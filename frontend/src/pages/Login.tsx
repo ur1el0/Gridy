@@ -20,11 +20,7 @@ export const Login: React.FC = () => {
     
     try {
       const response = await axiosPublic.post('/auth/login/', {
-<<<<<<< HEAD
         username: username,
-=======
-        username: email,
->>>>>>> d8f3674 (fix(login): fix login page payload)
         password: password
       });
       const { access, user: userData } = response.data;
@@ -150,13 +146,8 @@ export const Login: React.FC = () => {
           <form className="space-y-5" onSubmit={handleLogin}>
             {/* Username Field */}
             <div>
-<<<<<<< HEAD
               <label className="block text-[11px] font-bold tracking-wider text-slate-500 uppercase mb-2">
                 USERNAME
-=======
-              <label className="block text-sm font-medium text-slate-700">
-                Username
->>>>>>> d8f3674 (fix(login): fix login page payload)
               </label>
               <div className="relative flex items-center">
                 <div className="absolute left-3.5 text-slate-400 pointer-events-none">
@@ -167,17 +158,10 @@ export const Login: React.FC = () => {
                 <input
                   type="text"
                   required
-<<<<<<< HEAD
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="w-full pl-11 pr-4 py-3.5 bg-[#EEF2F6] focus:bg-white border border-transparent focus:border-[#003882] focus:ring-1 focus:ring-[#003882] rounded-xl text-sm font-medium text-slate-900 placeholder-slate-400 outline-none transition-all"
                   placeholder="Enter your username"
-=======
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="appearance-none block w-full px-3 py-2 border border-slate-300 rounded-md shadow-sm placeholder-slate-400 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
-                  placeholder="admin1"
->>>>>>> d8f3674 (fix(login): fix login page payload)
                 />
               </div>
             </div>
