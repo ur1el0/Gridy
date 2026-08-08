@@ -61,6 +61,7 @@ export const AdminLayout: React.FC = () => {
                 Issue Reports
               </NavLink>
             </li>
+<<<<<<< HEAD
             <li>
               <NavLink 
                 to="/announcements" 
@@ -86,6 +87,8 @@ export const AdminLayout: React.FC = () => {
               </NavLink>
             </li>
 
+=======
+>>>>>>> c0cbbf7 (feat(ui): implement issue reports dashboard with slide-over and image lightbox modals)
           </ul>
         </nav>
         
