@@ -6,6 +6,7 @@ from django.core.cache import cache
 import time
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, OpenApiTypes
+from config.celery import app as celery_app
 
 
 class HealthCheckView(APIView):
@@ -62,5 +63,26 @@ class HealthCheckView(APIView):
         if not overall_healthy:
             status_info["status"] = "unhealthy"
             return Response(status_info, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        try:
+            start_time = time.time()
+            # Pings the workers and waits up to 1 second
+            ping_result = celery_app.control.ping(timeout=1.0)
+
+            if not ping_result:
+                raise ValueError("No Celery workers responded to ping.")
+
+            celery_latency = (time.time() - start_time) * 1000
+            status_info["services"]["celery"] = {
+                "status": "healthy",
+                "latency_ms": round(celery_latency, 2),
+                "workers_alive": len(ping_result)
+            }
+        except Exception as e:
+            overall_healthy = False
+            status_info["services"]["celery"] = {
+                "status": "unhealthy",
+                "error": str(e)
+            }   
 
         return Response(status_info, status=status.HTTP_200_OK)

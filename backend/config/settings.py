@@ -270,3 +270,24 @@ LOGGING = {
         },
     },
 }
+
+
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.celery import CeleryIntegration
+
+# Uses existing environ setup to safely pull the DSN
+SENTRY_DSN = env('SENTRY_DSN', default='')
+
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[
+            DjangoIntegration(),
+            CeleryIntegration(),
+        ],
+        # Traces sample rate captures performance metrics.
+        # In heavy production, set this lower (e.g. 0.2) to save quota
+        traces_sample_rate=1.0,
+        send_default_pii=True
+    )
