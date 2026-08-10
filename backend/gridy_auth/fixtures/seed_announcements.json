@@ -1,0 +1,12 @@
+[
+  {
+    "title": "Welcome to Gridy!",
+    "content": "We are excited to launch the new Gridy system for our barangay.",
+    "is_pinned": true
+  },
+  {
+    "title": "Road Repair on 5th Street",
+    "content": "Please be advised that road repairs will commence next week on 5th street.",
+    "is_pinned": false
+  }
+]

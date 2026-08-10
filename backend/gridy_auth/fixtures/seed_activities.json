@@ -1,0 +1,14 @@
+[
+  {
+    "title": "Barangay Assembly",
+    "description": "Monthly general assembly for all residents.",
+    "event_datetime": "2026-10-01T10:00:00Z",
+    "location": "Barangay Hall"
+  },
+  {
+    "title": "Medical Mission",
+    "description": "Free medical checkups for senior citizens.",
+    "event_datetime": "2026-11-15T08:00:00Z",
+    "location": "Covered Court"
+  }
+]

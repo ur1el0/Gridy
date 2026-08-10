@@ -1,0 +1,26 @@
+[
+  {
+    "username": "admin1",
+    "password": "Password123!",
+    "email": "admin1@gridy.local",
+    "role": "ADMIN",
+    "first_name": "Admin",
+    "last_name": "One",
+    "is_staff": true,
+    "is_superuser": true
+  },
+  {
+    "username": "resident1",
+    "password": "Password123!",
+    "email": "resident1@gridy.local",
+    "role": "RESIDENT",
+    "first_name": "Resident",
+    "last_name": "One",
+    "resident_profile": {
+      "full_name": "Resident One",
+      "birth_date": "1990-01-01",
+      "voter_status": true,
+      "contact_number": "09123456789"
+    }
+  }
+]
