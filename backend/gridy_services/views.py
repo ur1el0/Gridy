@@ -93,7 +93,7 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
         
         return Response(DocumentRequestSerializer(document_request).data, status=status.HTTP_200_OK)
 
-    @action(detail=True, methods=['get'])
+    @action(detail=True, methods=['get'], url_path='generate-pdf')
     def generate_pdf(self, request, pk=None):
         document = self.get_object()
         
