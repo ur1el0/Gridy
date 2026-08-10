@@ -1,141 +1,83 @@
-# Gridy - Barangay Management & Resident Engagement System
+# Gridy - Barangay Information and Service Management System
 
-Gridy is a comprehensive, all-in-one municipal management platform designed to streamline Barangay administration and enhance resident engagement. This repository houses the backend core APIs built with Django and Django REST Framework (DRF), complete with Role-Based Access Control (RBAC), multi-device push notification services, and automated data logging.
+Gridy is an enterprise-grade web and mobile platform designed to modernize and digitize local government operations (Barangays). It provides a secure, role-based ecosystem for residents to request documents, report local issues, and stay informed via real-time notifications.
 
----
+## System Architecture
 
-## Technology Stack
+Gridy employs a highly decoupled, microservices-inspired architecture designed to scale. The entire ecosystem is containerized to guarantee 100% environment parity between local development and production.
 
-- **Framework:** Django 6.x & Django REST Framework (DRF)
-- **Authentication:** JSON Web Tokens (SimpleJWT)
-- **Task Queue & Caching:** Celery & Redis (Asynchronous background processing & caching)
-- **API Documentation:** OpenAPI 3.0 via `drf-spectacular`
-- **PDF Generation:** `xhtml2pdf` dynamic certificate renderer
-- **Database:** PostgreSQL (production-ready) / SQLite (development)
-- **Media Hosting:** Cloudinary Integration (Multipart image parsing)
-- **Push Notifications:** Firebase Cloud Messaging (FCM) via Firebase Admin SDK
-- **Testing:** Django APITestCase (automated unit & integration testing)
+- **Backend Engine (Django & DRF):** Powers the core REST API (Python 3.12). Handles complex relational business logic, OpenAPI schema generation, and JWT validation.
+- **Frontend Web Admin (React & Vite):** A blazing-fast Single Page Application (SPA) providing a responsive, Tailwind-styled dashboard for Barangay Officials.
+- **Primary Database (PostgreSQL 15):** Serves as the robust, ACID-compliant relational data store, heavily optimized with composite indices for rapid dashboard filtering.
+- **Message Broker & Cache (Redis 7):** Brokers background task queues and acts as an ultra-low-latency caching layer for session management.
+- **Asynchronous Task Queue (Celery):** Offloads heavy operations (like third-party Firebase network requests) from the main Django HTTP thread to background workers, ensuring zero UI blocking.
+- **Reverse Proxy & Static Hosting (Nginx):** Acts as the primary web server, serving the compiled React frontend as static assets while efficiently proxying dynamic API requests to Gunicorn.
+- **Cloud CDNs:** Leverages **Cloudinary** for scalable, ephemeral media storage (e.g., incident report photos) and **Firebase Cloud Messaging** for push notifications.
 
----
+## Core Features
 
-## System Architecture (Backend Apps)
+- **Role-Based Access Control (RBAC):** Strict view-level and object-level permission classes. ViewSets dynamically branch their `get_queryset()` logic based on user roles (`ADMIN` vs `RESIDENT`) to completely prevent unauthorized data exposure.
+- **Document Requests & Smart Queuing:** Residents can digitally request clearances and certificates. The system automatically provisions sequential Queue Tickets (e.g., `T001`, `T002`) and tracks real-time fulfillment status.
+- **Issue Reporting & Media Handling:** Residents can report local hazards. The backend implements multipart parsing to compress and stream image attachments directly to Cloudinary without bloating the local Docker container.
+- **Real-Time Push Notifications:** Comprehensive Firebase Admin SDK integration. The system dispatches single-device alerts (for queue advancements) and topic-based broadcasts (for general announcements) natively to iOS/Android devices.
+- **Secure Authentication:** JWT-based identity management utilizing `HttpOnly`, `SameSite=Strict` cookies. Features seamless Axio interceptors for automatic token refreshing, rendering the system highly resilient against XSS and CSRF attacks.
+- **Administrative Auditing:** A dedicated `gridy_audit` module automatically logs all official administrative actions (e.g., approving a document) to ensure complete government transparency and accountability.
 
-The system is structured as modular, decoupled Django applications:
+## Quickstart (Docker Production Environment)
 
-1. **`gridy_auth` (Identity & RBAC):**
-   - Custom `User` model supporting Roles (`ADMIN`, `RESIDENT`).
-   - Auto-linked `Resident` profile table containing voter information and birth details.
-   - Secure registration, login, and authenticated `/me/` details.
-   - **Bulk Resident CSV Import:** Allows Barangay admins to upload resident spreadsheets to populate directories in bulk, auto-generating default passwords based on birthdates.
-2. **`gridy_services` (Barangay Core Services):**
-   - **Document Requests:** Handles residents' requests for certificates (Barangay Clearance, Indigency) and secures status validations (Approved/Rejected) exclusively to Barangay Officials.
-   - **Hybrid Queuing System:** Generates auto-sequenced queue tickets (`T001`, `T002`, etc.) and manages live queue positions.
-   - **Analytics Dashboard:** Aggregates document status, queue counts, and incident urgency statistics (`GET /api/v1/dashboard/summary/`).
-3. **`gridy_reports` (Incident Reporting):**
-   - Exposes CRUD endpoints for hazard/broken infrastructure reporting.
-   - Configured with multipart parsing to compress and stream attachments directly to Cloudinary.
-   - Supports Urgency levels (`LOW`, `MEDIUM`, `HIGH`, `URGENT`).
-4. **`gridy_communications` (Community Board & Alerts):**
-   - Board announcements supporting priority pinning.
-   - Community activities and event schedules.
-   - Handles device token registrations (`FCMDevice`) and FCM notifications dispatching via Celery background tasks.
-5. **`gridy_audit` (Administrative Audit Trail):**
-   - Tracks official administrative actions (validations, queue advancements) for government transparency and auditing (`AuditLog`).
+The entire application stack is containerized. To spin up the system locally:
 
----
+1. **Clone the repository:**
 
-## Environment Configuration
+   ```bash
+   git clone https://github.com/mikeandrei32/Gridy.git
+   cd Gridy
+   ```
 
-Copy `backend/.env.example` to `backend/.env` and supply the required configurations:
+2. **Boot the Containers:**
 
-```env
-# Django Core Settings
-DEBUG=True
-SECRET_KEY=your-django-secret-key
-ALLOWED_HOSTS=127.0.0.1,localhost
+   ```bash
+   docker compose up --build -d
+   ```
 
-# JWT Settings
-JWT_SECRET_KEY=your-jwt-secret-key
+   _Note: The backend `entrypoint.sh` automatically runs database migrations upon boot._
 
-# Cloudinary Integration
-CLOUDINARY_CLOUD_NAME=your-cloud-name
-CLOUDINARY_API_KEY=your-api-key
-CLOUDINARY_API_SECRET=your-api-secret
+3. **Seed the Database (Optional):**
+   To populate the system with test users and announcements:
 
-# Firebase Push Alerts (FCM)
-FIREBASE_SERVICE_ACCOUNT_JSON_PATH=relative/path/to/firebase-key.json
-```
+   ```bash
+   docker compose exec backend python manage.py seed_db
+   ```
 
----
+4. **Access the Application:**
+   - **Web Dashboard:** `http://localhost:80`
+   - **API Swagger/OpenAPI Docs:** `http://localhost:8000/api/schema/swagger-ui/`
 
-## Quick Start Setup
+## Environment Variables
 
-Ensure you have Python 3.10+ installed.
+To run the project, you must create a `.env` file in the `backend/` directory based on `.env.example`:
 
-### 1. Initialize Virtual Environment
+- `SECRET_KEY`: Django cryptographic key
+- `DEBUG`: Set to `True` for development, `False` in production
+- `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`: PostgreSQL container credentials
+- `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET`: Media storage credentials
+- `FIREBASE_SERVICE_ACCOUNT_JSON_PATH`: Path to FCM credentials for push notifications
 
-```bash
-# Run from Gridy root directory
-python3 -m venv venv
-source venv/bin/activate
-```
+## Project Structure
 
-### 2. Install Project Dependencies
+- `backend/`: Django core application, REST APIs, and Celery task definitions
+  - `gridy_auth/`: JWT Authentication, User Models, Profiles
+  - `gridy_services/`: Document Requests and Queue Ticket logic
+  - `gridy_communications/`: Announcements, Activities, FCM logic
+  - `gridy_reports/`: Resident Issue Reporting and image handling
+  - `gridy_audit/`: System action logging
+- `frontend/`: React + Vite web dashboard for Barangay Officials
+- `docker-compose.yml`: Services orchestration configuration
+
+## Testing
+
+The backend is fully verified with comprehensive unit and integration tests. To execute the test suite inside the container:
 
 ```bash
-cd backend/
-pip install -r requirements.txt
+docker compose exec backend pytest
 ```
-
-### 3. Setup Database & Migrations
-
-```bash
-python manage.py makemigrations
-python manage.py migrate
-```
-
-### 4. Run Development Server
-
-```bash
-python manage.py runserver
-```
-
-The API browsable UI will be available at: [http://127.0.0.1:8000/api/v1/](http://127.0.0.1:8000/api/v1/)
-
----
-
-## Testing and Quality Assurance
-
-The codebase includes an automated unit and integration test suite verifying endpoints, authorization boundaries, date validations, and transaction rollbacks.
-
-To run the complete test suite:
-
-```bash
-# With venv activated inside backend/
-python manage.py test
-```
-
----
-
-## Key Endpoints Reference
-
-### Authentication
-
-- `POST /api/v1/auth/register/` - Create a resident profile.
-- `POST /api/v1/auth/login/` - Authenticate and fetch access/refresh JWT tokens.
-- `GET /api/v1/auth/me/` - Fetch currently logged-in account details.
-- `POST /api/v1/auth/import-residents/` - (Admin only) Upload CSV spreadsheet to batch import residents.
-
-### Services & Queue
-
-- `POST /api/v1/document-requests/` - Request certificates.
-- `PATCH /api/v1/document-requests/<id>/validate/` - (Admin only) Approve/Reject certificate requests.
-- `POST /api/v1/tickets/` - Get queue ticket position (auto-generates ticket number).
-- `GET /api/v1/tickets/live-status/` - Fetch live queue positions.
-- `POST /api/v1/tickets/next/` - (Admin only) Advance queue to next active ticket.
-
-### Communications & Incident Reporting
-
-- `POST /api/v1/reports/` - Submit hazard reports with photo uploads.
-- `POST /api/v1/announcements/` - (Admin only) Broadcast official board announcements.
-- `POST /api/v1/devices/` - Register FCM device token for push notifications.
