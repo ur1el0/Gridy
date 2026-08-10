@@ -23,6 +23,14 @@ from .serializers import (
     DashboardSummarySerializer,
 )
 
+from django.template.loader import get_template
+from django.http import HttpResponse
+from django.utils import timezone
+from xhtml2pdf import pisa
+from rest_framework.decorators import action
+from rest_framework.response import Response
+from rest_framework import status
+
 
 class DocumentRequestViewSet(viewsets.ModelViewSet):
     serializer_class = DocumentRequestSerializer
@@ -84,6 +92,41 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
         )
         
         return Response(DocumentRequestSerializer(document_request).data, status=status.HTTP_200_OK)
+
+    @action(detail=True, methods=['get'])
+    def generate_pdf(self, request, pk=None):
+        document = self.get_object()
+        
+        # Only allow PDF generation if the document is APPROVED or RELEASED
+        if document.status not in [DocumentRequest.Status.APPROVED, DocumentRequest.Status.RELEASED]:
+            return Response(
+                {"error": "You can only generate PDFs for approved documents."}, 
+                status=status.HTTP_400_BAD_REQUEST
+            )
+            
+        template_path = 'gridy_services/certificate.html'
+        context = {
+            'document': document,
+            'user': document.user,
+            'date_issued': timezone.now()
+        }
+        
+        # Create a Django response object, and specify content_type as pdf
+        response = HttpResponse(content_type='application/pdf')
+        # Instruct the browser to download the file instead of opening it
+        filename = f"Barangay_Clearance_{document.id}.pdf"
+        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        
+        # Render the template to HTML, then convert HTML to PDF
+        template = get_template(template_path)
+        html = template.render(context)
+        
+        pisa_status = pisa.CreatePDF(html, dest=response)
+        
+        if pisa_status.err:
+            return Response({"error": "Failed to generate PDF"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            
+        return response
 
 
 class QueueTicketViewSet(viewsets.ModelViewSet):
