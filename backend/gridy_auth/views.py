@@ -187,6 +187,7 @@ class CustomTokenRefreshView(TokenRefreshView):
 class LogoutView(APIView):
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(request=None, responses={204: None})
     def post(self, request, *args, **kwargs):
         refresh_token_str = request.COOKIES.get('refresh_token')
         if not refresh_token_str:
