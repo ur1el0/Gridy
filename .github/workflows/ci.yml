@@ -55,7 +55,7 @@ jobs:
           CELERY_BROKER_URL: "redis://localhost:6379/0"
         run: |
           cd backend
-          pytest
+          python -m pytest
 
   frontend-tests:
     runs-on: ubuntu-latest
