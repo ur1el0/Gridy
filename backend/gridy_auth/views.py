@@ -55,6 +55,12 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
+            
+            # Send welcome email asynchronously
+            full_name = getattr(user, 'profile', user).full_name if hasattr(user, 'profile') else user.username
+            from gridy_auth.tasks import send_welcome_email
+            send_welcome_email.delay(user.email, full_name)
+            
             return Response(
                 UserSerializer(user).data,
                 status=status.HTTP_201_CREATED
