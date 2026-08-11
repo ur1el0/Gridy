@@ -1,3 +1,4 @@
+from django.db.models import OneToOneField
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
@@ -25,3 +26,16 @@ class Resident(models.Model):
 
     def __str__(self):
         return f'{self.full_name}'
+
+
+class RefreshSession(models.Model):
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='sessions')
+    refresh_token_jti = models.CharField(max_length=255, unique=True, db_index=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    user_agent = models.TextField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    is_revoked = models.BooleanField(default=False)
+
+    def __str__(self):
+        return f"Session for {self.user.username} (JTI: {self.refresh_token_jti[:8]})"

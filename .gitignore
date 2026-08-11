@@ -2,10 +2,17 @@ node_modules/
 __pycache__/
 *.pyc
 .env
-context/
+/context/
 venv/
 db.sqlite3
 
 # Firebase Private Keys
 firebase-*.json
-*.json
+
+
+# Database Wildcards
+*.sqlite3
+
+# Media and Uploads
+media/
+backend/media/

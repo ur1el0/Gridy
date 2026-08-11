@@ -5,6 +5,7 @@ from gridy_communications.serializers import AnnouncementSerializer, ActivitySch
 from gridy_communications.services import send_fcm_topic_notification
 from gridy_communications.models import FCMDevice
 from gridy_communications.serializers import FCMDeviceSerializer
+from gridy_auth.models import User
 
 
 class ActivityScheduleViewSet(viewsets.ModelViewSet):
@@ -41,9 +42,18 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
         )
 
 class FCMDeviceViewSet(viewsets.ModelViewSet):
-    queryset = FCMDevice.objects.all()
     serializer_class = FCMDeviceSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_permissions(self):
+        return [permissions.IsAuthenticated()]
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            return FCMDevice.objects.none()
+        if user.role == User.Role.ADMIN:
+            return FCMDevice.objects.all()
+        return FCMDevice.objects.filter(user=user)
 
     # Clean up any existing records matching the token to prevent duplicate key crashes 
     def create(self, request, *args, **kwargs):

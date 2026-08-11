@@ -1,9 +1,12 @@
+from gridy_reports.models import IssueReport
+from rest_framework.status import HTTP_403_FORBIDDEN
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 from gridy_auth.models import User
 from gridy_services.models import DocumentRequest, QueueTicket
+from gridy_audit.models import AuditLog
 
 # Create your tests here.
 
@@ -64,6 +67,9 @@ class ServiceAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(DocumentRequest.objects.get(user=self.resident).status, "APPROVED")
         
+        # Verify that an audit log entry was generated
+        self.assertEqual(AuditLog.objects.filter(action_type=AuditLog.ActionType.DOCUMENT_ACTION).count(), 1)
+        
 
     def test_resident_can_create_queue_ticket(self):
         self.client.force_login(self.resident)
@@ -95,5 +101,68 @@ class ServiceAPITests(APITestCase):
         ticket.refresh_from_db()
         self.assertEqual(ticket.status, "SERVING")
 
+        # Verify that an audit log entry was generated
+        self.assertEqual(AuditLog.objects.filter(action_type=AuditLog.ActionType.QUEUE_ACTION).count(),  1)
 
-    
+
+    def test_dashboard_summary_required_auth(self):
+        url = "/api/v1/dashboard/summary/"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
+
+    def test_dashboard_summary_blocked_for_residents(self):
+        self.client.force_login(self.resident)
+        url = "/api/v1/dashboard/summary/"
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_dashboard_summary_success_for_official(self):
+        self.client.force_login(self.official)
+
+        # Create some mock data to verify aggregation counters
+        DocumentRequest.objects.create(
+            user=self.resident,
+            document_type="Indigency Certificate",
+            status="PENDING"
+        )
+        IssueReport.objects.create(
+            reporter=self.resident,
+            title="Broken Light",
+            description="Dark alley",
+            location="Purok 2",
+            urgency="HIGH"
+        )
+        QueueTicket.objects.create(
+            status="SERVING",
+            ticket_number="T001",
+            service_type="DOCUMENT"
+        )
+
+        url = "/api/v1/dashboard/summary/"
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        # Verify JSON structure contains expected keys and data values
+        self.assertIn("document_requests", response.data)
+        self.assertIn("issue_reports", response.data)
+        self.assertIn("queue_activity", response.data)
+
+        # Verify values
+        self.assertEqual(response.data["document_requests"]["pending"], 1)
+        self.assertEqual(response.data["issue_reports"]["urgency_breakdown"]["high"], 1)
+        self.assertEqual(response.data["queue_activity"]["serving_now"], "T001")
+        
+
+class SystemHealthAPITests(APITestCase):
+    def test_health_check_endpoint_success(self):
+        url = reverse('health_check')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["status"], "healthy")
+        self.assertIn("database", response.data["services"])
+        self.assertIn("cache", response.data["services"])
+        self.assertEqual(response.data["services"]["database"]["status"], "healthy")
+        self.assertEqual(response.data["services"]["cache"]["status"], "healthy")
+        self.assertIn("latency_ms", response.data["services"]["database"])
+        self.assertIn("latency_ms", response.data["services"]["cache"])

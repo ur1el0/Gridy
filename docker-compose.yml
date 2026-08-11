@@ -1,0 +1,62 @@
+version: '3.8'
+
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: gridy_db
+    restart: always
+    environment:
+      POSTGRES_DB: gridy_db
+      POSTGRES_USER: gridy_user
+      POSTGRES_PASSWORD: gridy_password
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  redis:
+    image: redis:7-alpine
+    container_name: gridy_redis
+    restart: always
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+
+  backend:
+    build: ./backend
+    container_name: gridy_backend
+    restart: always
+    # We use Gunicorn with 3 worker processes instead of runserver
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3
+    ports:
+      - "8000:8000"
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - db
+      - redis
+
+  celery_worker:
+    build: ./backend
+    container_name: gridy_celery
+    restart: always
+    # Same backend image, but is the command is overridden to run the worker
+    command: celery -A config worker -l info
+    env_file:
+      - ./backend/.env
+    depends_on:
+      - backend
+      - redis
+  frontend:
+    build: ./frontend
+    container_name: gridy_frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
+  redis_data:

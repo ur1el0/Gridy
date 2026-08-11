@@ -19,7 +19,7 @@ class DocumentRequestSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['created_at', 'updated_at']
 
-    def get_requester_name(self, obj):
+    def get_requester_name(self, obj) -> str:
         user = obj.user
         return getattr(user.profile, 'full_name', user.username) if hasattr(user,'profile') else user.username
 
@@ -37,3 +37,35 @@ class QueueTicketSerializer(serializers.ModelSerializer):
             'updated_at'
         ]
         read_only_fields = ['status', 'ticket_number', 'created_at', 'updated_at']
+
+
+class DocumentStatsSerializer(serializers.Serializer):
+    total = serializers.IntegerField()
+    pending = serializers.IntegerField()
+    approved = serializers.IntegerField()
+    rejected = serializers.IntegerField()
+    released = serializers.IntegerField()
+
+class UrgencyBreakdownSerializer(serializers.Serializer):
+    low = serializers.IntegerField()
+    medium = serializers.IntegerField()
+    high = serializers.IntegerField()
+    urgent = serializers.IntegerField()
+
+class IssueStatsSerializer(serializers.Serializer):
+    total = serializers.IntegerField()
+    pending = serializers.IntegerField()
+    in_progress = serializers.IntegerField()
+    resolved = serializers.IntegerField()
+    urgency_breakdown = UrgencyBreakdownSerializer()
+
+class QueueActivitySerializer(serializers.Serializer):
+    total_today = serializers.IntegerField()
+    serving_now = serializers.CharField(allow_null=True)
+    waiting_count = serializers.IntegerField()
+
+class DashboardSummarySerializer(serializers.Serializer):
+    document_requests = DocumentStatsSerializer()
+    issue_reports = IssueStatsSerializer()
+    queue_activity = QueueActivitySerializer()
+    

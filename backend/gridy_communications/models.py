@@ -15,6 +15,12 @@ class Announcement(models.Model):
     def __str__(self):
         return self.title
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['is_pinned', 'created_at']),
+        ]
+
+
 class ActivitySchedule(models.Model):
     title = models.CharField(max_length=255)
     description = models.TextField()

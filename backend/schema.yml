@@ -1,0 +1,1746 @@
+openapi: 3.0.3
+info:
+  title: Gridy API
+  version: 1.0.0
+  description: Barangay Information and Service Management System API
+paths:
+  /api/v1/activities/:
+    get:
+      operationId: v1_activities_list
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ActivitySchedule'
+          description: ''
+    post:
+      operationId: v1_activities_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivitySchedule'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ActivitySchedule'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ActivitySchedule'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivitySchedule'
+          description: ''
+  /api/v1/activities/{id}/:
+    get:
+      operationId: v1_activities_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this activity schedule.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivitySchedule'
+          description: ''
+    put:
+      operationId: v1_activities_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this activity schedule.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ActivitySchedule'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ActivitySchedule'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/ActivitySchedule'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivitySchedule'
+          description: ''
+    patch:
+      operationId: v1_activities_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this activity schedule.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedActivitySchedule'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedActivitySchedule'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedActivitySchedule'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ActivitySchedule'
+          description: ''
+    delete:
+      operationId: v1_activities_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this activity schedule.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/announcements/:
+    get:
+      operationId: v1_announcements_list
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Announcement'
+          description: ''
+    post:
+      operationId: v1_announcements_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Announcement'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Announcement'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Announcement'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Announcement'
+          description: ''
+  /api/v1/announcements/{id}/:
+    get:
+      operationId: v1_announcements_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this announcement.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Announcement'
+          description: ''
+    put:
+      operationId: v1_announcements_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this announcement.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Announcement'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Announcement'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Announcement'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Announcement'
+          description: ''
+    patch:
+      operationId: v1_announcements_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this announcement.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedAnnouncement'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedAnnouncement'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedAnnouncement'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Announcement'
+          description: ''
+    delete:
+      operationId: v1_announcements_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this announcement.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/auth/import-residents/:
+    post:
+      operationId: v1_auth_import_residents_create
+      summary: Bulk Import Residents from CSV
+      tags:
+      - v1
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FileUpload'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResidentImportResponse'
+          description: ''
+        '207':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ResidentImportResponse'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/auth/login/:
+    post:
+      operationId: v1_auth_login_create
+      description: |-
+        Takes a set of user credentials and returns an access and refresh JSON web
+        token pair to prove the authentication of those credentials.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CustomTokenObtainPair'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/CustomTokenObtainPair'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/CustomTokenObtainPair'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomTokenObtainPair'
+          description: ''
+  /api/v1/auth/me/:
+    get:
+      operationId: v1_auth_me_retrieve
+      summary: Get Current User Profile
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+  /api/v1/auth/register/:
+    post:
+      operationId: v1_auth_register_create
+      summary: Register Resident Account
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Register'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Register'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Register'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/auth/token/refresh/:
+    post:
+      operationId: v1_auth_token_refresh_create
+      description: |-
+        Takes a refresh type JSON web token and returns an access type JSON web
+        token if the refresh token is valid.
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/TokenRefresh'
+        required: true
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TokenRefresh'
+          description: ''
+  /api/v1/dashboard/summary/:
+    get:
+      operationId: v1_dashboard_summary_retrieve
+      description: Returns pre-calculated counters and urgency distributions for reports,
+        document queues, and clearances.
+      summary: Get Dashboard Statistics
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DashboardSummary'
+          description: ''
+  /api/v1/devices/:
+    get:
+      operationId: v1_devices_list
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/FCMDevice'
+          description: ''
+    post:
+      operationId: v1_devices_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FCMDevice'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FCMDevice'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FCMDevice'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FCMDevice'
+          description: ''
+  /api/v1/devices/{id}/:
+    get:
+      operationId: v1_devices_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this fcm device.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FCMDevice'
+          description: ''
+    put:
+      operationId: v1_devices_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this fcm device.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/FCMDevice'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/FCMDevice'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/FCMDevice'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FCMDevice'
+          description: ''
+    patch:
+      operationId: v1_devices_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this fcm device.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedFCMDevice'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedFCMDevice'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedFCMDevice'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FCMDevice'
+          description: ''
+    delete:
+      operationId: v1_devices_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this fcm device.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/document-requests/:
+    get:
+      operationId: v1_document_requests_list
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DocumentRequest'
+          description: ''
+    post:
+      operationId: v1_document_requests_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DocumentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DocumentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentRequest'
+          description: ''
+  /api/v1/document-requests/{id}/:
+    get:
+      operationId: v1_document_requests_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this document request.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentRequest'
+          description: ''
+    put:
+      operationId: v1_document_requests_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this document request.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DocumentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/DocumentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/DocumentRequest'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentRequest'
+          description: ''
+    patch:
+      operationId: v1_document_requests_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this document request.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDocumentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedDocumentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedDocumentRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentRequest'
+          description: ''
+    delete:
+      operationId: v1_document_requests_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this document request.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/document-requests/{id}/validate/:
+    patch:
+      operationId: v1_document_requests_validate_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this document request.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedDocumentRequest'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedDocumentRequest'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedDocumentRequest'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentRequest'
+          description: ''
+  /api/v1/reports/:
+    get:
+      operationId: v1_reports_list
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/IssueReport'
+          description: ''
+    post:
+      operationId: v1_reports_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/IssueReport'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/IssueReport'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueReport'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueReport'
+          description: ''
+  /api/v1/reports/{id}/:
+    get:
+      operationId: v1_reports_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this issue report.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueReport'
+          description: ''
+    put:
+      operationId: v1_reports_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this issue report.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/IssueReport'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/IssueReport'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/IssueReport'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueReport'
+          description: ''
+    patch:
+      operationId: v1_reports_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this issue report.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedIssueReport'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedIssueReport'
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedIssueReport'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/IssueReport'
+          description: ''
+    delete:
+      operationId: v1_reports_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this issue report.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/tickets/:
+    get:
+      operationId: v1_tickets_list
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/QueueTicket'
+          description: ''
+    post:
+      operationId: v1_tickets_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueueTicket'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/QueueTicket'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/QueueTicket'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueueTicket'
+          description: ''
+  /api/v1/tickets/{id}/:
+    get:
+      operationId: v1_tickets_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this queue ticket.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueueTicket'
+          description: ''
+    put:
+      operationId: v1_tickets_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this queue ticket.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueueTicket'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/QueueTicket'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/QueueTicket'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueueTicket'
+          description: ''
+    patch:
+      operationId: v1_tickets_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this queue ticket.
+        required: true
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedQueueTicket'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedQueueTicket'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedQueueTicket'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueueTicket'
+          description: ''
+    delete:
+      operationId: v1_tickets_destroy
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this queue ticket.
+        required: true
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+  /api/v1/tickets/live-status/:
+    get:
+      operationId: v1_tickets_live_status_retrieve
+      tags:
+      - v1
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueueTicket'
+          description: ''
+  /api/v1/tickets/next/:
+    post:
+      operationId: v1_tickets_next_create
+      tags:
+      - v1
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QueueTicket'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/QueueTicket'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/QueueTicket'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QueueTicket'
+          description: ''
+components:
+  schemas:
+    ActivitySchedule:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        event_datetime:
+          type: string
+          format: date-time
+        location:
+          type: string
+          maxLength: 255
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: integer
+          readOnly: true
+      required:
+      - created_at
+      - created_by
+      - description
+      - event_datetime
+      - id
+      - location
+      - title
+      - updated_at
+    Announcement:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        content:
+          type: string
+        is_pinned:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: integer
+          readOnly: true
+      required:
+      - content
+      - created_at
+      - created_by
+      - id
+      - title
+      - updated_at
+    CustomTokenObtainPair:
+      type: object
+      properties:
+        username:
+          type: string
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+      required:
+      - password
+      - username
+    DashboardSummary:
+      type: object
+      properties:
+        document_requests:
+          $ref: '#/components/schemas/DocumentStats'
+        issue_reports:
+          $ref: '#/components/schemas/IssueStats'
+        queue_activity:
+          $ref: '#/components/schemas/QueueActivity'
+      required:
+      - document_requests
+      - issue_reports
+      - queue_activity
+    DocumentRequest:
+      type: object
+      properties:
+        request_id:
+          type: integer
+          readOnly: true
+        requester_name:
+          type: string
+          readOnly: true
+        document_type:
+          type: string
+          maxLength: 100
+        urgency_tag:
+          $ref: '#/components/schemas/UrgencyTagEnum'
+        status:
+          $ref: '#/components/schemas/DocumentRequestStatusEnum'
+        admin_notes:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - document_type
+      - request_id
+      - requester_name
+      - updated_at
+    DocumentRequestStatusEnum:
+      enum:
+      - PENDING
+      - APPROVED
+      - REJECTED
+      - RELEASED
+      type: string
+      description: |-
+        * `PENDING` - Pending
+        * `APPROVED` - Approved
+        * `REJECTED` - Rejected
+        * `RELEASED` - Released
+    DocumentStats:
+      type: object
+      properties:
+        total:
+          type: integer
+        pending:
+          type: integer
+        approved:
+          type: integer
+        rejected:
+          type: integer
+        released:
+          type: integer
+      required:
+      - approved
+      - pending
+      - rejected
+      - released
+      - total
+    FCMDevice:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        token:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - id
+      - token
+    FileUpload:
+      type: object
+      properties:
+        file:
+          type: string
+          format: uri
+          description: CSV file containing resident accounts to import.
+      required:
+      - file
+    IssueReport:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        location:
+          type: string
+          description: A brief description of where the issue is located.
+          maxLength: 255
+        image:
+          type: string
+          format: uri
+          nullable: true
+        status:
+          $ref: '#/components/schemas/IssueReportStatusEnum'
+        urgency:
+          $ref: '#/components/schemas/UrgencyEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        reporter:
+          type: integer
+          readOnly: true
+      required:
+      - created_at
+      - description
+      - id
+      - location
+      - reporter
+      - title
+      - updated_at
+    IssueReportStatusEnum:
+      enum:
+      - PENDING
+      - IN_PROGRESS
+      - RESOLVED
+      type: string
+      description: |-
+        * `PENDING` - Pending
+        * `IN_PROGRESS` - In Progress
+        * `RESOLVED` - Resolved
+    IssueStats:
+      type: object
+      properties:
+        total:
+          type: integer
+        pending:
+          type: integer
+        in_progress:
+          type: integer
+        resolved:
+          type: integer
+        urgency_breakdown:
+          $ref: '#/components/schemas/UrgencyBreakdown'
+      required:
+      - in_progress
+      - pending
+      - resolved
+      - total
+      - urgency_breakdown
+    PatchedActivitySchedule:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        event_datetime:
+          type: string
+          format: date-time
+        location:
+          type: string
+          maxLength: 255
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: integer
+          readOnly: true
+    PatchedAnnouncement:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        content:
+          type: string
+        is_pinned:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        created_by:
+          type: integer
+          readOnly: true
+    PatchedDocumentRequest:
+      type: object
+      properties:
+        request_id:
+          type: integer
+          readOnly: true
+        requester_name:
+          type: string
+          readOnly: true
+        document_type:
+          type: string
+          maxLength: 100
+        urgency_tag:
+          $ref: '#/components/schemas/UrgencyTagEnum'
+        status:
+          $ref: '#/components/schemas/DocumentRequestStatusEnum'
+        admin_notes:
+          type: string
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedFCMDevice:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        token:
+          type: string
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+    PatchedIssueReport:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        title:
+          type: string
+          maxLength: 255
+        description:
+          type: string
+        location:
+          type: string
+          description: A brief description of where the issue is located.
+          maxLength: 255
+        image:
+          type: string
+          format: uri
+          nullable: true
+        status:
+          $ref: '#/components/schemas/IssueReportStatusEnum'
+        urgency:
+          $ref: '#/components/schemas/UrgencyEnum'
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+        reporter:
+          type: integer
+          readOnly: true
+    PatchedQueueTicket:
+      type: object
+      properties:
+        ticket_id:
+          type: integer
+          readOnly: true
+        ticket_number:
+          type: string
+          readOnly: true
+        service_type:
+          type: string
+          maxLength: 100
+        status:
+          allOf:
+          - $ref: '#/components/schemas/QueueTicketStatusEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+    QueueActivity:
+      type: object
+      properties:
+        total_today:
+          type: integer
+        serving_now:
+          type: string
+          nullable: true
+        waiting_count:
+          type: integer
+      required:
+      - serving_now
+      - total_today
+      - waiting_count
+    QueueTicket:
+      type: object
+      properties:
+        ticket_id:
+          type: integer
+          readOnly: true
+        ticket_number:
+          type: string
+          readOnly: true
+        service_type:
+          type: string
+          maxLength: 100
+        status:
+          allOf:
+          - $ref: '#/components/schemas/QueueTicketStatusEnum'
+          readOnly: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - created_at
+      - service_type
+      - status
+      - ticket_id
+      - ticket_number
+      - updated_at
+    QueueTicketStatusEnum:
+      enum:
+      - WAITING
+      - SERVING
+      - COMPLETED
+      - CANCELLED
+      type: string
+      description: |-
+        * `WAITING` - Waiting
+        * `SERVING` - Serving
+        * `COMPLETED` - Completed
+        * `CANCELLED` - Cancelled
+    Register:
+      type: object
+      properties:
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        password:
+          type: string
+          writeOnly: true
+        full_name:
+          type: string
+          writeOnly: true
+        birth_date:
+          type: string
+          format: date
+          writeOnly: true
+        voter_status:
+          type: boolean
+          writeOnly: true
+          default: false
+        contact_number:
+          type: string
+          writeOnly: true
+      required:
+      - birth_date
+      - full_name
+      - password
+      - username
+    Resident:
+      type: object
+      properties:
+        full_name:
+          type: string
+          maxLength: 255
+        birth_date:
+          type: string
+          format: date
+        voter_status:
+          type: boolean
+        contact_number:
+          type: string
+          nullable: true
+          maxLength: 20
+      required:
+      - birth_date
+      - full_name
+    ResidentImportResponse:
+      type: object
+      properties:
+        imported:
+          type: integer
+          description: Number of residents successfully imported.
+        skipped_due_to_duplicate:
+          type: integer
+          description: Number of records skipped due to pre-existing username.
+        errors:
+          type: array
+          items:
+            type: string
+          description: List of validation error messages.
+      required:
+      - errors
+      - imported
+      - skipped_due_to_duplicate
+    RoleEnum:
+      enum:
+      - ADMIN
+      - RESIDENT
+      type: string
+      description: |-
+        * `ADMIN` - Admin
+        * `RESIDENT` - Resident
+    TokenRefresh:
+      type: object
+      properties:
+        access:
+          type: string
+          readOnly: true
+        refresh:
+          type: string
+      required:
+      - access
+      - refresh
+    UrgencyBreakdown:
+      type: object
+      properties:
+        low:
+          type: integer
+        medium:
+          type: integer
+        high:
+          type: integer
+        urgent:
+          type: integer
+      required:
+      - high
+      - low
+      - medium
+      - urgent
+    UrgencyEnum:
+      enum:
+      - LOW
+      - MEDIUM
+      - HIGH
+      - URGENT
+      type: string
+      description: |-
+        * `LOW` - Low
+        * `MEDIUM` - Medium
+        * `HIGH` - High
+        * `URGENT` - Urgent
+    UrgencyTagEnum:
+      enum:
+      - REGULAR
+      - URGENT
+      type: string
+      description: |-
+        * `REGULAR` - Regular
+        * `URGENT` - Urgent
+    User:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          description: Required. 150 characters or fewer. Letters, digits and @/./+/-/_
+            only.
+          pattern: ^[\w.@+-]+$
+          maxLength: 150
+        email:
+          type: string
+          format: email
+          title: Email address
+          maxLength: 254
+        role:
+          $ref: '#/components/schemas/RoleEnum'
+        profile:
+          allOf:
+          - $ref: '#/components/schemas/Resident'
+          readOnly: true
+      required:
+      - id
+      - profile
+      - username
+  securitySchemes:
+    cookieAuth:
+      type: apiKey
+      in: cookie
+      name: sessionid
+    jwtAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT

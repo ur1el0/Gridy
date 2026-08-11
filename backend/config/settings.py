@@ -56,6 +56,8 @@ INSTALLED_APPS = [
     'gridy_services',
     'gridy_reports',
     'gridy_communications',
+    'gridy_audit',
+    'drf_spectacular',
 ]
 
 MIDDLEWARE = [
@@ -134,8 +136,14 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-CORS_ALLOW_ALL_ORIGINS = env.bool('CORS_ALLOW_ALL_ORIGINS', default=DEBUG)
-CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=['http://localhost:3000', 'http://127.0.0.1:3000'])
+CORS_ALLOW_ALL_ORIGINS = False
+CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
+    'http://localhost:3000', 
+    'http://127.0.0.1:3000',
+    'http://localhost:5173',
+    'http://127.0.0.1:5173'
+])
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -145,6 +153,7 @@ REST_FRAMEWORK = {
     'DEFAULT_PERMISSION_CLASSES': (
         'rest_framework.permissions.IsAuthenticated',
     ),
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
 }
 
 from datetime import timedelta
@@ -176,8 +185,9 @@ else:
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
-import os
+# pyrefly: ignore [missing-import]
 import firebase_admin
+# pyrefly: ignore [missing-import]
 from firebase_admin import credentials
 
 
@@ -194,3 +204,96 @@ if FIREBASE_SERVICE_ACCOUNT_JSON_PATH and os.path.exists(FIREBASE_SERVICE_ACCOUN
         print(f"Error initializing Firebase Admin SDK: {e}")
 else: 
     print("Warning: Firebase service account JSON key not found. FCM notifications are disabled.")
+
+
+# Celery and Redis Configuration
+CELERY_BROKER_URL = env('CELERY_BROKER_URL', default='redis://localhost:6379/0')
+CELERY_RESULT_BACKEND = env('CELERY_RESULT_BACKEND', default='redis://localhost:6379/0')
+CELERY_ACCEPT_CONTENT = ['json']
+CELERY_TASK_SERIALIZER = 'json'
+CELERY_RESULT_SERIALIZER = 'json'
+CELERY_TIMEZONE = TIME_ZONE
+
+# Dynamically enable Eager Mode when running tests
+import sys
+if 'test' in sys.argv:
+    CELERY_TASK_ALWAYS_EAGER = True
+    CELERY_TASK_EAGER_PROPAGATES = True
+
+
+
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Gridy API',
+    'DESCRIPTION': 'Barangay Information and Service Management System API',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False,
+}
+
+# Cache Settings (Redis backend)
+CACHES = {
+    'default': {
+        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+        'LOCATION': env('REDIS_URL', default='redis://127.0.0.1:6379/1'),
+    }
+}
+
+# Structured JSON Logging Configuration
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'json': {
+            '()': 'config.logging.JSONFormatter',
+        },
+    },
+    'handlers': {
+        'console': {
+            'level': 'INFO',
+            'class': 'logging.StreamHandler',
+            'formatter': 'json',
+        },
+    },
+    'root': {
+        'handlers': ['console'],
+        'level': 'INFO',
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+        'gridy': {
+            'handlers': ['console'],
+            'level': 'INFO',
+            'propagate': False,
+        },
+    },
+}
+
+
+import sentry_sdk
+from sentry_sdk.integrations.django import DjangoIntegration
+from sentry_sdk.integrations.celery import CeleryIntegration
+
+# Uses existing environ setup to safely pull the DSN
+SENTRY_DSN = env('SENTRY_DSN', default='')
+
+if SENTRY_DSN:
+    sentry_sdk.init(
+        dsn=SENTRY_DSN,
+        integrations=[
+            DjangoIntegration(),
+            CeleryIntegration(),
+        ],
+        # Traces sample rate captures performance metrics.
+        # In heavy production, set this lower (e.g. 0.2) to save quota
+        traces_sample_rate=1.0,
+        send_default_pii=True
+    )
+
+# Email Configuration
+# For development, we print emaisl to the console.
+# In production, change this to 'django.core.mail.backends.smtp.EmailBackend' and add SMTP credentials
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'Gridy Admin <admin@gridy.local>'

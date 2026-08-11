@@ -1,3 +1,4 @@
+from django.db.models import indexes
 from django.db import models
 from django.conf import settings
 
@@ -38,6 +39,11 @@ class DocumentRequest(models.Model):
     def __str__(self):
         return f"{self.document_type} - {self.user.username} ({self.status})"
 
+    class Meta:
+        indexes = [
+            models.Index(fields=['user', 'status']),
+            models.Index(fields=['status']),
+        ]
 
 class QueueTicket(models.Model):
     class Status(models.TextChoices):
@@ -81,4 +87,10 @@ class QueueTicket(models.Model):
                 new_num = 1
             self.ticket_number = f"T{new_num:03d}"
         super().save(*args, **kwargs)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=['status', 'created_at']),
+            models.Index(fields=['created_at']),
+        ]
             

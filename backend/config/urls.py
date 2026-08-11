@@ -14,8 +14,17 @@ Including another URLconf
     1. Import the include() function: from django.urls import include, path
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
+from unicodedata import name
 from django.contrib import admin
 from django.urls import path, include
+
+from drf_spectacular.views import (
+    SpectacularAPIView,
+    SpectacularRedocView,
+    SpectacularSwaggerView,
+)
+
+from config.health_views import HealthCheckView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -23,5 +32,14 @@ urlpatterns = [
     path('api/v1/', include('gridy_services.urls')),
     path('api/v1/', include('gridy_reports.urls')),
     path('api/v1/', include('gridy_communications.urls')),
-]
 
+    # OpenAPI Schema Views
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'),name='swagger-ui'),
+    path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
+
+    # Health Check Endpoint
+    path('health/', HealthCheckView.as_view(), name='health_check'),
+
+]
+    

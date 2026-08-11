@@ -1,3 +1,4 @@
+from random import choices
 from django.db import models
 from django.conf import settings
 
@@ -6,6 +7,12 @@ class IssueReport(models.Model):
         PENDING = 'PENDING', 'Pending'
         IN_PROGRESS = 'IN_PROGRESS', 'In Progress'
         RESOLVED = 'RESOLVED', 'Resolved'
+
+    class Urgency(models.TextChoices):
+        LOW = 'LOW', 'Low'
+        MEDIUM = 'MEDIUM', 'Medium'
+        HIGH = 'HIGH', 'High'
+        URGENT = 'URGENT', 'Urgent'
 
     reporter = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
@@ -24,9 +31,17 @@ class IssueReport(models.Model):
         choices=Status.choices, 
         default=Status.PENDING
     )
+
+    urgency = models.CharField(
+        max_length = 10,
+        choices=Urgency.choices,
+        default=Urgency.LOW
+    )
     
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     def __str__(self):
         return f"{self.title} - {self.get_status_display()}"
+
+
