@@ -29,25 +29,22 @@ The entire application stack is containerized. To spin up the system locally:
 
 1. **Clone the repository:**
 
-   ```bash
-   git clone https://github.com/mikeandrei32/Gridy.git
-   cd Gridy
-   ```
+```bash
+docker compose exec backend pytest
+```
 
-2. **Boot the Containers:**
+### 2. Install Project Dependencies
 
-   ```bash
-   docker compose up --build -d
-   ```
+```bash
+cd backend/
+pip install -r requirements.txt
+```
 
-   _Note: The backend `entrypoint.sh` automatically runs database migrations upon boot._
+### 3. Setup Database & Migrations
 
-3. **Seed the Database (Optional):**
-   To populate the system with test users and announcements:
-
-   ```bash
-   docker compose exec backend python manage.py seed_db
-   ```
+```bash
+docker compose exec backend python manage.py seed_db
+```
 
 4. **Access the Application:**
    - **Web Dashboard:** `http://localhost:80`
@@ -79,5 +76,31 @@ To run the project, you must create a `.env` file in the `backend/` directory ba
 The backend is fully verified with comprehensive unit and integration tests. To execute the test suite inside the container:
 
 ```bash
-docker compose exec backend pytest
+# With venv activated inside backend/
+python manage.py test
 ```
+
+---
+
+## Key Endpoints Reference
+
+### Authentication
+
+- `POST /api/v1/auth/register/` - Create a resident profile.
+- `POST /api/v1/auth/login/` - Authenticate and fetch access/refresh JWT tokens.
+- `GET /api/v1/auth/me/` - Fetch currently logged-in account details.
+- `POST /api/v1/auth/import-residents/` - (Admin only) Upload CSV spreadsheet to batch import residents.
+
+### Services & Queue
+
+- `POST /api/v1/document-requests/` - Request certificates.
+- `PATCH /api/v1/document-requests/<id>/validate/` - (Admin only) Approve/Reject certificate requests.
+- `POST /api/v1/tickets/` - Get queue ticket position (auto-generates ticket number).
+- `GET /api/v1/tickets/live-status/` - Fetch live queue positions.
+- `POST /api/v1/tickets/next/` - (Admin only) Advance queue to next active ticket.
+
+### Communications & Incident Reporting
+
+- `POST /api/v1/reports/` - Submit hazard reports with photo uploads.
+- `POST /api/v1/announcements/` - (Admin only) Broadcast official board announcements.
+- `POST /api/v1/devices/` - Register FCM device token for push notifications.
