@@ -53,6 +53,7 @@ jobs:
           DATABASE_URL: "postgres://gridy_user:gridy_password@localhost:5432/gridy_db"
           REDIS_URL: "redis://localhost:6379/1"
           CELERY_BROKER_URL: "redis://localhost:6379/0"
+          CELERY_RESULT_BACKEND: "redis://localhost:6379/0"
         run: |
           cd backend
           python -m pytest
