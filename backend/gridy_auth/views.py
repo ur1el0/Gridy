@@ -141,7 +141,7 @@ class CustomTokenRefreshView(TokenRefreshView):
 
         # Check session mapping status in the database
         try:
-            old_token = RefreshToken(refresh_token_str)
+            old_token = RefreshToken(refresh_token_str, verify=False)
             old_jti = old_token['jti']
             session = RefreshSession.objects.filter(refresh_token_jti=old_jti, is_revoked=False).first()
             if not session:

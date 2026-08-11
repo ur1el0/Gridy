@@ -214,10 +214,10 @@ class AuthAPITests(APITestCase):
         self.assertEqual(login_response.status_code, status.HTTP_200_OK)
         # 2. Call logout view
         logout_url = reverse('auth_logout')
-    logout_response = self.client.post(logout_url)
-    self.assertEqual(logout_response.status_code, status.HTTP_200_OK)
-    # Verify cookie is cleared
-    cookie = logout_response.cookies.get('refresh_token')
-    self.assertTrue(not cookie or not cookie.value or cookie['max-age'] == 0)
-    # Verify active session is revoked in database
-    self.assertEqual(RefreshSession.objects.filter(user=self.user, is_revoked=False).count(), 0)
+        logout_response = self.client.post(logout_url)
+        self.assertEqual(logout_response.status_code, status.HTTP_200_OK)
+        # Verify cookie is cleared
+        cookie = logout_response.cookies.get('refresh_token')
+        self.assertTrue(not cookie or not cookie.value or cookie['max-age'] == 0)
+        # Verify active session is revoked in database
+        self.assertEqual(RefreshSession.objects.filter(user=self.user, is_revoked=False).count(), 0)
