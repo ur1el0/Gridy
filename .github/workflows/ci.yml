@@ -9,6 +9,26 @@ on:
 jobs:
   backend-tests:
     runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:15
+        env:
+          POSTGRES_DB: gridy_db
+          POSTGRES_USER: gridy_user
+          POSTGRES_PASSWORD: gridy_password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -23,14 +43,20 @@ jobs:
           cd backend
           python -m pip install --upgrade pip
           pip install -r requirements.txt
+          # Manually install pytest since it's missing from requirements
+          pip install pytest pytest-django
 
       - name: Run Django Pytest
         env:
           SECRET_KEY: "ci-dummy-key"
           DEBUG: "True"
+          DATABASE_URL: "postgres://gridy_user:gridy_password@localhost:5432/gridy_db"
+          REDIS_URL: "redis://localhost:6379/1"
+          CELERY_BROKER_URL: "redis://localhost:6379/0"
+          CELERY_RESULT_BACKEND: "redis://localhost:6379/0"
         run: |
           cd backend
-          pytest
+          python -m pytest
 
   frontend-tests:
     runs-on: ubuntu-latest
@@ -38,10 +64,10 @@ jobs:
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      - name: Set up Node.js 20
+      - name: Set up Node.js 18
         uses: actions/setup-node@v4
         with:
-          node-version: "20"
+          node-version: "18"
 
       - name: Install Dependencies
         run: |

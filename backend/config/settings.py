@@ -291,3 +291,9 @@ if SENTRY_DSN:
         traces_sample_rate=1.0,
         send_default_pii=True
     )
+
+# Email Configuration
+# For development, we print emaisl to the console.
+# In production, change this to 'django.core.mail.backends.smtp.EmailBackend' and add SMTP credentials
+EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
+DEFAULT_FROM_EMAIL = 'Gridy Admin <admin@gridy.local>'
