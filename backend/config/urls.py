@@ -41,5 +41,7 @@ urlpatterns = [
     # Health Check Endpoint
     path('health/', HealthCheckView.as_view(), name='health_check'),
 
+    # Prometheus Metrics Endpoint
+    path('prometheus/', include('django_prometheus.urls')),
 ]
     
