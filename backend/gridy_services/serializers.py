@@ -65,7 +65,9 @@ class QueueActivitySerializer(serializers.Serializer):
     waiting_count = serializers.IntegerField()
 
 class DashboardSummarySerializer(serializers.Serializer):
+    total_residents = serializers.IntegerField(default=0)
     document_requests = DocumentStatsSerializer()
     issue_reports = IssueStatsSerializer()
     queue_activity = QueueActivitySerializer()
+
     
