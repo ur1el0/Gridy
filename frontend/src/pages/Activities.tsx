@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { axiosPrivate } from '../api/axios';
-import { Calendar, Clock, MapPin, Plus } from 'lucide-react';
+import { Calendar, MapPin, Plus } from 'lucide-react';
 
 interface ActivityItem {
   id: number;

@@ -8,7 +8,7 @@ db.sqlite3
 
 # Firebase Private Keys
 firebase-*.json
-*.json
+
 
 # Database Wildcards
 *.sqlite3

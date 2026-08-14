@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { axiosPrivate } from '../api/axios';
-import { AlertCircle, CheckCircle2, Clock, MapPin, Plus } from 'lucide-react';
+import { Clock, MapPin, Plus } from 'lucide-react';
 
 interface IssueReportItem {
   id: number;

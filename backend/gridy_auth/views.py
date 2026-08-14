@@ -55,6 +55,12 @@ class RegisterView(APIView):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():
             user = serializer.save()
+            
+            # Send welcome email asynchronously
+            full_name = getattr(user, 'profile', user).full_name if hasattr(user, 'profile') else user.username
+            from gridy_auth.tasks import send_welcome_email
+            send_welcome_email.delay(user.email, full_name)
+            
             return Response(
                 UserSerializer(user).data,
                 status=status.HTTP_201_CREATED
@@ -135,7 +141,7 @@ class CustomTokenRefreshView(TokenRefreshView):
 
         # Check session mapping status in the database
         try:
-            old_token = RefreshToken(refresh_token_str)
+            old_token = RefreshToken(refresh_token_str, verify=False)
             old_jti = old_token['jti']
             session = RefreshSession.objects.filter(refresh_token_jti=old_jti, is_revoked=False).first()
             if not session:
@@ -187,6 +193,7 @@ class CustomTokenRefreshView(TokenRefreshView):
 class LogoutView(APIView):
     permission_classes = [permissions.AllowAny]
 
+    @extend_schema(request=None, responses={204: None})
     def post(self, request, *args, **kwargs):
         refresh_token_str = request.COOKIES.get('refresh_token')
         if not refresh_token_str:

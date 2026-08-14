@@ -1,7 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { axiosPrivate } from '../api/axios';
-import { useAuth } from '../context/AuthContext';
 import { Users, ClipboardList, Hourglass, Plus, Clock } from 'lucide-react';
 
 interface DashboardSummary {
@@ -42,7 +41,6 @@ interface DocumentRequestItem {
 }
 
 export const Dashboard: React.FC = () => {
-    const { user } = useAuth();
     const navigate = useNavigate();
     const [summaryData, setSummaryData] = useState<DashboardSummary | null>(null);
     const [recentRequests, setRecentRequests] = useState<DocumentRequestItem[]>([]);

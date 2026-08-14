@@ -163,61 +163,61 @@ class AuthAPITests(APITestCase):
         self.assertTrue(User.objects.filter(username="imported3").exists())
 
 
-def test_token_refresh_via_cookie_success(self):
-    from gridy_auth.models import RefreshSession
-    # 1. Login to establish cookie
-    login_url = reverse('auth_login')
-    login_payload = {
-        "username": self.username,
-        "password": self.password
-    }
-    login_response = self.client.post(login_url, login_payload, format='json')
-    self.assertEqual(login_response.status_code, status.HTTP_200_OK)
-
-    # Get initial session count
-    self.assertEqual(RefreshSession.objects.filter(user=self.user, is_revoked=False).count(), 1)
-    old_session = RefreshSession.objects.filter(user=self.user,  is_revoked=False).first()
-        # 2. Call refresh endpoint (attaches cookies automatically)
-    refresh_url = reverse('auth_token_refresh')
-    refresh_response = self.client.post(refresh_url)
-    self.assertEqual(refresh_response.status_code, status.HTTP_200_OK)
-    self.assertIn('access', refresh_response.data)
-    # Verify old JTI session is revoked and a new active one is created
-    old_session.refresh_from_db()
-    self.assertTrue(old_session.is_revoked)
-    self.assertEqual(RefreshSession.objects.filter(user=self.user, is_revoked=False).count(), 1)
-def test_token_refresh_fails_with_revoked_session(self):
-    from gridy_auth.models import RefreshSession
-    # 1. Login to establish cookie
-    login_url = reverse('auth_login')
-    login_payload = {
-        "username": self.username,
-        "password": self.password
-    }
-    login_response = self.client.post(login_url, login_payload, format='json')
-    self.assertEqual(login_response.status_code, status.HTTP_200_OK)
-    # 2. Revoke the session in database
-    RefreshSession.objects.filter(user=self.user).update(is_revoked=True)
-    # 3. Call refresh endpoint and verify rejection
-    refresh_url = reverse('auth_token_refresh')
-    refresh_response = self.client.post(refresh_url)
-    self.assertEqual(refresh_response.status_code, status.HTTP_401_UNAUTHORIZED)
-def test_logout_invalidates_cookie_and_session(self):
-    from gridy_auth.models import RefreshSession
-    # 1. Login to establish cookie
-    login_url = reverse('auth_login')
-    login_payload = {
-        "username": self.username,
-        "password": self.password
-    }
-    login_response = self.client.post(login_url, login_payload, format='json')
-    self.assertEqual(login_response.status_code, status.HTTP_200_OK)
-    # 2. Call logout view
-    logout_url = reverse('auth_logout')
-    logout_response = self.client.post(logout_url)
-    self.assertEqual(logout_response.status_code, status.HTTP_200_OK)
-    # Verify cookie is cleared
-    cookie = logout_response.cookies.get('refresh_token')
-    self.assertTrue(not cookie or not cookie.value or cookie['max-age'] == 0)
-    # Verify active session is revoked in database
-    self.assertEqual(RefreshSession.objects.filter(user=self.user, is_revoked=False).count(), 0)
+    def test_token_refresh_via_cookie_success(self):
+        from gridy_auth.models import RefreshSession
+        # 1. Login to establish cookie
+        login_url = reverse('auth_login')
+        login_payload = {
+            "username": self.username,
+            "password": self.password
+        }
+        login_response = self.client.post(login_url, login_payload, format='json')
+        self.assertEqual(login_response.status_code, status.HTTP_200_OK)
+    
+        # Get initial session count
+        self.assertEqual(RefreshSession.objects.filter(user=self.user, is_revoked=False).count(), 1)
+        old_session = RefreshSession.objects.filter(user=self.user,  is_revoked=False).first()
+            # 2. Call refresh endpoint (attaches cookies automatically)
+        refresh_url = reverse('auth_token_refresh')
+        refresh_response = self.client.post(refresh_url)
+        self.assertEqual(refresh_response.status_code, status.HTTP_200_OK)
+        self.assertIn('access', refresh_response.data)
+        # Verify old JTI session is revoked and a new active one is created
+        old_session.refresh_from_db()
+        self.assertTrue(old_session.is_revoked)
+        self.assertEqual(RefreshSession.objects.filter(user=self.user, is_revoked=False).count(), 1)
+    def test_token_refresh_fails_with_revoked_session(self):
+        from gridy_auth.models import RefreshSession
+        # 1. Login to establish cookie
+        login_url = reverse('auth_login')
+        login_payload = {
+            "username": self.username,
+            "password": self.password
+        }
+        login_response = self.client.post(login_url, login_payload, format='json')
+        self.assertEqual(login_response.status_code, status.HTTP_200_OK)
+        # 2. Revoke the session in database
+        RefreshSession.objects.filter(user=self.user).update(is_revoked=True)
+        # 3. Call refresh endpoint and verify rejection
+        refresh_url = reverse('auth_token_refresh')
+        refresh_response = self.client.post(refresh_url)
+        self.assertEqual(refresh_response.status_code, status.HTTP_401_UNAUTHORIZED)
+    def test_logout_invalidates_cookie_and_session(self):
+        from gridy_auth.models import RefreshSession
+        # 1. Login to establish cookie
+        login_url = reverse('auth_login')
+        login_payload = {
+            "username": self.username,
+            "password": self.password
+        }
+        login_response = self.client.post(login_url, login_payload, format='json')
+        self.assertEqual(login_response.status_code, status.HTTP_200_OK)
+        # 2. Call logout view
+        logout_url = reverse('auth_logout')
+        logout_response = self.client.post(logout_url)
+        self.assertEqual(logout_response.status_code, status.HTTP_200_OK)
+        # Verify cookie is cleared
+        cookie = logout_response.cookies.get('refresh_token')
+        self.assertTrue(not cookie or not cookie.value or cookie['max-age'] == 0)
+        # Verify active session is revoked in database
+        self.assertEqual(RefreshSession.objects.filter(user=self.user, is_revoked=False).count(), 0)

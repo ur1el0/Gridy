@@ -4,8 +4,12 @@ from rest_framework import status, permissions
 from django.db import connection
 from django.core.cache import cache
 import time
+import logging
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, OpenApiTypes
+from config.celery import app as celery_app
+
+logger = logging.getLogger(__name__)
 
 
 class HealthCheckView(APIView):
@@ -36,9 +40,10 @@ class HealthCheckView(APIView):
             }
         except Exception as e:
             overall_healthy = False
+            logger.exception("Database health check failed")
             status_info["services"]["database"] = {
                 "status": "unhealthy",
-                "error": str(e)
+                "error": "Database connectivity check failed."
             }
 
         # 2. Check Redis Cache Connection & Latency
@@ -55,12 +60,35 @@ class HealthCheckView(APIView):
             }
         except Exception as e:
             overall_healthy = False
+            logger.exception("Cache health check failed")
             status_info["services"]["cache"] = {
                 "status": "unhealthy",
-                "error": str(e)
+                "error": "Cache connectivity check failed."
             }
         if not overall_healthy:
             status_info["status"] = "unhealthy"
             return Response(status_info, status=status.HTTP_503_SERVICE_UNAVAILABLE)
+
+        try:
+            start_time = time.time()
+            # Pings the workers and waits up to 1 second
+            ping_result = celery_app.control.ping(timeout=1.0)
+
+            if not ping_result:
+                raise ValueError("No Celery workers responded to ping.")
+
+            celery_latency = (time.time() - start_time) * 1000
+            status_info["services"]["celery"] = {
+                "status": "healthy",
+                "latency_ms": round(celery_latency, 2),
+                "workers_alive": len(ping_result)
+            }
+        except Exception as e:
+            overall_healthy = False
+            logger.exception("Celery health check failed")
+            status_info["services"]["celery"] = {
+                "status": "unhealthy",
+                "error": "Celery worker check failed."
+            }   
 
         return Response(status_info, status=status.HTTP_200_OK)

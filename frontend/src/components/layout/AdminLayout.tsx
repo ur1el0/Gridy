@@ -1,39 +1,20 @@
 import React from 'react';
-import { Outlet, NavLink, useNavigate } from 'react-router-dom';
+import { Outlet, NavLink } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { 
-  LayoutDashboard, 
-  PlusSquare, 
-  FileText, 
-  Calendar, 
-  Users, 
-  Megaphone, 
-  Settings, 
-  LogOut, 
   Search, 
   Bell, 
-  HelpCircle,
-  Grid
+  HelpCircle
 } from 'lucide-react';
 
 export const AdminLayout: React.FC = () => {
   const { user, logout } = useAuth();
-  const navigate = useNavigate();
 
   const userInitial = user?.full_name 
     ? user.full_name.charAt(0).toUpperCase() 
     : (user?.username?.charAt(0).toUpperCase() || 'J');
     
   const userName = user?.full_name || user?.username || 'Admin Juan';
-
-  const navItems = [
-    { label: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
-    { label: 'Queue', path: '/queue', icon: PlusSquare },
-    { label: 'Documents', path: '/documents', icon: FileText },
-    { label: 'Schedule', path: '/schedule', icon: Calendar },
-    { label: 'Residents', path: '/residents', icon: Users },
-    { label: 'Announcements', path: '/announcements', icon: Megaphone },
-  ];
 
   return (
     <div className="flex h-screen bg-background text-slate-900 font-sans">
