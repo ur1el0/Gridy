@@ -237,6 +237,7 @@ class DashboardSummaryView(APIView):
 
         
         return Response ({
+            "total_residents": User.objects.filter(role=User.Role.RESIDENT).count(),
             "document_requests": {
                 "total": doc_total,
                 "pending": doc_pending,
@@ -262,4 +263,5 @@ class DashboardSummaryView(APIView):
                 "waiting_count": queue_waiting_count
             }
         }, status=status.HTTP_200_OK)
+
         

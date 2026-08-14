@@ -29,6 +29,17 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['role'] = user.role
         return token
 
+    def validate(self, attrs):
+        data = super().validate(attrs)
+        data['user'] = {
+            'id': self.user.id,
+            'username': self.user.username,
+            'email': self.user.email,
+            'role': self.user.role,
+            'full_name': getattr(self.user.profile, 'full_name', self.user.username) if hasattr(self.user, 'profile') else self.user.username,
+        }
+        return data
+
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)

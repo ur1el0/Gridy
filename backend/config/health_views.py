@@ -4,9 +4,12 @@ from rest_framework import status, permissions
 from django.db import connection
 from django.core.cache import cache
 import time
+import logging
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema, OpenApiTypes
 from config.celery import app as celery_app
+
+logger = logging.getLogger(__name__)
 
 
 class HealthCheckView(APIView):
@@ -37,9 +40,10 @@ class HealthCheckView(APIView):
             }
         except Exception as e:
             overall_healthy = False
+            logger.exception("Database health check failed")
             status_info["services"]["database"] = {
                 "status": "unhealthy",
-                "error": str(e)
+                "error": "Database connectivity check failed."
             }
 
         # 2. Check Redis Cache Connection & Latency
@@ -56,9 +60,10 @@ class HealthCheckView(APIView):
             }
         except Exception as e:
             overall_healthy = False
+            logger.exception("Cache health check failed")
             status_info["services"]["cache"] = {
                 "status": "unhealthy",
-                "error": str(e)
+                "error": "Cache connectivity check failed."
             }
         if not overall_healthy:
             status_info["status"] = "unhealthy"
@@ -80,9 +85,10 @@ class HealthCheckView(APIView):
             }
         except Exception as e:
             overall_healthy = False
+            logger.exception("Celery health check failed")
             status_info["services"]["celery"] = {
                 "status": "unhealthy",
-                "error": str(e)
+                "error": "Celery worker check failed."
             }   
 
         return Response(status_info, status=status.HTTP_200_OK)

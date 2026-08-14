@@ -1,141 +1,176 @@
-import React, { useEffect, useState } from 'react'
-import { axiosPrivate } from '../api/axios'
+import React, { useEffect, useState } from 'react';
+import { axiosPrivate } from '../api/axios';
+import { Megaphone, Pin, Plus } from 'lucide-react';
 
-interface Announcement {
-    id: number;
-    title: string;
-    content: string;
-    is_pinned: boolean;
-    created_at: string;
+interface AnnouncementItem {
+  id: number;
+  title: string;
+  content: string;
+  is_pinned: boolean;
+  created_at: string;
 }
 
 export const Announcements: React.FC = () => {
-    const [announcements, setAnnouncements] = useState<Announcement[]>([])
-    const [loading, setLoading] = useState(false)
-    const [error, setError] = useState('')
+  const [items, setItems] = useState<AnnouncementItem[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [showModal, setShowModal] = useState(false);
+  const [title, setTitle] = useState('');
+  const [content, setContent] = useState('');
+  const [isPinned, setIsPinned] = useState(false);
 
-    const [isModalOpen, setIsModalOpen] = useState(false)
-    const [isSubmitting, setIsSubmitting ] =useState(false)
-    const [title, setTitle] = useState('')
-    const [content, setContent] =useState('')
-    const [isPinned, setIsPinned] = useState(false)
-
-    const fetchAnnouncements = async () => {
-        setLoading(true)
-        try {
-            const response = await axiosPrivate.get('/announcements')
-            setAnnouncements(response.data.results || response.data)
-        } catch (err) {
-            setError('Failed to load announcements.')
-            console.error(err)
-        } finally {
-            setLoading(false)
-        }
+  const fetchAnnouncements = async () => {
+    try {
+      setLoading(true);
+      const res = await axiosPrivate.get('/announcements/');
+      const list = res.data.results || res.data || [];
+      setItems(list);
+    } catch (err: any) {
+      setError('Failed to fetch announcements.');
+    } finally {
+      setLoading(false);
     }
+  };
 
-    useEffect(() => {
-        fetchAnnouncements()
-    }, [])
+  useEffect(() => {
+    fetchAnnouncements();
+  }, []);
 
-    const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
-        e.preventDefault()
-        setIsSubmitting(true)
-        try {
-            await axiosPrivate.post('/announcements/', {
-                title,
-                content,
-                is_pinned: isPinned
-            })
-            await fetchAnnouncements()
-            closeModal()
-        } catch (err) {
-            console.error('Failed to create annoncement.', err)
-            alert('Failed to create announcement.')
-        } finally {
-            setIsSubmitting(false)
-        }
+  const handleCreate = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      await axiosPrivate.post('/announcements/', {
+        title,
+        content,
+        is_pinned: isPinned
+      });
+      setShowModal(false);
+      setTitle('');
+      setContent('');
+      setIsPinned(false);
+      fetchAnnouncements();
+    } catch (err: any) {
+      setError('Failed to post announcement.');
     }
-
-    const closeModal = () => {
-        setIsModalOpen(false)
-        setTitle('')
-        setContent('')
-        setIsPinned(false)
-    }
-
-    if (loading && announcements.length === 0) return <div className="p-8 text-slate-600">Loading...</div>
-    if (error) return <div className='p-8 text-red-600'>{error}</div>
+  };
 
   return (
-    <div className="space-y-6 relative">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-slate-900">Announcements</h2>
-        <button 
-          onClick={() => setIsModalOpen(true)}
-          className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-md text-sm font-medium transition-colors shadow-sm"
+    <div className="space-y-6 pt-2">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Barangay Announcements</h1>
+          <p className="text-sm font-medium text-slate-500 mt-0.5">
+            Broadcast official notices, advisories, and public updates to residents.
+          </p>
+        </div>
+        <button
+          onClick={() => setShowModal(true)}
+          className="bg-[#0047BA] hover:bg-[#003693] text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
         >
-          New Announcement
+          <Plus className="w-4 h-4" />
+          <span>New Announcement</span>
         </button>
       </div>
-      <div className="bg-surface shadow-sm border border-border rounded-lg overflow-hidden">
-        <table className="min-w-full divide-y divide-border">
-          <thead className="bg-slate-50">
-            <tr>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">ID</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Status</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Details</th>
-              <th className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase">Date</th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-border">
-            {announcements.length === 0 ? (
-              <tr><td colSpan={4} className="px-6 py-4 text-center text-sm text-slate-500">No announcements found.</td></tr>
-            ) : (
-              announcements.map((ann) => (
-                <tr key={ann.id} className="hover:bg-slate-50 transition-colors">
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-medium">#{ann.id}</td>
-                  <td className="px-6 py-4 whitespace-nowrap">
-                    <span className={`px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full border ${
-                      ann.is_pinned ? 'bg-blue-100 text-blue-800 border-blue-200' : 'bg-slate-100 text-slate-800 border-slate-200'
-                    }`}>
-                      {ann.is_pinned ? 'Pinned' : 'Standard'}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-slate-700">
-                    <div className="font-semibold text-slate-900">{ann.title}</div>
-                    <div className="text-slate-500 line-clamp-1 mt-1">{ann.content}</div>
-                  </td>
-                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
-                    {new Date(ann.created_at).toLocaleDateString()}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
-      </div>
-      {isModalOpen && (
-        <div className="fixed inset-0 overflow-y-auto z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-slate-900 bg-opacity-75 transition-opacity" onClick={closeModal} />
-          
-          <div className="relative bg-white rounded-lg shadow-xl max-w-lg w-full p-6 flex flex-col">
-            <h3 className="text-xl font-bold text-slate-900 mb-5">Broadcast Announcement</h3>
-            <form onSubmit={handleCreate} className="space-y-5">
+
+      {error && (
+        <div className="p-4 bg-red-50 border border-red-200 text-red-700 text-sm font-medium rounded-xl">
+          {error}
+        </div>
+      )}
+
+      {loading ? (
+        <div className="p-8 text-center text-slate-400 text-sm animate-pulse">Loading announcements...</div>
+      ) : items.length === 0 ? (
+        <div className="p-8 text-center bg-white rounded-2xl border border-slate-200 text-slate-500 text-sm">
+          No active announcements.
+        </div>
+      ) : (
+        <div className="space-y-4">
+          {items.map((item) => (
+            <div
+              key={item.id}
+              className={`bg-white rounded-2xl p-6 border shadow-xs transition-all ${
+                item.is_pinned ? 'border-blue-300 ring-2 ring-blue-100' : 'border-slate-200'
+              }`}
+            >
+              <div className="flex items-start justify-between">
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-lg bg-blue-50 text-blue-700 flex items-center justify-center">
+                    <Megaphone className="w-4 h-4" />
+                  </div>
+                  <h3 className="text-lg font-bold text-slate-900">{item.title}</h3>
+                </div>
+                {item.is_pinned && (
+                  <span className="flex items-center gap-1 text-xs font-bold text-blue-700 bg-blue-50 px-3 py-1 rounded-full">
+                    <Pin className="w-3.5 h-3.5" /> PINNED
+                  </span>
+                )}
+              </div>
+              <p className="text-sm text-slate-700 mt-3 whitespace-pre-line leading-relaxed">{item.content}</p>
+              <div className="mt-4 pt-3 border-t border-slate-100 text-xs text-slate-400">
+                Posted on {new Date(item.created_at).toLocaleString()}
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {showModal && (
+        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-slate-200">
+            <h2 className="text-xl font-bold text-slate-900 mb-4">Post Announcement</h2>
+            <form onSubmit={handleCreate} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Title</label>
-                <input type="text" required value={title} onChange={e => setTitle(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md" />
+                <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Title</label>
+                <input
+                  type="text"
+                  required
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-600"
+                  placeholder="e.g. Scheduled Power Interruption"
+                />
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-slate-700 mb-1">Content</label>
-                <textarea required rows={4} value={content} onChange={e => setContent(e.target.value)} className="w-full px-3 py-2 border border-slate-300 rounded-md" />
+                <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Content</label>
+                <textarea
+                  required
+                  rows={4}
+                  value={content}
+                  onChange={(e) => setContent(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-600"
+                  placeholder="Details of the announcement..."
+                />
               </div>
-              <div className="flex items-center">
-                <input id="is_pinned" type="checkbox" checked={isPinned} onChange={e => setIsPinned(e.target.checked)} className="h-4 w-4 text-primary" />
-                <label htmlFor="is_pinned" className="ml-2 text-sm font-medium text-slate-900">Pin Announcement</label>
+
+              <div className="flex items-center gap-2">
+                <input
+                  type="checkbox"
+                  id="pin"
+                  checked={isPinned}
+                  onChange={(e) => setIsPinned(e.target.checked)}
+                  className="w-4 h-4 text-blue-600 rounded"
+                />
+                <label htmlFor="pin" className="text-xs font-bold text-slate-700 cursor-pointer">
+                  Pin this announcement to top
+                </label>
               </div>
-              <div className="flex justify-end space-x-3 pt-4 border-t">
-                <button type="button" onClick={closeModal} className="px-4 py-2 border rounded-md text-sm font-medium bg-white">Cancel</button>
-                <button type="submit" disabled={isSubmitting} className="px-4 py-2 border rounded-md text-sm font-medium text-white bg-primary">Broadcast</button>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setShowModal(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-xs font-bold text-white bg-[#0047BA] hover:bg-[#003693] rounded-xl"
+                >
+                  Publish Announcement
+                </button>
               </div>
             </form>
           </div>

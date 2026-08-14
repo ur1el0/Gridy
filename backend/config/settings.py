@@ -58,11 +58,9 @@ INSTALLED_APPS = [
     'gridy_communications',
     'gridy_audit',
     'drf_spectacular',
-    'django_prometheus',
 ]
 
 MIDDLEWARE = [
-    'django_prometheus.middleware.PrometheusBeforeMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'corsheaders.middleware.CorsMiddleware',
@@ -71,7 +69,6 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'django_prometheus.middleware.PrometheusAfterMiddleware',
 ]
 
 ROOT_URLCONF = 'config.urls'
@@ -139,14 +136,14 @@ USE_TZ = True
 
 STATIC_URL = 'static/'
 
-CORS_ALLOW_ALL_ORIGINS = False
-CORS_ALLOW_CREDENTIALS = True
+CORS_ALLOW_ALL_ORIGINS = env.bool('CORS_ALLOW_ALL_ORIGINS', default=DEBUG)
 CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
-    'http://localhost:3000', 
+    'http://localhost:3000',
     'http://127.0.0.1:3000',
     'http://localhost:5173',
     'http://127.0.0.1:5173'
 ])
+CORS_ALLOW_CREDENTIALS = True
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -232,13 +229,21 @@ SPECTACULAR_SETTINGS = {
     'SERVE_INCLUDE_SCHEMA': False,
 }
 
-# Cache Settings (Redis backend)
-CACHES = {
-    'default': {
-        'BACKEND': 'django.core.cache.backends.redis.RedisCache',
-        'LOCATION': env('REDIS_URL', default='redis://127.0.0.1:6379/1'),
+# Cache Settings (Redis backend in dev/prod, LocMemCache in tests)
+if 'test' in sys.argv:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
+        }
     }
-}
+else:
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.redis.RedisCache',
+            'LOCATION': env('REDIS_URL', default='redis://127.0.0.1:6379/1'),
+        }
+    }
+
 
 # Structured JSON Logging Configuration
 LOGGING = {
@@ -273,30 +278,3 @@ LOGGING = {
         },
     },
 }
-
-
-import sentry_sdk
-from sentry_sdk.integrations.django import DjangoIntegration
-from sentry_sdk.integrations.celery import CeleryIntegration
-
-# Uses existing environ setup to safely pull the DSN
-SENTRY_DSN = env('SENTRY_DSN', default='')
-
-if SENTRY_DSN:
-    sentry_sdk.init(
-        dsn=SENTRY_DSN,
-        integrations=[
-            DjangoIntegration(),
-            CeleryIntegration(),
-        ],
-        # Traces sample rate captures performance metrics.
-        # In heavy production, set this lower (e.g. 0.2) to save quota
-        traces_sample_rate=1.0,
-        send_default_pii=True
-    )
-
-# Email Configuration
-# For development, we print emaisl to the console.
-# In production, change this to 'django.core.mail.backends.smtp.EmailBackend' and add SMTP credentials
-EMAIL_BACKEND = 'django.core.mail.backends.console.EmailBackend'
-DEFAULT_FROM_EMAIL = 'Gridy Admin <admin@gridy.local>'
