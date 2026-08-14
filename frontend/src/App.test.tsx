@@ -26,3 +26,4 @@ describe('Login Component', () => {
     expect(loginButton).toBeInTheDocument()
 
   })
+})
