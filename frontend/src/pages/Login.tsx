@@ -23,9 +23,13 @@ export const Login: React.FC = () => {
         username: username,
         password: password
       });
-      login(response.data.user);
-      navigate('/dashboard');
-
+      const { access, user: userData } = response.data;
+      if (access) {
+        login(access, userData);
+        navigate('/dashboard');
+      } else {
+        setError('Login failed: Authentication token was not returned.');
+      }
     } catch (err: any) {
       console.error("Login failed:", err);
       if (err.response?.data?.detail) {
