@@ -5,9 +5,9 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminLayout } from "./components/layout/AdminLayout";
 import { DocumentRequests } from "./pages/DocumentRequests";
 import { IssueReports } from "./pages/IssueReports";
-// 1. Import the new pages
 import { Announcements } from "./pages/Announcements";
 import { Activities } from "./pages/Activities";
+import { LiveQueue } from "./pages/LiveQueue";
 
 export function App() {
     return (
@@ -22,9 +22,9 @@ export function App() {
                     <Route element={<AdminLayout />}>
                         <Route path="/dashboard" element={<Dashboard />} />
                         <Route path="/queue" element={<IssueReports />} />
+                        <Route path="/queue" element={<LiveQueue />} />
                         <Route path="/documents" element={<DocumentRequests />} />
                         <Route path="/reports" element={<IssueReports />} />
-                        {/* 2. Register the new routes */}
                         <Route path="/announcements" element={<Announcements />} />
                         <Route path="/activities" element={<Activities />} />
                         
