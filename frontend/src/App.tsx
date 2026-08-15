@@ -21,7 +21,6 @@ export function App() {
                     {/* UI Layout Wrapper */}
                     <Route element={<AdminLayout />}>
                         <Route path="/dashboard" element={<Dashboard />} />
-                        <Route path="/queue" element={<IssueReports />} />
                         <Route path="/queue" element={<LiveQueue />} />
                         <Route path="/documents" element={<DocumentRequests />} />
                         <Route path="/reports" element={<IssueReports />} />

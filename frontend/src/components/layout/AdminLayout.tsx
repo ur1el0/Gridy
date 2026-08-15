@@ -39,6 +39,18 @@ export const AdminLayout: React.FC = () => {
             </li>
             <li>
               <NavLink 
+                to="/queue" 
+                className={({ isActive }) => 
+                  `block px-4 py-2 rounded-md transition-colors ${
+                    isActive ? "bg-primary text-white" : "hover:bg-primary/10 hover:text-primary"
+                  }`
+                }
+              >
+                Live Queue
+              </NavLink>
+            </li>
+            <li>
+              <NavLink 
                 to="/documents" 
                 className={({ isActive }) => 
                   `block px-4 py-2 rounded-md transition-colors ${
@@ -143,7 +155,7 @@ export const AdminLayout: React.FC = () => {
 
           {/* Footer */}
           <footer className="pt-8 text-xs text-slate-400 font-medium">
-            © 2026 Gridy Management Suite
+            © 2026 Gridy
           </footer>
         </main>
       </div>
