@@ -240,7 +240,7 @@ class DashboardSummaryView(APIView):
 
         # 4. Demographics (Purok & Age)
         # Purok Distribution
-        purok_stats = Resident.object.values('purok').annotate(count=Count('purok')).order_by('purok')
+        purok_stats = Resident.objects.values('purok').annotate(count=Count('purok')).order_by('purok')
         purok_distribution = {
             f"Purok {item['purok']}" if item['purok'] is not None else  "Unassigned": item['count']
             for item in purok_stats
