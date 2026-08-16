@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+
 import { axiosPrivate } from '../api/axios';
 import { useAuth } from '../context/AuthContext';
-import { Users, ClipboardList, Hourglass, Plus, Clock } from 'lucide-react';
+
 
 interface DashboardSummary {
     total_residents: number;
@@ -32,21 +32,9 @@ interface DashboardSummary {
     };
 }
 
-interface DocumentRequestItem {
-    request_id?: number;
-    id?: number;
-    requester_name?: string;
-    document_type: string;
-    status: string;
-    created_at: string;
-}
-
 export const Dashboard: React.FC = () => {
     const { user } = useAuth();
-    const navigate = useNavigate();
-    const [profileData, setProfileData] = useState<any>(null);
     const [summaryData, setSummaryData] = useState<DashboardSummary | null>(null);
-    const [recentRequests, setRecentRequests] = useState<DocumentRequestItem[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
 
@@ -56,13 +44,12 @@ export const Dashboard: React.FC = () => {
 
         const fetchData = async () => {
             try {
-                const [profileRes, summaryRes] = await Promise.all([
+                const [, summaryRes] = await Promise.all([
                     axiosPrivate.get('/auth/me/', { signal: controller.signal }),
                     axiosPrivate.get('/dashboard/summary/', { signal: controller.signal })
                 ]);
                 
                 if (isMounted) {
-                    setProfileData(profileRes.data);
                     setSummaryData(summaryRes.data);
                     setLoading(false);
                 }
