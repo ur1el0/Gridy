@@ -9,7 +9,7 @@ from .models import User, Resident
 class ResidentSerializer(serializers.ModelSerializer):
     class Meta:
         model = Resident
-        fields = ['full_name', 'birth_date', 'voter_status', 'contact_number']
+        fields = ['id', 'full_name', 'birth_date', 'voter_status', 'contact_number', 'purok', 'is_verified', 'guardian']
 
 
 class UserSerializer(serializers.ModelSerializer):

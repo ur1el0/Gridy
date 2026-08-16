@@ -23,6 +23,11 @@ class Resident(models.Model):
     voter_status = models.BooleanField(default=False)
     contact_number = models.CharField(max_length=20, null=True, blank=True)
     purok = models.PositiveIntegerField(null=True, blank=True)
+<<<<<<< Updated upstream
+=======
+    is_verified = models.BooleanField(default=False)
+    guardian = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='dependents')
+>>>>>>> Stashed changes
     
 
     def __str__(self):

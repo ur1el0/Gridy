@@ -1,3 +1,4 @@
+from backend.gridy_auth.serializers import ResidentSerializer
 from django.http import HttpResponseForbidden
 from rest_framework import status, permissions
 from rest_framework.views import APIView
@@ -30,6 +31,10 @@ from datetime import datetime
 from django.conf import settings
 from .models import RefreshSession
 from gridy_audit.services import get_client_ip
+
+from rest_framework.generics import ListAPIView
+from django.shortcuts import get_object_or_404
+
 
 # Create your views here.
 
@@ -95,6 +100,13 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                 user = User.objects.get(id=user_id)
             except User.DoesNotExist:
                 return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
+
+            if user.role == User.Role.RESIDENT:
+                if hasattr(user, 'profile') and not user.profile.is_verified:
+                    return Response(
+                        {"detail": "Your resident account is pending verification by the admin. Please try again later."},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
 
             # Create session in the databse
             RefreshSession.objects.create(
@@ -336,4 +348,24 @@ class ResidentImportView(APIView):
             return Response(response_data, status=status.HTTP_207_MULTI_STATUS)
         return Response(response_data, status=status.HTTP_200_OK)
 
-    
+class PendingResidentsView(ListAPIView):
+    permission_classes = [permissions.IsAuthenticated, IsBarangayOfficial]
+    serializer_class = ResidentSerializer
+
+    def get_queryset(self):
+        # Only return residents that need approval
+        return Resident.objects.filter(is_verified=False)
+
+
+class VerifyResidentView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsBarangayOfficial]
+
+    @extend_schema(
+        summary="Verify a resident account",
+        responses={200: ResidentSerializer, 404: OpenApiTypes.OBJECT}
+    )
+    def patch(self, request, pk):
+        resident = get_object_or_404(Resident, pk=pk)
+        resident.is_verified = True
+        resident.save()
+        return Response(ResidentSerializer(resident).data, status=status.HTTP_200_OK)
