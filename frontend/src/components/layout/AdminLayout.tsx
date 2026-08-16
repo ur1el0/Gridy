@@ -1,14 +1,11 @@
 import React from 'react';
-import { Outlet, NavLink } from 'react-router-dom';
+import { Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { 
-  Search, 
-  Bell, 
-  HelpCircle
-} from 'lucide-react';
+import { Search, Bell, HelpCircle } from 'lucide-react';
+import { Sidebar } from './Sidebar';
 
 export const AdminLayout: React.FC = () => {
-  const { user, logout } = useAuth();
+  const { user } = useAuth();
 
   const userInitial = user?.full_name 
     ? user.full_name.charAt(0).toUpperCase() 
