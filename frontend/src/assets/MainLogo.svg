@@ -1,0 +1,23 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 500 500" width="100%" height="100%" fill="none">
+  <!-- Outer Circular Base -->
+  <circle cx="250" cy="250" r="230" fill="#1b2e4b" />
+  <circle cx="250" cy="250" r="205" fill="#2d4a73" />
+  
+  <!-- Outer Shield Trim -->
+  <path d="M250 85 L375 145 V260 C375 345 250 405 250 405 C250 405 125 345 125 260 V145 Z" fill="#eef2f7" />
+  
+  <!-- Inner Shield Body -->
+  <path d="M250 105 L355 155 V255 C355 330 250 385 250 385 C250 385 145 330 145 255 V155 Z" fill="#3b5d88" />
+  <!-- Inner Shield Half-Tone Shadow -->
+  <path d="M250 105 L355 155 V255 C355 330 250 385 250 385 Z" fill="#2e4c73" />
+
+  <!-- Bahay Kubo Roof Structure -->
+  <path d="M130 225 L250 160 L370 225" stroke="#ffffff" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" />
+  <!-- Crossing Roof Apex Detail -->
+  <line x1="238" y1="180" x2="258" y2="150" stroke="#ffffff" stroke-width="18" stroke-linecap="round" />
+  <line x1="262" y1="180" x2="242" y2="150" stroke="#ffffff" stroke-width="18" stroke-linecap="round" />
+
+  <!-- Modern Geometric 'G' Centerpiece -->
+  <path d="M295 210 H205 C190 210 180 220 180 235 V305 C180 320 190 330 205 330 H295 C310 330 320 320 320 305 V260 H250" 
+        stroke="#ffffff" stroke-width="22" stroke-linecap="round" stroke-linejoin="round" fill="none" />
+</svg>
