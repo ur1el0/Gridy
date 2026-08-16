@@ -8,6 +8,7 @@ import { IssueReports } from "./pages/IssueReports";
 import { Announcements } from "./pages/Announcements";
 import { Activities } from "./pages/Activities";
 import { LiveQueue } from "./pages/LiveQueue";
+import ResidentVerification from "./pages/ResidentVerification";
 
 export function App() {
     return (
@@ -26,6 +27,7 @@ export function App() {
                         <Route path="/reports" element={<IssueReports />} />
                         <Route path="/announcements" element={<Announcements />} />
                         <Route path="/activities" element={<Activities />} />
+                        <Route path="/residents" element={<ResidentVerification />} />
                         
                         <Route path="/" element={<Navigate to="/dashboard" replace/>} />
                     </Route>
