@@ -14,9 +14,99 @@ export const AdminLayout: React.FC = () => {
   const userName = user?.full_name || user?.username || 'Admin Juan';
 
   return (
-    <div className="flex h-screen bg-[#F0F4FA] text-slate-900 font-sans overflow-hidden">
-      {/* Sidebar Navigation */}
-      <Sidebar />
+    <div className="flex h-screen bg-background text-slate-900 font-sans">
+      <aside className="w-64 bg-surface border-r border-border shadow-sm flex flex-col">
+        <div className="h-16 flex items-center px-6 border-b border-border">
+          <h1 className="text-xl font-bold text-primary">Gridy Admin</h1>
+        </div>
+        
+        <nav className="flex-1 p-4">
+          <ul className="space-y-2">
+            <li>
+              <NavLink 
+                to="/dashboard" 
+                className={({ isActive }) => 
+                  `block px-4 py-2 rounded-md transition-colors ${
+                    isActive ? "bg-primary text-white" : "hover:bg-primary/10 hover:text-primary"
+                  }`
+                }
+              >
+                Dashboard
+              </NavLink>
+            </li>
+            <li>
+              <NavLink 
+                to="/queue" 
+                className={({ isActive }) => 
+                  `block px-4 py-2 rounded-md transition-colors ${
+                    isActive ? "bg-primary text-white" : "hover:bg-primary/10 hover:text-primary"
+                  }`
+                }
+              >
+                Live Queue
+              </NavLink>
+            </li>
+            <li>
+              <NavLink 
+                to="/documents" 
+                className={({ isActive }) => 
+                  `block px-4 py-2 rounded-md transition-colors ${
+                    isActive ? "bg-primary text-white" : "hover:bg-primary/10 hover:text-primary"
+                  }`
+                }
+              >
+                Document Requests
+              </NavLink>
+            </li>
+            <li>
+              <NavLink 
+                to="/reports" 
+                className={({ isActive }) => 
+                  `block px-4 py-2 rounded-md transition-colors ${
+                    isActive ? "bg-primary text-white" : "hover:bg-primary/10 hover:text-primary"
+                  }`
+                }
+              >
+                Issue Reports
+              </NavLink>
+            </li>
+            <li>
+              <NavLink 
+                to="/announcements" 
+                className={({ isActive }) => 
+                  `block px-4 py-2 rounded-md transition-colors ${
+                    isActive ? "bg-primary text-white" : "hover:bg-primary/10 hover:text-primary"
+                  }`
+                }
+              >
+                Announcements
+              </NavLink>
+            </li>
+            <li>
+              <NavLink 
+                to="/activities" 
+                className={({ isActive }) => 
+                  `block px-4 py-2 rounded-md transition-colors ${
+                    isActive ? "bg-primary text-white" : "hover:bg-primary/10 hover:text-primary"
+                  }`
+                }
+              >
+                Activity Schedules
+              </NavLink>
+            </li>
+
+          </ul>
+        </nav>
+        
+        <div className="p-4 border-t border-border">
+           <button 
+             onClick={logout}
+             className="w-full text-left px-4 py-2 text-red-600 hover:bg-red-50 rounded-md transition-colors font-medium"
+           >
+             Sign Out
+           </button>
+        </div>
+      </aside>
 
       {/* Main Right Content Section */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
@@ -62,7 +152,7 @@ export const AdminLayout: React.FC = () => {
 
           {/* Footer */}
           <footer className="pt-8 text-xs text-slate-400 font-medium">
-            © 2026 Gridy Management Suite
+            © 2026 Gridy
           </footer>
         </main>
       </div>

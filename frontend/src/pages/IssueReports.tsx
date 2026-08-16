@@ -1,211 +1,263 @@
 import React, { useEffect, useState } from 'react';
 import { axiosPrivate } from '../api/axios';
-import { Clock, MapPin, Plus } from 'lucide-react';
 
-interface IssueReportItem {
+interface IssueReport {
   id: number;
   title: string;
   description: string;
   location: string;
-  status: 'PENDING' | 'IN_PROGRESS' | 'RESOLVED';
-  urgency: 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
+  image: string | null;
+  status: string;
+  urgency: string;
   created_at: string;
 }
 
 export const IssueReports: React.FC = () => {
-  const [reports, setReports] = useState<IssueReportItem[]>([]);
+  const [reports, setReports] = useState<IssueReport[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [showModal, setShowModal] = useState(false);
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
-  const [location, setLocation] = useState('');
-  const [urgency, setUrgency] = useState<'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT'>('LOW');
 
-  const fetchReports = async () => {
-    try {
-      setLoading(true);
-      const res = await axiosPrivate.get('/reports/');
-      const list = res.data.results || res.data || [];
-      setReports(list);
-    } catch (err: any) {
-      setError('Failed to load issue reports.');
-    } finally {
-      setLoading(false);
-    }
-  };
+  const [selectedReport, setSelectedReport] = useState<IssueReport | null>(null);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isUpdating, setIsUpdating] = useState(false);
+  
+  // Lightbox state for the image
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   useEffect(() => {
+    const fetchReports = async () => {
+      try {
+        const response = await axiosPrivate.get('/reports/');
+        setReports(response.data.results || response.data);
+      } catch (err) {
+        setError('Failed to load issue reports.');
+        console.error(err);
+      } finally {
+        setLoading(false);
+      }
+    };
     fetchReports();
   }, []);
 
-  const handleCreate = async (e: React.FormEvent) => {
-    e.preventDefault();
-    try {
-      await axiosPrivate.post('/reports/', {
-        title,
-        description,
-        location,
-        urgency
-      });
-      setShowModal(false);
-      setTitle('');
-      setDescription('');
-      setLocation('');
-      setUrgency('LOW');
-      fetchReports();
-    } catch (err: any) {
-      setError('Failed to report issue.');
+  const getStatusBadge = (status: string) => {
+    switch (status.toUpperCase()) {
+      case 'PENDING': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'IN_PROGRESS': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'RESOLVED': return 'bg-green-100 text-green-800 border-green-200';
+      default: return 'bg-slate-100 text-slate-800 border-slate-200';
     }
   };
 
-  const getUrgencyBadge = (u: string) => {
-    switch (u) {
-      case 'URGENT':
-        return 'bg-red-100 text-red-800 font-bold';
-      case 'HIGH':
-        return 'bg-orange-100 text-orange-800 font-semibold';
-      case 'MEDIUM':
-        return 'bg-amber-100 text-amber-800 font-medium';
-      default:
-        return 'bg-slate-100 text-slate-700 font-medium';
+  const getUrgencyBadge = (urgency: string) => {
+    switch (urgency.toUpperCase()) {
+      case 'URGENT': return 'bg-red-100 text-red-800 border-red-200';
+      case 'HIGH': return 'bg-orange-100 text-orange-800 border-orange-200';
+      case 'MEDIUM': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'LOW': return 'bg-slate-100 text-slate-800 border-slate-200';
+      default: return 'bg-slate-100 text-slate-800 border-slate-200';
     }
   };
+
+  const openModal = (report: IssueReport) => {
+    setSelectedReport(report);
+    setIsModalOpen(true);
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectedReport(null);
+  };
+
+  const handleStatusUpdate = async (newStatus: string) => {
+    if (!selectedReport) return;
+    setIsUpdating(true);
+    
+    try {
+      await axiosPrivate.patch(`/reports/${selectedReport.id}/`, {
+        status: newStatus
+      });
+      
+      setReports(prev => prev.map(rep => 
+        rep.id === selectedReport.id ? { ...rep, status: newStatus } : rep
+      ));
+      
+      closeModal();
+    } catch (err) {
+      console.error("Failed to update status", err);
+      alert("Failed to update status. Please try again.");
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  if (loading) return <div className="p-8 text-slate-600">Loading issue reports...</div>;
+  if (error) return <div className="p-8 text-red-600">{error}</div>;
 
   return (
-    <div className="space-y-6 pt-2">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-extrabold text-slate-900 tracking-tight">Community Issue Reports</h1>
-          <p className="text-sm font-medium text-slate-500 mt-0.5">
-            Track and manage incidents, infrastructure reports, and community maintenance.
-          </p>
-        </div>
-        <button
-          onClick={() => setShowModal(true)}
-          className="bg-[#0047BA] hover:bg-[#003693] text-white font-semibold text-xs px-4 py-2.5 rounded-xl shadow-xs flex items-center gap-1.5 transition-all cursor-pointer"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Report New Issue</span>
-        </button>
+    <div className="space-y-6 relative">
+      <div className="flex justify-between items-center">
+        <h2 className="text-2xl font-bold text-slate-900">Issue Reports</h2>
       </div>
 
-      {error && (
-        <div className="p-4 bg-red-50 border border-red-200 text-red-700 text-sm font-medium rounded-xl">
-          {error}
-        </div>
-      )}
+      <div className="bg-surface shadow-sm border border-border rounded-lg overflow-hidden">
+        <table className="min-w-full divide-y divide-border">
+          <thead className="bg-slate-50">
+            <tr>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">ID</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Title</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Location</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Urgency</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
+              <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Date</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-border">
+            {reports.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-6 py-4 text-center text-sm text-slate-500">No issue reports found.</td>
+              </tr>
+            ) : (
+              reports.map((rep) => (
+                <tr key={rep.id} onClick={() => openModal(rep)} className="hover:bg-slate-50 transition-colors cursor-pointer">
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-medium">#{rep.id}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">{rep.title}</td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{rep.location}</td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full border ${getUrgencyBadge(rep.urgency)}`}>
+                      {rep.urgency}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap">
+                    <span className={`px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full border ${getStatusBadge(rep.status)}`}>
+                      {rep.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                    {new Date(rep.created_at).toLocaleDateString()}
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
 
-      {loading ? (
-        <div className="p-8 text-center text-slate-400 text-sm animate-pulse">Loading issue reports...</div>
-      ) : reports.length === 0 ? (
-        <div className="p-8 text-center bg-white rounded-2xl border border-slate-200 text-slate-500 text-sm">
-          No issue reports found.
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          {reports.map((r) => (
-            <div key={r.id} className="bg-white rounded-2xl p-5 border border-slate-200 shadow-xs flex flex-col justify-between space-y-3">
-              <div>
-                <div className="flex items-center justify-between mb-2">
-                  <span className={`text-xs px-2.5 py-1 rounded-full ${getUrgencyBadge(r.urgency)}`}>
-                    {r.urgency} URGENCY
-                  </span>
-                  <span className="text-xs text-slate-400 flex items-center gap-1">
-                    <Clock className="w-3.5 h-3.5" />
-                    {new Date(r.created_at).toLocaleDateString()}
-                  </span>
+      {isModalOpen && selectedReport && (
+        <div className="fixed inset-0 overflow-hidden z-40">
+          <div className="absolute inset-0 overflow-hidden">
+            <div className="absolute inset-0 bg-slate-900 bg-opacity-75 transition-opacity" onClick={closeModal} />
+            
+            <div className="fixed inset-y-0 right-0 max-w-md w-full flex">
+              <div className="w-full h-full bg-white shadow-xl flex flex-col">
+                
+                <div className="px-6 py-6 border-b border-slate-200 flex justify-between items-center bg-slate-50">
+                  <h3 className="text-lg font-medium text-slate-900">Issue #{selectedReport.id} Details</h3>
+                  <button onClick={closeModal} className="text-slate-400 hover:text-slate-500">
+                    <span className="text-2xl">&times;</span>
+                  </button>
                 </div>
-                <h3 className="text-base font-bold text-slate-900">{r.title}</h3>
-                <p className="text-xs text-slate-600 mt-1 line-clamp-2">{r.description}</p>
-              </div>
 
-              <div className="pt-2 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-                <span className="flex items-center gap-1 text-slate-600 font-medium">
-                  <MapPin className="w-3.5 h-3.5 text-slate-400" />
-                  {r.location}
-                </span>
-                <span className="font-bold text-slate-700 bg-slate-100 px-2.5 py-1 rounded-lg">
-                  {r.status}
-                </span>
+                <div className="flex-1 px-6 py-6 space-y-6 overflow-y-auto">
+                  
+                  {selectedReport.image && (
+                    <div className="mb-4">
+                      <h4 className="text-sm font-medium text-slate-500 mb-2">Attached Image</h4>
+                      <div 
+                        className="relative h-48 w-full overflow-hidden rounded-lg border border-slate-200 cursor-pointer hover:opacity-90 transition-opacity"
+                        onClick={() => setLightboxImage(selectedReport.image)}
+                      >
+                        <img 
+                          src={selectedReport.image} 
+                          alt="Issue Attachment" 
+                          className="w-full h-full object-cover"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center opacity-0 hover:opacity-100 bg-black bg-opacity-30 transition-opacity">
+                           <span className="text-white text-sm font-medium bg-black bg-opacity-50 px-3 py-1 rounded-full">
+                             Click to Enlarge
+                           </span>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  <div>
+                    <h4 className="text-sm font-medium text-slate-500">Title</h4>
+                    <p className="mt-1 text-sm text-slate-900 font-semibold">{selectedReport.title}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-slate-500">Description</h4>
+                    <p className="mt-1 text-sm text-slate-900 bg-slate-50 p-3 rounded-md border border-slate-200">{selectedReport.description}</p>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-slate-500">Location</h4>
+                    <p className="mt-1 text-sm text-slate-900">{selectedReport.location}</p>
+                  </div>
+                  <div className="flex space-x-6">
+                    <div>
+                      <h4 className="text-sm font-medium text-slate-500 mb-2">Urgency</h4>
+                      <span className={`px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full border ${getUrgencyBadge(selectedReport.urgency)}`}>
+                        {selectedReport.urgency}
+                      </span>
+                    </div>
+                    <div>
+                      <h4 className="text-sm font-medium text-slate-500 mb-2">Status</h4>
+                      <span className={`px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full border ${getStatusBadge(selectedReport.status)}`}>
+                        {selectedReport.status}
+                      </span>
+                    </div>
+                  </div>
+                  <div>
+                    <h4 className="text-sm font-medium text-slate-500">Date Reported</h4>
+                    <p className="mt-1 text-sm text-slate-900">{new Date(selectedReport.created_at).toLocaleString()}</p>
+                  </div>
+                </div>
+
+                <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex justify-end space-x-3">
+                  <button onClick={closeModal} className="px-4 py-2 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50">
+                    Close
+                  </button>
+                  
+                  {selectedReport.status.toUpperCase() === 'PENDING' && (
+                    <button 
+                      onClick={() => handleStatusUpdate('IN_PROGRESS')}
+                      disabled={isUpdating}
+                      className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                    >
+                      {isUpdating ? 'Updating...' : 'Mark In Progress'}
+                    </button>
+                  )}
+
+                  {selectedReport.status.toUpperCase() === 'IN_PROGRESS' && (
+                    <button 
+                      onClick={() => handleStatusUpdate('RESOLVED')}
+                      disabled={isUpdating}
+                      className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50"
+                    >
+                      {isUpdating ? 'Updating...' : 'Mark Resolved'}
+                    </button>
+                  )}
+                </div>
               </div>
             </div>
-          ))}
+          </div>
         </div>
       )}
 
-      {showModal && (
-        <div className="fixed inset-0 bg-black/40 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-slate-200">
-            <h2 className="text-xl font-bold text-slate-900 mb-4">Report an Issue</h2>
-            <form onSubmit={handleCreate} className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Issue Title</label>
-                <input
-                  type="text"
-                  required
-                  value={title}
-                  onChange={(e) => setTitle(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-600"
-                  placeholder="e.g. Broken Streetlight"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Location</label>
-                <input
-                  type="text"
-                  required
-                  value={location}
-                  onChange={(e) => setLocation(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-600"
-                  placeholder="e.g. Zone 4, Corner Main St."
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Urgency</label>
-                <select
-                  value={urgency}
-                  onChange={(e) => setUrgency(e.target.value as any)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-600"
-                >
-                  <option value="LOW">Low</option>
-                  <option value="MEDIUM">Medium</option>
-                  <option value="HIGH">High</option>
-                  <option value="URGENT">Urgent</option>
-                </select>
-              </div>
-
-              <div>
-                <label className="block text-xs font-bold uppercase text-slate-500 mb-1">Description</label>
-                <textarea
-                  required
-                  rows={3}
-                  value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm outline-none focus:border-blue-600"
-                  placeholder="Describe the details..."
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  className="px-4 py-2 text-xs font-bold text-white bg-[#0047BA] hover:bg-[#003693] rounded-xl"
-                >
-                  Submit Report
-                </button>
-              </div>
-            </form>
-          </div>
+      {/* Lightbox Modal */}
+      {lightboxImage && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-90" onClick={() => setLightboxImage(null)}>
+          <button 
+            className="absolute top-6 right-6 text-white hover:text-slate-300 text-4xl"
+            onClick={(e) => { e.stopPropagation(); setLightboxImage(null); }}
+          >
+            &times;
+          </button>
+          <img 
+            src={lightboxImage} 
+            alt="Expanded Issue Attachment" 
+            className="max-w-full max-h-full object-contain rounded-lg shadow-2xl cursor-default"
+            onClick={(e) => e.stopPropagation()} // Prevent clicks on the image from closing it
+          />
         </div>
       )}
     </div>
