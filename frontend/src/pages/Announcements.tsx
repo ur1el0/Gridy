@@ -11,7 +11,7 @@ interface Announcement {
 
 export const Announcements: React.FC = () => {
     const [announcements, setAnnouncements] = useState<Announcement[]>([])
-    const [loading, setLoading] = useState(null)
+    const [loading, setLoading] = useState<boolean>(true)
     const [error, setError] = useState('')
 
     const [isModalOpen, setIsModalOpen] = useState(false)

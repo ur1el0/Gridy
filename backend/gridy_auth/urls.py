@@ -7,7 +7,9 @@ from .views import (
     ResidentImportView, 
     UserProfileView, 
     CustomTokenRefreshView,
-    LogoutView
+    LogoutView,
+    PendingResidentsView,
+    VerifyResidentView
 )
 
 urlpatterns = [
@@ -17,4 +19,6 @@ urlpatterns = [
     path('logout/', LogoutView.as_view(), name='auth_logout'),
     path('me/', UserProfileView.as_view(), name='auth_me'),
     path('import-residents/', ResidentImportView.as_view(), name='import_residents'),
+    path('pending-residents/', PendingResidentsView.as_view(), name='pending_residents'),
+    path('verify-resident/<int:pk>/', VerifyResidentView.as_view(), name='verify_resident')
 ]
