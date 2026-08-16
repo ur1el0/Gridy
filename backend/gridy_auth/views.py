@@ -1,4 +1,4 @@
-from backend.gridy_auth.serializers import ResidentSerializer
+from gridy_auth.serializers import ResidentSerializer
 from django.http import HttpResponseForbidden
 from rest_framework import status, permissions
 from rest_framework.views import APIView
