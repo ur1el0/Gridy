@@ -23,9 +23,11 @@ export function App() {
                         <Route path="/dashboard" element={<Dashboard />} />
                         <Route path="/queue" element={<LiveQueue />} />
                         <Route path="/documents" element={<DocumentRequests />} />
+                        <Route path="/schedule" element={<Activities />} />
+                        <Route path="/activities" element={<Activities />} />
+                        <Route path="/residents" element={<IssueReports />} />
                         <Route path="/reports" element={<IssueReports />} />
                         <Route path="/announcements" element={<Announcements />} />
-                        <Route path="/activities" element={<Activities />} />
                         
                         <Route path="/" element={<Navigate to="/dashboard" replace/>} />
                     </Route>
