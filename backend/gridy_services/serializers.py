@@ -25,18 +25,25 @@ class DocumentRequestSerializer(serializers.ModelSerializer):
 
 class QueueTicketSerializer(serializers.ModelSerializer):
     ticket_id = serializers.IntegerField(source='id', read_only=True)
+    resident_name = serializers.SerializerMethodField()
 
     class Meta:
         model = QueueTicket
         fields = [
             'ticket_id',
             'ticket_number',
+            'resident_name',
             'service_type',
             'status',
             'created_at',
             'updated_at'
         ]
         read_only_fields = ['status', 'ticket_number', 'created_at', 'updated_at']
+
+    def get_resident_name(self, obj) -> str:
+        if obj.user:
+            return getattr(obj.user.profile, 'full_name', obj.user.username) if hasattr(obj.user, 'profile') else obj.user.username
+        return "Walk-in Resident"
 
 
 class DocumentStatsSerializer(serializers.Serializer):

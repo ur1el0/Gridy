@@ -6,7 +6,9 @@ from gridy_communications.services import send_fcm_topic_notification
 from gridy_communications.models import FCMDevice
 from gridy_communications.serializers import FCMDeviceSerializer
 from gridy_auth.models import User
+import logging
 
+logger = logging.getLogger(__name__)
 
 class ActivityScheduleViewSet(viewsets.ModelViewSet):
     queryset = ActivitySchedule.objects.all().order_by('event_datetime', 'created_at')
@@ -23,6 +25,7 @@ class ActivityScheduleViewSet(viewsets.ModelViewSet):
         serializer.save(created_by=self.request.user)
 
 
+
 class AnnouncementViewSet(viewsets.ModelViewSet):
     queryset = Announcement.objects.all().order_by('-is_pinned', '-created_at')
     serializer_class = AnnouncementSerializer
@@ -34,12 +37,15 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         instance = serializer.save(created_by=self.request.user)
-        send_fcm_topic_notification(
-            topic="announcements",
-            title="New Announcement",
-            body=instance.title,
-            data={"announcement_id": str(instance.id)}
-        )
+        try:
+            send_fcm_topic_notification(
+                topic=("announcements"),
+                title="New Announcement",
+                body=instance.title,
+                data={"announcement_id": str(instance.id)}
+            )
+        except Exception as e:
+            logger.error(f"Failed to send FCM notification for Announcement {instance.id}: {e}")
 
 class FCMDeviceViewSet(viewsets.ModelViewSet):
     serializer_class = FCMDeviceSerializer
