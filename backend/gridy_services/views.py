@@ -31,6 +31,9 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status
 
+from django.db.models import Count, Q
+from gridy_auth.models import Resident
+
 
 class DocumentRequestViewSet(viewsets.ModelViewSet):
     serializer_class = DocumentRequestSerializer
@@ -235,7 +238,32 @@ class DashboardSummaryView(APIView):
         serving_ticket = QueueTicket.objects.filter(status=QueueTicket.Status.SERVING).first()
         queue_waiting_count = QueueTicket.objects.filter(status=QueueTicket.Status.WAITING).count()
 
+        # 4. Demographics (Purok & Age)
+        # Purok Distribution
+        purok_stats = Resident.objects.values('purok').annotate(count=Count('purok')).order_by('purok')
+        purok_distribution = {
+            f"Purok {item['purok']}" if item['purok'] is not None else  "Unassigned": item['count']
+            for item in purok_stats
+        }
+
+        # Age Demographics
+        today = timezone.now().date()
+        def get_past_date(years):
+            try:
+                return today.replace(year=today.year - years)
+            except ValueError:
+                return today.replace(year=today.year - years, day=28)
         
+        date_18_years_ago = get_past_date(18)
+        date_36_years_ago = get_past_date(36)
+        date_60_years_ago = get_past_date(60)
+
+        age_demographics = Resident.objects.aggregate(
+            youth=Count('id', filter=Q(birth_date__gt=date_18_years_ago)),
+            young_adult=Count('id', filter=Q(birth_date__gt=date_18_years_ago, birth_date=date_36_years_ago)),
+            adult=Count('id', filter=Q(birth_date__gt=date_36_years_ago, birth_date=date_60_years_ago)),
+            senior=Count('id', filter=Q(birth_date__gt=date_60_years_ago)),
+        )
         return Response ({
             "total_residents": User.objects.filter(role=User.Role.RESIDENT).count(),
             "document_requests": {
@@ -261,7 +289,12 @@ class DashboardSummaryView(APIView):
                 "total_today": queue_total_today,
                 "serving_now": serving_ticket.ticket_number if serving_ticket else None,
                 "waiting_count": queue_waiting_count
+            },
+            "demographics": {
+                "purok_distribution": purok_distribution,
+                "age_demographics": age_demographics
             }
+            
         }, status=status.HTTP_200_OK)
 
         

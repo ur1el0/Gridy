@@ -22,6 +22,9 @@ class Resident(models.Model):
     birth_date = models.DateField()
     voter_status = models.BooleanField(default=False)
     contact_number = models.CharField(max_length=20, null=True, blank=True)
+    purok = models.PositiveIntegerField(null=True, blank=True)
+    is_verified = models.BooleanField(default=False)
+    guardian = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='dependents')
     
 
     def __str__(self):

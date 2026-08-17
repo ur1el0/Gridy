@@ -1,11 +1,15 @@
 import React from 'react';
 import { Outlet } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Search, Bell, HelpCircle } from 'lucide-react';
+import { 
+  Search, 
+  Bell, 
+  HelpCircle
+} from 'lucide-react';
 import { Sidebar } from './Sidebar';
 
 export const AdminLayout: React.FC = () => {
-  const { user } = useAuth();
+  const { user } = useAuth(); // removed unused logout since it's in Sidebar now
 
   const userInitial = user?.full_name 
     ? user.full_name.charAt(0).toUpperCase() 
@@ -59,10 +63,10 @@ export const AdminLayout: React.FC = () => {
 
           {/* Footer */}
           <footer className="pt-8 text-xs text-slate-400 font-medium">
-            © 2026 Gridy Management Suite
+            © 2026 Gridy Management Suite Management Suite
           </footer>
         </main>
       </div>
     </div>
   );
-};
+};

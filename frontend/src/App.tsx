@@ -5,9 +5,9 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminLayout } from "./components/layout/AdminLayout";
 import { DocumentRequests } from "./pages/DocumentRequests";
 import { IssueReports } from "./pages/IssueReports";
-import { ResidentVerification } from "./pages/ResidentVerification";
 import { Communications } from "./pages/Communications";
 import { LiveQueue } from "./pages/LiveQueue";
+import ResidentVerification from "./pages/ResidentVerification";
 
 export function App() {
     return (
