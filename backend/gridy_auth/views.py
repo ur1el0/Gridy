@@ -369,3 +369,17 @@ class VerifyResidentView(APIView):
         resident.is_verified = True
         resident.save()
         return Response(ResidentSerializer(resident).data, status=status.HTTP_200_OK)
+
+class RejectResidentView(APIView):
+    permission_classes = [permissions.IsAuthenticated, IsBarangayOfficial]
+
+    @extend_schema(
+        summary="Reject and delete a pending resident account",
+        responses={204: None, 404: OpenApiTypes.OBJECT}
+    )
+    def delete(self, request, pk):
+        resident = get_object_or_404(Resident, pk=pk)
+        user = resident.user
+        user.delete()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)

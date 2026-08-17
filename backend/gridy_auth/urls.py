@@ -9,7 +9,8 @@ from .views import (
     CustomTokenRefreshView,
     LogoutView,
     PendingResidentsView,
-    VerifyResidentView
+    VerifyResidentView,
+    RejectResidentView
 )
 
 urlpatterns = [
@@ -20,5 +21,6 @@ urlpatterns = [
     path('me/', UserProfileView.as_view(), name='auth_me'),
     path('import-residents/', ResidentImportView.as_view(), name='import_residents'),
     path('pending-residents/', PendingResidentsView.as_view(), name='pending_residents'),
-    path('verify-resident/<int:pk>/', VerifyResidentView.as_view(), name='verify_resident')
+    path('verify-resident/<int:pk>/', VerifyResidentView.as_view(), name='verify_resident'),
+    path('reject-resident/<int:pk>/', RejectResidentView.as_view(), name='reject_resident'),
 ]
