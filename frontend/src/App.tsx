@@ -5,8 +5,8 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 import { AdminLayout } from "./components/layout/AdminLayout";
 import { DocumentRequests } from "./pages/DocumentRequests";
 import { IssueReports } from "./pages/IssueReports";
-import { Announcements } from "./pages/Announcements";
-import { Activities } from "./pages/Activities";
+import { ResidentVerification } from "./pages/ResidentVerification";
+import { Communications } from "./pages/Communications";
 import { LiveQueue } from "./pages/LiveQueue";
 
 export function App() {
@@ -23,11 +23,14 @@ export function App() {
                         <Route path="/dashboard" element={<Dashboard />} />
                         <Route path="/queue" element={<LiveQueue />} />
                         <Route path="/documents" element={<DocumentRequests />} />
-                        <Route path="/schedule" element={<Activities />} />
-                        <Route path="/activities" element={<Activities />} />
-                        <Route path="/residents" element={<IssueReports />} />
+                        
+                        {/* New Combined Route */}
+                        <Route path="/communications" element={<Communications />} />
+                        
+                        {/* Fixed Resident Route */}
+                        <Route path="/residents" element={<ResidentVerification />} />
+                        
                         <Route path="/reports" element={<IssueReports />} />
-                        <Route path="/announcements" element={<Announcements />} />
                         
                         <Route path="/" element={<Navigate to="/dashboard" replace/>} />
                     </Route>

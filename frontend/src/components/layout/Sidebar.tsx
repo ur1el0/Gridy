@@ -1,29 +1,29 @@
 import React from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
-import { Settings, LogOut } from 'lucide-react';
-
-import dashboardIcon from '../../assets/sidebar-icons/dashboard.png';
-import queueIcon from '../../assets/sidebar-icons/queue.png';
-import documentsIcon from '../../assets/sidebar-icons/documents.png';
-import scheduleIcon from '../../assets/sidebar-icons/schedule.png';
-import residentsIcon from '../../assets/sidebar-icons/residents.png';
-import announcementsIcon from '../../assets/sidebar-icons/announcements.png';
+import { 
+  Settings, 
+  LogOut, 
+  LayoutDashboard, 
+  ListOrdered, 
+  FileText, 
+  Radio, 
+  Users 
+} from 'lucide-react';
 import mainLogoSvg from '../../assets/MainLogo.svg';
 
 interface NavItem {
   name: string;
   path: string;
-  icon: string;
+  icon: React.ElementType;
 }
 
 const navItems: NavItem[] = [
-  { name: 'Dashboard', path: '/dashboard', icon: dashboardIcon },
-  { name: 'Queue', path: '/queue', icon: queueIcon },
-  { name: 'Documents', path: '/documents', icon: documentsIcon },
-  { name: 'Schedule', path: '/schedule', icon: scheduleIcon },
-  { name: 'Residents', path: '/residents', icon: residentsIcon },
-  { name: 'Announcements', path: '/announcements', icon: announcementsIcon },
+  { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
+  { name: 'Queue', path: '/queue', icon: ListOrdered },
+  { name: 'Documents', path: '/documents', icon: FileText },
+  { name: 'Communications', path: '/communications', icon: Radio },
+  { name: 'Residents', path: '/residents', icon: Users },
 ];
 
 export const Sidebar: React.FC = () => {
@@ -32,7 +32,6 @@ export const Sidebar: React.FC = () => {
 
   return (
     <aside className="w-64 bg-[#F8FAFD] border-r border-[#E2E8F0] h-screen flex flex-col justify-between select-none shrink-0">
-      {/* Top Brand / Logo Section */}
       <div>
         <div className="h-20 flex items-center px-6 gap-3">
           <div className="w-9 h-9 rounded-xl bg-[#091b35] flex items-center justify-center p-1.5 shadow-sm shrink-0">
@@ -54,9 +53,9 @@ export const Sidebar: React.FC = () => {
             {navItems.map((item) => {
               const isActive =
                 location.pathname === item.path ||
-                (item.path === '/schedule' && location.pathname === '/activities') ||
-                (item.path === '/residents' && location.pathname === '/reports') ||
                 (item.path !== '/' && location.pathname.startsWith(item.path));
+                
+              const Icon = item.icon;
 
               return (
                 <li key={item.name}>
@@ -69,15 +68,11 @@ export const Sidebar: React.FC = () => {
                     }`}
                   >
                     <div className="w-5 h-5 flex items-center justify-center shrink-0">
-                      <img
-                        src={item.icon}
-                        alt={`${item.name} icon`}
-                        className={`w-5 h-5 object-contain transition-all duration-150 ${
-                          isActive
-                            ? '[filter:invert(18%)_sepia(95%)_saturate(2900%)_hue-rotate(212deg)_brightness(85%)_contrast(105%)]'
-                            : 'opacity-70 group-hover:opacity-100'
-                        }`}
-                      />
+                      <Icon className={`w-5 h-5 transition-colors duration-150 ${
+                        isActive 
+                          ? 'text-[#0047BA]' 
+                          : 'text-[#64748b] group-hover:text-[#0f172a]'
+                      }`} />
                     </div>
                     <span>{item.name}</span>
                   </NavLink>
@@ -88,7 +83,6 @@ export const Sidebar: React.FC = () => {
         </nav>
       </div>
 
-      {/* Bottom Section: Settings & Logout */}
       <div className="px-3.5 pb-6 space-y-1">
         <NavLink
           to="/settings"
@@ -119,4 +113,3 @@ export const Sidebar: React.FC = () => {
     </aside>
   );
 };
-
