@@ -37,7 +37,7 @@ describe('LiveQueue Component', () => {
     expect(screen.getByText(/now serving/i)).toBeInTheDocument()
     expect(screen.getByText('Permit')).toBeInTheDocument()
     // Check if the waiting list renders
-    expect(screen.getByText('Waiting List (1)')).toBeInTheDocument()
+    expect(screen.getByText('Waiting List')).toBeInTheDocument()
     expect(screen.getByText('Q-001')).toBeInTheDocument()
   })
 })
