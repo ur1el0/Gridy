@@ -191,14 +191,15 @@ export const LiveQueue: React.FC = () => {
     }
     setIsSubmittingNew(true);
     try {
-      const serviceDisplay = priorityStatus === 'priority' 
-        ? `${serviceRequired} (Priority)` 
-        : serviceRequired;
-
+      // Remove the old serviceDisplay string hacking, and map all our new state variables
       await axiosPrivate.post('/tickets/', {
-        service_type: serviceDisplay,
+        walkin_name: searchResident,
+        service_type: serviceRequired,
+        priority_status: priorityStatus,
+        notes: notes,
         status: 'WAITING',
-      });
+      })
+
       await fetchTickets();
       setIsManualModalOpen(false);
       setSearchResident('');
@@ -767,4 +768,4 @@ export const LiveQueue: React.FC = () => {
       )}
     </div>
   );
-};
+};
