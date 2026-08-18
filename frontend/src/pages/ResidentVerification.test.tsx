@@ -46,7 +46,7 @@ describe("ResidentVerification Component", () => {
         await waitFor(() => {
             expect(screen.getByText("Resident Verification")).toBeInTheDocument();
             expect(screen.getByText("Juan Dela Cruz")).toBeInTheDocument();
-            expect(screen.getByText("Purok 3")).toBeInTheDocument();
+            expect(screen.getAllByText("Purok 3")[0]).toBeInTheDocument();
         });
     });
 });

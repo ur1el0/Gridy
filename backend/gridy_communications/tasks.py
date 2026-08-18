@@ -5,9 +5,8 @@ from .services import send_notification_to_user, send_fcm_topic_notification
 
 logger = logging.getLogger(__name__)
 
-
 @shared_task
-def send_notification_to_user_task(topic, title, body, data=None):
+def async_send_fcm_topic_notification(topic, title, body, data=None):
     """
     Background task to broadcast a push notification to a specific topic.
     """
@@ -19,7 +18,7 @@ def send_notification_to_user_task(topic, title, body, data=None):
         return {"status": "error", "error": str(e)}
 
 @shared_task
-def async_send_fcm_topic_notification(user_id, title, body, data=None):
+def send_notification_to_user_task(user_id, title, body, data=None):
     """
     Background task to send a push notification to a specific user.
     """
