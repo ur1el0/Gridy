@@ -12,7 +12,9 @@ import {
   History, 
   Plus, 
   X,
-  RotateCcw
+  RotateCcw,
+  Search,
+  ChevronsUpDown
 } from 'lucide-react';
 
 interface QueueTicket {
@@ -31,10 +33,13 @@ export const LiveQueue: React.FC = () => {
   const [error, setError] = useState<string>('');
   const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
-  // Modals
+  // Modals & Form state
   const [isManualModalOpen, setIsManualModalOpen] = useState<boolean>(false);
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState<boolean>(false);
-  const [newServiceType, setNewServiceType] = useState<string>('Barangay Clearance');
+  const [searchResident, setSearchResident] = useState<string>('');
+  const [serviceRequired, setServiceRequired] = useState<string>('');
+  const [priorityStatus, setPriorityStatus] = useState<'regular' | 'priority'>('regular');
+  const [notes, setNotes] = useState<string>('');
   const [isSubmittingNew, setIsSubmittingNew] = useState<boolean>(false);
   const [notificationBanner, setNotificationBanner] = useState<string | null>(null);
 
@@ -180,14 +185,26 @@ export const LiveQueue: React.FC = () => {
   // Create Manual Ticket
   const handleCreateManualTicket = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!serviceRequired) {
+      alert('Please select a service category.');
+      return;
+    }
     setIsSubmittingNew(true);
     try {
+      const serviceDisplay = priorityStatus === 'priority' 
+        ? `${serviceRequired} (Priority)` 
+        : serviceRequired;
+
       await axiosPrivate.post('/tickets/', {
-        service_type: newServiceType,
+        service_type: serviceDisplay,
         status: 'WAITING',
       });
       await fetchTickets();
       setIsManualModalOpen(false);
+      setSearchResident('');
+      setServiceRequired('');
+      setPriorityStatus('regular');
+      setNotes('');
       showNotification('New queue ticket issued successfully.');
     } catch (err) {
       console.error('Failed to create ticket:', err);
@@ -195,6 +212,14 @@ export const LiveQueue: React.FC = () => {
     } finally {
       setIsSubmittingNew(false);
     }
+  };
+
+  const handleCloseManualModal = () => {
+    setIsManualModalOpen(false);
+    setSearchResident('');
+    setServiceRequired('');
+    setPriorityStatus('regular');
+    setNotes('');
   };
 
   const showNotification = (msg: string) => {
@@ -522,54 +547,142 @@ export const LiveQueue: React.FC = () => {
         </div>
       </div>
 
-      {/* Modal: Manual Entry for New Ticket */}
+      {/* Modal: Manual Queue Entry */}
       {isManualModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
-          <div className="bg-white rounded-2xl shadow-xl max-w-md w-full p-6 relative animate-fade-in">
-            <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-              <h3 className="text-lg font-bold text-[#0f172a]">Issue Queue Ticket</h3>
-              <button
-                onClick={() => setIsManualModalOpen(false)}
-                className="text-slate-400 hover:text-slate-600 p-1"
-              >
-                <X className="w-5 h-5" />
-              </button>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-[480px] w-full p-8 relative animate-fade-in text-left">
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={handleCloseManualModal}
+              className="absolute top-8 right-8 text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-100 transition-colors cursor-pointer"
+              aria-label="Close modal"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* Header */}
+            <div className="pr-6">
+              <h2 className="text-[22px] font-bold text-[#0f172a] tracking-tight">
+                Manual Queue Entry
+              </h2>
+              <p className="text-[13px] text-[#64748b] mt-1 leading-snug">
+                Manually register a resident into the current live queue system.
+              </p>
             </div>
 
-            <form onSubmit={handleCreateManualTicket} className="space-y-4 mt-4">
+            {/* Form */}
+            <form onSubmit={handleCreateManualTicket} className="space-y-4 mt-6">
+              {/* Field 1: Search Resident */}
               <div>
-                <label className="block text-xs font-bold uppercase tracking-wider text-slate-600 mb-2">
-                  Select Service
+                <label className="block text-sm font-bold text-[#0f172a] mb-2">
+                  Search Resident
                 </label>
-                <select
-                  value={newServiceType}
-                  onChange={(e) => setNewServiceType(e.target.value)}
-                  className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold text-slate-800 outline-none focus:ring-2 focus:ring-[#0047BA]/20 focus:border-[#0047BA]"
-                >
-                  <option value="Barangay Clearance">Barangay Clearance</option>
-                  <option value="Cedula / Community Tax">Cedula / Community Tax</option>
-                  <option value="Certificate of Indigency">Certificate of Indigency</option>
-                  <option value="Business Permit Endorsement">Business Permit Endorsement</option>
-                  <option value="Barangay ID Issuance">Barangay ID Issuance</option>
-                  <option value="Complaint Filing / Mediation">Complaint Filing / Mediation</option>
-                  <option value="General Public Assistance">General Public Assistance</option>
-                </select>
+                <div className="relative flex items-center">
+                  <Search className="absolute left-4 w-4 h-4 text-slate-400 pointer-events-none" />
+                  <input
+                    type="text"
+                    value={searchResident}
+                    onChange={(e) => setSearchResident(e.target.value)}
+                    placeholder="Search by name or Resident ID..."
+                    className="w-full pl-11 pr-4 py-3 bg-[#EEF2FF]/60 hover:bg-[#EEF2FF] focus:bg-[#EEF2FF] border border-transparent focus:border-[#0047BA]/20 rounded-xl text-sm text-[#0f172a] placeholder-[#94a3b8] outline-none transition-all"
+                  />
+                </div>
               </div>
 
-              <div className="pt-4 flex items-center justify-end gap-3 border-t border-slate-100">
+              {/* Field 2: Service Required */}
+              <div>
+                <label className="block text-sm font-bold text-[#0f172a] mb-2">
+                  Service Required
+                </label>
+                <div className="relative">
+                  <select
+                    value={serviceRequired}
+                    onChange={(e) => setServiceRequired(e.target.value)}
+                    required
+                    className={`w-full appearance-none pl-4 pr-10 py-3 bg-[#EEF2FF]/60 hover:bg-[#EEF2FF] focus:bg-[#EEF2FF] border border-transparent focus:border-[#0047BA]/20 rounded-xl text-sm font-medium outline-none transition-all cursor-pointer ${
+                      serviceRequired ? 'text-[#0f172a]' : 'text-[#94a3b8]'
+                    }`}
+                  >
+                    <option value="" disabled className="text-slate-400">
+                      Select a service category
+                    </option>
+                    <option value="Barangay Clearance" className="text-slate-800">Barangay Clearance</option>
+                    <option value="Cedula / Community Tax" className="text-slate-800">Cedula / Community Tax</option>
+                    <option value="Certificate of Indigency" className="text-slate-800">Certificate of Indigency</option>
+                    <option value="Business Permit Endorsement" className="text-slate-800">Business Permit Endorsement</option>
+                    <option value="Barangay ID Issuance" className="text-slate-800">Barangay ID Issuance</option>
+                    <option value="Complaint Filing / Mediation" className="text-slate-800">Complaint Filing / Mediation</option>
+                    <option value="General Public Assistance" className="text-slate-800">General Public Assistance</option>
+                  </select>
+                  <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-slate-400">
+                    <ChevronsUpDown className="w-4 h-4" />
+                  </div>
+                </div>
+              </div>
+
+              {/* Field 3: Priority Status */}
+              <div>
+                <label className="block text-sm font-bold text-[#0f172a] mb-2">
+                  Priority Status
+                </label>
+                <div className="grid grid-cols-2 gap-3.5">
+                  <button
+                    type="button"
+                    onClick={() => setPriorityStatus('regular')}
+                    className={`py-3 px-4 rounded-xl text-sm font-bold transition-all cursor-pointer text-center ${
+                      priorityStatus === 'regular'
+                        ? 'bg-[#DCE7FF] text-[#0047BA]'
+                        : 'bg-[#EEF2FF]/60 text-[#334155] hover:bg-[#EEF2FF]'
+                    }`}
+                  >
+                    Regular
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPriorityStatus('priority')}
+                    className={`py-3 px-4 rounded-xl text-sm font-bold transition-all cursor-pointer text-center flex items-center justify-center gap-1.5 ${
+                      priorityStatus === 'priority'
+                        ? 'bg-[#DCE7FF] text-[#0047BA]'
+                        : 'bg-[#EEF2FF]/60 text-[#334155] hover:bg-[#EEF2FF]'
+                    }`}
+                  >
+                    <span className="font-bold">!</span>
+                    <span>Priority/Senior/PWD</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Field 4: Notes */}
+              <div>
+                <label className="block text-sm font-bold text-[#0f172a] mb-2">
+                  Notes
+                </label>
+                <textarea
+                  value={notes}
+                  onChange={(e) => setNotes(e.target.value)}
+                  rows={3}
+                  placeholder="Additional details or special requests..."
+                  className="w-full py-3 px-4 bg-[#EEF2FF]/60 hover:bg-[#EEF2FF] focus:bg-[#EEF2FF] border border-transparent focus:border-[#0047BA]/20 rounded-xl text-sm text-[#0f172a] placeholder-[#94a3b8] outline-none transition-all resize-none"
+                />
+              </div>
+
+              {/* Action Buttons */}
+              <div className="pt-3 flex items-center justify-end gap-4">
                 <button
                   type="button"
-                  onClick={() => setIsManualModalOpen(false)}
-                  className="px-4 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors"
+                  onClick={handleCloseManualModal}
+                  className="text-sm font-bold text-[#334155] hover:text-[#0f172a] px-3 py-2.5 rounded-xl transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={isSubmittingNew}
-                  className="bg-[#0047BA] hover:bg-[#003882] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all disabled:opacity-50"
+                  disabled={isSubmittingNew || !serviceRequired}
+                  className="bg-[#0052CC] hover:bg-[#0047BA] active:bg-[#003882] text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-blue-700/20 hover:shadow-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isSubmittingNew ? 'Issuing...' : 'Generate Ticket'}
+                  {isSubmittingNew ? 'Adding...' : 'Add to Queue'}
                 </button>
               </div>
             </form>
