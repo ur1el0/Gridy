@@ -33,7 +33,10 @@ class QueueTicketSerializer(serializers.ModelSerializer):
             'ticket_id',
             'ticket_number',
             'resident_name',
+            'walkin_name',
             'service_type',
+            'priority_status',
+            'notes',
             'status',
             'created_at',
             'updated_at'
@@ -43,7 +46,8 @@ class QueueTicketSerializer(serializers.ModelSerializer):
     def get_resident_name(self, obj) -> str:
         if obj.user:
             return getattr(obj.user.profile, 'full_name', obj.user.username) if hasattr(obj.user, 'profile') else obj.user.username
-        return "Walk-in Resident"
+        # Return the actual typed name, or fallback if none was provided
+        return obj.walkin_name if obj.walkin_name else "Walk-in Resident"
 
 
 class DocumentStatsSerializer(serializers.Serializer):
