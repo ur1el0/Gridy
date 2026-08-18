@@ -149,7 +149,14 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
         return QueueTicket.objects.filter(user=user).order_by('-created_at')
 
     def perform_create(self, serializer):
-        serializer.save(user=self.request.user if self.request.user.is_authenticated else None)
+        user  = self.request.user
+        # If an admin is creating the ticket, they are issuing it for a walk-in resident.
+        # Do not attach the tikcet to the Admin's account.
+        if user and user.is_authenticated and user.role == User.Role.ADMIN:
+            serializer.save(user=None)
+        else:
+            # Otherwise, a resident is requesting a ticket for themselves via the app.
+            serializer.save(user=user if user.is_authenticated else None)
 
     @action(detail=False, methods=['get'], url_path='live-status')
     def live_status(self, request):
