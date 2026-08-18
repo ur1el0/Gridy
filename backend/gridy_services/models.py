@@ -52,6 +52,10 @@ class QueueTicket(models.Model):
         COMPLETED = 'COMPLETED', 'Completed'
         CANCELLED = 'CANCELLED', 'Cancelled'
 
+    class Priority(models.TextChoices):
+        REGULAR = 'regular', 'Regular'
+        PRIORITY = 'priority', 'Priority/Senior/PWD/Pregnant'
+
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -61,6 +65,14 @@ class QueueTicket(models.Model):
     )
     ticket_number = models.CharField(max_length=20)
     service_type = models.CharField(max_length=100)
+    # New Fields for Manual Entry
+    walkin_name = models.CharField(max_length=255, blank=True, null=True)
+    priority_status = models.CharField(
+        max_length=20,
+        choices=Priority.choices,
+        default=Priority.REGULAR,
+    )
+    notes = models.TextField(blank=True, null=True)
     status = models.CharField(
         max_length=20,
         choices=Status.choices,
