@@ -16,3 +16,7 @@ firebase-*.json
 # Media and Uploads
 media/
 backend/media/
+
+
+# Instructions + Further Context
+.agents
