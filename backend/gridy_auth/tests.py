@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-from gridy_auth.models import User
+from gridy_auth.models import User, Resident
 
 # Create your tests here.
 
@@ -202,6 +202,7 @@ class AuthAPITests(APITestCase):
         refresh_url = reverse('auth_token_refresh')
         refresh_response = self.client.post(refresh_url)
         self.assertEqual(refresh_response.status_code, status.HTTP_401_UNAUTHORIZED)
+
     def test_logout_invalidates_cookie_and_session(self):
         from gridy_auth.models import RefreshSession
         # 1. Login to establish cookie
@@ -221,3 +222,34 @@ class AuthAPITests(APITestCase):
         self.assertTrue(not cookie or not cookie.value or cookie['max-age'] == 0)
         # Verify active session is revoked in database
         self.assertEqual(RefreshSession.objects.filter(user=self.user, is_revoked=False).count(), 0)
+
+    def test_reject_resident_deletes_account(self):
+        # 1. Create a dummy pending resident
+        dummy_user = User.objects.create_user(
+            username="dummy_pending",
+            password="password123",
+            email="dummy@example.com",
+            role=User.Role.RESIDENT
+        )
+        
+        dummy_resident = Resident.objects.create(
+            user=dummy_user,
+            full_name="Dummy Pending",
+            birth_date="2000-01-01"
+        )
+        
+        # 2. Make our test user an Admin so they have permission
+        self.user.role = User.Role.ADMIN
+        self.user.save()
+        self.client.force_authenticate(user=self.user)
+
+        url = reverse('reject_resident', args=[dummy_resident.pk])
+        
+        # 3. Hit the endpoint
+        response = self.client.delete(url)
+        
+        # 4. Verify the response is 204 No Content
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        
+        # 5. Verify the user is actually deleted from the database
+        self.assertEqual(User.objects.filter(username="dummy_pending").count(), 0)
