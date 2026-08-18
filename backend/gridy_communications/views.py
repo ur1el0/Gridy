@@ -2,7 +2,7 @@ from rest_framework import viewsets, permissions
 from gridy_auth.permissions import IsBarangayOfficial
 from gridy_communications.models import Announcement, ActivitySchedule
 from gridy_communications.serializers import AnnouncementSerializer, ActivityScheduleSerializer
-from gridy_communications.services import send_fcm_topic_notification
+from gridy_communications.tasks import async_send_fcm_topic_notification
 from gridy_communications.models import FCMDevice
 from gridy_communications.serializers import FCMDeviceSerializer
 from gridy_auth.models import User
@@ -38,8 +38,9 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
     def perform_create(self, serializer):
         instance = serializer.save(created_by=self.request.user)
         try:
-            send_fcm_topic_notification(
-                topic=("announcements"),
+            # Add .delay to push this to Celery queue
+            async_send_fcm_topic_notification.delay(
+                topic="announcements",
                 title="New Announcement",
                 body=instance.title,
                 data={"announcement_id": str(instance.id)}
