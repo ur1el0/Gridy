@@ -41,6 +41,7 @@ ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1'])
 # Application definition
 
 INSTALLED_APPS = [
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -48,6 +49,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'cloudinary_storage',
     'django.contrib.staticfiles',
+    'channels',
     'rest_framework',
     'rest_framework_simplejwt.token_blacklist',
     'corsheaders',
@@ -88,7 +90,24 @@ TEMPLATES = [
     },
 ]
 
+# Leave WSGI_APPLICATION there as a fallback for standard HTTP
 WSGI_APPLICATION = 'config.wsgi.application'
+
+# Add ASGI application for WebSockets
+ASGI_APPLICATION = 'config.asgi.application'
+
+# Configure the Redis Channel Layer (Point to the existing gridy_redis container)
+CHANNEL_LAYERS = {
+    "default": {
+        "BACKEND": "channels_redis.core.RedisChannelLayer",
+        "CONFIG": {
+            # We use db=1 to keep it separate from our Celery broker (which uses db=0)
+            "hosts": [("redis", 6379)],
+        },
+    },
+}
+
+
 
 
 # Database
