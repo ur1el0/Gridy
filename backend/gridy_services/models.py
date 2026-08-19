@@ -1,3 +1,4 @@
+from http.client import PROCESSING
 from django.db.models import indexes
 from django.db import models
 from django.conf import settings
@@ -8,7 +9,8 @@ from django.conf import settings
 class DocumentRequest(models.Model):
     class Status(models.TextChoices):
         PENDING = 'PENDING', 'Pending'
-        APPROVED = 'APPROVED', 'Approved'
+        PROCESSING = 'PROCESSING', 'Processing'
+        READY_FOR_PICKUP = 'READY_FOR_PICKUP', 'Ready for Pickup'
         REJECTED = 'REJECTED', 'Rejected'
         RELEASED = 'RELEASED', 'Released'
 
