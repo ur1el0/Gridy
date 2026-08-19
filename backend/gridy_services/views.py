@@ -37,6 +37,14 @@ from gridy_auth.models import Resident
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
+import time
+from django.db import connections
+from django.core.cache import cache
+from django.db.utils import OperationalError
+from rest_framework.decorators import api_view, permission_classes
+from rest_framework.permissions import AllowAny
+
+
 def broadcast_queue_update():
     """
     Helper to notify all connected WebSockets that the queue has changed.
@@ -331,4 +339,59 @@ class DashboardSummaryView(APIView):
             
         }, status=status.HTTP_200_OK)
 
-        
+@api_view(['GET'])
+@permission_classes([AllowAny])
+def health_check(request):
+    """
+    System health monitoring endpoint checking Database and Cache dependencies.
+    """
+
+    health_data = {
+        "status": "healthy",
+        "services": {}
+    }
+
+    # 1. Database Check
+    db_start = time.time()
+    try:
+        # Pinging the default datanase connection
+        connections['default'].cursor()
+        db_latency = round((time.time() - db_start) * 1000, 2)
+        health_data["services"]["database"] = {
+            "status": "healthy",
+            "latency_ms": db_latency
+        }
+    except OperationalError:
+        health_data["status"] = "unhealthy"
+        health_data["services"]["database"] = {
+            "status": "unhealthy",
+            "latency_ms": None,
+            "error": "Database connection failed"
+        }
+    
+    # 2. Redis Cache Check
+    cache_start = time.time()
+    try:
+        # A simple set and get to verify Redis is actively responding
+        cache.set("health_ping", "pong", timeout=5)
+        cache_result = cache.get("health_ping")
+
+        if cache_result == "pong":
+            cache_latency = round((time.time() - cache_start) * 1000, 2)
+            health_data["services"]["cache"] = {
+                "status": "healthy",
+                "latency_ms": cache_latency
+            }
+        else:
+            raise Exception("Cache write/read verification failed")
+    except Exception as e:
+        health_data["status"] = "unhealthy"
+        health_data["services"]["cache"] = {
+            "status": "unhealthy",
+            "latency_ms": None,
+            "error": str(e)
+        }
+
+    # If any service is unhealthy, return a 503 Service Unavailable
+    status_code = 200 if health_data["status"] == "healthy" else 503
+    return Response(health_data, status=status_code)
