@@ -17,6 +17,7 @@ Including another URLconf
 from unicodedata import name
 from django.contrib import admin
 from django.urls import path, include
+from gridy_services.views import health_check
 
 from drf_spectacular.views import (
     SpectacularAPIView,
@@ -32,14 +33,12 @@ urlpatterns = [
     path('api/v1/', include('gridy_services.urls')),
     path('api/v1/', include('gridy_reports.urls')),
     path('api/v1/', include('gridy_communications.urls')),
+    path('api/v1/health/', health_check, name='health_check'),
 
     # OpenAPI Schema Views
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
     path('api/schema/swagger-ui/', SpectacularSwaggerView.as_view(url_name='schema'),name='swagger-ui'),
     path('api/schema/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
-
-    # Health Check Endpoint
-    path('health/', HealthCheckView.as_view(), name='health_check'),
 
     # Prometheus Metrics Endpoint
     path('prometheus/', include('django_prometheus.urls')),

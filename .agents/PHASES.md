@@ -20,7 +20,7 @@ This document outlines the macro-level roadmap for the Gridy project.
 - Community Issue tracking with image uploads.
 - Global Announcements and Bulletin Boards.
 
-## Phase 5: Notifications & Observability (Planned)
+## Phase 5: Notifications & Observability (Completed)
 - Firebase Push Notifications (FCM) integration via Celery.
 - System health monitoring endpoints (`/api/health/`).
 - Comprehensive Audit Logging.
