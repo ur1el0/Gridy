@@ -139,7 +139,7 @@ class ServiceAPITests(APITestCase):
             title="Broken Light",
             description="Dark alley",
             location="Purok 2",
-            urgency="HIGH"
+            urgency="HAZARD"
         )
         QueueTicket.objects.create(
             status="SERVING",
@@ -159,7 +159,7 @@ class ServiceAPITests(APITestCase):
 
         # Verify values
         self.assertEqual(response.data["document_requests"]["pending"], 1)
-        self.assertEqual(response.data["issue_reports"]["urgency_breakdown"]["high"], 1)
+        self.assertEqual(response.data["issue_reports"]["urgency_breakdown"]["hazard"], 1)
         self.assertEqual(response.data["queue_activity"]["serving_now"], "T001")
         
 
