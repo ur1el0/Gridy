@@ -229,7 +229,7 @@ class DashboardSummaryView(APIView):
         # 1. Document request statistics
         doc_total = DocumentRequest.objects.count()
         doc_pending = DocumentRequest.objects.filter(status=DocumentRequest.Status.PENDING).count()
-        doc_approved = DocumentRequest.objects.filter(status=DocumentRequest.Status.APPROVED).count()
+        doc_approved = DocumentRequest.objects.filter(status=DocumentRequest.Status.PROCESSING).count()
         doc_rejected = DocumentRequest.objects.filter(status=DocumentRequest.Status.REJECTED).count()
         doc_released = DocumentRequest.objects.filter(status=DocumentRequest.Status.RELEASED).count()
         
