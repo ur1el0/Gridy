@@ -113,8 +113,8 @@ export const DocumentRequests: React.FC = () => {
                 <td colSpan={5} className="px-6 py-4 text-center text-sm text-slate-500">No requests found.</td>
               </tr>
             ) : (
-              requests.map((req) => (
-                <tr key={req.id} onClick={() => openModal(req)} className="hover:bg-slate-50 transition-colors cursor-pointer">
+              requests.map((req, index) => (
+                <tr key={req.id || index} onClick={() => openModal(req)} className="hover:bg-slate-50 transition-colors cursor-pointer">
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-medium">#{req.id}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">{req.document_type}</td>
                   <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{req.purpose}</td>
