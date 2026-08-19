@@ -109,7 +109,7 @@ CHANNEL_LAYERS = {
     },
 }
 
-if 'test' in sys.argv:
+if 'test' in sys.argv or 'pytest' in sys.modules:
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels.layers.InMemoryChannelLayer"
