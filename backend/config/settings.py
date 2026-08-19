@@ -96,6 +96,8 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Add ASGI application for WebSockets
 ASGI_APPLICATION = 'config.asgi.application'
 
+import sys
+
 # Configure the Redis Channel Layer (Point to the existing gridy_redis container)
 CHANNEL_LAYERS = {
     "default": {
@@ -107,6 +109,12 @@ CHANNEL_LAYERS = {
     },
 }
 
+if 'test' in sys.argv:
+    CHANNEL_LAYERS = {
+        "default": {
+            "BACKEND": "channels.layers.InMemoryChannelLayer"
+        }
+    }
 
 
 
