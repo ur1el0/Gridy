@@ -34,6 +34,20 @@ from rest_framework import status
 from django.db.models import Count, Q
 from gridy_auth.models import Resident
 
+from asgiref.sync import async_to_sync
+from channels.layers import get_channel_layer
+
+def broadcast_queue_update():
+    """
+    Helper to notify all connected WebSockets that the queue has changed.
+    """
+    channel_layer = get_channel_layer()
+    async_to_sync(channel_layer.group_send)(
+        'queue_updates',
+        {
+            'type': 'queue_update' 
+        }
+    )
 
 class DocumentRequestViewSet(viewsets.ModelViewSet):
     serializer_class = DocumentRequestSerializer
@@ -154,14 +168,19 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
         return QueueTicket.objects.filter(user=user).order_by('-created_at')
 
     def perform_create(self, serializer):
-        user  = self.request.user
-        # If an admin is creating the ticket, they are issuing it for a walk-in resident.
-        # Do not attach the tikcet to the Admin's account.
+        user = self.request.user
         if user and user.is_authenticated and user.role == User.Role.ADMIN:
             serializer.save(user=None)
-        else:
-            # Otherwise, a resident is requesting a ticket for themselves via the app.
+        else: 
             serializer.save(user=user if user.is_authenticated else None)
+        
+        # Trigger WebSocket update
+        broadcast_queue_update()
+
+    def perform_update(self, serializer):
+        serializer.save()
+        # Trigger WebSocket update
+        broadcast_queue_update()
 
     @action(detail=False, methods=['get'], url_path='live-status')
     def live_status(self, request):
@@ -210,6 +229,9 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
             
             remaining_waiting = QueueTicket.objects.filter(status=QueueTicket.Status.WAITING).count()
             
+            # Trigger WebSocket update
+            broadcast_queue_update()
+
             return Response({
                 "current_ticket": next_ticket.ticket_number,
                 "remaining_waiting": remaining_waiting
