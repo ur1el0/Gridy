@@ -261,10 +261,10 @@ class DashboardSummaryView(APIView):
         issue_in_progress = IssueReport.objects.filter(status=IssueReport.Status.IN_PROGRESS).count()
         issue_resolved = IssueReport.objects.filter(status=IssueReport.Status.RESOLVED).count()
         
-        issues_by_urgency_low = IssueReport.objects.filter(urgency=IssueReport.Urgency.LOW).count()
-        issues_by_urgency_medium = IssueReport.objects.filter(urgency=IssueReport.Urgency.MEDIUM).count()
-        issues_by_urgency_high = IssueReport.objects.filter(urgency=IssueReport.Urgency.HIGH).count()
-        issues_by_urgency_urgent = IssueReport.objects.filter(urgency=IssueReport.Urgency.URGENT).count()
+        issues_by_urgency_minor = IssueReport.objects.filter(urgency=IssueReport.Urgency.MINOR).count()
+        issues_by_urgency_moderate = IssueReport.objects.filter(urgency=IssueReport.Urgency.MODERATE).count()
+        issues_by_urgency_hazard = IssueReport.objects.filter(urgency=IssueReport.Urgency.HAZARD).count()
+        issues_by_urgency_emergency = IssueReport.objects.filter(urgency=IssueReport.Urgency.EMERGENCY).count()
 
         # 3. Queue activity stats for today
         today = timezone.now().date()
@@ -313,10 +313,10 @@ class DashboardSummaryView(APIView):
                 "in_progress": issue_in_progress,
                 "resolved": issue_resolved,
                 "urgency_breakdown": {
-                    "low": issues_by_urgency_low,
-                    "medium": issues_by_urgency_medium,
-                    "high": issues_by_urgency_high,
-                    "urgent": issues_by_urgency_urgent,
+                    "minor": issues_by_urgency_minor,
+                    "moderate": issues_by_urgency_moderate,
+                    "hazard": issues_by_urgency_hazard,
+                    "emergency": issues_by_urgency_emergency,
                 }
             },
             "queue_activity": {

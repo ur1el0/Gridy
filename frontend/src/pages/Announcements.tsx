@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { axiosPrivate } from '../api/axios';
 import { Pin, Megaphone, Plus, X } from 'lucide-react';
+import { useAuth } from '../context/AuthContext';
 
 interface Announcement {
     id: number;
@@ -11,6 +12,7 @@ interface Announcement {
 }
 
 export const Announcements: React.FC = () => {
+    const { user } = useAuth()
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState('');
@@ -75,13 +77,15 @@ export const Announcements: React.FC = () => {
                     <Megaphone className="w-5 h-5 text-[#0047BA]" />
                     <span className="font-semibold text-sm">Active Broadcasts</span>
                 </div>
-                <button
-                    onClick={() => setIsModalOpen(true)}
-                    className="flex items-center gap-2 bg-[#0047BA] hover:bg-[#003894] text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm hover:shadow active:scale-95"
-                >
-                    <Plus className="w-4 h-4" />
-                    New Announcement
-                </button>
+                {user?.role === 'ADMIN' && (
+                    <button
+                        onClick={() => setIsModalOpen(true)}
+                        className="flex items-center gap-2 bg-[#0047BA] hover:bg-[#003894] text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm hover:shadow active:scale-95"
+                    >
+                        <Plus className="w-4 h-4" />
+                        New Announcement
+                    </button>
+                )}
             </div>
 
             {/* Announcements Grid */}

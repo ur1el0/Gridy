@@ -29,19 +29,19 @@ class IssueReportAPITests(APITestCase):
         response = self.client.post(self.url, payload, format='json')
 
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(IssueReport.objects.get(title="Flooded street").urgency, IssueReport.Urgency.LOW)    
+        self.assertEqual(IssueReport.objects.get(title="Flooded street").urgency, IssueReport.Urgency.MINOR)    
 
-    def test_report_creation_explicit_urgency(self):
-        # Create a report with HIGH urgency
+    def test_report_creation_ignores_client_urgency(self):
+        # Create a report with EMERGENCY urgency
         payload = {
             "title": "Fallen power line",
             "description": "Live wire exposed",
             "location": "Purok 3",
-            "urgency": "HIGH"
+            "urgency": "EMERGENCY"
         }
         response = self.client.post(self.url, payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(IssueReport.objects.get(title="Fallen power line").urgency, IssueReport.Urgency.HIGH)
+        self.assertEqual(IssueReport.objects.get(title="Fallen power line").urgency, IssueReport.Urgency.MINOR)
 
     def test_report_creation_invalid_urgency(self):
         # Try to post with an invalid urgency choice

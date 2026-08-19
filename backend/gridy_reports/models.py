@@ -9,11 +9,10 @@ class IssueReport(models.Model):
         RESOLVED = 'RESOLVED', 'Resolved'
 
     class Urgency(models.TextChoices):
-        LOW = 'LOW', 'Low'
-        MEDIUM = 'MEDIUM', 'Medium'
-        HIGH = 'HIGH', 'High'
-        URGENT = 'URGENT', 'Urgent'
-
+        MINOR = 'MINOR', 'Minor'
+        MODERATE = 'MODERATE', 'Moderate'
+        HAZARD = 'HAZARD', 'Hazard'
+        EMERGENCY = 'EMERGENCY', 'Emergency'
     reporter = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
         on_delete=models.CASCADE, 
@@ -33,9 +32,9 @@ class IssueReport(models.Model):
     )
 
     urgency = models.CharField(
-        max_length = 10,
+        max_length = 20,
         choices=Urgency.choices,
-        default=Urgency.LOW
+        default=Urgency.MINOR
     )
     
     created_at = models.DateTimeField(auto_now_add=True)

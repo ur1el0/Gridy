@@ -11,12 +11,12 @@ This document outlines the macro-level roadmap for the Gridy project.
 - Granular permissions (Residents vs. Admins).
 - PDF Generation logic for approved documents.
 
-## Phase 3: Live Queue & Dashboard (In Progress)
+## Phase 3: Live Queue & Dashboard (Completed)
 - Real-time queue ticket generation.
 - Dashboard for Admins to manage walk-ins.
-- **Current Objective**: Refine the document request lifecycle (Processing, Ready for Pickup).
+- Document request lifecycle refinement (Processing, Ready for Pickup).
 
-## Phase 4: Issue Reporting & Communications (Planned)
+## Phase 4: Issue Reporting & Communications (Completed)
 - Community Issue tracking with image uploads.
 - Global Announcements and Bulletin Boards.
 
