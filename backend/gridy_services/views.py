@@ -67,7 +67,12 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
         admin_notes = request.data.get('admin_notes', '')
 
         # Enforce valid transition states
-        if new_status not in [DocumentRequest.Status.APPROVED, DocumentRequest.Status.REJECTED, DocumentRequest.Status.RELEASED]:
+        if new_status not in [
+            DocumentRequest.Status.PROCESSING,
+            DocumentRequest.Status.READY_FOR_PICKUP,
+            DocumentRequest.Status.RELEASED,
+            DocumentRequest.Status.REJECTED
+        ]:
             return Response(
                 {"detail": "Invalid status transition."},
                 status=status.HTTP_400_BAD_REQUEST
@@ -100,10 +105,10 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
     def generate_pdf(self, request, pk=None):
         document = self.get_object()
         
-        # Only allow PDF generation if the document is APPROVED or RELEASED
-        if document.status not in [DocumentRequest.Status.APPROVED, DocumentRequest.Status.RELEASED]:
+        # Only allow PDF generation if the document is not Pending or Rejected
+        if document.status in [DocumentRequest.Status.PENDING, DocumentRequest.Status.REJECTED]:
             return Response(
-                {"error": "You can only generate PDFs for approved documents."}, 
+                {"error": "You cannot generate PDFs for pending or rejected documents."}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
             
