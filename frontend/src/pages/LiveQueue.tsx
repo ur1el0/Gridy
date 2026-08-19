@@ -1,3 +1,4 @@
+import useWebSocket from 'react-use-websocket';
 import React, { useEffect, useState, useMemo } from 'react';
 import { axiosPrivate } from '../api/axios';
 import { 
@@ -57,13 +58,22 @@ export const LiveQueue: React.FC = () => {
     }
   };
 
-  // Auto-refresh interval every 5s
-  useEffect(() => {
-    fetchTickets();
-    const interval = setInterval(fetchTickets, 5000);
-    return () => clearInterval(interval);
-  }, []);
+  const SOCKET_URL = 'ws://127.0.0.1:8000/ws/queue/'
+  
+  useWebSocket(SOCKET_URL, {
+    onOpen: () => console.log('WebSocket connection established!'),
+    onMessage: (event) => {
+      console.log('Real-time queue update received:', event.data);
+      // Data changed on the backend! Instantly sync our UI.
+      fetchTickets();
+    },
+    shouldReconnect: (closeEvent) => true, // Auto-reconnect if server drops
+  })
 
+  useEffect(() => {
+    fetchTickets()
+  }, [])
+  
   // Filtered lists
   const servingTicket = useMemo(() => {
     return tickets.find((t) => t.status.toUpperCase() === 'SERVING') || null;
