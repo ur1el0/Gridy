@@ -54,22 +54,31 @@ class ServiceAPITests(APITestCase):
         self.assertEqual(doc_req.status, DocumentRequest.Status.PENDING) 
 
     def test_official_can_validate_document_request(self):
+        # 1. Setup: Log in the admin and create a dummy request
         self.client.force_login(self.official)
         doc_req = DocumentRequest.objects.create(
             user=self.resident,
             document_type="Barangay Clearance",
         )
-        url = reverse("document-request-validate", args=[doc_req.id])
+        
+        # 2. Action: Hit the custom /validate/ endpoint
+        url = reverse('document-request-validate', args=[doc_req.id])
         payload = {
-            "status": "APPROVED"
+            'status': 'PROCESSING',
+            'admin_notes': 'Document is now being processed'
         }
         response = self.client.patch(url, payload, format="json")
+        
+        # 3. Assertions
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(DocumentRequest.objects.get(user=self.resident).status, "APPROVED")
         
-        # Verify that an audit log entry was generated
+        # Verify the database actually updated
+        doc_req.refresh_from_db()
+        self.assertEqual(doc_req.status, DocumentRequest.Status.PROCESSING)
+        
+        # Verify the audit log was fired
         self.assertEqual(AuditLog.objects.filter(action_type=AuditLog.ActionType.DOCUMENT_ACTION).count(), 1)
-        
+      
 
     def test_resident_can_create_queue_ticket(self):
         self.client.force_login(self.resident)

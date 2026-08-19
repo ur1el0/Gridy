@@ -35,12 +35,21 @@ export const DocumentRequests: React.FC = () => {
 
   const getStatusBadge = (status: string) => {
     switch (status.toLowerCase()) {
-      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
-      case 'approved': return 'bg-green-100 text-green-800 border-green-200';
-      case 'rejected': return 'bg-red-100 text-red-800 border-red-200';
-      default: return 'bg-slate-100 text-slate-800 border-slate-200';
+      case 'pending': 
+        return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'processing': 
+        return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'ready_for_pickup': 
+        return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'released': 
+        return 'bg-emerald-100 text-emerald-800 border-emerald-200';
+      case 'rejected': 
+        return 'bg-red-100 text-red-800 border-red-200';
+      default: 
+        return 'bg-slate-100 text-slate-800 border-slate-200';
     }
   };
+
 
   const openModal = (request: DocumentRequest) => {
     setSelectedRequest(request);
@@ -53,28 +62,27 @@ export const DocumentRequests: React.FC = () => {
   };
 
   const handleStatusUpdate = async (newStatus: string) => {
-    if (!selectedRequest) return;
-    setIsUpdating(true);
-    
+    if (!selectedRequest) return
+    setIsUpdating(true)
+
     try {
-      // Send the status update to Django
-      await axiosPrivate.patch(`/document-requests/${selectedRequest.id}/`, {
+      // Send the status update to Django's custom validate endpoint
+      await axiosPrivate.patch(`/document-requests/${selectedRequest.id}/validate/`, {
         status: newStatus
-      });
-      
-      // Instantly update the local UI table without reloading the page
-      setRequests(prev => prev.map(req => 
-        req.id === selectedRequest.id ? { ...req, status: newStatus } : req
-      ));
-      
-      closeModal();
-    } catch (err) {
-      console.error("Failed to update status", err);
-      alert("Failed to update status. Please check permissions or try again.");
+      })
+
+      // Instantly update the local UI tbale without reloading the page
+      setRequests(prev => prev.map(req =>
+        req.id === selectedRequest.id ? {...req, status: newStatus} : req
+      ))
+      closeModal()
+    } catch(err) {
+      console.error("Failed to update status", err)
+      alert("Failed to update status. Please check permissions or try again.")
     } finally {
-      setIsUpdating(false);
+      setIsUpdating(false)
     }
-  };
+  }
 
   if (loading) return <div className="p-8 text-slate-600">Loading requests...</div>;
   if (error) return <div className="p-8 text-red-600">{error}</div>;
@@ -115,7 +123,7 @@ export const DocumentRequests: React.FC = () => {
                   </td>
                   <td className="px-6 py-4 whitespace-nowrap">
                     <span className={`px-2.5 py-0.5 inline-flex text-xs leading-5 font-semibold rounded-full border ${getStatusBadge(req.status)}`}>
-                      {req.status}
+                      {req.status.replace(/_/g, ' ')}
                     </span>
                   </td>
                 </tr>
@@ -156,33 +164,59 @@ export const DocumentRequests: React.FC = () => {
                   <div>
                     <h4 className="text-sm font-medium text-slate-500 mb-2">Current Status</h4>
                     <span className={`px-3 py-1 inline-flex text-sm leading-5 font-semibold rounded-full border ${getStatusBadge(selectedRequest.status)}`}>
-                      {selectedRequest.status}
+                      {selectedRequest.status.replace(/_/g, ' ')}
                     </span>
                   </div>
                 </div>
 
                 <div className="px-6 py-4 border-t border-slate-200 bg-slate-50 flex justify-end space-x-3">
-                  <button onClick={closeModal} className="px-4 py-2 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50">
+                  <button 
+                    onClick={closeModal} 
+                    className="px-4 py-2 border border-slate-300 rounded-md shadow-sm text-sm font-medium text-slate-700 bg-white hover:bg-slate-50"
+                  >
                     Close
                   </button>
                   
+                  {/* 1. Pending Actions */}
                   {selectedRequest.status.toLowerCase() === 'pending' && (
                     <>
                       <button 
                         onClick={() => handleStatusUpdate('REJECTED')}
                         disabled={isUpdating}
-                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-50"
+                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 disabled:opacity-50 transition-colors"
                       >
                         Reject
                       </button>
                       <button 
-                        onClick={() => handleStatusUpdate('APPROVED')}
+                        onClick={() => handleStatusUpdate('PROCESSING')}
                         disabled={isUpdating}
-                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-green-600 hover:bg-green-700 disabled:opacity-50"
+                        className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50 transition-colors"
                       >
-                        {isUpdating ? 'Updating...' : 'Approve'}
+                        {isUpdating ? 'Updating...' : 'Start Processing'}
                       </button>
                     </>
+                  )}
+
+                  {/* 2. Processing Actions */}
+                  {selectedRequest.status.toLowerCase() === 'processing' && (
+                    <button 
+                      onClick={() => handleStatusUpdate('READY_FOR_PICKUP')}
+                      disabled={isUpdating}
+                      className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-purple-600 hover:bg-purple-700 disabled:opacity-50 transition-colors"
+                    >
+                      {isUpdating ? 'Updating...' : 'Mark Ready for Pickup'}
+                    </button>
+                  )}
+
+                  {/* 3. Ready for Pickup Actions */}
+                  {selectedRequest.status.toLowerCase() === 'ready_for_pickup' && (
+                    <button 
+                      onClick={() => handleStatusUpdate('RELEASED')}
+                      disabled={isUpdating}
+                      className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 transition-colors"
+                    >
+                      {isUpdating ? 'Updating...' : 'Release to Resident'}
+                    </button>
                   )}
                 </div>
               </div>
