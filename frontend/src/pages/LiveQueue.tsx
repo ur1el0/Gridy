@@ -1,4 +1,5 @@
-import useWebSocket from 'react-use-websocket';
+import _useWebSocket from 'react-use-websocket';
+const useWebSocket = (_useWebSocket as any).default || _useWebSocket;
 import React, { useEffect, useState, useMemo } from 'react';
 import { axiosPrivate } from '../api/axios';
 import { 
