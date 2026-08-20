@@ -99,7 +99,7 @@ export const Dashboard: React.FC = () => {
                     </p>
                 </div>
                 <button 
-                    onClick={() => navigate('/residents')}
+                    onClick={() => navigate('/issue-reports')}
                     className="bg-[#0047BA] hover:bg-[#003882] active:bg-[#002D6B] text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm flex items-center gap-2 transition-all cursor-pointer w-fit shrink-0"
                 >
                     <span className="text-base font-bold leading-none">+</span>
@@ -165,7 +165,7 @@ export const Dashboard: React.FC = () => {
                                 Today's Appointments
                             </h2>
                             <NavLink 
-                                to="/schedule" 
+                                to="/activities" 
                                 className="text-xs lg:text-sm font-semibold text-[#0047BA] hover:underline"
                             >
                                 View All Schedule

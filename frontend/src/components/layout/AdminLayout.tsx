@@ -1,5 +1,5 @@
 import React from 'react';
-import { Outlet } from 'react-router-dom';
+import { Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { 
   Search, 
@@ -9,7 +9,8 @@ import {
 import { Sidebar } from './Sidebar';
 
 export const AdminLayout: React.FC = () => {
-  const { user } = useAuth(); // removed unused logout since it's in Sidebar now
+  const { user } = useAuth();
+  const navigate = useNavigate()
 
   const userInitial = user?.full_name 
     ? user.full_name.charAt(0).toUpperCase() 
@@ -38,15 +39,15 @@ export const AdminLayout: React.FC = () => {
 
           {/* Right Header Controls */}
           <div className="flex items-center gap-4">
-            <button className="p-2 text-blue-600 hover:bg-blue-50/80 rounded-full transition-colors relative" title="Notifications">
+            <button onClick={() => navigate('/notifications')} className="p-2 text-blue-600 hover:bg-blue-50/80 rounded-full transition-colors relative" title="Notifications">
               <Bell className="w-5 h-5" />
             </button>
             
-            <button className="p-2 text-blue-600 hover:bg-blue-50/80 rounded-full transition-colors" title="Help & Info">
+            <button onClick={() => navigate('/faqs')} className="p-2 text-blue-600 hover:bg-blue-50/80 rounded-full transition-colors" title="Help & Info">
               <HelpCircle className="w-5 h-5" />
             </button>
 
-            <div className="flex items-center gap-3 cursor-pointer pl-2">
+            <div onClick={() => navigate('/profile')} className="flex items-center gap-3 cursor-pointer pl-2">
               <span className="text-sm font-bold text-slate-800">{userName}</span>
               <div className="w-9 h-9 rounded-xl bg-slate-300 text-slate-700 font-bold flex items-center justify-center text-sm shadow-xs border border-slate-200">
                 {userInitial}
