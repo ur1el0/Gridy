@@ -193,6 +193,18 @@ export const LiveQueue: React.FC = () => {
     }
   };
 
+  const handleDeleteTicket = async (ticketId: number) => {
+    if (!window.confirm("Are you sure you want to permanently delete this queue record?")) return;
+    try {
+      await axiosPrivate.delete(`/queue/${ticketId}/`);
+      setHistory(prev => prev.filter(t => t.ticket_id !== ticketId));
+      alert("Queue record deleted successfully.");
+    } catch (err) {
+      console.error(err);
+      alert("Failed to delete queue record.");
+    }
+  };
+
   // Create Manual Ticket
   const handleCreateManualTicket = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -454,18 +466,18 @@ export const LiveQueue: React.FC = () => {
               </h2>
               <div className="flex items-center gap-2 text-slate-400">
                 <button
-                  onClick={fetchTickets}
+                  onClick={() => { fetchTickets(); alert('Queue Refreshed!'); }}
                   className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
                   title="Refresh Queue"
                 >
                   <RotateCcw className="w-4 h-4 text-slate-500" />
                 </button>
-                <button className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors" title="Filter">
+                <button onClick={() => alert('Filter options coming soon!')} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors" title="Filter">
                   <SlidersHorizontal className="w-4 h-4 text-slate-500" />
                 </button>
-                <button className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors" title="More">
+                <button onClick={() => alert('Additional options coming soon!')} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors" title="More">
                   <MoreVertical className="w-4 h-4 text-slate-500" />
-                </button>
+                </button> 
               </div>
             </div>
 
@@ -724,6 +736,7 @@ export const LiveQueue: React.FC = () => {
                     <th className="py-2.5 px-3">Resident / Service</th>
                     <th className="py-2.5 px-3">Status</th>
                     <th className="py-2.5 px-3">Time</th>
+                    <th className='py-2.5 px-3 text-right'>Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
@@ -758,6 +771,14 @@ export const LiveQueue: React.FC = () => {
                         </td>
                         <td className="py-2.5 px-3 text-xs text-slate-500 whitespace-nowrap">
                           {new Date(t.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </td>
+                        <td className="py-2.5 px-3 text-right whitespace-nowrap"> {/* <-- ADD THIS CELL */}
+                          <button 
+                            onClick={() => handleDeleteTicket(t.ticket_id)}
+                            className="text-red-600 hover:text-red-800 font-semibold text-xs transition-colors"
+                          >
+                            Delete
+                          </button>
                         </td>
                       </tr>
                     ))

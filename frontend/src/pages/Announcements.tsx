@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { axiosPrivate } from '../api/axios';
-import { Pin, Megaphone, Plus, X } from 'lucide-react';
+import { Pin, Megaphone, Plus, X, Trash } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
 interface Announcement {
@@ -33,6 +33,18 @@ export const Announcements: React.FC = () => {
             console.error(err);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDelete = async (id: number) => {
+        if (!window.confirm("Are you sure you want to permanently delete this announcement?")) return;
+        try {
+            await axiosPrivate.delete(`/announcements/${id}/`);
+            // Instantly remove it from the UI without reloading the page
+            setAnnouncements(prev => prev.filter(a => a.id !== id));
+        } catch (err) {
+            console.error("Failed to delete announcement", err);
+            alert("Failed to delete announcement.");
         }
     };
 
@@ -87,7 +99,7 @@ export const Announcements: React.FC = () => {
                     </button>
                 )}
             </div>
-
+                
             {/* Announcements Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
                 {announcements.length === 0 ? (
@@ -109,9 +121,20 @@ export const Announcements: React.FC = () => {
                                         {ann.is_pinned ? 'Pinned' : 'Standard'}
                                     </span>
                                 </div>
+                            <div className="flex items-center gap-3">
                                 <span className="text-xs font-medium text-slate-400">
                                     {new Date(ann.created_at).toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
                                 </span>
+                                {user?.role === 'ADMIN' && (
+                                    <button 
+                                        onClick={() => handleDelete(ann.id)}
+                                        className="text-red-400 hover:text-red-600 transition-colors p-1 rounded-md hover:bg-red-50"
+                                        title="Delete Announcement"
+                                    >
+                                        <Trash className="w-4 h-4" />
+                                    </button>
+                                )}
+                            </div>
                             </div>
                             
                             {/* Card Body */}

@@ -1,3 +1,4 @@
+from rest_framework.decorators import permission_classes
 from gridy_auth.serializers import ResidentSerializer
 from django.http import HttpResponseForbidden
 from rest_framework import status, permissions
@@ -35,6 +36,7 @@ from gridy_audit.services import get_client_ip
 from rest_framework.generics import ListAPIView
 from django.shortcuts import get_object_or_404
 
+from rest_framework import viewsets
 
 # Create your views here.
 
@@ -383,3 +385,16 @@ class RejectResidentView(APIView):
         user.delete()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
+
+class ResidentViewSet(viewsets.ModelViewSet):
+    """
+    CRUD endpoint for verified residents.
+    Only Barangay Officials can access this full directory.
+    """
+
+    permission_classes = [permissions.IsAuthenticated, IsBarangayOfficial]
+    serializer_class = ResidentSerializer
+
+    def get_queryset(self):
+        # Only return fully verified residents in the main directory
+        return Resident.objects.filter(is_verified=True).select_related('user').order_by('full_name')

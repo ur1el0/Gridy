@@ -17,6 +17,11 @@ export const DocumentRequests: React.FC = () => {
   const [selectedRequest, setSelectedRequest] = useState<DocumentRequest | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isUpdating, setIsUpdating] = useState(false);
+  
+  const [isCreateModalOpen, setIsCreateModalOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const [newDocType, setNewDocType] = useState('Barangay Clearance')
+  const [newPurpose, setNewPurpose] = useState('')
 
   useEffect(() => {
     const fetchRequests = async () => {
@@ -84,6 +89,28 @@ export const DocumentRequests: React.FC = () => {
     }
   }
 
+  const handleCreateRequest = async (e: React.SubmitEvent<HTMLFormElement>) => {
+    e.preventDefault()
+    setIsSubmitting(true)
+    try {
+      await axiosPrivate.post('/document-requests/', {
+        document_type: newDocType,
+        purpose: newPurpose
+      })
+      // Fetch fresh data from server to update the table
+      const response = await axiosPrivate.get('/document-requests/')
+      setRequests(response.data.results || response.data)
+
+      setIsCreateModalOpen(false)
+      setNewDocType('Barangay-Clearance')
+      setNewPurpose('')
+    } catch (err) {
+      console.error("Failed to create request.")
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   if (loading) return <div className="p-8 text-slate-600">Loading requests...</div>;
   if (error) return <div className="p-8 text-red-600">{error}</div>;
 
@@ -91,7 +118,10 @@ export const DocumentRequests: React.FC = () => {
     <div className="space-y-6 relative">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-slate-900">Document Requests</h2>
-        <button className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-md text-sm font-medium transition-colors shadow-sm">
+        <button 
+          onClick={() => setIsCreateModalOpen(true)}
+          className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-md text-sm font-medium transition-colors shadow-sm"
+        >
           New Request
         </button>
       </div>
@@ -221,6 +251,64 @@ export const DocumentRequests: React.FC = () => {
                 </div>
               </div>
             </div>
+          </div>
+        </div>
+      )}
+            {/* Create Request Modal */}
+      {isCreateModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95">
+            <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
+              <h3 className="text-lg font-bold text-slate-900">Log Walk-in Request</h3>
+              <button onClick={() => setIsCreateModalOpen(false)} className="text-slate-400 hover:text-slate-600">
+                <span className="text-2xl leading-none">&times;</span>
+              </button>
+            </div>
+            
+            <form onSubmit={handleCreateRequest} className="p-6 space-y-4 bg-white">
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Document Type</label>
+                <select 
+                  value={newDocType}
+                  onChange={(e) => setNewDocType(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                >
+                  <option value="Barangay Clearance">Barangay Clearance</option>
+                  <option value="Certificate of Indigency">Certificate of Indigency</option>
+                  <option value="Business Permit">Business Permit</option>
+                  <option value="Proof of Residency">Proof of Residency</option>
+                </select>
+              </div>
+              
+              <div>
+                <label className="block text-sm font-semibold text-slate-700 mb-1">Purpose</label>
+                <textarea 
+                  required
+                  value={newPurpose}
+                  onChange={(e) => setNewPurpose(e.target.value)}
+                  rows={3}
+                  placeholder="e.g., For employment purposes..."
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"
+                />
+              </div>
+              
+              <div className="pt-4 flex justify-end gap-3">
+                <button 
+                  type="button" 
+                  onClick={() => setIsCreateModalOpen(false)}
+                  className="px-4 py-2 text-sm font-medium text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className="px-4 py-2 text-sm font-medium text-white bg-primary hover:bg-primary-hover rounded-lg transition-colors shadow-sm disabled:opacity-70"
+                >
+                  {isSubmitting ? 'Saving...' : 'Submit Request'}
+                </button>
+              </div>
+            </form>
           </div>
         </div>
       )}
