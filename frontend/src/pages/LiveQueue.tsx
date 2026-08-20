@@ -196,14 +196,16 @@ export const LiveQueue: React.FC = () => {
   const handleDeleteTicket = async (ticketId: number) => {
     if (!window.confirm("Are you sure you want to permanently delete this queue record?")) return;
     try {
-      await axiosPrivate.delete(`/queue/${ticketId}/`);
-      setHistory(prev => prev.filter(t => t.ticket_id !== ticketId));
+      await axiosPrivate.delete(`/tickets/${ticketId}/`);
+      setTickets(prev => prev.filter(t => t.ticket_id !== ticketId));
       alert("Queue record deleted successfully.");
     } catch (err) {
       console.error(err);
       alert("Failed to delete queue record.");
     }
   };
+
+
 
   // Create Manual Ticket
   const handleCreateManualTicket = async (e: React.FormEvent) => {
