@@ -9,13 +9,10 @@ import { Communications } from "./pages/Communications";
 import { LiveQueue } from "./pages/LiveQueue";
 import ResidentVerification from "./pages/ResidentVerification";
 import { ResidentsManagement } from "./pages/ResidentsManagement";
-
-const PlaceholderPage = ({ title }: { title: string }) => (
-  <div className="flex flex-col items-center justify-center h-[70vh] text-center px-4">
-    <h1 className="text-3xl font-extrabold text-slate-800 mb-2">{title}</h1>
-    <p className="text-slate-500">This module is currently under development. Check back soon!</p>
-  </div>
-);
+import { AdminProfile } from "./pages/AdminProfile";
+import { Settings } from "./pages/Settings";
+import { Notifications } from "./pages/Notifications";
+import { Faqs } from "./pages/Faqs";
 
 export function App() {
     return (
@@ -31,21 +28,21 @@ export function App() {
                         <Route path="/dashboard" element={<Dashboard />} />
                         <Route path="/queue" element={<LiveQueue />} />
                         <Route path="/documents" element={<DocumentRequests />} />
-                        <Route path="/profile" element={<PlaceholderPage title="Admin Profile" />} />
-                        <Route path="/notifications" element={<PlaceholderPage title="Notifications" />} />
-                        <Route path="/faqs" element={<PlaceholderPage title="Help & FAQs" />} />
-
+                        <Route path="/settings" element={<Settings />} />
+                        <Route path="/notifications" element={<Notifications />} />
+                        <Route path="/faqs" element={<Faqs />} />
                         
                         {/* New Combined Route */}
                         <Route path="/communications" element={<Communications />} />
                         
                         {/* Resident Management Routes */}
-                        <Route path="/directory" element={<ResidentsManagement />} />
-                        <Route path="/residents" element={<ResidentVerification />} />
+                        <Route path="/residents" element={<ResidentsManagement />} />
+                        <Route path="/verifications" element={<ResidentVerification />} />
                         
                         <Route path="/reports" element={<IssueReports />} />
                         
                         <Route path="/" element={<Navigate to="/dashboard" replace/>} />
+                        <Route path="/profile" element={<AdminProfile />} />
                     </Route>
                 </Route>
             </Routes>
