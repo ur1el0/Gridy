@@ -29,7 +29,9 @@ export const ResidentsManagement: React.FC = () => {
         } finally {
             setLoading(false)
         }
-    }  useEffect(() => {
+    }  
+    
+    useEffect(() => {
     fetchResidents();
   }, []);
   const handleDelete = async (id: number) => {
