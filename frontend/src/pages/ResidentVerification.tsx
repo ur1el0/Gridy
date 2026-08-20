@@ -40,7 +40,7 @@ export default function ResidentVerification() {
     useEffect(() => {
         const fetchPendingResidents = async () => {
             try {
-                const response = await axiosPrivate.get('/auth/pending-residents/');
+                const response = await axiosPrivate.get('auth/pending-residents/');
                 setPendingResidents(response.data.results || response.data);
             } catch (error) {
                 console.error("Failed to fetch residents", error);
@@ -54,7 +54,7 @@ export default function ResidentVerification() {
 
     const handleApprove = async (id: number) => {
         try {
-            await axiosPrivate.patch(`/auth/verify-resident/${id}/`);
+            await axiosPrivate.patch(`auth/verify-resident/${id}/`);
             setPendingResidents((prev) => prev.filter((r) => r.id !== id));
         } catch (error) {
             console.error("Failed to verify resident", error);
@@ -65,7 +65,7 @@ export default function ResidentVerification() {
     const handleReject = async () => {
         if (!residentToReject) return
         try {
-            await axiosPrivate.delete(`/auth/reject-resident/${residentToReject.id}/`)
+            await axiosPrivate.delete(`auth/reject-resident/${residentToReject.id}/`)
             setPendingResidents((prev => prev.filter((r) => r.id !== residentToReject.id)))
             setResidentToReject(null)
         } catch (error) {
