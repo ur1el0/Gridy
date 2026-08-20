@@ -40,7 +40,7 @@ export function App() {
                         <Route path="/communications" element={<Communications />} />
                         
                         {/* Resident Management Routes */}
-                        <Route path="/directory" element {<ResidentsManagement />} />
+                        <Route path="/directory" element={<ResidentsManagement />} />
                         <Route path="/residents" element={<ResidentVerification />} />
                         
                         <Route path="/reports" element={<IssueReports />} />
