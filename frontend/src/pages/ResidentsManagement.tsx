@@ -22,7 +22,7 @@ export const ResidentsManagement: React.FC = () => {
 
     const fetchResidents = async () => {
         try {
-            const response = await axiosPrivate.get('/resident')
+            const response = await axiosPrivate.get('/auth/resident/')
             setResidents(response.data.results || response.data)
         } catch (err) {
             console.error("Failed to fetch directory:", err)
@@ -37,7 +37,7 @@ export const ResidentsManagement: React.FC = () => {
   const handleDelete = async (id: number) => {
     if (!window.confirm("Are you sure you want to permanently remove this resident? This will revoke all their access.")) return;
     try {
-      await axiosPrivate.delete(`/resident/${id}/`);
+      await axiosPrivate.delete(`/auth/resident/${id}/`);
       setResidents(prev => prev.filter(r => r.id !== id));
     } catch (err) {
       console.error("Failed to delete resident", err);
