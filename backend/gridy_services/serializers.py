@@ -36,6 +36,7 @@ class QueueTicketSerializer(serializers.ModelSerializer):
             'walkin_name',
             'service_type',
             'priority_status',
+            'is_priority',
             'notes',
             'status',
             'created_at',

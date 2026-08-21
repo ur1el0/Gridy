@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { axiosPrivate } from '../api/axios';
 import { Users, FileText, Hourglass } from 'lucide-react';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 
 interface DashboardSummary {
     total_residents: number;
@@ -29,6 +30,15 @@ interface DashboardSummary {
         serving_now: string | null;
         waiting_count: number;
     };
+    demographics?: {
+        purok_distribution: Record<string, number>
+        age_demographics: {
+            youth: number;
+            young_adult: number;
+            adult: number;
+            senior: number;
+        };
+    };
 }
 
 interface ActivityItem {
@@ -39,6 +49,9 @@ interface ActivityItem {
     event_datetime: string;
     created_at: string;
 }
+
+
+const COLORS = ['#0047BA', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
 export const Dashboard: React.FC = () => {
     const navigate = useNavigate();
@@ -85,6 +98,22 @@ export const Dashboard: React.FC = () => {
             controller.abort();
         };
     }, []);
+
+    const purokData = summaryData?.demographics?.purok_distribution 
+        ? Object.entries(summaryData.demographics.purok_distribution).map(([name, value]) => ({
+            name,
+            value
+        }))
+        : []
+
+    const ageData = summaryData?.demographics?.age_demographics
+        ? [
+            { name: 'Youth (<18)', count: summaryData.demographics.age_demographics.youth },
+            { name: 'Young Adult', count: summaryData.demographics.age_demographics.young_adult },
+            { name: 'Adult', count: summaryData.demographics.age_demographics.adult },
+            { name: 'Senior (60+)', count: summaryData.demographics.age_demographics.senior },
+        ]
+        : []
 
     return (
         <div className="space-y-6">
@@ -151,6 +180,50 @@ export const Dashboard: React.FC = () => {
                         <p className="text-3xl font-extrabold text-[#0f172a] mt-1">
                             {summaryData !== null ? summaryData.queue_activity.waiting_count : '--'}
                         </p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Demographics Row (2 Cards) */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                {/* Purok Distribution Pie Chart */}
+                <div className="bg-white rounded-2xl p-6 shadow-xs border border-[#E2E8F0]/80">
+                    <h2 className="text-base font-bold text-[#0f172a] mb-6">Purok Distribution</h2>
+                    <div className="h-[250px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <PieChart>
+                                <Pie
+                                    data={purokData}
+                                    cx="50%"
+                                    cy="50%"
+                                    innerRadius={60}
+                                    outerRadius={90}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                >
+                                    {purokData.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip cursor={{fill: 'transparent'}} />
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* Age Demographics Bar Chart */}
+                <div className="bg-white rounded-2xl p-6 shadow-xs border border-[#E2E8F0]/80">
+                    <h2 className="text-base font-bold text-[#0f172a] mb-6">Age Demographics</h2>
+                    <div className="h-[250px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={ageData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                                <Tooltip cursor={{fill: 'rgba(0,71,186,0.05)'}} />
+                                <Bar dataKey="count" fill="#0047BA" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                            </BarChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
             </div>
