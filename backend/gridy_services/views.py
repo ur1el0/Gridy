@@ -206,7 +206,7 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
         with transaction.atomic():
             QueueTicket.objects.filter(status=QueueTicket.Status.SERVING).update(status=QueueTicket.Status.COMPLETED)
             
-            next_ticket = QueueTicket.objects.filter(status=QueueTicket.Status.WAITING).order_by('created_at').first()
+            next_ticket = QueueTicket.objects.filter(status=QueueTicket.Status.WAITING).order_by('-is_priority', 'created_at').first()
             
             if not next_ticket:
                 return Response(
@@ -302,10 +302,11 @@ class DashboardSummaryView(APIView):
 
         age_demographics = Resident.objects.aggregate(
             youth=Count('id', filter=Q(birth_date__gt=date_18_years_ago)),
-            young_adult=Count('id', filter=Q(birth_date__gt=date_18_years_ago, birth_date=date_36_years_ago)),
-            adult=Count('id', filter=Q(birth_date__gt=date_36_years_ago, birth_date=date_60_years_ago)),
-            senior=Count('id', filter=Q(birth_date__gt=date_60_years_ago)),
+            young_adult=Count('id', filter=Q(birth_date__lte=date_18_years_ago, birth_date__gt=date_36_years_ago)),
+            adult=Count('id', filter=Q(birth_date__lte=date_36_years_ago, birth_date__gt=date_60_years_ago)),
+            senior=Count('id', filter=Q(birth_date__lte=date_60_years_ago)),
         )
+
         return Response ({
             "total_residents": User.objects.filter(role=User.Role.RESIDENT).count(),
             "document_requests": {
