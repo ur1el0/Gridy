@@ -7,6 +7,8 @@ from .models import User, Resident
 
 
 class ResidentSerializer(serializers.ModelSerializer):
+    username = serializers.CharField(source='user.username', read_only=True, default='')
+    email = serializers.CharField(source='user.email', read_only=True, default='')
     class Meta:
         model = Resident
         fields = ['id', 'username', 'email', 'full_name', 'birth_date', 'voter_status', 'contact_number', 'purok', 'is_verified', 'guardian']
