@@ -24,6 +24,8 @@ interface QueueTicket {
   ticket_number: string;
   resident_name?: string;
   service_type: string;
+  priority_status?: string
+  is_priority?: boolean
   status: string;
   created_at: string;
   updated_at?: string;
@@ -221,6 +223,7 @@ export const LiveQueue: React.FC = () => {
         walkin_name: searchResident,
         service_type: serviceRequired,
         priority_status: priorityStatus,
+        is_priority: priorityStatus === 'priority',
         notes: notes,
         status: 'WAITING',
       })
@@ -517,7 +520,14 @@ export const LiveQueue: React.FC = () => {
                             </div>
                           </td>
                           <td className="py-3.5 px-4 font-bold text-[#0047BA] whitespace-nowrap">
-                            {ticket.ticket_number}
+                            <div className="flex items-center gap-2">
+                              <span>{ticket.ticket_number}</span>
+                              {ticket.is_priority && (
+                                <span className="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-amber-200 uppercase tracking-wide">
+                                  Priority
+                                </span>
+                              )}
+                            </div>
                           </td>
                           <td className="py-3.5 px-4 text-[#475569] font-medium whitespace-nowrap">
                             {ticket.service_type}

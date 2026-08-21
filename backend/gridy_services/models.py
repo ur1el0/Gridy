@@ -80,6 +80,7 @@ class QueueTicket(models.Model):
         choices=Status.choices,
         default=Status.WAITING,
     )
+    is_priority = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
