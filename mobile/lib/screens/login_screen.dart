@@ -1,11 +1,21 @@
 import 'package:flutter/material.dart';
+import '../core/network/api_client.dart';
+import '../core/network/api_exception.dart';
 import '../core/theme/app_colors.dart';
+import '../models/auth_response.dart';
+import '../services/auth_service.dart';
+import '../services/storage_service.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/gridy_logo.dart';
 
 class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
+  final AuthService? authService;
+
+  const LoginScreen({
+    super.key,
+    this.authService,
+  });
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -16,9 +26,42 @@ class _LoginScreenState extends State<LoginScreen> {
   final TextEditingController _usernameController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
 
+  AuthService? _authService;
   bool _obscurePassword = true;
   bool _rememberMe = false;
   bool _isLoading = false;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _initializeAuthService();
+  }
+
+  Future<void> _initializeAuthService() async {
+    if (widget.authService != null) {
+      _authService = widget.authService;
+    } else {
+      final storage = await StorageService.init();
+      final apiClient = ApiClient();
+      _authService = AuthService(
+        apiClient: apiClient,
+        storageService: storage,
+      );
+    }
+
+    // Populate remembered username if configured
+    if (_authService != null) {
+      final savedUser = _authService!.getSavedUsername();
+      final rememberMe = _authService!.isRememberMeEnabled();
+      if (mounted && savedUser != null && savedUser.isNotEmpty) {
+        setState(() {
+          _rememberMe = rememberMe;
+          _usernameController.text = savedUser;
+        });
+      }
+    }
+  }
 
   @override
   void dispose() {
@@ -27,31 +70,107 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
-  void _handleLogin() {
-    if (_formKey.currentState?.validate() ?? false) {
+  Future<void> _handleLogin() async {
+    FocusScope.of(context).unfocus();
+
+    if (_errorMessage != null) {
       setState(() {
-        _isLoading = true;
+        _errorMessage = null;
+      });
+    }
+
+    if (!(_formKey.currentState?.validate() ?? false)) {
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      // Ensure auth service is initialized
+      if (_authService == null) {
+        final storage = await StorageService.init();
+        final apiClient = ApiClient();
+        _authService = AuthService(
+          apiClient: apiClient,
+          storageService: storage,
+        );
+      }
+
+      final AuthResponse authResponse = await _authService!.login(
+        username: _usernameController.text.trim(),
+        password: _passwordController.text,
+        rememberMe: _rememberMe,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _isLoading = false;
+        _errorMessage = null;
       });
 
-      // Simulate authentication request
-      Future.delayed(const Duration(seconds: 2), () {
-        if (mounted) {
-          setState(() {
-            _isLoading = false;
-          });
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                'Welcome, ${_usernameController.text.trim().isNotEmpty ? _usernameController.text.trim() : "Resident"}!',
+      final displayName = authResponse.user.fullName.isNotEmpty
+          ? authResponse.user.fullName
+          : authResponse.user.username;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_rounded, color: Colors.white),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  'Welcome back, $displayName!',
+                  style: const TextStyle(fontWeight: FontWeight.w600),
+                ),
               ),
-              backgroundColor: AppColors.primaryNavy,
-              behavior: SnackBarBehavior.floating,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(10),
-              ),
-            ),
-          );
-        }
+            ],
+          ),
+          backgroundColor: const Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
+        ),
+      );
+    } on ForbiddenException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.message;
+      });
+    } on UnauthorizedException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.message;
+      });
+    } on ValidationException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.message;
+      });
+    } on NetworkException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.message;
+      });
+    } on ApiException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = e.message;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isLoading = false;
+        _errorMessage = 'An unexpected error occurred. Please try again.';
       });
     }
   }
@@ -108,7 +227,60 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                         ),
 
-                        const SizedBox(height: 32),
+                        // Dynamic Error Alert Banner
+                        if (_errorMessage != null) ...[
+                          const SizedBox(height: 20),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 12,
+                            ),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFFEF2F2),
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(
+                                color: const Color(0xFFFCA5A5),
+                                width: 1,
+                              ),
+                            ),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Icon(
+                                  Icons.error_outline_rounded,
+                                  color: Color(0xFFDC2626),
+                                  size: 20,
+                                ),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    _errorMessage!,
+                                    style: const TextStyle(
+                                      color: Color(0xFFB91C1C),
+                                      fontSize: 13.5,
+                                      fontWeight: FontWeight.w500,
+                                      height: 1.3,
+                                    ),
+                                  ),
+                                ),
+                                GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _errorMessage = null;
+                                    });
+                                  },
+                                  child: const Icon(
+                                    Icons.close,
+                                    color: Color(0xFF991B1B),
+                                    size: 18,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+
+                        const SizedBox(height: 28),
 
                         // Citizen ID / Username Input
                         CustomTextField(
@@ -117,6 +289,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           hintText: 'resident',
                           prefixIcon: Icons.person_outline_rounded,
                           textInputAction: TextInputAction.next,
+                          enabled: !_isLoading,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
                               return 'Please enter your citizen ID or username';
@@ -135,6 +308,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           prefixIcon: Icons.lock_outline_rounded,
                           obscureText: _obscurePassword,
                           textInputAction: TextInputAction.done,
+                          enabled: !_isLoading,
                           onFieldSubmitted: (_) => _handleLogin(),
                           suffixIcon: IconButton(
                             icon: Icon(
@@ -166,11 +340,13 @@ class _LoginScreenState extends State<LoginScreen> {
                           children: [
                             // Remember Me Checkbox
                             InkWell(
-                              onTap: () {
-                                setState(() {
-                                  _rememberMe = !_rememberMe;
-                                });
-                              },
+                              onTap: _isLoading
+                                  ? null
+                                  : () {
+                                      setState(() {
+                                        _rememberMe = !_rememberMe;
+                                      });
+                                    },
                               borderRadius: BorderRadius.circular(6),
                               child: Padding(
                                 padding: const EdgeInsets.symmetric(
@@ -190,8 +366,8 @@ class _LoginScreenState extends State<LoginScreen> {
                                         borderRadius: BorderRadius.circular(5),
                                         border: Border.all(
                                           color: _rememberMe
-                                              ? AppColors.primaryNavy
-                                              : const Color(0xFFCBD5E1),
+                                             ? AppColors.primaryNavy
+                                             : const Color(0xFFCBD5E1),
                                           width: 1.5,
                                         ),
                                       ),
