@@ -3,16 +3,14 @@ import { axiosPrivate } from "../api/axios";
 import { Search, Trash2, ShieldCheck, Mail, Phone } from "lucide-react";
 
 interface Resident {
-    id: number
-    user: {
-        id: number
-        username: string
-        email: string
-    }
-    full_name: string
-    birth_date: string
-    voter_status: boolean
-    contact_number: string
+    id: number;
+    username?: string;
+    email?: string;
+    full_name: string;
+    birth_date: string;
+    voter_status: boolean;
+    contact_number: string;
+    purok?: string | number | null;
 }
 
 export const ResidentsManagement: React.FC = () => {
@@ -34,6 +32,7 @@ export const ResidentsManagement: React.FC = () => {
     useEffect(() => {
     fetchResidents();
   }, []);
+
   const handleDelete = async (id: number) => {
     if (!window.confirm("Are you sure you want to permanently remove this resident? This will revoke all their access.")) return;
     try {
@@ -44,10 +43,12 @@ export const ResidentsManagement: React.FC = () => {
       alert("Failed to delete resident.");
     }
   };
+
   const filteredResidents = residents.filter(r => 
-    r.full_name.toLowerCase().includes(search.toLowerCase()) || 
-    r.user.username.toLowerCase().includes(search.toLowerCase())
+    (r.full_name || '').toLowerCase().includes(search.toLowerCase()) || 
+    (r.username || '').toLowerCase().includes(search.toLowerCase())
   );
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
@@ -98,12 +99,14 @@ export const ResidentsManagement: React.FC = () => {
                         </div>
                       </div>
                     </td>
-                    <td className="py-3 px-6 font-medium text-slate-700">@{resident.user.username}</td>
+                    <td className="py-3 px-6 font-medium text-slate-700">
+                      @{resident.username || 'resident'}
+                    </td>
                     <td className="py-3 px-6">
                       <div className="flex flex-col gap-1">
-                        {resident.user.email && (
+                        {resident.email && (
                           <div className="flex items-center gap-1.5 text-xs text-slate-600">
-                            <Mail className="w-3 h-3 text-slate-400" /> {resident.user.email}
+                            <Mail className="w-3 h-3 text-slate-400" /> {resident.email}
                           </div>
                         )}
                         {resident.contact_number && (
