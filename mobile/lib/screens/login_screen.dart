@@ -8,6 +8,7 @@ import '../services/storage_service.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/gridy_logo.dart';
+import 'dashboard_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final AuthService? authService;
@@ -135,6 +136,11 @@ class _LoginScreenState extends State<LoginScreen> {
             borderRadius: BorderRadius.circular(10),
           ),
         ),
+      );
+
+      // Navigate to resident dashboard
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const DashboardScreen()),
       );
     } on ForbiddenException catch (e) {
       if (!mounted) return;
