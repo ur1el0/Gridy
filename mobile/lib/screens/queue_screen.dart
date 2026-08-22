@@ -2,40 +2,42 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../core/network/api_client.dart';
 import '../core/theme/app_colors.dart';
+import '../models/queue_ticket_model.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
-import '../services/dashboard_service.dart';
+import '../services/queue_service.dart';
 import '../services/storage_service.dart';
-import '../widgets/community_schedule_section.dart';
 import '../widgets/custom_bottom_nav.dart';
-import '../widgets/metric_summary_card.dart';
-import '../widgets/quick_services_section.dart';
-import '../widgets/recent_notifications_section.dart';
-import '../widgets/resident_hero_card.dart';
+import '../widgets/queue_hero_card.dart';
+import '../widgets/queue_metric_cards.dart';
+import '../widgets/recent_completions_section.dart';
+import '../widgets/user_ticket_card.dart';
+import 'dashboard_screen.dart';
 import 'login_screen.dart';
-import 'queue_screen.dart';
 
-/// Resident Dashboard Screen matching the exact reference UI and connected to backend data
-class DashboardScreen extends StatefulWidget {
-  final DashboardService? dashboardService;
+/// Screen presenting the live queue status matching the exact reference UI
+class QueueScreen extends StatefulWidget {
+  final QueueService? queueService;
   final AuthService? authService;
 
-  const DashboardScreen({
+  const QueueScreen({
     super.key,
-    this.dashboardService,
+    this.queueService,
     this.authService,
   });
 
   @override
-  State<DashboardScreen> createState() => _DashboardScreenState();
+  State<QueueScreen> createState() => _QueueScreenState();
 }
 
-class _DashboardScreenState extends State<DashboardScreen> {
-  DashboardService? _dashboardService;
+class _QueueScreenState extends State<QueueScreen> {
+  QueueService? _queueService;
   AuthService? _authService;
-  DashboardData _data = const DashboardData();
+  StorageService? _storageService;
+  UserModel? _currentUser;
+  QueueLiveStatusModel _queueStatus = const QueueLiveStatusModel();
   bool _isLoading = true;
-  int _selectedNavIndex = 0;
+  final int _selectedNavIndex = 1;
 
   @override
   void initState() {
@@ -44,33 +46,34 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   Future<void> _initializeAndLoad() async {
-    _dashboardService = widget.dashboardService;
+    _queueService = widget.queueService;
     _authService = widget.authService;
 
-    if (_dashboardService == null || _authService == null) {
-      final storage = await StorageService.init();
-      final apiClient = ApiClient();
-      _authService ??= AuthService(
-        apiClient: apiClient,
-        storageService: storage,
-      );
-      _dashboardService ??= DashboardService(
-        apiClient: apiClient,
-        storageService: storage,
-      );
-    }
+    final storage = await StorageService.init();
+    _storageService = storage;
+    _currentUser = storage.getUser();
 
-    await _loadDashboardData();
+    final apiClient = ApiClient();
+    _authService ??= AuthService(
+      apiClient: apiClient,
+      storageService: storage,
+    );
+    _queueService ??= QueueService(
+      apiClient: apiClient,
+      storageService: storage,
+    );
+
+    await _loadQueueData();
   }
 
-  Future<void> _loadDashboardData() async {
-    if (_dashboardService == null) return;
+  Future<void> _loadQueueData() async {
+    if (_queueService == null) return;
 
     try {
-      final freshData = await _dashboardService!.fetchDashboardData();
+      final freshStatus = await _queueService!.fetchQueueStatus();
       if (mounted) {
         setState(() {
-          _data = freshData;
+          _queueStatus = freshStatus;
           _isLoading = false;
         });
       }
@@ -84,7 +87,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 
   void _showProfileModal(BuildContext context) {
-    final user = _data.user;
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,
@@ -102,49 +104,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 height: 5,
                 decoration: BoxDecoration(
                   color: const Color(0xFFCBD5E1),
-                  borderRadius: BorderRadius.circular(3),
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
               const SizedBox(height: 20),
               CircleAvatar(
-                radius: 32,
-                backgroundColor: AppColors.primaryNavy,
+                radius: 36,
+                backgroundColor: const Color(0xFFE2E8F0),
                 child: Text(
-                  user != null && user.fullName.isNotEmpty
-                      ? user.fullName[0].toUpperCase()
+                  _currentUser != null && _currentUser!.fullName.isNotEmpty
+                      ? _currentUser!.fullName[0].toUpperCase()
                       : 'R',
                   style: const TextStyle(
-                    fontSize: 24,
+                    fontSize: 28,
                     fontWeight: FontWeight.w800,
-                    color: Colors.white,
+                    color: AppColors.primaryNavy,
                   ),
                 ),
               ),
               const SizedBox(height: 12),
               Text(
-                user?.fullName ?? user?.username ?? 'Resident',
+                _currentUser?.fullName ?? 'Resident',
                 style: const TextStyle(
                   fontSize: 18,
                   fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
+                  color: Color(0xFF0F172A),
                 ),
               ),
               const SizedBox(height: 4),
               Text(
-                user?.email ?? '',
+                _currentUser?.email ?? '',
                 style: const TextStyle(
-                  fontSize: 13.5,
-                  color: AppColors.textMuted,
+                  fontSize: 13,
+                  color: Color(0xFF64748B),
                 ),
               ),
               const SizedBox(height: 24),
               ListTile(
-                leading: const Icon(Icons.logout_rounded, color: Color(0xFFEF4444)),
+                leading: const Icon(Icons.logout_rounded, color: AppColors.error),
                 title: const Text(
-                  'Logout',
+                  'Log Out',
                   style: TextStyle(
+                    color: AppColors.error,
                     fontWeight: FontWeight.w700,
-                    color: Color(0xFFEF4444),
                   ),
                 ),
                 onTap: () async {
@@ -167,7 +169,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final UserModel? user = _data.user;
+    final user = _currentUser;
 
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
@@ -179,7 +181,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Brand Logo & Title Header
+                // Gridy Brand Logo + Text
                 Row(
                   children: [
                     Container(
@@ -228,7 +230,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ? user.fullName[0].toUpperCase()
                             : (user != null && user.username.isNotEmpty
                                 ? user.username[0].toUpperCase()
-                                : 'C'),
+                                : 'R'),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -250,7 +252,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
               ),
             )
           : RefreshIndicator(
-              onRefresh: _loadDashboardData,
+              onRefresh: _loadQueueData,
               color: AppColors.primaryNavy,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
@@ -258,105 +260,60 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // 1. Verified Resident Hero Banner Card
-                    ResidentHeroCard(
-                      user: _data.user,
-                      pendingCount: _data.pendingRequestsCount,
+                    // Section Subtitle & Title Header
+                    const Text(
+                      'LIVE QUEUE STATUS',
+                      style: TextStyle(
+                        color: Color(0xFF64748B),
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        letterSpacing: 1.0,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    const Text(
+                      "Today's Queue",
+                      style: TextStyle(
+                        color: Color(0xFF0A2540),
+                        fontSize: 28,
+                        fontWeight: FontWeight.w900,
+                        letterSpacing: -0.5,
+                      ),
+                    ),
+
+                    const SizedBox(height: 20),
+
+                    // 1. Hero Card: Currently at Counter
+                    QueueHeroCard(
+                      currentTicket: _queueStatus.currentTicket,
+                      serviceType: _queueStatus.currentService,
                     ),
 
                     const SizedBox(height: 18),
 
-                    // 2. Metric Counters Row (Announcements & Pending Requests)
-                    MetricSummaryRow(
-                      announcementCount: _data.announcements.length,
-                      pendingRequestCount: _data.pendingRequestsCount,
-                      hasNewAnnouncements: _data.announcements.isNotEmpty,
+                    // 2. User's Active Ticket Card
+                    UserTicketCard(
+                      ticket: _queueStatus.userTicket,
                     ),
 
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 18),
 
-                    // 3. Recent Notifications Section
-                    RecentNotificationsSection(
-                      notifications: _data.notifications,
+                    // 3. Side-by-Side Metric Cards: Estimated Call & Live Capacity
+                    QueueMetricCards(
+                      estimatedCallTime: _queueStatus.estimatedCallTimeFormatted,
+                      liveCapacity: _queueStatus.capacityLabel,
+                    ),
+
+                    const SizedBox(height: 28),
+
+                    // 4. Recent Completions List
+                    RecentCompletionsSection(
+                      completedTickets: _queueStatus.recentCompleted,
                       onViewAll: () {
                         ScaffoldMessenger.of(context).showSnackBar(
                           const SnackBar(
-                            content: Text('Notifications center coming soon'),
+                            content: Text('Viewing complete queue history'),
                             behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // 4. Quick Services Action Cards
-                    QuickServicesSection(
-                      onRequestDocument: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Document Request flow opened'),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      },
-                      onReportIssue: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Report Issue flow opened'),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      },
-                      onBarangayHotline: () {
-                        showDialog(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: const Text('Barangay Hotline'),
-                            content: const Text(
-                              'Emergency Hotline: (02) 8123-4567\n'
-                              'Barangay Action Desk: 0917-123-4567\n'
-                              'Police / Rescue Desk: 911',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx),
-                                child: const Text('Close'),
-                              ),
-                            ],
-                          ),
-                        );
-                      },
-                    ),
-
-                    const SizedBox(height: 24),
-
-                    // 5. Community Schedule Timeline
-                    CommunityScheduleSection(
-                      activities: _data.activities,
-                      onActivityTap: (activity) {
-                        showDialog(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: Text(activity.title),
-                            content: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text('Location: ${activity.location}',
-                                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                                const SizedBox(height: 8),
-                                Text(activity.description.isNotEmpty
-                                    ? activity.description
-                                    : 'No additional details provided.'),
-                              ],
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx),
-                                child: const Text('OK'),
-                              ),
-                            ],
                           ),
                         );
                       },
@@ -370,11 +327,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
       bottomNavigationBar: CustomBottomNav(
         currentIndex: _selectedNavIndex,
         onTap: (index) {
-          if (index == 1) {
+          if (index == 0) {
             Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const QueueScreen()),
+              MaterialPageRoute(builder: (_) => const DashboardScreen()),
             );
-          } else if (index != 0) {
+          } else if (index != 1) {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
