@@ -194,11 +194,16 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
     def live_status(self, request):
         serving_ticket = QueueTicket.objects.filter(status=QueueTicket.Status.SERVING).first()
         total_waiting = QueueTicket.objects.filter(status=QueueTicket.Status.WAITING).count()
+        recent_completed = QueueTicket.objects.filter(
+            status=QueueTicket.Status.COMPLETED
+        ).order_by('-updated_at')[:5]
         
         return Response({
             "current_ticket": serving_ticket.ticket_number if serving_ticket else None,
+            "current_service": serving_ticket.service_type if serving_ticket else "General Inquiries",
             "total_waiting": total_waiting,
-            "avg_wait_mins": total_waiting * 2 
+            "avg_wait_mins": total_waiting * 2,
+            "recent_completed": QueueTicketSerializer(recent_completed, many=True).data
         }, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['post'], url_path='next', permission_classes=[IsBarangayOfficial])
