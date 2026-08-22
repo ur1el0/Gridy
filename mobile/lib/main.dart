@@ -15,7 +15,12 @@ void main() {
 }
 
 class GridyApp extends StatelessWidget {
-  const GridyApp({super.key});
+  final Widget? home;
+
+  const GridyApp({
+    super.key,
+    this.home,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -23,7 +28,7 @@ class GridyApp extends StatelessWidget {
       title: 'Gridy - Resident Portal',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
-      home: const LoginScreen(),
+      home: home ?? const LoginScreen(),
     );
   }
 }
