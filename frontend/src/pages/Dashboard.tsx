@@ -24,6 +24,17 @@ interface DashboardSummary {
             high: number;
             urgent: number;
         };
+        scenario_breakdown: {
+            peace_and_order: number;
+            public_health: number;
+            infrastructure: number;
+            environment: number;
+            other: number;
+        };
+        time_of_day: {
+            night_time: number;
+            day_time: number;
+        }
     };
     queue_activity: {
         total_today: number;
@@ -115,6 +126,14 @@ export const Dashboard: React.FC = () => {
         ]
         : []
 
+    const scenarioData = summaryData?.issue_reports?.scenario_breakdown ? [
+        { name: 'Peace & Order', count: summaryData.issue_reports.scenario_breakdown.peace_and_order},
+        { name: 'Public Health', count: summaryData.issue_reports.scenario_breakdown.public_health},
+        { name: 'Infrastructure', count: summaryData.issue_reports.scenario_breakdown.infrastructure},
+        { name: 'Environment', count: summaryData.issue_reports.scenario_breakdown.environment},
+    ]
+    : []
+
     return (
         <div className="space-y-6">
             {/* Header / Title Section */}
@@ -181,6 +200,22 @@ export const Dashboard: React.FC = () => {
                             {summaryData !== null ? summaryData.queue_activity.waiting_count : '--'}
                         </p>
                     </div>
+                </div>
+            </div>
+
+            {/* Scenario Breakdown Row */}
+            <div className="bg-white rounded-2xl p-6 shadow-xs border border-[#E2E8F0]/80">
+                <h2 className="text-base font-bold text-[#0f172a] mb-6">Local Incident Scenarios</h2>
+                <div className="h-[250px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                        <BarChart data={scenarioData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                            <Tooltip cursor={{fill: 'rgba(239,68,68,0.05)'}} />
+                            <Bar dataKey="count" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                        </BarChart>
+                    </ResponsiveContainer>
                 </div>
             </div>
 

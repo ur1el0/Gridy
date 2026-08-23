@@ -1,3 +1,9 @@
+from django.contrib.auth import base_user
+from django.contrib.auth import base_user
+from django.contrib.auth import base_user
+from django.contrib.auth import base_user
+from django.contrib.auth import base_user
+from django.contrib.auth import base_user
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -44,7 +50,6 @@ from django.db.utils import OperationalError
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 
-
 def broadcast_queue_update():
     """
     Helper to notify all connected WebSockets that the queue has changed.
@@ -69,12 +74,16 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if not user or not user.is_authenticated:
             return DocumentRequest.objects.none()
+
         if user.role == User.Role.ADMIN:
+            return DocumentRequest.objects.filter(user__barangay=user.barangay).order_by('-created_at')
+
+        if user.role == User.Role.DILG_ADMIN:
             return DocumentRequest.objects.all().order_by('-created_at')
+
         return DocumentRequest.objects.filter(user=user).order_by('-created_at')
 
     def perform_create(self, serializer):
-        # Force status to PENDING and clear admin_notes during creation
         serializer.save(
             user=self.request.user,
             status=DocumentRequest.Status.PENDING,
@@ -171,16 +180,21 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if not user or not user.is_authenticated:
             return QueueTicket.objects.none()
+
         if user.role == User.Role.ADMIN:
+            return QueueTicket.objects.filter(barangay=user.barangay).order_by('-created_at')
+
+        if user.role == User.Role.DILG_ADMIN:
             return QueueTicket.objects.all().order_by('-created_at')
+
         return QueueTicket.objects.filter(user=user).order_by('-created_at')
 
     def perform_create(self, serializer):
         user = self.request.user
         if user and user.is_authenticated and user.role == User.Role.ADMIN:
-            serializer.save(user=None)
+            serializer.save(user=None, barangay=user.barangay)
         else: 
-            serializer.save(user=user if user.is_authenticated else None)
+            serializer.save(user=user if user.is_authenticated else None, barangay=user.barangay if hasattr(user, 'barangay') else None)
         
         # Trigger WebSocket update
         broadcast_queue_update()
@@ -274,6 +288,24 @@ class DashboardSummaryView(APIView):
         issues_by_urgency_hazard = IssueReport.objects.filter(urgency=IssueReport.Urgency.HAZARD).count()
         issues_by_urgency_emergency = IssueReport.objects.filter(urgency=IssueReport.Urgency.EMERGENCY).count()
 
+        # 2b. Scenario / Category Breakdown
+        scenarios_breakdown = {
+            "peace_and_order": IssueReport.objects.filter(category=IssueReport.Category.PEACE_AND_ORDER).count(),
+            "public_health": IssueReport.objects.filter(category=IssueReport.Category.PUBLIC_HEALTH).count(),
+            "infrastructure": IssueReport.objects.filter(category=IssueReport.Category.INFRASTRUCTURE).count(),
+            "environment": IssueReport.objects.filter(category=IssueReport.Category.ENVIRONMENT).count(),
+            "other": IssueReport.objects.filter(category=IssueReport.Category.OTHER).count(),
+        }
+
+        # 2c. TIme of Day Analysis (Night: 22:00 - 04:59)
+        night_time_incidents = IssueReport.objects.filter(
+            Q(incident_datetime__hour__gte=22) | Q(incident_datetime__hour__lt=5)
+        ).count()
+        day_time_incidents = IssueReport.objects.filter(
+            incident_datetime__hour__gte=5,
+            incident_datetime__hour__lt=22,
+        ).count()
+
         # 3. Queue activity stats for today
         today = timezone.now().date()
         queue_total_today = QueueTicket.objects.filter(created_at__date=today).count()
@@ -326,6 +358,11 @@ class DashboardSummaryView(APIView):
                     "moderate": issues_by_urgency_moderate,
                     "hazard": issues_by_urgency_hazard,
                     "emergency": issues_by_urgency_emergency,
+                },
+                "scenario_breakdown": scenarios_breakdown,
+                "time_of_day": {
+                    "night_time": night_time_incidents,
+                    "day_time": day_time_incidents
                 }
             },
             "queue_activity": {

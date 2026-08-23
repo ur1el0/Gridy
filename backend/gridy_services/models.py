@@ -1,3 +1,4 @@
+from gridy_auth.models import Barangay
 from http.client import PROCESSING
 from django.db.models import indexes
 from django.db import models
@@ -63,6 +64,13 @@ class QueueTicket(models.Model):
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
+        related_name='queue_tickets'
+    )
+
+    barangay = models.ForeignKey(
+        Barangay,
+        on_delete=models.CASCADE,
+        null=True,
         related_name='queue_tickets'
     )
     ticket_number = models.CharField(max_length=20)
