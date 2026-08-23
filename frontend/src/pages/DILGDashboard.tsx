@@ -8,6 +8,14 @@ interface AnalyticsData {
     residents: { total: number; verified: number };
     documents: { pending: number; released: number };
     queue: { priority: number; regular: number };
+    scenarios: {
+        peace_and_order: number
+        public_health: number
+        infrastructure: number
+        environment: number
+        other: number
+    }
+    night_time_incidents: number
 }
 
 export function DILGDashboard() {
@@ -38,7 +46,11 @@ export function DILGDashboard() {
         VerifiedResidents: item.residents.verified,
         PendingDocs: item.documents.pending,
         ReleasedDocs: item.documents.released,
-        TotalQueue: item.queue.priority + item.queue.regular
+        TotalQueue: item.queue.priority + item.queue.regular,
+        PeaceAndOrder: item.scenarios.peace_and_order,
+        PublicHealth: item.scenarios.public_health,
+        Infrastructure: item.scenarios.infrastructure,
+        NightTime: item.night_time_incidents
     }));
 
     return (
@@ -87,6 +99,26 @@ export function DILGDashboard() {
                         </ResponsiveContainer>
                     </div>
                 </div>
+                
+                {/* Chart 3: Incident Hotspots */}
+                <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 lg:col-span-2">
+                    <h2 className="text-lg font-bold text-slate-700 mb-6">Incident Hotspots & Scenarios</h2>
+                    <div className="h-80">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={chartData}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
+                                <YAxis axisLine={false} tickLine={false} tick={{fill: '#64748b', fontSize: 12}} />
+                                <Tooltip cursor={{fill: '#F8FAFC'}} contentStyle={{borderRadius: '12px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)'}} />
+                                <Legend wrapperStyle={{paddingTop: '20px'}}/>
+                                <Bar dataKey="PeaceAndOrder" name="Peace & Order" fill="#ef4444" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="PublicHealth" name="Public Health" fill="#10b981" radius={[4, 4, 0, 0]} />
+                                <Bar dataKey="NightTime" name="Night-Time Incidents" fill="#1e1b4b" radius={[4, 4, 0, 0]} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
             </div>
         </div>
     );
