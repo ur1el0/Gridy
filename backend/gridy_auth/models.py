@@ -1,19 +1,32 @@
-from django.db.models import OneToOneField
 from django.db import models
 from django.contrib.auth.models import AbstractUser
 
 # Create your models here.
 
+class Barangay(models.Model):
+    name = models.CharField(max_length=255, unique=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    def __str__(self):
+        return self.name
 
 class User(AbstractUser):
     class Role(models.TextChoices):
         ADMIN = 'ADMIN', 'Admin'
         RESIDENT = 'RESIDENT', 'Resident'
+        DILG_ADMIN = 'DILG_ADMIN', 'DILG Admin'
 
     role = models.CharField(
         max_length=50,
         choices=Role.choices,
         default=Role.RESIDENT,
+    )
+
+    barangay = models.ForeignKey(
+        Barangay,
+        on_delete=models.CASCADE,
+        null=True,
+        related_name='users'
     )
         
 class Resident(models.Model):
