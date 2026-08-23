@@ -3,8 +3,12 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.db import transaction
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
-from .models import User, Resident
+from .models import User, Resident, Barangay
 
+class BarangaySerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Barangay
+        fields = ['id', 'name']
 
 class ResidentSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True, default='')
@@ -16,10 +20,11 @@ class ResidentSerializer(serializers.ModelSerializer):
 
 class UserSerializer(serializers.ModelSerializer):
     profile = ResidentSerializer(read_only=True)
+    barangay = BarangaySerializer(read_only=True)
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'role', 'profile']
+        fields = ['id', 'username', 'email', 'role', 'barangay','profile']
 
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -29,6 +34,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         token['username'] = user.username
         token['full_name'] = getattr(user.profile, 'full_name', user.username) if hasattr(user, 'profile') else user.username
         token['role'] = user.role
+        token['barangay_id'] = user.barangay.id if user.barangay else None
         return token
 
     def validate(self, attrs):
@@ -38,6 +44,7 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
             'username': self.user.username,
             'email': self.user.email,
             'role': self.user.role,
+            'barangay_id': self.user.barangay.id if self.user.barangay else None,
             'full_name': getattr(self.user.profile, 'full_name', self.user.username) if hasattr(self.user, 'profile') else self.user.username,
         }
         return data
