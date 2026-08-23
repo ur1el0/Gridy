@@ -69,12 +69,16 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if not user or not user.is_authenticated:
             return DocumentRequest.objects.none()
+
         if user.role == User.Role.ADMIN:
+            return DocumentRequest.objects.filter(user__barangay=user.barangay).order_by('-created_at')
+
+        if user.role == User.Role.DILG_ADMIN:
             return DocumentRequest.objects.all().order_by('-created_at')
+
         return DocumentRequest.objects.filter(user=user).order_by('-created_at')
 
     def perform_create(self, serializer):
-        # Force status to PENDING and clear admin_notes during creation
         serializer.save(
             user=self.request.user,
             status=DocumentRequest.Status.PENDING,
@@ -171,16 +175,21 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if not user or not user.is_authenticated:
             return QueueTicket.objects.none()
+
         if user.role == User.Role.ADMIN:
+            return QueueTicket.objects.filter(user=user).order_by('-created_at')
+
+        if user.role == User.Role.DILG_ADMIN:
             return QueueTicket.objects.all().order_by('-created_at')
+
         return QueueTicket.objects.filter(user=user).order_by('-created_at')
 
     def perform_create(self, serializer):
         user = self.request.user
         if user and user.is_authenticated and user.role == User.Role.ADMIN:
-            serializer.save(user=None)
+            serializer.save(user=None, barangay=user.barangay)
         else: 
-            serializer.save(user=user if user.is_authenticated else None)
+            serializer.save(user=user if user.is_authenticated else None, barangay=user.barangay if hasattr(user, 'barangay') else None)
         
         # Trigger WebSocket update
         broadcast_queue_update()

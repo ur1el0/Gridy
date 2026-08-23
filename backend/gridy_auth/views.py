@@ -355,9 +355,10 @@ class PendingResidentsView(ListAPIView):
     serializer_class = ResidentSerializer
 
     def get_queryset(self):
-        # Only return residents that need approval
-        return Resident.objects.filter(is_verified=False)
-
+        user = self.request.user
+        if user.role == User.Role.DILG_ADMIN:
+            return Resident.objects.filter(is_verified=False)
+        return Resident.objects.filter(is_verified=False, user__barangay=user.barangay)
 
 class VerifyResidentView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsBarangayOfficial]
@@ -396,5 +397,8 @@ class ResidentViewSet(viewsets.ModelViewSet):
     serializer_class = ResidentSerializer
 
     def get_queryset(self):
-        # Only return fully verified residents in the main directory
-        return Resident.objects.filter(is_verified=True).select_related('user').order_by('full_name')
+        user = self.request.user
+        if user.role == User.Role.DILG_ADMIN:
+            return Resident.objects.filter(is_verified=True).select_related('user').order_by('full_name')
+            # Isolate by the admin's barangay
+        return Resident.objects.filter(is_verified=True, user__barangay=user.barangay).select_related('user').order_by('full_name')
