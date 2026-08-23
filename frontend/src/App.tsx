@@ -13,6 +13,7 @@ import { AdminProfile } from "./pages/AdminProfile";
 import { Settings } from "./pages/Settings";
 import { Notifications } from "./pages/Notifications";
 import { Faqs } from "./pages/Faqs";
+import { DILGDashboard } from "./pages/DILGDashboard";
 
 export function App() {
     return (
@@ -26,6 +27,7 @@ export function App() {
                     {/* UI Layout Wrapper */}
                     <Route element={<AdminLayout />}>
                         <Route path="/dashboard" element={<Dashboard />} />
+                        <Route path="/dilg-analytics" element={<DILGDashboard />} />
                         <Route path="/queue" element={<LiveQueue />} />
                         <Route path="/documents" element={<DocumentRequests />} />
                         <Route path="/settings" element={<Settings />} />
