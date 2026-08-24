@@ -1,3 +1,4 @@
+from xhtml2pdf import context
 from django.contrib.auth import base_user
 from django.contrib.auth import base_user
 from django.contrib.auth import base_user
@@ -136,8 +137,7 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
     def generate_pdf(self, request, pk=None):
         document = self.get_object()
         
-        # Only allow PDF generation if the document is not ready or released
-        if document.status in [DocumentRequest.Status.PROCESSING, DocumentRequest.Status.READY_FOR_PICKUP, DocumentRequest.Status.RELEASED]:
+        if document.status not in [DocumentRequest.Status.PROCESSING, DocumentRequest.Status.READY_FOR_PICKUP, DocumentRequest.Status.RELEASED]:
             return Response(
                 {"error": "You cannot generate PDFs for pending or rejected documents."}, 
                 status=status.HTTP_400_BAD_REQUEST
@@ -150,8 +150,8 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
         # Calculate precise age
         age = None
         if resident and resident.birth_date:
-            today = timezone.now().data()
-            age = today.year - resident.birth_date.year - ((today.montj, today.day) < (resident.birth_date.month, resident.birth_date.day))
+            today = timezone.now().date()
+            age = today.year - resident.birth_date.year - ((today.month, today.day) < (resident.birth_date.month, resident.birth_date.day))
 
         context = {
             'document': document,
