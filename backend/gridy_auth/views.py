@@ -1,3 +1,5 @@
+from backend.gridy_auth.models import Barangay
+from rest_framework.decorators import parser_classes
 from rest_framework.decorators import permission_classes
 from gridy_auth.serializers import ResidentSerializer
 from django.http import HttpResponseForbidden
@@ -22,7 +24,7 @@ from django.db import transaction
 from rest_framework.parsers import MultiPartParser, FormParser
 from gridy_auth.permissions import IsBarangayOfficial
 from gridy_auth.models import User, Resident
-from gridy_auth.serializers import UserSerializer
+from gridy_auth.serializers import UserSerializer, BarangaySerializer
 
 from rest_framework_simplejwt.tokens import RefreshToken
 from rest_framework_simplejwt.views import TokenRefreshView
@@ -402,3 +404,24 @@ class ResidentViewSet(viewsets.ModelViewSet):
             return Resident.objects.filter(is_verified=True).select_related('user').order_by('full_name')
             # Isolate by the admin's barangay
         return Resident.objects.filter(is_verified=True, user__barangay=user.barangay).select_related('user').order_by('full_name')
+
+class BarangayViewSet(viewsets.ModelViewSet):
+    """
+    Settings endpoint for Barangay Identity.
+    Only allows GET and PATCH
+    """
+
+    permission_classes = [permissions.IsAuthenticated, IsBarangayOfficial]
+    serializer_class = BarangaySerializer
+    parser_classes = [MultiPartParser, FormParser]
+    http_method_names = ['get', 'patch']
+
+    def get_queryset(self):
+        user = self.request.user
+        if user.role == User.Role.DILG_ADMIN:
+            return Barangay.objects.all().order_by('name')
+
+        # Isolate to the official's own barangay
+        if user.barangay:
+            return Barangay.objects.filter(id=user.barangay.id)
+        return Barangay.objects.none()
