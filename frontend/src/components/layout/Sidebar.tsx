@@ -10,7 +10,8 @@ import {
   FileText, 
   Radio, 
   Users, 
-  UserCheck
+  UserCheck,
+  Building
 } from 'lucide-react';
 import mainLogoSvg from '../../assets/MainLogo.svg';
 
@@ -27,6 +28,7 @@ const navItems: NavItem[] = [
   { name: 'Communications', path: '/communications', icon: Radio },
   { name: 'Residents', path: '/residents', icon: Users },
   { name: 'Verifications', path: '/verifications', icon: UserCheck},
+  { name: 'Barangay Profile', path: '/barangay-settings', icon: Building},
 ];
 
 export const Sidebar: React.FC = () => {
