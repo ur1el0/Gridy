@@ -12,11 +12,13 @@ from .views import (
     PendingResidentsView,
     VerifyResidentView,
     RejectResidentView,
-    ResidentViewSet
+    ResidentViewSet,
+    BarangayViewSet
 )
 
 router = DefaultRouter()
 router.register(r'resident', ResidentViewSet, basename='resident')
+router.register(r'barangay', BarangayViewSet, basename='barangay')
 
 
 urlpatterns = [

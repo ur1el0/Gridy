@@ -1,4 +1,4 @@
-from backend.gridy_auth.models import Barangay
+from gridy_auth.models import Barangay
 from rest_framework.decorators import parser_classes
 from rest_framework.decorators import permission_classes
 from gridy_auth.serializers import ResidentSerializer
