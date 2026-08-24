@@ -14,6 +14,7 @@ import { Settings } from "./pages/Settings";
 import { Notifications } from "./pages/Notifications";
 import { Faqs } from "./pages/Faqs";
 import { DILGDashboard } from "./pages/DILGDashboard";
+import { BarangaySettings } from "./pages/BarangaySettings";
 
 export function App() {
     return (
@@ -31,6 +32,7 @@ export function App() {
                         <Route path="/queue" element={<LiveQueue />} />
                         <Route path="/documents" element={<DocumentRequests />} />
                         <Route path="/settings" element={<Settings />} />
+                        <Route path="/barangay-settings" element={<BarangaySettings/>} />
                         <Route path="/notifications" element={<Notifications />} />
                         <Route path="/faqs" element={<Faqs />} />
                         
