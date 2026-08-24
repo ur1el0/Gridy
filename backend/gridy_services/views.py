@@ -1,4 +1,3 @@
-from xhtml2pdf import context
 from django.contrib.auth import base_user
 from django.contrib.auth import base_user
 from django.contrib.auth import base_user
