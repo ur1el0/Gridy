@@ -8,7 +8,7 @@ from .models import User, Resident, Barangay
 class BarangaySerializer(serializers.ModelSerializer):
     class Meta:
         model = Barangay
-        fields = ['id', 'name']
+        fields = ['id', 'name', 'logo', 'city_seal', 'captain_name', 'office_contact']
 
 class ResidentSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True, default='')
