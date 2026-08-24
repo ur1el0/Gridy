@@ -136,25 +136,35 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
     def generate_pdf(self, request, pk=None):
         document = self.get_object()
         
-        # Only allow PDF generation if the document is not Pending or Rejected
-        if document.status in [DocumentRequest.Status.PENDING, DocumentRequest.Status.REJECTED]:
+        if document.status not in [DocumentRequest.Status.PROCESSING, DocumentRequest.Status.READY_FOR_PICKUP, DocumentRequest.Status.RELEASED]:
             return Response(
                 {"error": "You cannot generate PDFs for pending or rejected documents."}, 
                 status=status.HTTP_400_BAD_REQUEST
             )
             
-        template_path = 'gridy_services/certificate.html'
+        template_path = 'gridy_services/pdf_clearance.html'
+        resident = document.user.profile if hasattr(document.user, 'profile') else None
+        barangay = document.user.barangay
+        
+        # Calculate precise age
+        age = None
+        if resident and resident.birth_date:
+            today = timezone.now().date()
+            age = today.year - resident.birth_date.year - ((today.month, today.day) < (resident.birth_date.month, resident.birth_date.day))
+
         context = {
             'document': document,
-            'user': document.user,
+            'resident': resident,
+            'barangay': barangay,
+            'age': age,
             'date_issued': timezone.now()
         }
         
         # Create a Django response object, and specify content_type as pdf
         response = HttpResponse(content_type='application/pdf')
         # Instruct the browser to download the file instead of opening it
-        filename = f"Barangay_Clearance_{document.id}.pdf"
-        response['Content-Disposition'] = f'attachment; filename="{filename}"'
+        safe_filename = document.document_type.replace(' ', '_')
+        response['Content-Disposition'] = f'attachment; filename="{safe_filename}_{document.id}.pdf"'
         
         # Render the template to HTML, then convert HTML to PDF
         template = get_template(template_path)
