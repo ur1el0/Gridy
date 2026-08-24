@@ -1,4 +1,4 @@
-from gridy_auth.views import UserProfileView
+from gridy_auth.views import UserProfileView, ChangePasswordView
 from django.urls import path
 from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework.routers import DefaultRouter
@@ -31,4 +31,5 @@ urlpatterns = [
     path('pending-residents/', PendingResidentsView.as_view(), name='pending_residents'),
     path('verify-resident/<int:pk>/', VerifyResidentView.as_view(), name='verify_resident'),
     path('reject-resident/<int:pk>/', RejectResidentView.as_view(), name='reject_resident'),
+    path('change-password/', ChangePasswordView.as_view(), name='change_password'),
 ] + router.urls

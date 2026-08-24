@@ -1,3 +1,4 @@
+from typing import Required
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.db import transaction
@@ -87,3 +88,14 @@ class RegisterSerializer(serializers.ModelSerializer):
             Resident.objects.create(user=user, **profile_data)
 
         return user
+
+class ChangePasswordSerializer(serializers.Serializer):
+    old_password = serializers.CharField(required=True)
+    new_password = serializers.CharField(required=True)
+
+    def validate_new_password(self, value):
+        try:
+            validate_password(value)
+        except DjangoValidationError as e:
+            raise serializers.ValidationError(list(e.messages))
+        return value

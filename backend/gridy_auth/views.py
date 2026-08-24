@@ -1,3 +1,21 @@
+from asyncio import exceptions
+from asyncio import exceptions
+from asyncio import exceptions
+from asyncio import events
+from asyncio import events
+from asyncio import events
+from asyncio import events
+from asyncio import events
+from asyncio import base_events
+from asyncio import base_events
+from asgiref import sync
+from asgiref import sync
+from asgiref import sync
+from asgiref import sync
+from asgiref import sync
+from asgiref import sync
+from asgiref import sync
+from asgiref import sync
 from gridy_auth.models import Barangay
 from rest_framework.decorators import parser_classes
 from rest_framework.decorators import permission_classes
@@ -11,6 +29,7 @@ from .serializers import (
     UserSerializer,
     RegisterSerializer,
     CustomTokenObtainPairSerializer,
+    ChangePasswordSerializer,
 )
 
 from drf_spectacular.utils import extend_schema
@@ -425,3 +444,30 @@ class BarangayViewSet(viewsets.ModelViewSet):
         if user.barangay:
             return Barangay.objects.filter(id=user.barangay.id)
         return Barangay.objects.none()
+
+class ChangePasswordView(APIView):
+    """
+    An endpoint for changing passowrd
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(
+        summary="Change User Password",
+        request=ChangePasswordSerializer,
+        responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT}
+    )
+
+    def patch(self, request, *args, **kwargs):
+        serializer = ChangePasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            # Check old password
+            if not request.user.check_password(serializer.validated_data.get("old_password")):
+                return Response({"old_password": ["Wrong password."]}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # set_password also hashes the password that the user will get
+            request.user.set_password(serializer.validated_data.get("new_password"))
+            request.user.save()
+
+            return Response({"detail": "Password updated successfully"}, status=status.HTTP_200_OK)
+            
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
