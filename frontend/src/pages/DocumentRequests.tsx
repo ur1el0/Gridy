@@ -89,6 +89,26 @@ export const DocumentRequests: React.FC = () => {
     }
   }
 
+  const handleDownloadPDF = async () => {
+    if (!selectedRequest) return
+    try {
+      const response = await axiosPrivate.get(`/document-requests/${selectedRequest.id}/generate-pdf/`, {
+        responseType: 'blob'
+      })
+
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', `${selectedRequest.document_type.replace(/ /g, '_')}${selectedRequest.id}.pdf`)
+      document.body.appendChild(link)
+      link.click()
+      link.parentNode?.removeChild(link)
+    } catch (error) {
+      console.error("Failed to download PDF", error)
+      alert("Failed to generate PDF. Make sure the document is not pending or rejected.")
+    }
+  }
+
   const handleCreateRequest = async (e: React.SubmitEvent<HTMLFormElement>) => {
     e.preventDefault()
     setIsSubmitting(true)
@@ -207,6 +227,14 @@ export const DocumentRequests: React.FC = () => {
                     Close
                   </button>
                   
+                  {['processing', 'ready_for_pickup', 'released'].includes(selectedRequest.status.toLowerCase()) && (
+                    <button
+                      onClick={handleDownloadPDF}
+                      className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 transition-colors"
+                    >
+                      Download PDF
+                    </button>
+                  )}
                   {/* 1. Pending Actions */}
                   {selectedRequest.status.toLowerCase() === 'pending' && (
                     <>
