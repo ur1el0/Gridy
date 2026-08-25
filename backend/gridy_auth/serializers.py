@@ -1,10 +1,10 @@
-from typing import Required
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.db import transaction
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
-from .models import User, Resident, Barangay
+from .models import User, Resident, Barangay, RefreshSession
+
 
 class BarangaySerializer(serializers.ModelSerializer):
     class Meta:
@@ -99,3 +99,10 @@ class ChangePasswordSerializer(serializers.Serializer):
         except DjangoValidationError as e:
             raise serializers.ValidationError(list(e.messages))
         return value
+
+
+class RefreshSessionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RefreshSession
+        fields = ['id', 'ip_address', 'user_agent', 'created_at', 'expires_at', 'is_revoked']
+        read_only_fields = ['id', 'ip_address', 'user_agent', 'created_at', 'expires_at', 'is_revoked']

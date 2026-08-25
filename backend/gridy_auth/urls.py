@@ -13,7 +13,8 @@ from .views import (
     VerifyResidentView,
     RejectResidentView,
     ResidentViewSet,
-    BarangayViewSet
+    BarangayViewSet,
+    ActiveSessionsView
 )
 
 router = DefaultRouter()
@@ -32,4 +33,6 @@ urlpatterns = [
     path('verify-resident/<int:pk>/', VerifyResidentView.as_view(), name='verify_resident'),
     path('reject-resident/<int:pk>/', RejectResidentView.as_view(), name='reject_resident'),
     path('change-password/', ChangePasswordView.as_view(), name='change_password'),
+    path('sessions/', ActiveSessionsView.as_view(), name='active_session'),
+    path('sessions/<int:pk>/', ActiveSessionsView.as_view(), name='revoke_session'),
 ] + router.urls
