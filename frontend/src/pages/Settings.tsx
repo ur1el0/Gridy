@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { Bell, Shield, Moon, Monitor, Key, Smartphone } from 'lucide-react';
+import { ChangePasswordModal } from '../components/modals/ChangePasswordModal';
 
 export const Settings: React.FC = () => {
   const [emailAlerts, setEmailAlerts] = useState(true);
   const [pushAlerts, setPushAlerts] = useState(false);
   const [darkMode, setDarkMode] = useState(false);
+  const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
 
   return (
     <div className="max-w-4xl mx-auto space-y-6 pb-12">
@@ -99,13 +101,26 @@ export const Settings: React.FC = () => {
               <Key className="w-4 h-4 text-slate-400" />
               <span className="text-sm font-semibold text-slate-700">Change Password</span>
             </div>
-            <button className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-colors">
+            <button 
+              onClick={() => setIsPasswordModalOpen(true)} 
+              className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-colors"
+            >
               Update
             </button>
+
           </div>
         </div>
-
       </div>
+      {/* Render the Modal here */}
+      <ChangePasswordModal 
+        isOpen={isPasswordModalOpen} 
+        onClose={() => setIsPasswordModalOpen(false)} 
+        onSuccess={() => {
+          setIsPasswordModalOpen(false);
+          alert("Password updated successfully!");
+        }} 
+      />
     </div>
   );
 };
+
