@@ -248,6 +248,18 @@ class UserProfileView(APIView):
         serializer = UserSerializer(request.user)
         return Response(serializer.data, status.HTTP_200_OK)
 
+    @extend_schema(
+        summary="Update User Profile (Preferences)",
+        request=UserSerializer,
+        responses={200: UserSerializer, 400: OpenApiTypes.OBJECT}
+    )
+    
+    def patch(self, request):
+        serializer = UserSerializer(request.user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 
 @extend_schema(
