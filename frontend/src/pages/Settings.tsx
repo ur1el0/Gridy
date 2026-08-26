@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Bell, Shield, Moon, Monitor, Key, Smartphone, Laptop, Trash2, Clock } from 'lucide-react';
 import { ChangePasswordModal } from '../components/modals/ChangePasswordModal';
 import { axiosPrivate } from '../api/axios';
+import axios from 'axios';
 
 interface RefreshSession {
   id: number
@@ -15,6 +16,7 @@ interface RefreshSession {
 export const Settings: React.FC = () => {
   const [emailAlerts, setEmailAlerts] = useState(true);
   const [pushAlerts, setPushAlerts] = useState(false);
+  const [isLoadingProfile, setIsLoadingProfile] = useState(true)
   const [darkMode, setDarkMode] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
 
@@ -22,9 +24,42 @@ export const Settings: React.FC = () => {
   const [isLoadingSessions, setIsLoadingSessions] = useState(true)
 
   useEffect(() => {
+    const fetchProfile = async () => {
+      try {
+        const response = await axiosPrivate.get('/auth/me/')
+        setEmailAlerts(response.data.email_alerts)
+        setPushAlerts(response.data.push_alerts)
+      } catch (error) {
+        console.error("Failed to load profile preferences", error)
+      } finally {
+        setIsLoadingProfile(false)
+      }
+    }
+    fetchProfile()
+  }, [])
+  useEffect(() => {
     fetchSessions()
   }, [])
 
+  const handleToggleEmail = async () => {
+    const newValue = !emailAlerts
+    try {
+      await axiosPrivate.patch('/auth/me/', { email_alerts: newValue })
+      setEmailAlerts(newValue) // Only update UI if the backend request succeeds 
+    } catch (error) {
+      alert("Failed to update email preferences.")
+    }
+  }
+
+  const handleTogglePush = async () => {
+    const newValue = !pushAlerts
+    try {
+      await axiosPrivate.patch('/auth/me/', { push_alerts: pushAlerts })
+      setPushAlerts(newValue)
+    } catch (error) {
+      alert("Failed to update push preferences.")
+    }
+  }
   const fetchSessions = async () => {
     try {
       const response = await axiosPrivate.get('/auth/sessions/')
@@ -98,9 +133,10 @@ export const Settings: React.FC = () => {
                 <span className="text-sm font-semibold text-slate-700">Push Notifications (Queue Alerts)</span>
               </div>
               <button 
-                onClick={() => setPushAlerts(!pushAlerts)}
-                className={`w-11 h-6 rounded-full transition-colors relative ${pushAlerts ? 'bg-orange-500' : 'bg-slate-200'}`}
-              >
+                  onClick={handleTogglePush}
+                  disabled={isLoadingProfile}
+                  className={`w-11 h-6 rounded-full transition-colors relative disabled:opacity-50 ${pushAlerts ? 'bg-orange-500' : 'bg-slate-200'}`}
+                >
                 <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${pushAlerts ? 'translate-x-5' : 'translate-x-0'}`}></div>
               </button>
             </div>
@@ -111,8 +147,9 @@ export const Settings: React.FC = () => {
                 <span className="text-[10px] text-slate-400">Receive daily queue and request reports</span>
               </div>
               <button 
-                onClick={() => setEmailAlerts(!emailAlerts)}
-                className={`w-11 h-6 rounded-full transition-colors relative ${emailAlerts ? 'bg-orange-500' : 'bg-slate-200'}`}
+                onClick={handleToggleEmail}
+                disabled={isLoadingProfile}
+                className={`w-11 h-6 rounded-full transition-colors relative disabled:opacity-50 ${emailAlerts ? 'bg-orange-500' : 'bg-slate-200'}`}
               >
                 <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${emailAlerts ? 'translate-x-5' : 'translate-x-0'}`}></div>
               </button>
@@ -144,10 +181,9 @@ export const Settings: React.FC = () => {
               Update
             </button>
           </div>
-          
+
           <div className="pt-6 mt-6 border-t border-slate-100">
             <h3 className="text-sm font-bold text-slate-900 mb-4">Active Sessions</h3>
-            
             {isLoadingSessions ? (
               <div className="text-sm text-slate-500 animate-pulse">Loading sessions...</div>
             ) : sessions.length === 0 ? (
