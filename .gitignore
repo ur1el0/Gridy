@@ -21,3 +21,6 @@ backend/media/
 # Instructions + Further Context
 .agents/AGENTS.md
 .agents/MEMORY.md
+
+# Ignore IDE and Editor Files
+.vscode/
