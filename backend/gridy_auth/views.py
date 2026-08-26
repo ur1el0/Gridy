@@ -2,7 +2,6 @@ from gridy_auth.models import Barangay
 from rest_framework.decorators import parser_classes
 from rest_framework.decorators import permission_classes
 from gridy_auth.serializers import ResidentSerializer
-from django.http import HttpResponseForbidden
 from rest_framework import status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -11,6 +10,8 @@ from .serializers import (
     UserSerializer,
     RegisterSerializer,
     CustomTokenObtainPairSerializer,
+    ChangePasswordSerializer,
+    RefreshSessionSerializer,
 )
 
 from drf_spectacular.utils import extend_schema
@@ -425,3 +426,64 @@ class BarangayViewSet(viewsets.ModelViewSet):
         if user.barangay:
             return Barangay.objects.filter(id=user.barangay.id)
         return Barangay.objects.none()
+
+class ChangePasswordView(APIView):
+    """
+    An endpoint for changing passowrd
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(
+        summary="Change User Password",
+        request=ChangePasswordSerializer,
+        responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT}
+    )
+
+    def patch(self, request, *args, **kwargs):
+        serializer = ChangePasswordSerializer(data=request.data)
+        if serializer.is_valid():
+            # Check old password
+            if not request.user.check_password(serializer.validated_data.get("old_password")):
+                return Response({"old_password": ["Wrong password."]}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # set_password also hashes the password that the user will get
+            request.user.set_password(serializer.validated_data.get("new_password"))
+            request.user.save()
+
+            return Response({"detail": "Password updated successfully"}, status=status.HTTP_200_OK)
+            
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+class ActiveSessionsView(APIView):
+    """
+    Endpoint to view and revoke active refresh sessions for the current user.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    @extend_schema(
+        summary="List Active Sessions",
+        responses={200: RefreshSessionSerializer(many=True)}
+    )
+    def get(self, request, *args, **kwargs):
+        # Only fetch active sessions for the logged-in user
+        sessions = RefreshSession.objects.filter(user=request.user, is_revoked=False).order_by('-created_at')
+        serializer = RefreshSessionSerializer(sessions, many=True)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
+    @extend_schema(
+        summary="Revoke a Specific Session",
+        responses={204: None, 403: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT}
+    )
+
+    def delete(self, request, pk, *args, **kwargs):
+        # Fetch the session and ensure it belongs to the current user
+        session = get_object_or_404(RefreshSession, pk=pk)
+
+        if session.user != request.user:
+            return Response({"detail": "You do not have permission to revoke this session."}, status=status.HTTP_403_FORBIDDEN)
+
+        session.is_revoked = True
+        session.save()
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
