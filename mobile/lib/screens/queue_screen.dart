@@ -13,6 +13,7 @@ import '../widgets/queue_metric_cards.dart';
 import '../widgets/recent_completions_section.dart';
 import '../widgets/user_ticket_card.dart';
 import 'dashboard_screen.dart';
+import 'documents_screen.dart';
 import 'login_screen.dart';
 
 /// Screen presenting the live queue status matching the exact reference UI
@@ -331,13 +332,15 @@ class _QueueScreenState extends State<QueueScreen> {
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(builder: (_) => const DashboardScreen()),
             );
-          } else if (index != 1) {
+          } else if (index == 2) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const DocumentsScreen()),
+            );
+          } else if (index == 3) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  index == 2 ? 'Documents Directory' : 'Community Schedule View',
-                ),
-                duration: const Duration(seconds: 1),
+              const SnackBar(
+                content: Text('Community Schedule View'),
+                duration: Duration(seconds: 1),
                 behavior: SnackBarBehavior.floating,
               ),
             );

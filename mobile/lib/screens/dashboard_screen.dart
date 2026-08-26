@@ -12,6 +12,7 @@ import '../widgets/metric_summary_card.dart';
 import '../widgets/quick_services_section.dart';
 import '../widgets/recent_notifications_section.dart';
 import '../widgets/resident_hero_card.dart';
+import 'documents_screen.dart';
 import 'login_screen.dart';
 import 'queue_screen.dart';
 
@@ -293,10 +294,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     // 4. Quick Services Action Cards
                     QuickServicesSection(
                       onRequestDocument: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Document Request flow opened'),
-                            behavior: SnackBarBehavior.floating,
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const DocumentsScreen(),
                           ),
                         );
                       },
@@ -374,13 +374,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
             Navigator.of(context).pushReplacement(
               MaterialPageRoute(builder: (_) => const QueueScreen()),
             );
-          } else if (index != 0) {
+          } else if (index == 2) {
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const DocumentsScreen()),
+            );
+          } else if (index == 3) {
             ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  index == 2 ? 'Documents Directory' : 'Community Schedule View',
-                ),
-                duration: const Duration(seconds: 1),
+              const SnackBar(
+                content: Text('Community Schedule View'),
+                duration: Duration(seconds: 1),
                 behavior: SnackBarBehavior.floating,
               ),
             );
