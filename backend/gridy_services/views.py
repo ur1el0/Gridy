@@ -191,12 +191,15 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
         if not user or not user.is_authenticated:
             return QueueTicket.objects.none()
 
+        # 1. DILG Admin sees all tickets globally
+        if user.role == User.Role.DILG_ADMIN:
+            return QueueTicket.objects.all().order_by('-created_at')
+        
+        # 2. Barangay Official only sees tickets for their barangay
         if user.role == User.Role.ADMIN:
             return QueueTicket.objects.filter(barangay=user.barangay).order_by('-created_at')
 
-        if user.role == User.Role.DILG_ADMIN:
-            return QueueTicket.objects.all().order_by('-created_at')
-
+        # 3. Residents only see their own tickets
         return QueueTicket.objects.filter(user=user).order_by('-created_at')
 
     def perform_create(self, serializer):

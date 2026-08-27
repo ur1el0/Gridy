@@ -10,20 +10,23 @@ class IssueReportViewSet(viewsets.ModelViewSet):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     
     def get_permissions(self):
-        # 1. Residents can view and create, but ONLY officials can update/delete
         if self.action in ['list', 'retrieve', 'create']:
             return [permissions.IsAuthenticated()]
         return [IsBarangayOfficial()]
 
     def get_queryset(self):
-        # 2. Queryset Isolation: Prevent residents from seeing other people's reports
         user = self.request.user
         if not user or not user.is_authenticated:
             return IssueReport.objects.none()
-
-        if user.role == User.Role.ADMIN:
+        # 1. DILG Admin sees all reports globally
+        if user.role == User.Role.DILG_ADMIN:
             return IssueReport.objects.all().order_by('-created_at')
 
+        # 2. Barangay Official only sees report from their own residents
+        if user.role == User.Role.ADMIN:
+            return IssueReport.objects.filter(reporter__barangay=user.barangay).order_by('-created_at')
+        
+        # 3. Residents only see their own reports
         return IssueReport.objects.filter(reporter=user).order_by('-created_by')
 
     def perform_create(self, serializer):
