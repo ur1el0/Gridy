@@ -45,7 +45,8 @@ class AnnouncementAPITests(APITestCase):
         )
 
         response = self.client.get(self.url)
-        data = response.json()
+        # Extract the results array from the paginated response
+        data = response.json().get('results', response.json())
 
         # 1. Check HTTP Status Code
         self.assertEqual(response.status_code, status.HTTP_200_OK)
