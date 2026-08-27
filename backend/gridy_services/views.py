@@ -219,6 +219,10 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['get'], url_path='live-status')
     def live_status(self, request):
+        # 1. Grab the tenant ID for isolation
+        tenant = request.user.barangay
+
+        # 2. Lock all queries to the specific barangay
         serving_ticket = QueueTicket.objects.filter(status=QueueTicket.Status.SERVING).first()
         total_waiting = QueueTicket.objects.filter(status=QueueTicket.Status.WAITING).count()
         recent_completed = QueueTicket.objects.filter(
@@ -235,10 +239,17 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], url_path='next', permission_classes=[IsBarangayOfficial])
     def next_ticket(self, request):
+        # 1. Grab the tenant ID for isolation
+        tenant = request.user.barangay
+        
         with transaction.atomic():
-            QueueTicket.objects.filter(status=QueueTicket.Status.SERVING).update(status=QueueTicket.Status.COMPLETED)
+            # 2. Lock the update every query so we don't close other barangays' tickets
+            QueueTicket.objects.filter(status=QueueTicket.Status.SERVING, barangay=tenant).update(status=QueueTicket.Status.COMPLETED)
             
-            next_ticket = QueueTicket.objects.filter(status=QueueTicket.Status.WAITING).order_by('-is_priority', 'created_at').first()
+            # 3. Lock the fetch query so we don't serve a ticket from another barangay
+            next_ticket = QueueTicket.objects.filter(
+                status=QueueTicket.Status.WAITING
+                ).order_by('-is_priority', 'created_at').first()
             
             if not next_ticket:
                 return Response(
@@ -248,6 +259,8 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
                 
             next_ticket.status = QueueTicket.Status.SERVING
             next_ticket.save()
+
+            return Response(QueueTicketSerializer(next_ticket).data)
 
             # Log the administrative queue counter advancement
             log_action(
