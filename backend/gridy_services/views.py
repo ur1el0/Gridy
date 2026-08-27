@@ -284,59 +284,68 @@ class DashboardSummaryView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsBarangayOfficial]
 
     def get(self, request, *args, **kwargs):
+        user = request.user
 
-        # 1. Document request statistics
-        doc_total = DocumentRequest.objects.count()
-        doc_pending = DocumentRequest.objects.filter(status=DocumentRequest.Status.PENDING).count()
-        doc_approved = DocumentRequest.objects.filter(status=DocumentRequest.Status.PROCESSING).count()
-        doc_rejected = DocumentRequest.objects.filter(status=DocumentRequest.Status.REJECTED).count()
-        doc_released = DocumentRequest.objects.filter(status=DocumentRequest.Status.RELEASED).count()
+        # 0. Base Queryset Isolation (The Multi-Tenant Guardrail)
+        if user.role == User.Role.ADMIN:
+            # Strictly lock data to the official's specific Barangay
+            base_docs = DocumentRequest.objects.filter(user__barangay=user.barangay)
+            base_issues = IssueReport.objects.filter(reporter__barangay=user.barangay)
+            base_queue = QueueTicket.objects.filter(barangay=user.barangay)
+            base_residents = Resident.objects.filter(user__barangay=user.barangay)
+            base_users = User.objects.filter(barangay=user.barangay)
+        else: 
+            # DILG_ADMIN sees global data across all Barangays
+            base_docs = DocumentRequest.objects.all()
+            base_issues = IssueReport.objects.all()
+            base_queue = QueueTicket.objects.all()
+            base_residents = Resident.objects.all()
+            base_users = User.objects.all()
+
+# 1. Document request statistics
+        doc_total = base_docs.count()
+        doc_pending = base_docs.filter(status=DocumentRequest.Status.PENDING).count()
+        doc_approved = base_docs.filter(status=DocumentRequest.Status.PROCESSING).count()
+        doc_rejected = base_docs.filter(status=DocumentRequest.Status.REJECTED).count()
+        doc_released = base_docs.filter(status=DocumentRequest.Status.RELEASED).count()
         
         # 2. Issue reports statistics and urgency breakdown
-        issue_total = IssueReport.objects.count()
-        issue_pending = IssueReport.objects.filter(status=IssueReport.Status.PENDING).count()
-        issue_in_progress = IssueReport.objects.filter(status=IssueReport.Status.IN_PROGRESS).count()
-        issue_resolved = IssueReport.objects.filter(status=IssueReport.Status.RESOLVED).count()
+        issue_total = base_issues.count()
+        issue_pending = base_issues.filter(status=IssueReport.Status.PENDING).count()
+        issue_in_progress = base_issues.filter(status=IssueReport.Status.IN_PROGRESS).count()
+        issue_resolved = base_issues.filter(status=IssueReport.Status.RESOLVED).count()
         
-        issues_by_urgency_minor = IssueReport.objects.filter(urgency=IssueReport.Urgency.MINOR).count()
-        issues_by_urgency_moderate = IssueReport.objects.filter(urgency=IssueReport.Urgency.MODERATE).count()
-        issues_by_urgency_hazard = IssueReport.objects.filter(urgency=IssueReport.Urgency.HAZARD).count()
-        issues_by_urgency_emergency = IssueReport.objects.filter(urgency=IssueReport.Urgency.EMERGENCY).count()
-
+        issues_by_urgency_minor = base_issues.filter(urgency=IssueReport.Urgency.MINOR).count()
+        issues_by_urgency_moderate = base_issues.filter(urgency=IssueReport.Urgency.MODERATE).count()
+        issues_by_urgency_hazard = base_issues.filter(urgency=IssueReport.Urgency.HAZARD).count()
+        issues_by_urgency_emergency = base_issues.filter(urgency=IssueReport.Urgency.EMERGENCY).count()
         # 2b. Scenario / Category Breakdown
         scenarios_breakdown = {
-            "peace_and_order": IssueReport.objects.filter(category=IssueReport.Category.PEACE_AND_ORDER).count(),
-            "public_health": IssueReport.objects.filter(category=IssueReport.Category.PUBLIC_HEALTH).count(),
-            "infrastructure": IssueReport.objects.filter(category=IssueReport.Category.INFRASTRUCTURE).count(),
-            "environment": IssueReport.objects.filter(category=IssueReport.Category.ENVIRONMENT).count(),
-            "other": IssueReport.objects.filter(category=IssueReport.Category.OTHER).count(),
+            "peace_and_order": base_issues.filter(category=IssueReport.Category.PEACE_AND_ORDER).count(),
+            "public_health": base_issues.filter(category=IssueReport.Category.PUBLIC_HEALTH).count(),
+            "infrastructure": base_issues.filter(category=IssueReport.Category.INFRASTRUCTURE).count(),
+            "environment": base_issues.filter(category=IssueReport.Category.ENVIRONMENT).count(),
+            "other": base_issues.filter(category=IssueReport.Category.OTHER).count(),
         }
-
-        # 2c. TIme of Day Analysis (Night: 22:00 - 04:59)
-        night_time_incidents = IssueReport.objects.filter(
+        # 2c. Time of Day Analysis (Night: 22:00 - 04:59)
+        night_time_incidents = base_issues.filter(
             Q(incident_datetime__hour__gte=22) | Q(incident_datetime__hour__lt=5)
         ).count()
-        day_time_incidents = IssueReport.objects.filter(
+        day_time_incidents = base_issues.filter(
             incident_datetime__hour__gte=5,
             incident_datetime__hour__lt=22,
         ).count()
-
         # 3. Queue activity stats for today
         today = timezone.now().date()
-        queue_total_today = QueueTicket.objects.filter(created_at__date=today).count()
-        serving_ticket = QueueTicket.objects.filter(status=QueueTicket.Status.SERVING).first()
-        queue_waiting_count = QueueTicket.objects.filter(status=QueueTicket.Status.WAITING).count()
-
+        queue_total_today = base_queue.filter(created_at__date=today).count()
+        serving_ticket = base_queue.filter(status=QueueTicket.Status.SERVING).first()
+        queue_waiting_count = base_queue.filter(status=QueueTicket.Status.WAITING).count()
         # 4. Demographics (Purok & Age)
-        # Purok Distribution
-        purok_stats = Resident.objects.values('purok').annotate(count=Count('purok')).order_by('purok')
+        purok_stats = base_residents.values('purok').annotate(count=Count('purok')).order_by('purok')
         purok_distribution = {
-            f"Purok {item['purok']}" if item['purok'] is not None else  "Unassigned": item['count']
+            f"Purok {item['purok']}" if item['purok'] is not None else "Unassigned": item['count']
             for item in purok_stats
         }
-
-        # Age Demographics
-        today = timezone.now().date()
         def get_past_date(years):
             try:
                 return today.replace(year=today.year - years)
@@ -346,16 +355,14 @@ class DashboardSummaryView(APIView):
         date_18_years_ago = get_past_date(18)
         date_36_years_ago = get_past_date(36)
         date_60_years_ago = get_past_date(60)
-
-        age_demographics = Resident.objects.aggregate(
+        age_demographics = base_residents.aggregate(
             youth=Count('id', filter=Q(birth_date__gt=date_18_years_ago)),
             young_adult=Count('id', filter=Q(birth_date__lte=date_18_years_ago, birth_date__gt=date_36_years_ago)),
             adult=Count('id', filter=Q(birth_date__lte=date_36_years_ago, birth_date__gt=date_60_years_ago)),
             senior=Count('id', filter=Q(birth_date__lte=date_60_years_ago)),
         )
-
         return Response ({
-            "total_residents": User.objects.filter(role=User.Role.RESIDENT).count(),
+            "total_residents": base_users.filter(role=User.Role.RESIDENT).count(),
             "document_requests": {
                 "total": doc_total,
                 "pending": doc_pending,
