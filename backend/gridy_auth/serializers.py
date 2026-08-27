@@ -59,9 +59,11 @@ class RegisterSerializer(serializers.ModelSerializer):
     voter_status = serializers.BooleanField(write_only=True, default=False)
     contact_number = serializers.CharField(write_only=True, required=False, allow_blank=True)
 
+    barangay_id = serializers.IntegerField(write_only=True)
+
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'full_name', 'birth_date', 'voter_status', 'contact_number']
+        fields = ['username', 'email', 'password', 'full_name', 'birth_date', 'voter_status', 'contact_number', 'barangay_id']
 
     def validate_password(self, value):
         try:
@@ -79,12 +81,15 @@ class RegisterSerializer(serializers.ModelSerializer):
             'contact_number': validated_data.pop('contact_number', ''),
         }
 
+        b_id = validated_data.pop('barangay_id')
+
         with transaction.atomic():
             user = User.objects.create_user(
                 username=validated_data['username'],
                 email=validated_data.get('email', ''),
                 password=validated_data['password'],
-                role=User.Role.RESIDENT
+                role=User.Role.RESIDENT,
+                barangay_id=b_id
             )
             Resident.objects.create(user=user, **profile_data)
 

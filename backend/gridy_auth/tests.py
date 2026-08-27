@@ -2,12 +2,15 @@ from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-from gridy_auth.models import User, Resident
+from gridy_auth.models import User, Resident, Barangay
 
 # Create your tests here.
 
 class AuthAPITests(APITestCase):
     def setUp(self):
+        # Create a test barangay
+        self.barangay = Barangay.objects.create(name="Test Barangay")
+
         #create a test resident user
         self.username = "resident_test"
         self.password = "SecurePassword123!"
@@ -25,7 +28,8 @@ class AuthAPITests(APITestCase):
             "email": "new@example.com",
             "password": "ValidPassword123!",
             "full_name": "Test Resident",
-            "birth_date": "2000-01-01"
+            "birth_date": "2000-01-01",
+            "barangay_id": self.barangay.id
         }
 
         response = self.client.post(url, payload, format='json')
