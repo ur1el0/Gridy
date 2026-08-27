@@ -248,7 +248,8 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
             
             # 3. Lock the fetch query so we don't serve a ticket from another barangay
             next_ticket = QueueTicket.objects.filter(
-                status=QueueTicket.Status.WAITING
+                status=QueueTicket.Status.WAITING,
+                barangay=tenant
                 ).order_by('-is_priority', 'created_at').first()
             
             if not next_ticket:
@@ -259,8 +260,6 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
                 
             next_ticket.status = QueueTicket.Status.SERVING
             next_ticket.save()
-
-            return Response(QueueTicketSerializer(next_ticket).data)
 
             # Log the administrative queue counter advancement
             log_action(
