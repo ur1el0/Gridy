@@ -19,7 +19,7 @@ export const AdminProfile: React.FC = () => {
           {/* Avatar Profile Picture */}
           <div className="absolute -top-12 left-8 w-24 h-24 bg-white rounded-full p-1 shadow-md">
             <div className="w-full h-full rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-4xl font-black">
-              {user.username.charAt(0).toUpperCase()}
+              {(user.username ?? '').charAt(0).toUpperCase()}
             </div>
           </div>
           

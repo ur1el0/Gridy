@@ -236,7 +236,7 @@ export const Dashboard: React.FC = () => {
                                     paddingAngle={5}
                                     dataKey="value"
                                 >
-                                    {purokData.map((entry, index) => (
+                                    {purokData.map((_, index) => (
                                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                                     ))}
                                 </Pie>

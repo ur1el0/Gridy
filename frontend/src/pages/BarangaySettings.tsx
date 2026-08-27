@@ -1,10 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { axiosPrivate } from '../api/axios';
-import { useAuth } from '../context/AuthContext';
 
 export const BarangaySettings: React.FC = () => {
-  const { user } = useAuth();
-  
   const [barangayId, setBarangayId] = useState<number | null>(null);
   const [name, setName] = useState('');
   const [captainName, setCaptainName] = useState('');

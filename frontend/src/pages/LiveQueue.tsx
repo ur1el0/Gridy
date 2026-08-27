@@ -65,12 +65,12 @@ export const LiveQueue: React.FC = () => {
   
   useWebSocket(SOCKET_URL, {
     onOpen: () => console.log('WebSocket connection established!'),
-    onMessage: (event) => {
+    onMessage: (event: any) => {
       console.log('Real-time queue update received:', event.data);
       // Data changed on the backend! Instantly sync our UI.
       fetchTickets();
     },
-    shouldReconnect: (closeEvent) => true, // Auto-reconnect if server drops
+    shouldReconnect: () => true, // Auto-reconnect if server drops
   })
 
   useEffect(() => {
