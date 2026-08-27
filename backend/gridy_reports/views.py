@@ -33,6 +33,5 @@ class IssueReportViewSet(viewsets.ModelViewSet):
         # 3. Parameter override: Force status to PENDING and urgency MINOR
         serializer.save(
             reporter=self.request.user,
-            status=IssueReport.Status.PENDING,
-            urgency=IssueReport.Urgency.MINOR
+            status=IssueReport.Status.PENDING
         )
