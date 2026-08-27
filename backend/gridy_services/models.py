@@ -1,6 +1,5 @@
 from gridy_auth.models import Barangay
 from http.client import PROCESSING
-from django.db.models import indexes
 from django.db import models
 from django.conf import settings
 
@@ -8,6 +7,21 @@ from django.conf import settings
 
 
 class DocumentRequest(models.Model):
+    class DocumentType(models.TextChoices):
+        BARANGAY_CLEARANCE = 'Barangay Clearance', 'Barangay Clearance'
+        INDIGENCY = 'Certificate of Indigency' 'Certificate of Indigency'
+        BUSINESS_PERMIT = 'Business Permit' 'Business Permit'
+        PROOF_OF_RESIDENCY = 'Proof of Residency', 'Proof of Residency'
+        BARANGAY_ID = 'Barangay ID', 'Barangay ID'
+        GOOD_MORAL = 'Certificate of Good Moral Character','Certificate of Good Moral Character'
+        LATE_REGISTRATION = 'Certificate of Late Registration', 'Certificate of Late Registration'
+        SOLO_PARENT = 'Certificate of Solo Parent', 'Certificate of Solo Parent'
+        COHABITATION = 'Certificate of Cohabitation', 'Certificate of Cohabitation'
+        FIRST_TIME_JOB_SEEKER = 'First Time Job Seeker Certificate', 'First Time Job Seeker Certificate'
+        NO_PROPERTY = 'Certificate of No Property', 'Certificate of No Property'
+        BPO = 'Barangay Protection Order', 'Barangay Protection Order'
+
+
     class Status(models.TextChoices):
         PENDING = 'PENDING', 'Pending'
         PROCESSING = 'PROCESSING', 'Processing'
@@ -24,7 +38,10 @@ class DocumentRequest(models.Model):
         on_delete=models.CASCADE,
         related_name='document_requests'
     )
-    document_type = models.CharField(max_length=100)
+    document_type = models.CharField(
+    max_length=100,
+    choices=DocumentType.choices,
+    )
     urgency_tag = models.CharField(
         max_length=20,
         choices=UrgencyTag.choices,

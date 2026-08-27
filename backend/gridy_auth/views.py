@@ -461,7 +461,9 @@ class ChangePasswordView(APIView):
             # set_password also hashes the password that the user will get
             request.user.set_password(serializer.validated_data.get("new_password"))
             request.user.save()
-
+            
+            RefreshSession.objects.filter(user=request.user).update(is_revoked=True)
+            
             return Response({"detail": "Password updated successfully"}, status=status.HTTP_200_OK)
             
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

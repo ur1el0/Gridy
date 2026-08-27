@@ -131,7 +131,7 @@ class ServiceAPITests(APITestCase):
         # Create some mock data to verify aggregation counters
         DocumentRequest.objects.create(
             user=self.resident,
-            document_type="Indigency Certificate",
+            document_type="Certificate of Indigency",
             status="PENDING"
         )
         IssueReport.objects.create(
