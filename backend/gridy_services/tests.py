@@ -103,7 +103,7 @@ class ServiceAPITests(APITestCase):
         ticket = QueueTicket.objects.create(
             status="WAITING",
             ticket_number="T001",
-            service_type="DOCUMENT",
+            service_type="DOCUMENT"
         )
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -131,7 +131,7 @@ class ServiceAPITests(APITestCase):
         # Create some mock data to verify aggregation counters
         DocumentRequest.objects.create(
             user=self.resident,
-            document_type="Certificate of Indigency",
+            document_type="Indigency Certificate",
             status="PENDING"
         )
         IssueReport.objects.create(

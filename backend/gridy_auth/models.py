@@ -33,9 +33,6 @@ class User(AbstractUser):
         null=True,
         related_name='users'
     )
-
-    email_alerts = models.BooleanField(default=True, help_text="Receive daily queue and request email reports")
-    push_alerts = models.BooleanField(default=False, help_text="Receieve real-time FCM push notifications")
         
 class Resident(models.Model):
     user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
