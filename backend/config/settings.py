@@ -183,6 +183,20 @@ REST_FRAMEWORK = {
         'rest_framework.permissions.IsAuthenticated',
     ),
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema',
+
+    # 1. Global Pagination (Prevents OOM Crashes from massive queries)
+    'DEFAULT_PAGINATION_CLASS': 'rest_framework.pagination.PageNumberPagination',
+    'PAGE_SIZE': 50,
+
+    # 2. Global Rate Limitting (Prevents Brute-force and DDoS attacks)
+    'DEFAULT_THROTTLE_CLASSES': [
+        'rest_framework.throttling.AnonRateThrottle',
+        'rest_framework.throttling.UserRateThrottle'
+    ],
+    'DEFAULT_THROTTLE_RATE': {
+        'anon': '20/minute', # Protects /api/v1/auth/login/
+        'user': '100/minute' # Protects authenticated endpoints
+    }
 }
 
 from datetime import timedelta
