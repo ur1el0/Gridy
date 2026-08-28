@@ -263,6 +263,25 @@ class UserProfileView(APIView):
             serializer.save()
             return Response(serializer.data, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @extend_schema(
+        summary="Permanently Erase User Account (Right to Erasure)",
+        responses={204: None}
+    )
+
+    def delete(self, request):
+        user = request.user
+
+        # Log the voluntary self-deletion for the audit trail before the object is destroyed
+        log_action(
+            user=user,
+            action_type=AuditLog.ActionType.USER_ACTION,
+            description=f"User {user.username} (ID: {user.id}) voluntarily exercised their Right to Erasure and permanently deleted their account.",
+            request=request
+        )
+
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @extend_schema(
