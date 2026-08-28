@@ -4,6 +4,7 @@ from rest_framework_simplejwt.views import TokenRefreshView
 from rest_framework.routers import DefaultRouter
 from .views import (
     RegisterView, 
+    AdminRegisterView,
     CustomTokenObtainPairView, 
     ResidentImportView, 
     UserProfileView, 
@@ -23,6 +24,7 @@ router.register(r'barangay', BarangayViewSet, basename='barangay')
 
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='auth_register'),
+    path('register/admin/', AdminRegisterView.as_view(), name='auth_register_admin'),
     path('login/', CustomTokenObtainPairView.as_view(), name='auth_login'),
     path('token/refresh/', CustomTokenRefreshView.as_view(), name='auth_token_refresh'),
     path('logout/', LogoutView.as_view(), name='auth_logout'),

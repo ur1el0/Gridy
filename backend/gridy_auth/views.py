@@ -10,6 +10,7 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import (
     UserSerializer,
     RegisterSerializer,
+    AdminRegisterSerializer,
     CustomTokenObtainPairSerializer,
 )
 
@@ -70,6 +71,33 @@ class RegisterView(APIView):
             from gridy_auth.tasks import send_welcome_email
             send_welcome_email.delay(user.email, full_name)
             
+            return Response(
+                UserSerializer(user).data,
+                status=status.HTTP_201_CREATED
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(
+    summary="Register Administrative Personnel Account",
+    request=AdminRegisterSerializer,
+    responses={201: UserSerializer, 400: OpenApiTypes.OBJECT}
+)
+class AdminRegisterView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = AdminRegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+
+            full_name = f"{user.first_name} {user.last_name}".strip() or user.username
+            try:
+                from gridy_auth.tasks import send_welcome_email
+                send_welcome_email.delay(user.email, full_name)
+            except Exception:
+                pass
+
             return Response(
                 UserSerializer(user).data,
                 status=status.HTTP_201_CREATED
