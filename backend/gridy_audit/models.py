@@ -13,6 +13,8 @@ class AuditLog(models.Model):
     action_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
+        null=True,
+        blank=True,
         related_name='audit_logs'
     )
     action_type = models.CharField(
