@@ -34,6 +34,12 @@ class IssueReportViewSet(viewsets.ModelViewSet):
         return IssueReport.objects.filter(reporter=user).order_by('-created_by')
 
     def perform_create(self, serializer):
+        serializer.save(
+            reporter=self.request.user,
+            status=IssueReport.Status.PENDING
+        )
+
+    def perform_update(self, serializer):
         # 1. Capture the old state before saving
         original_status = serializer.instance.status
 
@@ -49,7 +55,7 @@ class IssueReportViewSet(viewsets.ModelViewSet):
                 request=self.request
             )
 
-            # Ping the resident's mobile phone 
+            # Ping the resident's mobile phone
             if instance.reporter:
                 send_notification_to_user_task.delay(
                     user_id=instance.reporter.id,
@@ -57,8 +63,3 @@ class IssueReportViewSet(viewsets.ModelViewSet):
                     body=f"Your issue report '{instance.title}' has been marked as {instance.get_status_display()}.",
                     data={"report_id": str(instance.id)}
                 )
-                
-        serializer.save(
-            reporter=self.request.user,
-            status=IssueReport.Status.PENDING
-        )
