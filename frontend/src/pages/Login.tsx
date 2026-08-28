@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { axiosPublic } from '../api/axios';
 
@@ -227,9 +227,9 @@ export const Login: React.FC = () => {
             <div className="text-center pt-3">
               <p className="text-xs text-slate-500 font-medium">
                 Don't have an account?{' '}
-                <a href="#register" onClick={(e) => e.preventDefault()} className="font-bold text-slate-900 hover:text-[#003882] hover:underline transition-colors">
+                <Link to="/register" className="font-bold text-slate-900 hover:text-[#003882] hover:underline transition-colors">
                   Register here
-                </a>
+                </Link>
               </p>
             </div>
           </form>
