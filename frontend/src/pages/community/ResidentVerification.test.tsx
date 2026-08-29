@@ -4,7 +4,7 @@ import ResidentVerification from "./ResidentVerification";
 import { axiosPrivate } from "../../api/axios";
 
 // 1. Mock the axios instance so we don't make real network calls
-vi.mock("../api/axios", () => ({
+vi.mock("../../api/axios", () => ({
     axiosPrivate: {
         get: vi.fn(),
         patch: vi.fn(),

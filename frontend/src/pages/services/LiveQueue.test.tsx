@@ -6,7 +6,7 @@ import { AuthProvider } from "../../context/AuthContext";
 import { BrowserRouter } from "react-router-dom";
 
 // Mock the axiosPrivate instance
-vi.mock('../api/axios', () => ({
+vi.mock('../../api/axios', () => ({
   axiosPrivate: {
     get: vi.fn(),
     patch: vi.fn(),
