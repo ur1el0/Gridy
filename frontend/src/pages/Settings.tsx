@@ -16,7 +16,6 @@ export const Settings: React.FC = () => {
   const [emailAlerts, setEmailAlerts] = useState(true);
   const [pushAlerts, setPushAlerts] = useState(false);
   const [isLoadingProfile, setIsLoadingProfile] = useState(true)
-  const [darkMode, setDarkMode] = useState(false);
   const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
 
   const [sessions, setSessions] = useState<RefreshSession[]>([])
