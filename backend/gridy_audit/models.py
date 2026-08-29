@@ -8,10 +8,13 @@ class AuditLog(models.Model):
         DOCUMENT_ACTION = 'DOCUMENT_ACTION', 'Document Request Action'
         QUEUE_ACTION = 'QUEUE_ACTION', 'Queue Ticket Action'
         REPORT_ACTION = 'REPORT_ACTION', 'Incident Report Action'
+        USER_ACTION = 'USER_ACTION', 'User Verification Action'
 
     action_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
+        null=True,
+        blank=True,
         related_name='audit_logs'
     )
     action_type = models.CharField(

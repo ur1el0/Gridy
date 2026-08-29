@@ -16,42 +16,45 @@ import { Notifications } from "./pages/Notifications";
 import { Faqs } from "./pages/Faqs";
 import { DILGDashboard } from "./pages/DILGDashboard";
 import { BarangaySettings } from "./pages/BarangaySettings";
+import { ErrorBoundary } from "./components/ErrorBoundary";
 
 export function App() {
     return (
-        <Router>
-            <Routes>
-                {/* Public Routes */}
-                <Route path="/login" element={<Login />}/>
-                <Route path="/register" element={<Register />}/>
-                
-                {/* Protected Routes Wrapper */}
-                <Route element={<ProtectedRoute/>}>
-                    {/* UI Layout Wrapper */}
-                    <Route element={<AdminLayout />}>
-                        <Route path="/dashboard" element={<Dashboard />} />
-                        <Route path="/dilg-analytics" element={<DILGDashboard />} />
-                        <Route path="/queue" element={<LiveQueue />} />
-                        <Route path="/documents" element={<DocumentRequests />} />
-                        <Route path="/settings" element={<Settings />} />
-                        <Route path="/barangay-settings" element={<BarangaySettings/>} />
-                        <Route path="/notifications" element={<Notifications />} />
-                        <Route path="/faqs" element={<Faqs />} />
-                        
-                        {/* New Combined Route */}
-                        <Route path="/communications" element={<Communications />} />
-                        
-                        {/* Resident Management Routes */}
-                        <Route path="/residents" element={<ResidentsManagement />} />
-                        <Route path="/verifications" element={<ResidentVerification />} />
-                        
-                        <Route path="/reports" element={<IssueReports />} />
-                        
-                        <Route path="/" element={<Navigate to="/dashboard" replace/>} />
-                        <Route path="/profile" element={<AdminProfile />} />
+        <ErrorBoundary>
+            <Router>
+                <Routes>
+                    {/* Public Routes */}
+                    <Route path="/login" element={<Login />}/>
+                    <Route path="/register" element={<Register />}/>
+                    
+                    {/* Protected Routes Wrapper */}
+                    <Route element={<ProtectedRoute/>}>
+                        {/* UI Layout Wrapper */}
+                        <Route element={<AdminLayout />}>
+                            <Route path="/dashboard" element={<Dashboard />} />
+                            <Route path="/dilg-analytics" element={<DILGDashboard />} />
+                            <Route path="/queue" element={<LiveQueue />} />
+                            <Route path="/documents" element={<DocumentRequests />} />
+                            <Route path="/settings" element={<Settings />} />
+                            <Route path="/barangay-settings" element={<BarangaySettings/>} />
+                            <Route path="/notifications" element={<Notifications />} />
+                            <Route path="/faqs" element={<Faqs />} />
+                            
+                            {/* New Combined Route */}
+                            <Route path="/communications" element={<Communications />} />
+                            
+                            {/* Resident Management Routes */}
+                            <Route path="/residents" element={<ResidentsManagement />} />
+                            <Route path="/verifications" element={<ResidentVerification />} />
+                            
+                            <Route path="/reports" element={<IssueReports />} />
+                            
+                            <Route path="/" element={<Navigate to="/dashboard" replace/>} />
+                            <Route path="/profile" element={<AdminProfile />} />
+                        </Route>
                     </Route>
-                </Route>
-            </Routes>
-        </Router>
+                </Routes>
+            </Router>
+        </ErrorBoundary>
     );
 }
