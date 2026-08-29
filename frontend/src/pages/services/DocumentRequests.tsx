@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { axiosPrivate } from '../api/axios';
-import { DocumentTable } from '../components/documents/DocumentTable';
-import { ReviewDocumentModal } from '../components/documents/ReviewDocumentModal';
+import { axiosPrivate } from '../../api/axios';
+import { DocumentTable } from '../../components/documents/DocumentTable';
+import { ReviewDocumentModal } from '../../components/documents/ReviewDocumentModal';
 
 export interface DocumentRequest {
   id: number;

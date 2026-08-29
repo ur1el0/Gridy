@@ -1,6 +1,6 @@
 import React, { useState} from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { axiosPrivate } from "../api/axios";
+import { axiosPrivate } from "../../api/axios";
 import { Shield, CheckCircle, AlertTriangle } from "lucide-react";
 
 export const ResetPassword = () => {

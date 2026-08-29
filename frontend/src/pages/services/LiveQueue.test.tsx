@@ -1,8 +1,8 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import { LiveQueue } from "./LiveQueue";
-import { axiosPrivate } from "../api/axios";
-import { AuthProvider } from "../context/AuthContext";
+import { axiosPrivate } from "../../api/axios";
+import { AuthProvider } from "../../context/AuthContext";
 import { BrowserRouter } from "react-router-dom";
 
 // Mock the axiosPrivate instance

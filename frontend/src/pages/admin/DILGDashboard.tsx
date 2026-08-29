@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { axiosPrivate } from '../api/axios';
+import { axiosPrivate } from '../../api/axios';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Globe } from 'lucide-react';
 

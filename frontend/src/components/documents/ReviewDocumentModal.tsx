@@ -1,4 +1,4 @@
-import type { DocumentRequest } from '../../pages/DocumentRequests';
+import type { DocumentRequest } from '../../pages/services/DocumentRequests';
 
 interface ReviewDocumentModalProps {
   selectedRequest: DocumentRequest | null;

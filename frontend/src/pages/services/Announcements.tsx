@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { axiosPrivate } from '../api/axios';
+import { axiosPrivate } from '../../api/axios';
 import { Pin, Megaphone, Plus, X, Trash } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
+import { useAuth } from '../../context/AuthContext';
 
 interface Announcement {
     id: number;

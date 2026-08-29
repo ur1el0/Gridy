@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { axiosPublic } from '../api/axios';
+import { axiosPublic } from '../../api/axios';
 
 export const Register: React.FC = () => {
   const [fullName, setFullName] = useState('');

@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from "react";
-import { axiosPrivate } from "../api/axios";
+import { axiosPrivate } from "../../api/axios";
 import { CheckCircle, Clock, Search, Filter, XCircle } from "lucide-react";
 
 interface Resident {

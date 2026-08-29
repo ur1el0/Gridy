@@ -1,24 +1,24 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
-import { Login } from "./pages/Login";
-import { Register } from "./pages/Register";
-import { Dashboard } from "./pages/Dashboard";
-import { ProtectedRoute } from "./components/ProtectedRoute";
+import { Login } from "./pages/auth/Login";
+import { Register } from "./pages/auth/Register";
+import { Dashboard } from "./pages/admin/Dashboard";
+import { ProtectedRoute } from "./components/core/ProtectedRoute";
 import { AdminLayout } from "./components/layout/AdminLayout";
-import { DocumentRequests } from "./pages/DocumentRequests";
-import { IssueReports } from "./pages/IssueReports";
-import { Communications } from "./pages/Communications";
-import { LiveQueue } from "./pages/LiveQueue";
-import ResidentVerification from "./pages/ResidentVerification";
-import { ResidentsManagement } from "./pages/ResidentsManagement";
-import { AdminProfile } from "./pages/AdminProfile";
-import { Settings } from "./pages/Settings";
-import { Notifications } from "./pages/Notifications";
-import { Faqs } from "./pages/Faqs";
-import { DILGDashboard } from "./pages/DILGDashboard";
-import { BarangaySettings } from "./pages/BarangaySettings";
-import { ErrorBoundary } from "./components/ErrorBoundary";
-import { ForgotPassword } from "./pages/ForgotPassword";
-import { ResetPassword } from "./pages/ResetPassword";
+import { DocumentRequests } from "./pages/services/DocumentRequests";
+import { IssueReports } from "./pages/services/IssueReports";
+import { Communications } from "./pages/services/Communications";
+import { LiveQueue } from "./pages/services/LiveQueue";
+import ResidentVerification from "./pages/community/ResidentVerification";
+import { ResidentsManagement } from "./pages/community/ResidentsManagement";
+import { AdminProfile } from "./pages/admin/AdminProfile";
+import { Settings } from "./pages/admin/Settings";
+import { Notifications } from "./pages/community/Notifications";
+import { Faqs } from "./pages/community/Faqs";
+import { DILGDashboard } from "./pages/admin/DILGDashboard";
+import { BarangaySettings } from "./pages/admin/BarangaySettings";
+import { ErrorBoundary } from "./components/core/ErrorBoundary";
+import { ForgotPassword } from "./pages/auth/ForgotPassword";
+import { ResetPassword } from "./pages/auth/ResetPassword";
 
 export function App() {
     return (

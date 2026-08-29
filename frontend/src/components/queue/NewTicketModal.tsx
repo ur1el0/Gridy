@@ -170,3 +170,4 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
     </div>
   );
 };
+

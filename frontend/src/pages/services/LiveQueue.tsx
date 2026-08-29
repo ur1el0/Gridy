@@ -1,13 +1,13 @@
 import _useWebSocket from 'react-use-websocket';
 const useWebSocket = (_useWebSocket as any).default || _useWebSocket;
 import React, { useEffect, useState, useMemo } from 'react';
-import { axiosPrivate } from '../api/axios';
+import { axiosPrivate } from '../../api/axios';
 import { History, Plus, X, SkipForward, CheckCircle, Bell } from 'lucide-react';
 
-import { QueueMetrics } from '../components/queue/QueueMetrics';
-import { ActiveTicketView } from '../components/queue/ActiveTicketView';
-import { WaitingListTable } from '../components/queue/WaitingListTable';
-import { NewTicketModal } from '../components/queue/NewTicketModal';
+import { QueueMetrics } from '../../components/queue/QueueMetrics';
+import { ActiveTicketView } from '../../components/queue/ActiveTicketView';
+import { WaitingListTable } from '../../components/queue/WaitingListTable';
+import { NewTicketModal } from '../../components/queue/NewTicketModal';
 
 export interface QueueTicket {
   ticket_id: number;

@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { axiosPrivate } from '../api/axios';
+import { axiosPrivate } from '../../api/axios';
 
 export const BarangaySettings: React.FC = () => {
   const [barangayId, setBarangayId] = useState<number | null>(null);

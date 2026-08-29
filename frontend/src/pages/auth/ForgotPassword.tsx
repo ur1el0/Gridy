@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
-import { axiosPrivate } from "../api/axios";
+import { axiosPrivate } from "../../api/axios";
 import { Mail, ArrowLeft, CheckCircle } from "lucide-react";
 
 export const ForgotPassword = () => {

@@ -1,7 +1,7 @@
 import { render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi } from "vitest";
 import ResidentVerification from "./ResidentVerification";
-import { axiosPrivate } from "../api/axios";
+import { axiosPrivate } from "../../api/axios";
 
 // 1. Mock the axios instance so we don't make real network calls
 vi.mock("../api/axios", () => ({

@@ -45,3 +45,4 @@ export const ActiveTicketView: React.FC<ActiveTicketViewProps> = ({ servingTicke
     </div>
   );
 };
+

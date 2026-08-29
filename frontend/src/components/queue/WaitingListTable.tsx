@@ -1,6 +1,6 @@
 import React from 'react';
 import { RotateCcw, SlidersHorizontal, MoreVertical } from 'lucide-react';
-import type { QueueTicket } from '../../pages/LiveQueue';
+import type { QueueTicket } from '../../pages/services/LiveQueue';
 
 interface WaitingListTableProps {
   waitingTickets: QueueTicket[];

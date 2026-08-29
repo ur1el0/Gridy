@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Bell, Shield, Key, Smartphone, Laptop, Trash2, Clock } from 'lucide-react';
-import { ChangePasswordModal } from '../components/modals/ChangePasswordModal';
-import { axiosPrivate } from '../api/axios';
+import { ChangePasswordModal } from '../../components/modals/ChangePasswordModal';
+import { axiosPrivate } from '../../api/axios';
 
 interface RefreshSession {
   id: number
