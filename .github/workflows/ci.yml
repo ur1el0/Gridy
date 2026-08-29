@@ -47,7 +47,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           # Manually install pytest since it's missing from requirements
-          pip install pytest pytest-django
+          pip install pytest pytest-django pytest-cov
 
       - name: Run Django Pytest
         env:
@@ -59,7 +59,7 @@ jobs:
           CELERY_RESULT_BACKEND: "redis://localhost:6379/0"
         run: |
           cd backend
-          python -m pytest
+          python -m pytest --cov=. --cov-fail-under=75
 
   frontend-tests:
     runs-on: ubuntu-latest
