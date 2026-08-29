@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { HelpCircle, ChevronDown, ChevronUp, Book, MessageSquare, Phone } from 'lucide-react';
+import { HelpCircle, ChevronDown, ChevronUp, Book} from 'lucide-react';
 
 export const Faqs: React.FC = () => {
   const [openIndex, setOpenIndex] = useState<number | null>(0);
