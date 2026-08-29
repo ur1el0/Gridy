@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, type ReactNode } from "react";
+import { axiosPrivate } from "../api/axios";
 
 export interface User {
     id?: number | string
@@ -11,7 +12,7 @@ export interface User {
 interface AuthContextType {
     user: User | null
     login: (token: string, userData?: User) => void
-    logout: () => void
+    logout: () => Promise<void>
     isAuthenticated: boolean
 }
 
@@ -56,9 +57,17 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
         }
     }
 
-    const logout = () => {
-        localStorage.removeItem('access_token')
-        setUser(null)
+    const logout = async () => {
+        try {
+            // 1. Tell the backend to blacklist the session and destroy the HttpOnly cookie
+            await axiosPrivate.post('/auth/logout/')
+        } catch(error) {
+            console.error("Server logout failed, but local state will be cleared.", error)
+        } finally {
+            // 2. Always clear local React state, regardless of network success
+            localStorage.removeItem('access_token')
+            setUser(null)
+        }
     }
 
     return (

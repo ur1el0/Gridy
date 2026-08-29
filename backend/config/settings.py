@@ -270,6 +270,7 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'Barangay Information and Service Management System API',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
+    'SERVE_PERMISSIOMNS': ['gridy_auth.permissions.IsBarangayOfficial'],
 }
 
 # Cache Settings (Redis backend in dev/prod, LocMemCache in tests)

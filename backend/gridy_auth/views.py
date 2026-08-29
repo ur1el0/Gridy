@@ -39,6 +39,9 @@ from rest_framework.generics import ListAPIView
 from django.shortcuts import get_object_or_404
 
 from rest_framework import viewsets
+from gridy_audit.services import get_client_ip, log_action
+from gridy_audit.models import AuditLog
+
 
 # Create your views here.
 
@@ -247,6 +250,35 @@ class UserProfileView(APIView):
         serializer = UserSerializer(request.user)
         return Response(serializer.data, status.HTTP_200_OK)
 
+    @extend_schema(
+        summary="Update User Profile (Preferences)",
+        request=UserSerializer,
+        responses={200: UserSerializer, 400: OpenApiTypes.OBJECT}
+    )
+    def patch(self, request):
+        serializer = UserSerializer(request.user, data=request.data, partial=True)
+        if serializer.is_valid():
+            serializer.save()
+            return Response(serializer.data, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+    @extend_schema(
+        summary="Permanently Erase User Account (Right to Erasure)",
+        responses={204: None}
+    )
+    def delete(self, request):
+        user = request.user
+
+        # Log the voluntary self-deletion for the audit trail before the object is destroyed
+        log_action(
+            user=user,
+            action_type=AuditLog.ActionType.USER_ACTION,
+            description=f"User {user.username} (ID: {user.id}) voluntarily exercised their Right to Erasure and permanently deleted their account.",
+            request=request
+        )
+
+        user.delete()
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
 
 @extend_schema(
@@ -373,6 +405,14 @@ class VerifyResidentView(APIView):
         resident = get_object_or_404(Resident, pk=pk)
         resident.is_verified = True
         resident.save()
+
+        log_action(
+            user=request.user,
+            action_type=AuditLog.ActionType.USER_ACTION,
+            description=f"Verified resident account for {resident.full_name} (ID: {resident.id}).",
+            request=request
+        )
+
         return Response(ResidentSerializer(resident).data, status=status.HTTP_200_OK)
 
 class RejectResidentView(APIView):
@@ -384,8 +424,20 @@ class RejectResidentView(APIView):
     )
     def delete(self, request, pk):
         resident = get_object_or_404(Resident, pk=pk)
+        
+        # Save info before deletion for the audit log
+        resident_name = resident.full_name
+        resident_id = resident.id
+
         user = resident.user
-        user.delete()
+        user.delete() # This cascades and deletes the Resident profile
+
+        log_action(
+            user=request.user,
+            action_type=AuditLog.ActionType.USER_ACTION,
+            description=f"Rejected and deleted pending resident account for {resident_name} (ID: {resident_id}).",
+            request=request
+        )
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
