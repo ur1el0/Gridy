@@ -11,8 +11,15 @@ import logging
 logger = logging.getLogger(__name__)
 
 class ActivityScheduleViewSet(viewsets.ModelViewSet):
-    queryset = ActivitySchedule.objects.all().order_by('event_datetime', 'created_at')
     serializer_class = ActivityScheduleSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            return ActivitySchedule.objects.none()
+        if user.role == User.Role.SUPER_ADMIN:
+            return ActivitySchedule.objects.all().order_by('event_datetime', 'created_at')
+        return ActivitySchedule.objects.filter(created_by__barangay=user.barangay).order_by('event_datetime', 'created_at')
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
@@ -27,8 +34,15 @@ class ActivityScheduleViewSet(viewsets.ModelViewSet):
 
 
 class AnnouncementViewSet(viewsets.ModelViewSet):
-    queryset = Announcement.objects.all().order_by('-is_pinned', '-created_at')
     serializer_class = AnnouncementSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            return Announcement.objects.none()
+        if user.role == User.Role.SUPER_ADMIN:
+            return Announcement.objects.all().order_by('-is_pinned', '-created_at')
+        return Announcement.objects.filter(created_by__barangay=user.barangay).order_by('-is_pinned', '-created_at')
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
@@ -58,7 +72,7 @@ class FCMDeviceViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if not user or not user.is_authenticated:
             return FCMDevice.objects.none()
-        if user.role == User.Role.ADMIN:
+        if user.role == User.Role.ADMIN or user.role == User.Role.SUPER_ADMIN:
             return FCMDevice.objects.all()
         return FCMDevice.objects.filter(user=user)
 
