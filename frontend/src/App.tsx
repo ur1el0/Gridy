@@ -17,6 +17,8 @@ import { Faqs } from "./pages/Faqs";
 import { DILGDashboard } from "./pages/DILGDashboard";
 import { BarangaySettings } from "./pages/BarangaySettings";
 import { ErrorBoundary } from "./components/ErrorBoundary";
+import { ForgotPassword } from "./pages/ForgotPassword";
+import { ResetPassword } from "./pages/ResetPassword";
 
 export function App() {
     return (
@@ -26,6 +28,8 @@ export function App() {
                     {/* Public Routes */}
                     <Route path="/login" element={<Login />}/>
                     <Route path="/register" element={<Register />}/>
+                    <Route path="/forgot-password" element={<ForgotPassword />}/>
+                    <Route path="/reset-password" element={<ResetPassword />}/>
                     
                     {/* Protected Routes Wrapper */}
                     <Route element={<ProtectedRoute/>}>
