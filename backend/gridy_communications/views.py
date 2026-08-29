@@ -17,7 +17,7 @@ class ActivityScheduleViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if not user or not user.is_authenticated:
             return ActivitySchedule.objects.none()
-        if user.role == User.Role.SUPER_ADMIN:
+        if user.role == User.Role.ADMIN:
             return ActivitySchedule.objects.all().order_by('event_datetime', 'created_at')
         return ActivitySchedule.objects.filter(created_by__barangay=user.barangay).order_by('event_datetime', 'created_at')
 
@@ -40,7 +40,7 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if not user or not user.is_authenticated:
             return Announcement.objects.none()
-        if user.role == User.Role.SUPER_ADMIN:
+        if user.role == User.Role.ADMIN:
             return Announcement.objects.all().order_by('-is_pinned', '-created_at')
         return Announcement.objects.filter(created_by__barangay=user.barangay).order_by('-is_pinned', '-created_at')
 
@@ -72,7 +72,7 @@ class FCMDeviceViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if not user or not user.is_authenticated:
             return FCMDevice.objects.none()
-        if user.role == User.Role.ADMIN or user.role == User.Role.SUPER_ADMIN:
+        if user.role == User.Role.ADMIN:
             return FCMDevice.objects.all()
         return FCMDevice.objects.filter(user=user)
 

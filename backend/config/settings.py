@@ -259,7 +259,7 @@ CELERY_TIMEZONE = TIME_ZONE
 
 # Dynamically enable Eager Mode when running tests
 import sys
-if 'test' in sys.argv:
+if 'test' in sys.argv or 'pytest' in sys.modules:
     CELERY_TASK_ALWAYS_EAGER = True
     CELERY_TASK_EAGER_PROPAGATES = True
 
@@ -274,7 +274,7 @@ SPECTACULAR_SETTINGS = {
 }
 
 # Cache Settings (Redis backend in dev/prod, LocMemCache in tests)
-if 'test' in sys.argv:
+if 'test' in sys.argv or 'pytest' in sys.modules:
     CACHES = {
         'default': {
             'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
@@ -331,3 +331,35 @@ EMAIL_PORT = 587
 EMAIL_USE_TLS = True
 EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
+
+
+import sys
+
+# Testing Overrides (Bypass NeonDB, Redis, Celery, and SMTP locally)
+if 'test' in sys.argv or 'pytest' in sys.modules:
+    # 1. Force local SQLite db for fast tests
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': ':memory:',
+        }
+    }
+
+    # 2. Completely disable Redis and Celery Backends
+    CELERY_TASK_ALWAYS_EAGER = True
+    CELERY_TASK_STORE_EAGER_RESULT = False
+    CELERY_BROKER_URL= 'memory://'
+    CELERY_RESULT_BACKEND= None
+
+    # 3. Disable real emails and WebSockets
+    EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        }
+    }
+    CACHES = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.locmem.LocMemCache'
+        }
+    }
