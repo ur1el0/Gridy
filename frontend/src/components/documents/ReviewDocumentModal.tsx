@@ -1,6 +1,15 @@
-import React from 'react';
+import type { DocumentRequest } from '../../pages/DocumentRequests';
 
-export const ReviewDocumentModal = ({ selectedRequest, closeModal, getStatusBadge, handleStatusUpdate, isUpdating, handleDownloadPDF }) => {
+interface ReviewDocumentModalProps {
+  selectedRequest: DocumentRequest | null;
+  closeModal: () => void;
+  getStatusBadge: (status: string) => string;
+  handleStatusUpdate: (newStatus: string) => void;
+  isUpdating: boolean;
+  handleDownloadPDF: () => void;
+}
+
+export const ReviewDocumentModal = ({ selectedRequest, closeModal, getStatusBadge, handleStatusUpdate, isUpdating, handleDownloadPDF }: ReviewDocumentModalProps) => {
   if (!selectedRequest) return null;
   return (
     <div className="fixed inset-0 overflow-hidden z-50">

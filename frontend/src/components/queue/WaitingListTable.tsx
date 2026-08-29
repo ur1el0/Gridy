@@ -1,6 +1,6 @@
 import React from 'react';
 import { RotateCcw, SlidersHorizontal, MoreVertical } from 'lucide-react';
-import { QueueTicket } from '../../pages/LiveQueue';
+import type { QueueTicket } from '../../pages/LiveQueue';
 
 interface WaitingListTableProps {
   waitingTickets: QueueTicket[];
@@ -129,3 +129,4 @@ export const WaitingListTable: React.FC<WaitingListTableProps> = ({
     </div>
   );
 };
+

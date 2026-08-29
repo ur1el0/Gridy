@@ -1,6 +1,12 @@
-import React from 'react';
+import type { DocumentRequest } from '../../pages/DocumentRequests';
 
-export const DocumentTable = ({ requests, openModal, getStatusBadge }) => {
+interface DocumentTableProps {
+  requests: DocumentRequest[];
+  openModal: (request: DocumentRequest) => void;
+  getStatusBadge: (status: string) => string;
+}
+
+export const DocumentTable = ({ requests, openModal, getStatusBadge }: DocumentTableProps) => {
   return (
     <div className="bg-surface shadow-sm border border-border rounded-lg overflow-hidden">
       <table className="min-w-full divide-y divide-border">
