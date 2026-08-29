@@ -1,64 +1,8 @@
 from rest_framework import serializers
-from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.db import transaction
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
-from .models import User, Resident, Barangay
-
-from django.contrib.auth.tokens import default_token_generator
-from django.utils.http import urlsafe_base64_decode
-from django.utils.encoding import force_str
-
-class BarangaySerializer(serializers.ModelSerializer):
-    class Meta:
-        model = Barangay
-        fields = ['id', 'name', 'logo', 'city_seal', 'captain_name', 'office_contact']
-
-class ResidentSerializer(serializers.ModelSerializer):
-    username = serializers.CharField(source='user.username', read_only=True, default='')
-    email = serializers.CharField(source='user.email', read_only=True, default='')
-    class Meta:
-        model = Resident
-        fields = ['id', 'username', 'email', 'full_name', 'birth_date', 'voter_status', 'contact_number', 'purok', 'is_verified', 'guardian']
-
-
-class UserSerializer(serializers.ModelSerializer):
-    profile = ResidentSerializer(read_only=True)
-    barangay = BarangaySerializer(read_only=True)
-
-    class Meta:
-        model = User
-        fields = ['id', 'username', 'email', 'role', 'barangay','profile']
-
-
-class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
-    @classmethod
-    def get_token(cls, user):
-        token = super().get_token(user)
-        token['username'] = user.username
-        full_name = getattr(user.profile, 'full_name', None) if hasattr(user, 'profile') else None
-        if not full_name:
-            full_name = f"{user.first_name} {user.last_name}".strip() or user.username
-        token['full_name'] = full_name
-        token['role'] = user.role
-        token['barangay_id'] = user.barangay.id if user.barangay else None
-        return token
-
-    def validate(self, attrs):
-        data = super().validate(attrs)
-        full_name = getattr(self.user.profile, 'full_name', None) if hasattr(self.user, 'profile') else None
-        if not full_name:
-            full_name = f"{self.user.first_name} {self.user.last_name}".strip() or self.user.username
-        data['user'] = {
-            'id': self.user.id,
-            'username': self.user.username,
-            'email': self.user.email,
-            'role': self.user.role,
-            'barangay_id': self.user.barangay.id if self.user.barangay else None,
-            'full_name': full_name,
-        }
-        return data
-
+from gridy_auth.models import User, Resident, Barangay
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -77,7 +21,6 @@ class RegisterSerializer(serializers.ModelSerializer):
         except DjangoValidationError as e:
             raise serializers.ValidationError(list(e.messages))
         return value
-
 
     def create(self, validated_data):
         profile_data = {
@@ -167,32 +110,4 @@ class AdminRegisterSerializer(serializers.Serializer):
                 is_staff=True
             )
 
-        return user
-
-
-class PasswordResetRequestSerializer(serializers.Serializer):
-    email = serializers.EmailField()
-
-class PasswordResetConfirmSerializer(serializers.Serializer):
-    new_password = serializers.CharField(write_only=True, min_length=8)
-    uidb64 = serializers.CharField(write_only=True)
-    token = serializers.CharField(write_only=True)
-
-    def validate(self, data):
-        try:
-            uid = force_str(urlsafe_base64_decode(data['uidb64']))
-            user = User.objects.get(pk=uid)
-        except (TypeError, ValueError, OverflowError, User.DoesNotExist):
-            raise serializers.ValidationError({"uidb64": "Invalid user ID"})
-        
-        if not default_token_generator.check_token(user, data['token']):
-            raise serializers.ValidationError({"token": "Invalid or expired token"})
-        
-        self.context['user'] = user
-        return data
-    
-    def save(self):
-        user = self.context['user']
-        user.set_password(self.validated_data['new_password'])
-        user.save()
         return user
