@@ -27,7 +27,7 @@ export const Settings: React.FC = () => {
         const response = await axiosPrivate.get('/auth/me/')
         setEmailAlerts(response.data.email_alerts)
         setPushAlerts(response.data.push_alerts)
-      } catch {
+      } catch (error) {
         console.error("Failed to load profile preferences", error)
       } finally {
         setIsLoadingProfile(false)
@@ -62,7 +62,7 @@ export const Settings: React.FC = () => {
     try {
       const response = await axiosPrivate.get('/auth/sessions/')
       setSessions(response.data)
-    } catch {
+    } catch (error) {
       console.error("Failed to fetch sessions", error)
     } finally {
       setIsLoadingSessions(false)
