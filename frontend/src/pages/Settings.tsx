@@ -85,34 +85,7 @@ export const Settings: React.FC = () => {
         <p className="text-[#64748b] text-sm mt-1">Manage your dashboard preferences and security.</p>
       </div>
       
-      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100">
-        
-        {/* Appearance Section */}
-        <div className="p-8">
-          <div className="flex items-center gap-3 mb-6">
-            <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-indigo-600">
-              <Monitor className="w-5 h-5" />
-            </div>
-            <div>
-              <h2 className="text-lg font-bold text-slate-900">Appearance</h2>
-              <p className="text-xs text-slate-500">Customize how Gridy looks on your device.</p>
-            </div>
-          </div>
-          
-          <div className="flex items-center justify-between py-3">
-            <div className="flex items-center gap-3">
-              <Moon className="w-4 h-4 text-slate-400" />
-              <span className="text-sm font-semibold text-slate-700">Dark Mode</span>
-            </div>
-            <button 
-              onClick={() => setDarkMode(!darkMode)}
-              className={`w-11 h-6 rounded-full transition-colors relative ${darkMode ? 'bg-indigo-600' : 'bg-slate-200'}`}
-            >
-              <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${darkMode ? 'translate-x-5' : 'translate-x-0'}`}></div>
-            </button>
-          </div>
-        </div>
-
+      <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100">  
         {/* Notifications Section */}
         <div className="p-8">
           <div className="flex items-center gap-3 mb-6">

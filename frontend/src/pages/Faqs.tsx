@@ -78,17 +78,6 @@ export const Faqs: React.FC = () => {
             <p className="text-blue-100 text-sm mb-6 leading-relaxed">
               Our technical support team is available 24/7 to assist barangay administrators with the Gridy platform.
             </p>
-            
-            <div className="space-y-3">
-              <button className="w-full flex items-center justify-center gap-2 bg-white text-blue-700 font-bold py-2.5 rounded-xl hover:bg-blue-50 transition-colors text-sm">
-                <MessageSquare className="w-4 h-4" />
-                Live Chat Support
-              </button>
-              <button className="w-full flex items-center justify-center gap-2 bg-blue-800/50 text-white font-bold py-2.5 rounded-xl hover:bg-blue-800/70 transition-colors text-sm">
-                <Phone className="w-4 h-4" />
-                Call +63 (2) 1234-5678
-              </button>
-            </div>
           </div>
         </div>
         
