@@ -227,3 +227,16 @@ class PasswordResetConfirmView(APIView):
             serializer.save()
             return Response({"detail": "Password has been reset successfully."}, status=status.HTTP_200_OK)
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+from rest_framework import viewsets, permissions
+from gridy_auth.serializers import RefreshSessionSerializer
+
+class SessionViewSet(viewsets.ReadOnlyModelViewSet):
+    """
+    Exposes the user's active and revoked sessions for security management.
+    """
+    serializer_class = RefreshSessionSerializer
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get_queryset(self):
+        return RefreshSession.objects.filter(user=self.request.user).order_by('-created_at')
+

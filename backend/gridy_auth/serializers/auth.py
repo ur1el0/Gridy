@@ -3,7 +3,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import force_str
-from gridy_auth.models import User
+from gridy_auth.models import User, RefreshSession
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
     @classmethod
@@ -60,3 +60,10 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         user.set_password(self.validated_data['new_password'])
         user.save()
         return user
+
+
+class RefreshSessionSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = RefreshSession
+        fields = ['id', 'ip_address', 'user_agent', 'created_at', 'expires_at', 'is_revoked']
+        read_only_fields = fields

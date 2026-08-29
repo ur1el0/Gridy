@@ -1,5 +1,5 @@
 from .authentication import (
-    CustomTokenObtainPairView,
+    CustomTokenObtainPairView, SessionViewSet,
     CustomTokenRefreshView,
     LogoutView,
     PasswordResetRequestView,
