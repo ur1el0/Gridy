@@ -11,8 +11,15 @@ import logging
 logger = logging.getLogger(__name__)
 
 class ActivityScheduleViewSet(viewsets.ModelViewSet):
-    queryset = ActivitySchedule.objects.all().order_by('event_datetime', 'created_at')
     serializer_class = ActivityScheduleSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            return ActivitySchedule.objects.none()
+        if user.role == User.Role.ADMIN:
+            return ActivitySchedule.objects.all().order_by('event_datetime', 'created_at')
+        return ActivitySchedule.objects.filter(created_by__barangay=user.barangay).order_by('event_datetime', 'created_at')
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
@@ -21,17 +28,6 @@ class ActivityScheduleViewSet(viewsets.ModelViewSet):
         # Only officials can write (create, update, delete)
         return [IsBarangayOfficial()]
 
-    def get_queryset(self):
-        user = self.request.user
-        if not user or not user.is_authenticated:
-            return ActivitySchedule.objects.none()
-        
-        if user.role == User.Role.DILG_ADMIN:
-            return ActivitySchedule.objects.all().order_by('event_datetime', 'created_at')
-        
-        # Residents and Officials see activities isolated to their Barangay
-        return ActivitySchedule.objects.filter(created_at__barangay=user.barangay).order_by('event_datetime', 'created_at')
-    
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
 
@@ -40,21 +36,18 @@ class ActivityScheduleViewSet(viewsets.ModelViewSet):
 class AnnouncementViewSet(viewsets.ModelViewSet):
     serializer_class = AnnouncementSerializer
 
-    def get_permissions(self):
-        if self.action in ['list', 'retrieve']:
-            return [permissions.IsAuthenticated()]
-        return [IsBarangayOfficial()]
-
     def get_queryset(self):
         user = self.request.user
         if not user or not user.is_authenticated:
             return Announcement.objects.none()
-        
-        if user.role == User.Role.DILG_ADMIN:
+        if user.role == User.Role.ADMIN:
             return Announcement.objects.all().order_by('-is_pinned', '-created_at')
-        
-        # Residents and Officials see announcements isolated to their Barangay
         return Announcement.objects.filter(created_by__barangay=user.barangay).order_by('-is_pinned', '-created_at')
+
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            return [permissions.IsAuthenticated()]
+        return [IsBarangayOfficial()]
 
     def perform_create(self, serializer):
         instance = serializer.save(created_by=self.request.user)

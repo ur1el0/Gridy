@@ -45,8 +45,10 @@ class AnnouncementAPITests(APITestCase):
         )
 
         response = self.client.get(self.url)
-        # Extract the results array from the paginated response
-        data = response.json().get('results', response.json())
+        data = response.json()
+        
+        # If paginated, extract 'results', otherwise use the raw list
+        results = data.get('results', data) if isinstance(data, dict) else data
 
         # 1. Check HTTP Status Code
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -54,12 +56,12 @@ class AnnouncementAPITests(APITestCase):
         # 2. Check the order of announcements
         # Pinned should be first, then the others by creation time (newest first)
         expected_order = [ann2.id, ann3.id, ann1.id]
-        actual_order = [item['id'] for item in data]
+        actual_order = [item['id'] for item in results]
         self.assertEqual(actual_order, expected_order, "Announcements are not ordered correctly")
 
         # 3. Check that pinned items are correctly identified
-        pinned_items = [item for item in data if item['is_pinned']]
-        regular_items = [item for item in data if not item['is_pinned']]
+        pinned_items = [item for item in results if item['is_pinned']]
+        regular_items = [item for item in results if not item['is_pinned']]
 
         self.assertEqual(len(pinned_items), 1, "Should be exactly one pinned announcement")
         self.assertEqual(pinned_items[0]['id'], ann2.id, "Pinned announcement is not the correct one")

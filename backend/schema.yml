@@ -6,9 +6,16 @@ info:
 paths:
   /api/v1/activities/:
     get:
-      operationId: v1_activities_list
+      operationId: api_v1_activities_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
       tags:
-      - v1
+      - api
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -17,14 +24,12 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/ActivitySchedule'
+                $ref: '#/components/schemas/PaginatedActivityScheduleList'
           description: ''
     post:
-      operationId: v1_activities_create
+      operationId: api_v1_activities_create
       tags:
-      - v1
+      - api
       requestBody:
         content:
           application/json:
@@ -49,7 +54,7 @@ paths:
           description: ''
   /api/v1/activities/{id}/:
     get:
-      operationId: v1_activities_retrieve
+      operationId: api_v1_activities_retrieve
       parameters:
       - in: path
         name: id
@@ -58,7 +63,7 @@ paths:
         description: A unique integer value identifying this activity schedule.
         required: true
       tags:
-      - v1
+      - api
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -70,7 +75,7 @@ paths:
                 $ref: '#/components/schemas/ActivitySchedule'
           description: ''
     put:
-      operationId: v1_activities_update
+      operationId: api_v1_activities_update
       parameters:
       - in: path
         name: id
@@ -79,7 +84,7 @@ paths:
         description: A unique integer value identifying this activity schedule.
         required: true
       tags:
-      - v1
+      - api
       requestBody:
         content:
           application/json:
@@ -103,7 +108,7 @@ paths:
                 $ref: '#/components/schemas/ActivitySchedule'
           description: ''
     patch:
-      operationId: v1_activities_partial_update
+      operationId: api_v1_activities_partial_update
       parameters:
       - in: path
         name: id
@@ -112,7 +117,7 @@ paths:
         description: A unique integer value identifying this activity schedule.
         required: true
       tags:
-      - v1
+      - api
       requestBody:
         content:
           application/json:
@@ -135,7 +140,7 @@ paths:
                 $ref: '#/components/schemas/ActivitySchedule'
           description: ''
     delete:
-      operationId: v1_activities_destroy
+      operationId: api_v1_activities_destroy
       parameters:
       - in: path
         name: id
@@ -144,7 +149,7 @@ paths:
         description: A unique integer value identifying this activity schedule.
         required: true
       tags:
-      - v1
+      - api
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -153,9 +158,16 @@ paths:
           description: No response body
   /api/v1/announcements/:
     get:
-      operationId: v1_announcements_list
+      operationId: api_v1_announcements_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
       tags:
-      - v1
+      - api
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -164,14 +176,12 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/Announcement'
+                $ref: '#/components/schemas/PaginatedAnnouncementList'
           description: ''
     post:
-      operationId: v1_announcements_create
+      operationId: api_v1_announcements_create
       tags:
-      - v1
+      - api
       requestBody:
         content:
           application/json:
@@ -196,7 +206,7 @@ paths:
           description: ''
   /api/v1/announcements/{id}/:
     get:
-      operationId: v1_announcements_retrieve
+      operationId: api_v1_announcements_retrieve
       parameters:
       - in: path
         name: id
@@ -205,7 +215,7 @@ paths:
         description: A unique integer value identifying this announcement.
         required: true
       tags:
-      - v1
+      - api
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -217,7 +227,7 @@ paths:
                 $ref: '#/components/schemas/Announcement'
           description: ''
     put:
-      operationId: v1_announcements_update
+      operationId: api_v1_announcements_update
       parameters:
       - in: path
         name: id
@@ -226,7 +236,7 @@ paths:
         description: A unique integer value identifying this announcement.
         required: true
       tags:
-      - v1
+      - api
       requestBody:
         content:
           application/json:
@@ -250,7 +260,7 @@ paths:
                 $ref: '#/components/schemas/Announcement'
           description: ''
     patch:
-      operationId: v1_announcements_partial_update
+      operationId: api_v1_announcements_partial_update
       parameters:
       - in: path
         name: id
@@ -259,7 +269,7 @@ paths:
         description: A unique integer value identifying this announcement.
         required: true
       tags:
-      - v1
+      - api
       requestBody:
         content:
           application/json:
@@ -282,7 +292,7 @@ paths:
                 $ref: '#/components/schemas/Announcement'
           description: ''
     delete:
-      operationId: v1_announcements_destroy
+      operationId: api_v1_announcements_destroy
       parameters:
       - in: path
         name: id
@@ -291,19 +301,99 @@ paths:
         description: A unique integer value identifying this announcement.
         required: true
       tags:
-      - v1
+      - api
       security:
       - jwtAuth: []
       - cookieAuth: []
       responses:
         '204':
           description: No response body
+  /api/v1/auth/barangay/:
+    get:
+      operationId: api_v1_auth_barangay_list
+      description: |-
+        Settings endpoint for Barangay Identity.
+        Only allows GET and PATCH
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBarangayList'
+          description: ''
+  /api/v1/auth/barangay/{id}/:
+    get:
+      operationId: api_v1_auth_barangay_retrieve
+      description: |-
+        Settings endpoint for Barangay Identity.
+        Only allows GET and PATCH
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Barangay'
+          description: ''
+    patch:
+      operationId: api_v1_auth_barangay_partial_update
+      description: |-
+        Settings endpoint for Barangay Identity.
+        Only allows GET and PATCH
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedBarangay'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedBarangay'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Barangay'
+          description: ''
   /api/v1/auth/import-residents/:
     post:
-      operationId: v1_auth_import_residents_create
+      operationId: api_v1_auth_import_residents_create
       summary: Bulk Import Residents from CSV
       tags:
-      - v1
+      - api
       requestBody:
         content:
           multipart/form-data:
@@ -335,12 +425,12 @@ paths:
           description: ''
   /api/v1/auth/login/:
     post:
-      operationId: v1_auth_login_create
+      operationId: api_v1_auth_login_create
       description: |-
         Takes a set of user credentials and returns an access and refresh JSON web
         token pair to prove the authentication of those credentials.
       tags:
-      - v1
+      - api
       requestBody:
         content:
           application/json:
@@ -360,12 +450,24 @@ paths:
               schema:
                 $ref: '#/components/schemas/CustomTokenObtainPair'
           description: ''
+  /api/v1/auth/logout/:
+    post:
+      operationId: api_v1_auth_logout_create
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '204':
+          description: No response body
   /api/v1/auth/me/:
     get:
-      operationId: v1_auth_me_retrieve
+      operationId: api_v1_auth_me_retrieve
       summary: Get Current User Profile
       tags:
-      - v1
+      - api
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -376,12 +478,34 @@ paths:
               schema:
                 $ref: '#/components/schemas/User'
           description: ''
+  /api/v1/auth/pending-residents/:
+    get:
+      operationId: api_v1_auth_pending_residents_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResidentList'
+          description: ''
   /api/v1/auth/register/:
     post:
-      operationId: v1_auth_register_create
+      operationId: api_v1_auth_register_create
       summary: Register Resident Account
       tags:
-      - v1
+      - api
       requestBody:
         content:
           application/json:
@@ -412,14 +536,241 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/v1/auth/register/admin/:
+    post:
+      operationId: api_v1_auth_register_admin_create
+      summary: Register Administrative Personnel Account
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdminRegister'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/AdminRegister'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/AdminRegister'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+          description: ''
+        '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/auth/reject-resident/{id}/:
+    delete:
+      operationId: api_v1_auth_reject_resident_destroy
+      summary: Reject and delete a pending resident account
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/auth/resident/:
+    get:
+      operationId: api_v1_auth_resident_list
+      description: |-
+        CRUD endpoint for verified residents.
+        Only Barangay Officials can access this full directory.
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedResidentList'
+          description: ''
+    post:
+      operationId: api_v1_auth_resident_create
+      description: |-
+        CRUD endpoint for verified residents.
+        Only Barangay Officials can access this full directory.
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Resident'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Resident'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Resident'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resident'
+          description: ''
+  /api/v1/auth/resident/{id}/:
+    get:
+      operationId: api_v1_auth_resident_retrieve
+      description: |-
+        CRUD endpoint for verified residents.
+        Only Barangay Officials can access this full directory.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resident'
+          description: ''
+    put:
+      operationId: api_v1_auth_resident_update
+      description: |-
+        CRUD endpoint for verified residents.
+        Only Barangay Officials can access this full directory.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Resident'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/Resident'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/Resident'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resident'
+          description: ''
+    patch:
+      operationId: api_v1_auth_resident_partial_update
+      description: |-
+        CRUD endpoint for verified residents.
+        Only Barangay Officials can access this full directory.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedResident'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedResident'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedResident'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resident'
+          description: ''
+    delete:
+      operationId: api_v1_auth_resident_destroy
+      description: |-
+        CRUD endpoint for verified residents.
+        Only Barangay Officials can access this full directory.
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: string
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '204':
+          description: No response body
   /api/v1/auth/token/refresh/:
     post:
-      operationId: v1_auth_token_refresh_create
+      operationId: api_v1_auth_token_refresh_create
       description: |-
         Takes a refresh type JSON web token and returns an access type JSON web
         token if the refresh token is valid.
       tags:
-      - v1
+      - api
       requestBody:
         content:
           application/json:
@@ -439,14 +790,43 @@ paths:
               schema:
                 $ref: '#/components/schemas/TokenRefresh'
           description: ''
+  /api/v1/auth/verify-resident/{id}/:
+    patch:
+      operationId: api_v1_auth_verify_resident_partial_update
+      summary: Verify a resident account
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Resident'
+          description: ''
+        '404':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/v1/dashboard/summary/:
     get:
-      operationId: v1_dashboard_summary_retrieve
+      operationId: api_v1_dashboard_summary_retrieve
       description: Returns pre-calculated counters and urgency distributions for reports,
         document queues, and clearances.
       summary: Get Dashboard Statistics
       tags:
-      - v1
+      - api
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -459,9 +839,16 @@ paths:
           description: ''
   /api/v1/devices/:
     get:
-      operationId: v1_devices_list
+      operationId: api_v1_devices_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
       tags:
-      - v1
+      - api
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -470,14 +857,12 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/FCMDevice'
+                $ref: '#/components/schemas/PaginatedFCMDeviceList'
           description: ''
     post:
-      operationId: v1_devices_create
+      operationId: api_v1_devices_create
       tags:
-      - v1
+      - api
       requestBody:
         content:
           application/json:
@@ -502,7 +887,7 @@ paths:
           description: ''
   /api/v1/devices/{id}/:
     get:
-      operationId: v1_devices_retrieve
+      operationId: api_v1_devices_retrieve
       parameters:
       - in: path
         name: id
@@ -511,7 +896,7 @@ paths:
         description: A unique integer value identifying this fcm device.
         required: true
       tags:
-      - v1
+      - api
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -523,7 +908,7 @@ paths:
                 $ref: '#/components/schemas/FCMDevice'
           description: ''
     put:
-      operationId: v1_devices_update
+      operationId: api_v1_devices_update
       parameters:
       - in: path
         name: id
@@ -532,7 +917,7 @@ paths:
         description: A unique integer value identifying this fcm device.
         required: true
       tags:
-      - v1
+      - api
       requestBody:
         content:
           application/json:
@@ -556,7 +941,7 @@ paths:
                 $ref: '#/components/schemas/FCMDevice'
           description: ''
     patch:
-      operationId: v1_devices_partial_update
+      operationId: api_v1_devices_partial_update
       parameters:
       - in: path
         name: id
@@ -565,7 +950,7 @@ paths:
         description: A unique integer value identifying this fcm device.
         required: true
       tags:
-      - v1
+      - api
       requestBody:
         content:
           application/json:
@@ -588,7 +973,7 @@ paths:
                 $ref: '#/components/schemas/FCMDevice'
           description: ''
     delete:
-      operationId: v1_devices_destroy
+      operationId: api_v1_devices_destroy
       parameters:
       - in: path
         name: id
@@ -597,18 +982,36 @@ paths:
         description: A unique integer value identifying this fcm device.
         required: true
       tags:
-      - v1
+      - api
       security:
       - jwtAuth: []
       - cookieAuth: []
       responses:
         '204':
           description: No response body
+  /api/v1/dilg-analytics/:
+    get:
+      operationId: api_v1_dilg_analytics_retrieve
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          description: No response body
   /api/v1/document-requests/:
     get:
-      operationId: v1_document_requests_list
+      operationId: api_v1_document_requests_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
       tags:
-      - v1
+      - api
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -617,14 +1020,12 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/DocumentRequest'
+                $ref: '#/components/schemas/PaginatedDocumentRequestList'
           description: ''
     post:
-      operationId: v1_document_requests_create
+      operationId: api_v1_document_requests_create
       tags:
-      - v1
+      - api
       requestBody:
         content:
           application/json:
@@ -649,7 +1050,7 @@ paths:
           description: ''
   /api/v1/document-requests/{id}/:
     get:
-      operationId: v1_document_requests_retrieve
+      operationId: api_v1_document_requests_retrieve
       parameters:
       - in: path
         name: id
@@ -658,7 +1059,7 @@ paths:
         description: A unique integer value identifying this document request.
         required: true
       tags:
-      - v1
+      - api
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -670,7 +1071,7 @@ paths:
                 $ref: '#/components/schemas/DocumentRequest'
           description: ''
     put:
-      operationId: v1_document_requests_update
+      operationId: api_v1_document_requests_update
       parameters:
       - in: path
         name: id
@@ -679,7 +1080,7 @@ paths:
         description: A unique integer value identifying this document request.
         required: true
       tags:
-      - v1
+      - api
       requestBody:
         content:
           application/json:
@@ -703,7 +1104,7 @@ paths:
                 $ref: '#/components/schemas/DocumentRequest'
           description: ''
     patch:
-      operationId: v1_document_requests_partial_update
+      operationId: api_v1_document_requests_partial_update
       parameters:
       - in: path
         name: id
@@ -712,7 +1113,7 @@ paths:
         description: A unique integer value identifying this document request.
         required: true
       tags:
-      - v1
+      - api
       requestBody:
         content:
           application/json:
@@ -735,7 +1136,7 @@ paths:
                 $ref: '#/components/schemas/DocumentRequest'
           description: ''
     delete:
-      operationId: v1_document_requests_destroy
+      operationId: api_v1_document_requests_destroy
       parameters:
       - in: path
         name: id
@@ -744,16 +1145,16 @@ paths:
         description: A unique integer value identifying this document request.
         required: true
       tags:
-      - v1
+      - api
       security:
       - jwtAuth: []
       - cookieAuth: []
       responses:
         '204':
           description: No response body
-  /api/v1/document-requests/{id}/validate/:
-    patch:
-      operationId: v1_document_requests_validate_partial_update
+  /api/v1/document-requests/{id}/generate-pdf/:
+    get:
+      operationId: api_v1_document_requests_generate_pdf_retrieve
       parameters:
       - in: path
         name: id
@@ -762,7 +1163,29 @@ paths:
         description: A unique integer value identifying this document request.
         required: true
       tags:
-      - v1
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentRequest'
+          description: ''
+  /api/v1/document-requests/{id}/validate/:
+    patch:
+      operationId: api_v1_document_requests_validate_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this document request.
+        required: true
+      tags:
+      - api
       requestBody:
         content:
           application/json:
@@ -784,11 +1207,31 @@ paths:
               schema:
                 $ref: '#/components/schemas/DocumentRequest'
           description: ''
+  /api/v1/health/:
+    get:
+      operationId: api_v1_health_retrieve
+      description: System health monitoring endpoint checking Database and Cache dependencies.
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          description: No response body
   /api/v1/reports/:
     get:
-      operationId: v1_reports_list
+      operationId: api_v1_reports_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
       tags:
-      - v1
+      - api
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -797,14 +1240,12 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/IssueReport'
+                $ref: '#/components/schemas/PaginatedIssueReportList'
           description: ''
     post:
-      operationId: v1_reports_create
+      operationId: api_v1_reports_create
       tags:
-      - v1
+      - api
       requestBody:
         content:
           multipart/form-data:
@@ -829,7 +1270,7 @@ paths:
           description: ''
   /api/v1/reports/{id}/:
     get:
-      operationId: v1_reports_retrieve
+      operationId: api_v1_reports_retrieve
       parameters:
       - in: path
         name: id
@@ -838,7 +1279,7 @@ paths:
         description: A unique integer value identifying this issue report.
         required: true
       tags:
-      - v1
+      - api
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -850,7 +1291,7 @@ paths:
                 $ref: '#/components/schemas/IssueReport'
           description: ''
     put:
-      operationId: v1_reports_update
+      operationId: api_v1_reports_update
       parameters:
       - in: path
         name: id
@@ -859,7 +1300,7 @@ paths:
         description: A unique integer value identifying this issue report.
         required: true
       tags:
-      - v1
+      - api
       requestBody:
         content:
           multipart/form-data:
@@ -883,7 +1324,7 @@ paths:
                 $ref: '#/components/schemas/IssueReport'
           description: ''
     patch:
-      operationId: v1_reports_partial_update
+      operationId: api_v1_reports_partial_update
       parameters:
       - in: path
         name: id
@@ -892,7 +1333,7 @@ paths:
         description: A unique integer value identifying this issue report.
         required: true
       tags:
-      - v1
+      - api
       requestBody:
         content:
           multipart/form-data:
@@ -915,7 +1356,7 @@ paths:
                 $ref: '#/components/schemas/IssueReport'
           description: ''
     delete:
-      operationId: v1_reports_destroy
+      operationId: api_v1_reports_destroy
       parameters:
       - in: path
         name: id
@@ -924,7 +1365,7 @@ paths:
         description: A unique integer value identifying this issue report.
         required: true
       tags:
-      - v1
+      - api
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -933,9 +1374,16 @@ paths:
           description: No response body
   /api/v1/tickets/:
     get:
-      operationId: v1_tickets_list
+      operationId: api_v1_tickets_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
       tags:
-      - v1
+      - api
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -944,14 +1392,12 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/QueueTicket'
+                $ref: '#/components/schemas/PaginatedQueueTicketList'
           description: ''
     post:
-      operationId: v1_tickets_create
+      operationId: api_v1_tickets_create
       tags:
-      - v1
+      - api
       requestBody:
         content:
           application/json:
@@ -976,7 +1422,7 @@ paths:
           description: ''
   /api/v1/tickets/{id}/:
     get:
-      operationId: v1_tickets_retrieve
+      operationId: api_v1_tickets_retrieve
       parameters:
       - in: path
         name: id
@@ -985,7 +1431,7 @@ paths:
         description: A unique integer value identifying this queue ticket.
         required: true
       tags:
-      - v1
+      - api
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -997,7 +1443,7 @@ paths:
                 $ref: '#/components/schemas/QueueTicket'
           description: ''
     put:
-      operationId: v1_tickets_update
+      operationId: api_v1_tickets_update
       parameters:
       - in: path
         name: id
@@ -1006,7 +1452,7 @@ paths:
         description: A unique integer value identifying this queue ticket.
         required: true
       tags:
-      - v1
+      - api
       requestBody:
         content:
           application/json:
@@ -1030,7 +1476,7 @@ paths:
                 $ref: '#/components/schemas/QueueTicket'
           description: ''
     patch:
-      operationId: v1_tickets_partial_update
+      operationId: api_v1_tickets_partial_update
       parameters:
       - in: path
         name: id
@@ -1039,7 +1485,7 @@ paths:
         description: A unique integer value identifying this queue ticket.
         required: true
       tags:
-      - v1
+      - api
       requestBody:
         content:
           application/json:
@@ -1062,7 +1508,7 @@ paths:
                 $ref: '#/components/schemas/QueueTicket'
           description: ''
     delete:
-      operationId: v1_tickets_destroy
+      operationId: api_v1_tickets_destroy
       parameters:
       - in: path
         name: id
@@ -1071,7 +1517,7 @@ paths:
         description: A unique integer value identifying this queue ticket.
         required: true
       tags:
-      - v1
+      - api
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -1080,9 +1526,9 @@ paths:
           description: No response body
   /api/v1/tickets/live-status/:
     get:
-      operationId: v1_tickets_live_status_retrieve
+      operationId: api_v1_tickets_live_status_retrieve
       tags:
-      - v1
+      - api
       security:
       - jwtAuth: []
       - cookieAuth: []
@@ -1095,9 +1541,9 @@ paths:
           description: ''
   /api/v1/tickets/next/:
     post:
-      operationId: v1_tickets_next_create
+      operationId: api_v1_tickets_next_create
       tags:
-      - v1
+      - api
       requestBody:
         content:
           application/json:
@@ -1159,6 +1605,36 @@ components:
       - location
       - title
       - updated_at
+    AdminRegister:
+      type: object
+      properties:
+        full_name:
+          type: string
+          writeOnly: true
+          maxLength: 255
+        barangay_id:
+          type: integer
+          writeOnly: true
+          nullable: true
+        email:
+          type: string
+          format: email
+          writeOnly: true
+        password:
+          type: string
+          writeOnly: true
+        confirm_password:
+          type: string
+          writeOnly: true
+        affirmation:
+          type: boolean
+          writeOnly: true
+          default: false
+      required:
+      - confirm_password
+      - email
+      - full_name
+      - password
     Announcement:
       type: object
       properties:
@@ -1190,6 +1666,50 @@ components:
       - id
       - title
       - updated_at
+    Barangay:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        logo:
+          type: string
+          format: uri
+          nullable: true
+        city_seal:
+          type: string
+          format: uri
+          nullable: true
+        captain_name:
+          type: string
+          nullable: true
+          description: Full name of the incumbent Punong Barangay
+          maxLength: 255
+        office_contact:
+          type: string
+          nullable: true
+          description: Office Address or Phone Number
+          maxLength: 255
+      required:
+      - id
+      - name
+    CategoryEnum:
+      enum:
+      - PEACE_AND_ORDER
+      - PUBLIC_HEALTH
+      - INFRASTRUCTURE
+      - ENVIRONMENT
+      - OTHER
+      type: string
+      description: |-
+        * `PEACE_AND_ORDER` - Peace & Order (Riots, Noise, Curfew)
+        * `PUBLIC_HEALTH` - Public Health (Vaccinations, Medical)
+        * `INFRASTRUCTURE` - Infrastructure (Potholes, Outages)
+        * `ENVIRONMENT` - Environment (Floods, Waste)
+        * `OTHER` - Other
     CustomTokenObtainPair:
       type: object
       properties:
@@ -1205,6 +1725,9 @@ components:
     DashboardSummary:
       type: object
       properties:
+        total_residents:
+          type: integer
+          default: 0
         document_requests:
           $ref: '#/components/schemas/DocumentStats'
         issue_reports:
@@ -1251,13 +1774,15 @@ components:
     DocumentRequestStatusEnum:
       enum:
       - PENDING
-      - APPROVED
+      - PROCESSING
+      - READY_FOR_PICKUP
       - REJECTED
       - RELEASED
       type: string
       description: |-
         * `PENDING` - Pending
-        * `APPROVED` - Approved
+        * `PROCESSING` - Processing
+        * `READY_FOR_PICKUP` - Ready for Pickup
         * `REJECTED` - Rejected
         * `RELEASED` - Released
     DocumentStats:
@@ -1327,6 +1852,13 @@ components:
           $ref: '#/components/schemas/IssueReportStatusEnum'
         urgency:
           $ref: '#/components/schemas/UrgencyEnum'
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        incident_datetime:
+          type: string
+          format: date-time
+          nullable: true
+          description: Exact time the scenario occurred.
         created_at:
           type: string
           format: date-time
@@ -1375,6 +1907,190 @@ components:
       - resolved
       - total
       - urgency_breakdown
+    PaginatedActivityScheduleList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/ActivitySchedule'
+    PaginatedAnnouncementList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Announcement'
+    PaginatedBarangayList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Barangay'
+    PaginatedDocumentRequestList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DocumentRequest'
+    PaginatedFCMDeviceList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/FCMDevice'
+    PaginatedIssueReportList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/IssueReport'
+    PaginatedQueueTicketList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/QueueTicket'
+    PaginatedResidentList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/Resident'
     PatchedActivitySchedule:
       type: object
       properties:
@@ -1427,6 +2143,33 @@ components:
         created_by:
           type: integer
           readOnly: true
+    PatchedBarangay:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        logo:
+          type: string
+          format: uri
+          nullable: true
+        city_seal:
+          type: string
+          format: uri
+          nullable: true
+        captain_name:
+          type: string
+          nullable: true
+          description: Full name of the incumbent Punong Barangay
+          maxLength: 255
+        office_contact:
+          type: string
+          nullable: true
+          description: Office Address or Phone Number
+          maxLength: 255
     PatchedDocumentRequest:
       type: object
       properties:
@@ -1489,6 +2232,13 @@ components:
           $ref: '#/components/schemas/IssueReportStatusEnum'
         urgency:
           $ref: '#/components/schemas/UrgencyEnum'
+        category:
+          $ref: '#/components/schemas/CategoryEnum'
+        incident_datetime:
+          type: string
+          format: date-time
+          nullable: true
+          description: Exact time the scenario occurred.
         created_at:
           type: string
           format: date-time
@@ -1509,9 +2259,23 @@ components:
         ticket_number:
           type: string
           readOnly: true
+        resident_name:
+          type: string
+          readOnly: true
+        walkin_name:
+          type: string
+          nullable: true
+          maxLength: 255
         service_type:
           type: string
           maxLength: 100
+        priority_status:
+          $ref: '#/components/schemas/PriorityStatusEnum'
+        is_priority:
+          type: boolean
+        notes:
+          type: string
+          nullable: true
         status:
           allOf:
           - $ref: '#/components/schemas/QueueTicketStatusEnum'
@@ -1524,6 +2288,51 @@ components:
           type: string
           format: date-time
           readOnly: true
+    PatchedResident:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          readOnly: true
+          default: ''
+        email:
+          type: string
+          readOnly: true
+          default: ''
+        full_name:
+          type: string
+          maxLength: 255
+        birth_date:
+          type: string
+          format: date
+        voter_status:
+          type: boolean
+        contact_number:
+          type: string
+          nullable: true
+          maxLength: 20
+        purok:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        is_verified:
+          type: boolean
+        guardian:
+          type: integer
+          nullable: true
+    PriorityStatusEnum:
+      enum:
+      - regular
+      - priority
+      type: string
+      description: |-
+        * `regular` - Regular
+        * `priority` - Priority/Senior/PWD/Pregnant
     QueueActivity:
       type: object
       properties:
@@ -1547,9 +2356,23 @@ components:
         ticket_number:
           type: string
           readOnly: true
+        resident_name:
+          type: string
+          readOnly: true
+        walkin_name:
+          type: string
+          nullable: true
+          maxLength: 255
         service_type:
           type: string
           maxLength: 100
+        priority_status:
+          $ref: '#/components/schemas/PriorityStatusEnum'
+        is_priority:
+          type: boolean
+        notes:
+          type: string
+          nullable: true
         status:
           allOf:
           - $ref: '#/components/schemas/QueueTicketStatusEnum'
@@ -1564,6 +2387,7 @@ components:
           readOnly: true
       required:
       - created_at
+      - resident_name
       - service_type
       - status
       - ticket_id
@@ -1620,6 +2444,17 @@ components:
     Resident:
       type: object
       properties:
+        id:
+          type: integer
+          readOnly: true
+        username:
+          type: string
+          readOnly: true
+          default: ''
+        email:
+          type: string
+          readOnly: true
+          default: ''
         full_name:
           type: string
           maxLength: 255
@@ -1632,9 +2467,23 @@ components:
           type: string
           nullable: true
           maxLength: 20
+        purok:
+          type: integer
+          maximum: 9223372036854775807
+          minimum: 0
+          format: int64
+          nullable: true
+        is_verified:
+          type: boolean
+        guardian:
+          type: integer
+          nullable: true
       required:
       - birth_date
+      - email
       - full_name
+      - id
+      - username
     ResidentImportResponse:
       type: object
       properties:
@@ -1657,10 +2506,12 @@ components:
       enum:
       - ADMIN
       - RESIDENT
+      - DILG_ADMIN
       type: string
       description: |-
         * `ADMIN` - Admin
         * `RESIDENT` - Resident
+        * `DILG_ADMIN` - DILG Admin
     TokenRefresh:
       type: object
       properties:
@@ -1690,16 +2541,16 @@ components:
       - urgent
     UrgencyEnum:
       enum:
-      - LOW
-      - MEDIUM
-      - HIGH
-      - URGENT
+      - MINOR
+      - MODERATE
+      - HAZARD
+      - EMERGENCY
       type: string
       description: |-
-        * `LOW` - Low
-        * `MEDIUM` - Medium
-        * `HIGH` - High
-        * `URGENT` - Urgent
+        * `MINOR` - Minor
+        * `MODERATE` - Moderate
+        * `HAZARD` - Hazard
+        * `EMERGENCY` - Emergency
     UrgencyTagEnum:
       enum:
       - REGULAR
@@ -1727,11 +2578,16 @@ components:
           maxLength: 254
         role:
           $ref: '#/components/schemas/RoleEnum'
+        barangay:
+          allOf:
+          - $ref: '#/components/schemas/Barangay'
+          readOnly: true
         profile:
           allOf:
           - $ref: '#/components/schemas/Resident'
           readOnly: true
       required:
+      - barangay
       - id
       - profile
       - username

@@ -1,7 +1,6 @@
 from gridy_auth.models import Barangay
-from rest_framework.decorators import parser_classes
-from rest_framework.decorators import permission_classes
-from gridy_auth.serializers import ResidentSerializer
+from gridy_auth.serializers import ResidentSerializer, PasswordResetConfirmSerializer, PasswordResetRequestSerializer
+from django.http import HttpResponseForbidden
 from rest_framework import status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
@@ -9,9 +8,8 @@ from rest_framework_simplejwt.views import TokenObtainPairView
 from .serializers import (
     UserSerializer,
     RegisterSerializer,
+    AdminRegisterSerializer,
     CustomTokenObtainPairSerializer,
-    ChangePasswordSerializer,
-    RefreshSessionSerializer,
 )
 
 from drf_spectacular.utils import extend_schema
@@ -34,7 +32,6 @@ from django.utils import timezone
 from datetime import datetime
 from django.conf import settings
 from .models import RefreshSession
-from gridy_audit.services import get_client_ip
 
 from rest_framework.generics import ListAPIView
 from django.shortcuts import get_object_or_404
@@ -43,6 +40,10 @@ from rest_framework import viewsets
 from gridy_audit.services import get_client_ip, log_action
 from gridy_audit.models import AuditLog
 
+from django.core.mail import send_mail
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_decode
+from django.contrib.auth.tokens import default_token_generator
 
 # Create your views here.
 
@@ -74,6 +75,33 @@ class RegisterView(APIView):
             from gridy_auth.tasks import send_welcome_email
             send_welcome_email.delay(user.email, full_name)
             
+            return Response(
+                UserSerializer(user).data,
+                status=status.HTTP_201_CREATED
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+
+
+@extend_schema(
+    summary="Register Administrative Personnel Account",
+    request=AdminRegisterSerializer,
+    responses={201: UserSerializer, 400: OpenApiTypes.OBJECT}
+)
+class AdminRegisterView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request):
+        serializer = AdminRegisterSerializer(data=request.data)
+        if serializer.is_valid():
+            user = serializer.save()
+
+            full_name = f"{user.first_name} {user.last_name}".strip() or user.username
+            try:
+                from gridy_auth.tasks import send_welcome_email
+                send_welcome_email.delay(user.email, full_name)
+            except Exception:
+                pass
+
             return Response(
                 UserSerializer(user).data,
                 status=status.HTTP_201_CREATED
@@ -480,66 +508,60 @@ class BarangayViewSet(viewsets.ModelViewSet):
         if user.barangay:
             return Barangay.objects.filter(id=user.barangay.id)
         return Barangay.objects.none()
+    
 
-class ChangePasswordView(APIView):
-    """
-    An endpoint for changing passowrd
-    """
-    permission_classes = [permissions.IsAuthenticated]
+class PasswordResetRequestView(APIView):
+    permission_classes = [permissions.AllowAny] # Anyone can request a reset
 
     @extend_schema(
-        summary="Change User Password",
-        request=ChangePasswordSerializer,
-        responses={200: OpenApiTypes.OBJECT, 400: OpenApiTypes.OBJECT}
+        summary="Request Password Reset Email",
+        request=PasswordResetRequestSerializer,
+        responses={200: OpenApiTypes.OBJECT}
     )
 
-    def patch(self, request, *args, **kwargs):
-        serializer = ChangePasswordSerializer(data=request.data)
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data)
         if serializer.is_valid():
-            # Check old password
-            if not request.user.check_password(serializer.validated_data.get("old_password")):
-                return Response({"old_password": ["Wrong password."]}, status=status.HTTP_400_BAD_REQUEST)
+            email = serializer.validated_data['email']
+            user = User.objects.filter(email=email).first()
+
+            if user:
+                # 1. Generate cryptographic token and encode User ID
+                uid = urlsafe_base64_decode(force_bytes(user.pk))
+                token = default_token_generator.make_token(user)
+
+                # 2. Construct the Magical Link pointing to React Frontend
+                reset_link = f"http://localhost:5173/reset-password?uidb64={uid}&token={token}"
+
+                # 3. Fire the Email
+                send_mail(
+                    subject="Gridy: Password Reset Request",
+                    message=f"Hello, \n,\nYou requested a password reset. Click the link below to set a new password:\n\n{reset_link}\n\nIf your did not request this, please ignore this email.",
+                    from_email=settings.EMAIL_HOST_USER,
+                    recipient_list=[email],
+                    fail_silently=False,
+                )
             
-            # set_password also hashes the password that the user will get
-            request.user.set_password(serializer.validated_data.get("new_password"))
-            request.user.save()
-            
-            RefreshSession.objects.filter(user=request.user).update(is_revoked=True)
-            
-            return Response({"detail": "Password updated successfully"}, status=status.HTTP_200_OK)
-            
+            # SECURITY CONCEPT: We always return 200 Success even if the email DOES NOT exist.
+            # This prevents hackers from guessing which emails belong to our system (Email Enumeration Attack)
+            return Response(
+                {"detail": "If your email is registered, a reset link has been sent."},
+                status=status.HTTP_200_OK
+            )
         return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
-
-
-class ActiveSessionsView(APIView):
-    """
-    Endpoint to view and revoke active refresh sessions for the current user.
-    """
-    permission_classes = [permissions.IsAuthenticated]
+    
+class PasswordResetConfirmView(APIView):
+    permission_classes = [permissions.AllowAny]
 
     @extend_schema(
-        summary="List Active Sessions",
-        responses={200: RefreshSessionSerializer(many=True)}
+        summary="Confirm New Password via Token",
+        request=PasswordResetConfirmSerializer, 
+        responses={200: OpenApiTypes.OBJECT}
     )
-    def get(self, request, *args, **kwargs):
-        # Only fetch active sessions for the logged-in user
-        sessions = RefreshSession.objects.filter(user=request.user, is_revoked=False).order_by('-created_at')
-        serializer = RefreshSessionSerializer(sessions, many=True)
-        return Response(serializer.data, status=status.HTTP_200_OK)
-
-    @extend_schema(
-        summary="Revoke a Specific Session",
-        responses={204: None, 403: OpenApiTypes.OBJECT, 404: OpenApiTypes.OBJECT}
-    )
-
-    def delete(self, request, pk, *args, **kwargs):
-        # Fetch the session and ensure it belongs to the current user
-        session = get_object_or_404(RefreshSession, pk=pk)
-
-        if session.user != request.user:
-            return Response({"detail": "You do not have permission to revoke this session."}, status=status.HTTP_403_FORBIDDEN)
-
-        session.is_revoked = True
-        session.save()
-
-        return Response(status=status.HTTP_204_NO_CONTENT)
+    
+    def post(self, request):
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"detail": "Password has been reset successfully."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)

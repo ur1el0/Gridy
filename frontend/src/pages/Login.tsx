@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { axiosPublic } from '../api/axios';
 
 export const Login: React.FC = () => {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   
@@ -172,9 +171,9 @@ export const Login: React.FC = () => {
                 <label className="block text-[11px] font-bold tracking-wider text-slate-500 uppercase">
                   PASSWORD
                 </label>
-                <a href="#forgot" onClick={(e) => e.preventDefault()} className="text-xs font-bold text-[#003882] hover:underline transition-colors">
-                  Forgot password?
-                </a>
+                <Link to="/forgot-password" className="text-xs font-bold text-[#003882] hover:underline transition-colors">
+                    Forgot password?
+                </Link>
               </div>
               <div className="relative flex items-center">
                 <div className="absolute left-3.5 text-slate-400 pointer-events-none">
@@ -191,20 +190,6 @@ export const Login: React.FC = () => {
                   placeholder="........"
                 />
               </div>
-            </div>
-
-            {/* Checkbox */}
-            <div className="flex items-center pt-1">
-              <input
-                id="remember-me"
-                type="checkbox"
-                checked={rememberMe}
-                onChange={(e) => setRememberMe(e.target.checked)}
-                className="w-4 h-4 rounded border-slate-300 text-[#003882] focus:ring-[#003882] cursor-pointer"
-              />
-              <label htmlFor="remember-me" className="ml-2.5 text-sm font-medium text-slate-600 cursor-pointer select-none">
-                Remember this session
-              </label>
             </div>
 
             {/* Submit Button */}
@@ -227,25 +212,12 @@ export const Login: React.FC = () => {
             <div className="text-center pt-3">
               <p className="text-xs text-slate-500 font-medium">
                 Don't have an account?{' '}
-                <a href="#register" onClick={(e) => e.preventDefault()} className="font-bold text-slate-900 hover:text-[#003882] hover:underline transition-colors">
+                <Link to="/register" className="font-bold text-slate-900 hover:text-[#003882] hover:underline transition-colors">
                   Register here
-                </a>
+                </Link>
               </p>
             </div>
           </form>
-
-          {/* Divider */}
-          <div className="border-t border-slate-200/80 my-8"></div>
-
-          {/* Footer Links */}
-          <div className="flex justify-center gap-6 text-xs text-slate-400 font-medium">
-            <a href="#privacy" onClick={(e) => e.preventDefault()} className="hover:text-slate-600 transition-colors">
-              Privacy Policy
-            </a>
-            <a href="#support" onClick={(e) => e.preventDefault()} className="hover:text-slate-600 transition-colors">
-              Support
-            </a>
-          </div>
         </div>
       </div>
     </div>
