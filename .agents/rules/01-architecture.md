@@ -30,3 +30,10 @@ These guidelines apply across the entire Gridy ecosystem to ensure enterprise-gr
 
 - **Rule**: Keep configuration synced across developers.
 - **Practice**: Whenever a new environment variable or secret is required in the backend or frontend, immediately append a placeholder for it in `.env.example` to prevent configuration drift.
+
+### 6. Modularity & Domain-Driven Design (No God Files)
+
+- **Rule**: Prevent overgrown monolithic files ("God Files") across both the backend and frontend.
+- **Practice**: 
+  - In Django: Break down large `views.py` files into domain-specific packages (`views/domain.py`) and export them cleanly via `views/__init__.py`.
+  - In React: Keep parent page components strictly for state management and layout logic. Extract all complex UI segments (tables, metrics, modals) into dedicated sub-components within `components/[feature]/`.
