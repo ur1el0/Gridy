@@ -40,7 +40,7 @@ export class ErrorBoundary extends Component<Props, State> {
                         </div>
                         <h1 className="text-2xl font-bold text-slate-900 mb-2">System Error</h1>
                         <p className="text-slate-500 mb-8">
-                            We've encountered an unexpected issue while rendering this screen. Our engineering team has been notified.
+                            We've encountered an unexpected issue while rendering this screen. Our IT team has been notified.
                         </p>
                         <button
                         onClick={() => window.location.reload()}

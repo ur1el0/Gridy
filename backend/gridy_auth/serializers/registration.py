@@ -111,3 +111,4 @@ class AdminRegisterSerializer(serializers.Serializer):
             )
 
         return user
+

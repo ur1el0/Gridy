@@ -14,7 +14,7 @@ export const ForgotPassword = () => {
         try {
             await axiosPrivate.post('http://localhost:8000/api/v1/auth/password-reset/', { email })
             setStatus('success')
-        } catch (error) {
+        } catch {
             // We still show success even on error to prevent Email Enumeration attacks
             setStatus('success')
         }

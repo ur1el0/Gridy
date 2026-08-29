@@ -127,7 +127,7 @@ export const DocumentRequests: React.FC = () => {
       setNewDocType('Barangay-Clearance')
       setNewPurpose('')
     } catch (err) {
-      console.error("Failed to create request.")
+      console.error("Failed to create request.", err)
     } finally {
       setIsSubmitting(false)
     }

@@ -27,7 +27,7 @@ export const Settings: React.FC = () => {
         const response = await axiosPrivate.get('/auth/me/')
         setEmailAlerts(response.data.email_alerts)
         setPushAlerts(response.data.push_alerts)
-      } catch (error) {
+      } catch {
         console.error("Failed to load profile preferences", error)
       } finally {
         setIsLoadingProfile(false)
@@ -44,7 +44,7 @@ export const Settings: React.FC = () => {
     try {
       await axiosPrivate.patch('/auth/me/', { email_alerts: newValue })
       setEmailAlerts(newValue) // Only update UI if the backend request succeeds 
-    } catch (error) {
+    } catch {
       alert("Failed to update email preferences.")
     }
   }
@@ -54,7 +54,7 @@ export const Settings: React.FC = () => {
     try {
       await axiosPrivate.patch('/auth/me/', { push_alerts: pushAlerts })
       setPushAlerts(newValue)
-    } catch (error) {
+    } catch {
       alert("Failed to update push preferences.")
     }
   }
@@ -62,7 +62,7 @@ export const Settings: React.FC = () => {
     try {
       const response = await axiosPrivate.get('/auth/sessions/')
       setSessions(response.data)
-    } catch (error) {
+    } catch {
       console.error("Failed to fetch sessions", error)
     } finally {
       setIsLoadingSessions(false)
@@ -73,7 +73,7 @@ export const Settings: React.FC = () => {
     try {
       await axiosPrivate.delete(`/auth/session/${id}/`)
       setSessions(sessions.filter(session => session.id !== id))
-    } catch (error) {
+    } catch {
       alert("Failed to revoke session. It may have already expired.")
     }
   }
