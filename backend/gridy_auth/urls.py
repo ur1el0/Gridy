@@ -14,7 +14,9 @@ from .views import (
     VerifyResidentView,
     RejectResidentView,
     ResidentViewSet,
-    BarangayViewSet
+    BarangayViewSet,
+    PasswordResetRequestView,
+    PasswordResetConfirmView,
 )
 
 router = DefaultRouter()
@@ -33,4 +35,6 @@ urlpatterns = [
     path('pending-residents/', PendingResidentsView.as_view(), name='pending_residents'),
     path('verify-resident/<int:pk>/', VerifyResidentView.as_view(), name='verify_resident'),
     path('reject-resident/<int:pk>/', RejectResidentView.as_view(), name='reject_resident'),
+    path('password-reset/', PasswordResetRequestView.as_view(), name='password_reset_request'),
+    path('password-reset/confirm/', PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
 ] + router.urls

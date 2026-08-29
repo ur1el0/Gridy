@@ -1,7 +1,5 @@
 from gridy_auth.models import Barangay
-from rest_framework.decorators import parser_classes
-from rest_framework.decorators import permission_classes
-from gridy_auth.serializers import ResidentSerializer
+from gridy_auth.serializers import ResidentSerializer, PasswordResetConfirmSerializer, PasswordResetRequestSerializer
 from django.http import HttpResponseForbidden
 from rest_framework import status, permissions
 from rest_framework.views import APIView
@@ -34,7 +32,6 @@ from django.utils import timezone
 from datetime import datetime
 from django.conf import settings
 from .models import RefreshSession
-from gridy_audit.services import get_client_ip
 
 from rest_framework.generics import ListAPIView
 from django.shortcuts import get_object_or_404
@@ -43,6 +40,10 @@ from rest_framework import viewsets
 from gridy_audit.services import get_client_ip, log_action
 from gridy_audit.models import AuditLog
 
+from django.core.mail import send_mail
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_decode
+from django.contrib.auth.tokens import default_token_generator
 
 # Create your views here.
 
@@ -507,3 +508,60 @@ class BarangayViewSet(viewsets.ModelViewSet):
         if user.barangay:
             return Barangay.objects.filter(id=user.barangay.id)
         return Barangay.objects.none()
+    
+
+class PasswordResetRequestView(APIView):
+    permission_classes = [permissions.AllowAny] # Anyone can request a reset
+
+    @extend_schema(
+        summary="Request Password Reset Email",
+        request=PasswordResetRequestSerializer,
+        responses={200: OpenApiTypes.OBJECT}
+    )
+
+    def post(self, request):
+        serializer = PasswordResetRequestSerializer(data=request.data)
+        if serializer.is_valid():
+            email = serializer.validated_data['email']
+            user = User.objects.filter(email=email).first()
+
+            if user:
+                # 1. Generate cryptographic token and encode User ID
+                uid = urlsafe_base64_decode(force_bytes(user.pk))
+                token = default_token_generator.make_token(user)
+
+                # 2. Construct the Magical Link pointing to React Frontend
+                reset_link = f"http://localhost:5173/reset-password?uidb64={uid}&token={token}"
+
+                # 3. Fire the Email
+                send_mail(
+                    subject="Gridy: Password Reset Request",
+                    message=f"Hello, \n,\nYou requested a password reset. Click the link below to set a new password:\n\n{reset_link}\n\nIf your did not request this, please ignore this email.",
+                    from_email=settings.EMAIL_HOST_USER,
+                    recipient_list=[email],
+                    fail_silently=False,
+                )
+            
+            # SECURITY CONCEPT: We always return 200 Success even if the email DOES NOT exist.
+            # This prevents hackers from guessing which emails belong to our system (Email Enumeration Attack)
+            return Response(
+                {"detail": "If your email is registered, a reset link has been sent."},
+                status=status.HTTP_200_OK
+            )
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+    
+class PasswordResetConfirmView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    @extend_schema(
+        summary="Confirm New Password via Token",
+        request=PasswordResetConfirmSerializer, 
+        responses={200: OpenApiTypes.OBJECT}
+    )
+    
+    def post(self, request):
+        serializer = PasswordResetConfirmSerializer(data=request.data)
+        if serializer.is_valid():
+            serializer.save()
+            return Response({"detail": "Password has been reset successfully."}, status=status.HTTP_200_OK)
+        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
