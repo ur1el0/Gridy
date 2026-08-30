@@ -1,9 +1,11 @@
+from gridy_auth.models import User, Resident
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Count, Q
+from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -119,6 +121,11 @@ class DashboardSummaryView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsBarangayOfficial]
 
     def get(self, request, *args, **kwargs):
+        user = request.user
+
+        # 0. Total Residents for this Barangay
+        total_res = User.objects.filter(role=User.Role.RESIDENT, barangay=user.barangay).count()
+
         # 1. Document request statistics
         doc_total = DocumentRequest.objects.count()
         doc_pending = DocumentRequest.objects.filter(status=DocumentRequest.Status.PENDING).count()
@@ -160,7 +167,34 @@ class DashboardSummaryView(APIView):
         serving_now_val = serving_ticket.ticket_number if serving_ticket else None
         waiting_in_queue_val = QueueTicket.objects.filter(status=QueueTicket.Status.WAITING).count()
 
+
+        # 4. Demographics (Purok & Age)
+        purok_stats = Resident.objects.filter(user__barangay=user.barangay).values('purok').annotate(count=Count('purok')).order_by('purok')
+        purok_distribution = {
+            f"Purok {item['purok']}" if item['purok'] is not None else "Unassigned": item['count']
+            for item in purok_stats
+        }
+
+        today = timezone.now().date()
+        def get_past_date(years):
+            try:
+                return today.replace(year=today.year - years)
+            except ValueError:
+                return today.replace(year=today.year - years, day=28)
+        
+        date_18_years_ago = get_past_date(18)
+        date_36_years_ago = get_past_date(36)
+        date_60_years_ago = get_past_date(60)
+
+        age_demographics = Resident.objects.filter(user__barangay=user.barangay).aggregate(
+            youth=Count('id', filter=Q(birth_date__gt=date_18_years_ago)),
+            young_adult=Count('id', filter=Q(birth_date__lte=date_18_years_ago, birth_date__gt=date_36_years_ago)),
+            adult=Count('id', filter=Q(birth_date__lte=date_36_years_ago, birth_date__gt=date_60_years_ago)),
+            senior=Count('id', filter=Q(birth_date__lte=date_60_years_ago)),
+        )
+
         data = {
+            "total_residents": total_res,
             "document_requests": {
                 "total": doc_total,
                 "pending": doc_pending,
@@ -185,9 +219,14 @@ class DashboardSummaryView(APIView):
                     "night_time": night_time_incidents,
                 }
             },
+            "demographics": {
+                "purok_distribution": purok_distribution,
+                "age_demographics": age_demographics
+            },
             "queue_activity": {
                 "serving_now": serving_now_val,
                 "waiting_in_queue": waiting_in_queue_val,
             }
         }
+        print("DICT DATA:", data.keys())
         return Response(data, status=status.HTTP_200_OK)

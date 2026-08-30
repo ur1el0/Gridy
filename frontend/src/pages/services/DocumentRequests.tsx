@@ -11,6 +11,27 @@ export interface DocumentRequest {
   created_at: string;
 }
 
+const TableSkeleton = () => (
+  <div className="space-y-6 animate-pulse">
+    <div className="flex justify-between items-center">
+      <div className="h-8 w-48 bg-slate-200 rounded"></div>
+      <div className="h-10 w-32 bg-slate-200 rounded-md"></div>
+    </div>
+    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+      <div className="bg-slate-50 h-12 border-b border-slate-200 w-full"></div>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <div key={i} className="flex h-16 border-b border-slate-100 items-center px-6 gap-4">
+          <div className="h-4 w-12 bg-slate-200 rounded"></div>
+          <div className="h-4 w-48 bg-slate-200 rounded"></div>
+          <div className="h-4 w-32 bg-slate-200 rounded"></div>
+          <div className="h-4 w-24 bg-slate-200 rounded"></div>
+          <div className="h-6 w-20 bg-slate-200 rounded-full"></div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 export const DocumentRequests: React.FC = () => {
   const [requests, setRequests] = useState<DocumentRequest[]>([]);
   const [loading, setLoading] = useState(true);
@@ -133,7 +154,7 @@ export const DocumentRequests: React.FC = () => {
     }
   }
 
-  if (loading) return <div className="p-8 text-slate-600">Loading requests...</div>;
+  if (loading) return <div className="p-4 md:p-8"><TableSkeleton /></div>;
   if (error) return <div className="p-8 text-red-600">{error}</div>;
 
   return (
@@ -142,7 +163,7 @@ export const DocumentRequests: React.FC = () => {
         <h2 className="text-2xl font-bold text-slate-900">Document Requests</h2>
         <button 
           onClick={() => setIsCreateModalOpen(true)}
-          className="bg-primary hover:bg-primary-hover text-white px-4 py-2 rounded-md text-sm font-medium transition-colors shadow-sm"
+          className="bg-[#0047BA] hover:bg-[#003882] active:bg-[#002D6B] text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm transition-all"
         >
           New Request
         </button>

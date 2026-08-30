@@ -17,8 +17,10 @@ class ActivityScheduleViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if not user or not user.is_authenticated:
             return ActivitySchedule.objects.none()
-        if user.role == User.Role.ADMIN:
+            
+        if user.role == User.Role.DILG_ADMIN:
             return ActivitySchedule.objects.all().order_by('event_datetime', 'created_at')
+            
         return ActivitySchedule.objects.filter(created_by__barangay=user.barangay).order_by('event_datetime', 'created_at')
 
     def get_permissions(self):
@@ -40,8 +42,10 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if not user or not user.is_authenticated:
             return Announcement.objects.none()
-        if user.role == User.Role.ADMIN:
+            
+        if user.role == User.Role.DILG_ADMIN:
             return Announcement.objects.all().order_by('-is_pinned', '-created_at')
+            
         return Announcement.objects.filter(created_by__barangay=user.barangay).order_by('-is_pinned', '-created_at')
 
     def get_permissions(self):
@@ -72,8 +76,8 @@ class FCMDeviceViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if not user or not user.is_authenticated:
             return FCMDevice.objects.none()
-        if user.role == User.Role.ADMIN:
-            return FCMDevice.objects.all()
+            
+        # Security: Everyone (even Admins) should only be able to view/manage THEIR OWN mobile devices
         return FCMDevice.objects.filter(user=user)
 
     # Clean up any existing records matching the token to prevent duplicate key crashes 
@@ -83,6 +87,6 @@ class FCMDeviceViewSet(viewsets.ModelViewSet):
             FCMDevice.objects.filter(token=token).delete()
         return super().create(request, *args, **kwargs)
 
-    # Auto-assign the user during creation
+    # Security: Force the device to belong to the logged-in user!
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
