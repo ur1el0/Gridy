@@ -166,6 +166,36 @@ class DashboardSummaryView(APIView):
         serving_now_val = serving_ticket.ticket_number if serving_ticket else None
         waiting_in_queue_val = QueueTicket.objects.filter(status=QueueTicket.Status.WAITING).count()
 
+
+        # 4. Demographics (Purok & Age)
+        from gridy_auth.models import Resident
+        from django.db.models import Count, Q
+        from django.utils import timezone
+
+        purok_stats = Resident.objects.filter(user__barangay=user.barangay).values('purok').annotate(count=Count('purok')).order_by('purok')
+        purok_distribution = {
+            f"Purok {item['purok']}" if item['purok'] is not None else "Unassigned": item['count']
+            for item in purok_stats
+        }
+
+        today = timezone.now().date()
+        def get_past_date(years):
+            try:
+                return today.replace(year=today.year - years)
+            except ValueError:
+                return today.replace(year=today.year - years, day=28)
+        
+        date_18_years_ago = get_past_date(18)
+        date_36_years_ago = get_past_date(36)
+        date_60_years_ago = get_past_date(60)
+
+        age_demographics = Resident.objects.filter(user__barangay=user.barangay).aggregate(
+            youth=Count('id', filter=Q(birth_date__gt=date_18_years_ago)),
+            young_adult=Count('id', filter=Q(birth_date__lte=date_18_years_ago, birth_date__gt=date_36_years_ago)),
+            adult=Count('id', filter=Q(birth_date__lte=date_36_years_ago, birth_date__gt=date_60_years_ago)),
+            senior=Count('id', filter=Q(birth_date__lte=date_60_years_ago)),
+        )
+
         data = {
             "total_residents": total_res,
             "document_requests": {
@@ -191,6 +221,10 @@ class DashboardSummaryView(APIView):
                     "day_time": day_time_incidents,
                     "night_time": night_time_incidents,
                 }
+            },
+            "demographics": {
+                "purok_distribution": purok_distribution,
+                "age_demographics": age_demographics
             },
             "queue_activity": {
                 "serving_now": serving_now_val,
