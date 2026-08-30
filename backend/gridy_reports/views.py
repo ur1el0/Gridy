@@ -20,15 +20,20 @@ class IssueReportViewSet(viewsets.ModelViewSet):
         return [IsBarangayOfficial()]
 
     def get_queryset(self):
-        # 2. Queryset Isolation: Prevent residents from seeing other people's reports
         user = self.request.user
         if not user or not user.is_authenticated:
             return IssueReport.objects.none()
 
-        if user.role == User.Role.ADMIN:
+        # DILG Super Admins can see the entire database
+        if user.role == User.Role.DILG_ADMIN:
             return IssueReport.objects.all().order_by('-created_at')
 
-        return IssueReport.objects.filter(reporter=user).order_by('-created_by')
+        # Barangay Officials only see reports from residents in their specific Barangay
+        if user.role == User.Role.ADMIN:
+            return IssueReport.objects.filter(reporter__barangay=user.barangay).order_by('-created_at')
+
+        # Standard Residents only see their own reports (and we fixed the created_by typo)
+        return IssueReport.objects.filter(reporter=user).order_by('-created_at')
 
     def perform_create(self, serializer):
         serializer.save(
