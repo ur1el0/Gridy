@@ -15,6 +15,7 @@ import '../widgets/resident_hero_card.dart';
 import 'documents_screen.dart';
 import 'login_screen.dart';
 import 'queue_screen.dart';
+import 'schedule_screen.dart';
 
 /// Resident Dashboard Screen matching the exact reference UI and connected to backend data
 class DashboardScreen extends StatefulWidget {
@@ -379,12 +380,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               MaterialPageRoute(builder: (_) => const DocumentsScreen()),
             );
           } else if (index == 3) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Community Schedule View'),
-                duration: Duration(seconds: 1),
-                behavior: SnackBarBehavior.floating,
-              ),
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const ScheduleScreen()),
             );
           }
         },

@@ -15,6 +15,7 @@ import '../widgets/request_document_grid.dart';
 import 'dashboard_screen.dart';
 import 'login_screen.dart';
 import 'queue_screen.dart';
+import 'schedule_screen.dart';
 
 /// Central Registry Documents Screen matching the reference UI and integrated with live backend APIs
 class DocumentsScreen extends StatefulWidget {
@@ -489,12 +490,8 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
               MaterialPageRoute(builder: (_) => const QueueScreen()),
             );
           } else if (index == 3) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Community Schedule View'),
-                duration: Duration(seconds: 1),
-                behavior: SnackBarBehavior.floating,
-              ),
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const ScheduleScreen()),
             );
           }
         },

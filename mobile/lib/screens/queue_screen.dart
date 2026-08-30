@@ -15,6 +15,7 @@ import '../widgets/user_ticket_card.dart';
 import 'dashboard_screen.dart';
 import 'documents_screen.dart';
 import 'login_screen.dart';
+import 'schedule_screen.dart';
 
 /// Screen presenting the live queue status matching the exact reference UI
 class QueueScreen extends StatefulWidget {
@@ -337,12 +338,8 @@ class _QueueScreenState extends State<QueueScreen> {
               MaterialPageRoute(builder: (_) => const DocumentsScreen()),
             );
           } else if (index == 3) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Community Schedule View'),
-                duration: Duration(seconds: 1),
-                behavior: SnackBarBehavior.floating,
-              ),
+            Navigator.of(context).pushReplacement(
+              MaterialPageRoute(builder: (_) => const ScheduleScreen()),
             );
           }
         },
