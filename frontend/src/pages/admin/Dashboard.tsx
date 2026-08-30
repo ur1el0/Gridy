@@ -64,12 +64,35 @@ interface ActivityItem {
 
 const COLORS = ['#0047BA', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
+const MetricCardSkeleton = () => (
+    <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#E2E8F0]/80 flex flex-col justify-between animate-pulse">
+        <div>
+            <div className="w-10 h-10 rounded-xl bg-slate-200"></div>
+            <div className="h-3 w-32 bg-slate-200 rounded mt-5"></div>
+            <div className="h-8 w-16 bg-slate-200 rounded mt-3"></div>
+        </div>
+    </div>
+);
+
+const ChartSkeleton = ({ title }: { title: string }) => (
+    <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#E2E8F0]/80 animate-pulse">
+        <div className="h-5 w-48 bg-slate-200 rounded mb-6"></div>
+        <div className="h-[250px] w-full bg-slate-100 rounded-xl flex items-end justify-between px-4 pb-4">
+            <div className="w-12 h-[60%] bg-slate-200 rounded-t-sm"></div>
+            <div className="w-12 h-[80%] bg-slate-200 rounded-t-sm"></div>
+            <div className="w-12 h-[40%] bg-slate-200 rounded-t-sm"></div>
+            <div className="w-12 h-[100%] bg-slate-200 rounded-t-sm"></div>
+            <div className="w-12 h-[30%] bg-slate-200 rounded-t-sm"></div>
+        </div>
+    </div>
+);
+
 export const Dashboard: React.FC = () => {
     const navigate = useNavigate();
     const [summaryData, setSummaryData] = useState<DashboardSummary | null>(null);
     const [activities, setActivities] = useState<ActivityItem[]>([]);
-    const [, setLoading] = useState<boolean>(true);
-    const [, setError] = useState<string | null>(null);
+    const [loading, setLoading] = useState<boolean>(true);
+    const [error, setError] = useState<string | null>(null);
 
     useEffect(() => {
         let isMounted = true;
@@ -157,67 +180,81 @@ export const Dashboard: React.FC = () => {
 
             {/* Top Metric Cards Row (3 Cards) */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                {/* Card 1: Total Registered Residents */}
-                <div className="bg-white rounded-2xl p-6 shadow-xs border border-[#E2E8F0]/80 flex flex-col justify-between">
-                    <div>
-                        <div className="w-10 h-10 rounded-xl bg-[#E3EDFD] text-[#0047BA] flex items-center justify-center">
-                            <Users className="w-5 h-5" />
+                {loading ? (
+                    <>
+                        <MetricCardSkeleton />
+                        <MetricCardSkeleton />
+                        <MetricCardSkeleton />
+                    </>
+                ) : (
+                    <>
+                        {/* Card 1: Total Registered Residents */}
+                        <div className="bg-white rounded-2xl p-6 shadow-xs border border-[#E2E8F0]/80 flex flex-col justify-between hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+                            <div>
+                                <div className="w-10 h-10 rounded-xl bg-[#E3EDFD] text-[#0047BA] flex items-center justify-center">
+                                    <Users className="w-5 h-5" />
+                                </div>
+                                <h3 className="text-[#64748b] text-xs font-semibold uppercase tracking-wider mt-4">
+                                    Total Registered Residents
+                                </h3>
+                                <p className="text-3xl font-extrabold text-[#0f172a] mt-1">
+                                    {summaryData?.total_residents?.toLocaleString() ?? '--'}                        
+                                </p>
+                            </div>
                         </div>
-                        <h3 className="text-[#64748b] text-xs font-semibold uppercase tracking-wider mt-4">
-                            Total Registered Residents
-                        </h3>
-                        <p className="text-3xl font-extrabold text-[#0f172a] mt-1">
-                            {summaryData?.total_residents?.toLocaleString() ?? '--'}                        
-                        </p>
-                    </div>
-                </div>
 
-                {/* Card 2: Pending Requests */}
-                <div className="bg-white rounded-2xl p-6 shadow-xs border border-[#E2E8F0]/80 flex flex-col justify-between">
-                    <div>
-                        <div className="w-10 h-10 rounded-xl bg-[#FEECE8] text-[#E05638] flex items-center justify-center">
-                            <FileText className="w-5 h-5" />
+                        {/* Card 2: Pending Requests */}
+                        <div className="bg-white rounded-2xl p-6 shadow-xs border border-[#E2E8F0]/80 flex flex-col justify-between hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+                            <div>
+                                <div className="w-10 h-10 rounded-xl bg-[#FEECE8] text-[#E05638] flex items-center justify-center">
+                                    <FileText className="w-5 h-5" />
+                                </div>
+                                <h3 className="text-[#64748b] text-xs font-semibold uppercase tracking-wider mt-4">
+                                    Pending Requests
+                                </h3>
+                                <p className="text-3xl font-extrabold text-[#0f172a] mt-1">
+                                    {summaryData !== null ? summaryData.document_requests.pending : '--'}
+                                </p>
+                            </div>
                         </div>
-                        <h3 className="text-[#64748b] text-xs font-semibold uppercase tracking-wider mt-4">
-                            Pending Requests
-                        </h3>
-                        <p className="text-3xl font-extrabold text-[#0f172a] mt-1">
-                            {summaryData !== null ? summaryData.document_requests.pending : '--'}
-                        </p>
-                    </div>
-                </div>
 
-                {/* Card 3: Active Queue */}
-                <div className="bg-white rounded-2xl p-6 shadow-xs border border-[#E2E8F0]/80 flex flex-col justify-between">
-                    <div>
-                        <div className="w-10 h-10 rounded-xl bg-[#EBF2FE] text-[#3B82F6] flex items-center justify-center">
-                            <Hourglass className="w-5 h-5" />
+                        {/* Card 3: Active Issues */}
+                        <div className="bg-white rounded-2xl p-6 shadow-xs border border-[#E2E8F0]/80 flex flex-col justify-between hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+                            <div>
+                                <div className="w-10 h-10 rounded-xl bg-[#FEF3C7] text-[#D97706] flex items-center justify-center">
+                                    <Hourglass className="w-5 h-5" />
+                                </div>
+                                <h3 className="text-[#64748b] text-xs font-semibold uppercase tracking-wider mt-4">
+                                    Active Issues (In Progress)
+                                </h3>
+                                <p className="text-3xl font-extrabold text-[#0f172a] mt-1">
+                                    {summaryData !== null ? summaryData.issue_reports.in_progress : '--'}
+                                </p>
+                            </div>
                         </div>
-                        <h3 className="text-[#64748b] text-xs font-semibold uppercase tracking-wider mt-4">
-                            Active Queue
-                        </h3>
-                        <p className="text-3xl font-extrabold text-[#0f172a] mt-1">
-                            {summaryData !== null ? summaryData.queue_activity.waiting_count : '--'}
-                        </p>
-                    </div>
-                </div>
+                    </>
+                )}
             </div>
-
+            
             {/* Scenario Breakdown Row */}
-            <div className="bg-white rounded-2xl p-6 shadow-xs border border-[#E2E8F0]/80">
-                <h2 className="text-base font-bold text-[#0f172a] mb-6">Local Incident Scenarios</h2>
-                <div className="h-[250px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={scenarioData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                            <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                            <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                            <Tooltip cursor={{fill: 'rgba(239,68,68,0.05)'}} />
-                            <Bar dataKey="count" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                        </BarChart>
-                    </ResponsiveContainer>
+            {loading ? (
+                <ChartSkeleton title="Local Incident Scenarios" />
+            ) : (
+                <div className="bg-white rounded-2xl p-6 shadow-xs border border-[#E2E8F0]/80 hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+                    <h2 className="text-base font-bold text-[#0f172a] mb-6">Local Incident Scenarios</h2>
+                    <div className="h-[250px] w-full">
+                        <ResponsiveContainer width="100%" height="100%">
+                            <BarChart data={scenarioData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                                <Tooltip cursor={{fill: 'rgba(239,68,68,0.05)'}} />
+                                <Bar dataKey="count" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
                 </div>
-            </div>
+            )}
 
             {/* Demographics Row (2 Cards) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
