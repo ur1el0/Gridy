@@ -11,6 +11,20 @@ interface Activity {
   created_at: string;
 }
 
+const CardSkeleton = () => (
+  <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm animate-pulse flex flex-col h-[200px]">
+    <div className="p-5 flex-1">
+      <div className="flex justify-between items-start mb-4">
+        <div className="w-10 h-10 bg-slate-200 rounded-lg"></div>
+        <div className="w-16 h-5 bg-slate-200 rounded-full"></div>
+      </div>
+      <div className="h-5 w-3/4 bg-slate-200 rounded mb-3"></div>
+      <div className="h-4 w-full bg-slate-100 rounded mb-2"></div>
+      <div className="h-4 w-2/3 bg-slate-100 rounded"></div>
+    </div>
+  </div>
+);
+
 export const Activities: React.FC = () => {
   const [activities, setActivities] = useState<Activity[]>([]);
   const [loading, setLoading] = useState(true);
@@ -69,7 +83,14 @@ export const Activities: React.FC = () => {
     setEventDate('');
   };
 
-  if (loading && activities.length === 0) return <div className="p-8 text-slate-500 flex items-center gap-2"><div className="w-4 h-4 border-2 border-[#0047BA] border-t-transparent rounded-full animate-spin"></div> Loading...</div>;
+  if (loading && activities.length === 0) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
+        {[1, 2, 3, 4, 5, 6].map(i => <CardSkeleton key={i} />)}
+      </div>
+    );
+  }
+  
   if (error) return <div className="p-8 text-red-600 bg-red-50 rounded-lg border border-red-100">{error}</div>;
 
   return (

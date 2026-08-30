@@ -26,7 +26,7 @@ export const WaitingListTable: React.FC<WaitingListTableProps> = ({
           </h2>
           <div className="flex items-center gap-2 text-slate-400">
             <button
-              onClick={() => { fetchTickets(); alert('Queue Refreshed!'); }}
+              onClick={() => { fetchTickets()}}
               className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
               title="Refresh Queue"
             >
@@ -98,7 +98,7 @@ export const WaitingListTable: React.FC<WaitingListTableProps> = ({
                           <button
                             onClick={() => handleCancelTicket(ticket.ticket_id)}
                             disabled={isUpdating}
-                            className="text-xs font-medium text-red-500 hover:bg-red-50 px-2 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                            className="text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 border border-red-200 px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50"
                           >
                             Cancel
                           </button>

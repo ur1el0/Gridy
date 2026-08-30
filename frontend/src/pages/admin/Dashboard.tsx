@@ -74,7 +74,7 @@ const MetricCardSkeleton = () => (
     </div>
 );
 
-const ChartSkeleton = ({ title }: { title: string }) => (
+const ChartSkeleton = ({ }: { title: string }) => (
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#E2E8F0]/80 animate-pulse">
         <div className="h-5 w-48 bg-slate-200 rounded mb-6"></div>
         <div className="h-[250px] w-full bg-slate-100 rounded-xl flex items-end justify-between px-4 pb-4">
@@ -92,7 +92,7 @@ export const Dashboard: React.FC = () => {
     const [summaryData, setSummaryData] = useState<DashboardSummary | null>(null);
     const [activities, setActivities] = useState<ActivityItem[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
-    const [error, setError] = useState<string | null>(null);
+    const [, setError] = useState<string | null>(null);
 
     useEffect(() => {
         let isMounted = true;

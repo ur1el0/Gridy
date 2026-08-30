@@ -12,6 +12,26 @@ interface IssueReport {
   created_at: string;
 }
 
+const TableSkeleton = () => (
+  <div className="space-y-6 animate-pulse">
+    <div className="flex justify-between items-center">
+      <div className="h-8 w-40 bg-slate-200 rounded"></div>
+    </div>
+    <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
+      <div className="bg-slate-50 h-12 border-b border-slate-200 w-full"></div>
+      {[1, 2, 3, 4, 5].map((i) => (
+        <div key={i} className="flex h-16 border-b border-slate-100 items-center px-6 gap-4">
+          <div className="h-4 w-10 bg-slate-200 rounded"></div>
+          <div className="h-4 w-48 bg-slate-200 rounded"></div>
+          <div className="h-4 w-32 bg-slate-200 rounded"></div>
+          <div className="h-6 w-20 bg-slate-200 rounded-full"></div>
+          <div className="h-6 w-20 bg-slate-200 rounded-full"></div>
+        </div>
+      ))}
+    </div>
+  </div>
+);
+
 export const IssueReports: React.FC = () => {
   const [reports, setReports] = useState<IssueReport[]>([]);
   const [loading, setLoading] = useState(true);
@@ -84,13 +104,13 @@ export const IssueReports: React.FC = () => {
       closeModal();
     } catch (err) {
       console.error("Failed to update status", err);
-      alert("Failed to update status. Please try again.");
+      console.error("Failed to update status. Please try again.");
     } finally {
       setIsUpdating(false);
     }
   };
 
-  if (loading) return <div className="p-8 text-slate-600">Loading issue reports...</div>;
+  if (loading) return <div className="p-4 md:p-8"><TableSkeleton /></div>;
   if (error) return <div className="p-8 text-red-600">{error}</div>;
 
   return (
