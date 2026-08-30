@@ -69,19 +69,11 @@ export const ResidentIssueReports: React.FC = () => {
             setDescription('')
             setLocation('')
             setImageFile(null)
-<<<<<<< Updated upstream
-            console.log('Issue reported successfully!')
-            fetchReports()
-        } catch (err) {
-            console.error("Failed to submit report", err)
-            console.error("Failed to submit the report. Please try again.")
-=======
             toast.success('Issue reported successfully! It has been submitted for review.')
             fetchReports()
         } catch (err) {
             console.error("Failed to submit report", err)
             toast.error("Failed to submit report. Please check your connection and try again.")
->>>>>>> Stashed changes
         } finally {
             setIsSubmitting(false)
         }
