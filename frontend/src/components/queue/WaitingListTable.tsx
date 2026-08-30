@@ -1,5 +1,5 @@
 import React from 'react';
-import { RotateCcw, SlidersHorizontal, MoreVertical } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
 import type { QueueTicket } from '../../pages/services/LiveQueue';
 
 interface WaitingListTableProps {
@@ -32,12 +32,6 @@ export const WaitingListTable: React.FC<WaitingListTableProps> = ({
             >
               <RotateCcw className="w-4 h-4 text-slate-500" />
             </button>
-            <button onClick={() => alert('Filter options coming soon!')} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors" title="Filter">
-              <SlidersHorizontal className="w-4 h-4 text-slate-500" />
-            </button>
-            <button onClick={() => alert('Additional options coming soon!')} className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors" title="More">
-              <MoreVertical className="w-4 h-4 text-slate-500" />
-            </button> 
           </div>
         </div>
 
