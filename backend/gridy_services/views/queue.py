@@ -1,10 +1,11 @@
-from gridy_auth.models import User
+from gridy_auth.models import User, Resident
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from django.db import transaction
-from django.db.models import Q
+from django.db.models import Count, Q
+from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
@@ -168,10 +169,6 @@ class DashboardSummaryView(APIView):
 
 
         # 4. Demographics (Purok & Age)
-        from gridy_auth.models import Resident
-        from django.db.models import Count, Q
-        from django.utils import timezone
-
         purok_stats = Resident.objects.filter(user__barangay=user.barangay).values('purok').annotate(count=Count('purok')).order_by('purok')
         purok_distribution = {
             f"Purok {item['purok']}" if item['purok'] is not None else "Unassigned": item['count']
@@ -231,4 +228,5 @@ class DashboardSummaryView(APIView):
                 "waiting_in_queue": waiting_in_queue_val,
             }
         }
+        print("DICT DATA:", data.keys())
         return Response(data, status=status.HTTP_200_OK)
