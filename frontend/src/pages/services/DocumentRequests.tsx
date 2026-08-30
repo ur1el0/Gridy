@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useEffect, useState } from 'react';
 import { axiosPrivate } from '../../api/axios';
 import { DocumentTable } from '../../components/documents/DocumentTable';
@@ -106,7 +107,7 @@ export const DocumentRequests: React.FC = () => {
       closeModal()
     } catch(err) {
       console.error("Failed to update status", err)
-      alert("Failed to update status. Please check permissions or try again.")
+      toast.error('Failed to update status. Please check permissions or try again.')
     } finally {
       setIsUpdating(false)
     }
@@ -128,7 +129,7 @@ export const DocumentRequests: React.FC = () => {
       link.parentNode?.removeChild(link)
     } catch (error) {
       console.error("Failed to download PDF", error)
-      alert("Failed to generate PDF. Make sure the document is not pending or rejected.")
+      toast.error('Failed to generate PDF. Make sure the document is not pending or rejected.')
     }
   }
 

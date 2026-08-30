@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import { useState, useEffect, useMemo } from "react";
 import { axiosPrivate } from "../../api/axios";
 import { CheckCircle, Clock, Search, Filter, XCircle } from "lucide-react";
@@ -58,7 +59,7 @@ export default function ResidentVerification() {
             setPendingResidents((prev) => prev.filter((r) => r.id !== id));
         } catch (error) {
             console.error("Failed to verify resident", error);
-            alert("Error verifying resident.");
+            toast.error('Error verifying resident.');
         }
     };
 
@@ -70,7 +71,7 @@ export default function ResidentVerification() {
             setResidentToReject(null)
         } catch (error) {
             console.error("Failed to reject resident", error)
-            alert("Error rejecting resident.")
+            toast.error('Error rejecting resident.')
         }
     }
 

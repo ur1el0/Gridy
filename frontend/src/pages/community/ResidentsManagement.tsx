@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useEffect, useState} from "react";
 import { axiosPrivate } from "../../api/axios";
 import { Search, Trash2, ShieldCheck, Mail, Phone } from "lucide-react";
@@ -40,7 +41,7 @@ export const ResidentsManagement: React.FC = () => {
       setResidents(prev => prev.filter(r => r.id !== id));
     } catch (err) {
       console.error("Failed to delete resident", err);
-      alert("Failed to delete resident.");
+      toast.error('Failed to delete resident.');
     }
   };
 

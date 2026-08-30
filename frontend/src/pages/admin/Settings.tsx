@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useEffect, useState } from 'react';
 import { Bell, Shield, Key, Smartphone, Laptop, Trash2, Clock } from 'lucide-react';
 import { ChangePasswordModal } from '../../components/modals/ChangePasswordModal';
@@ -45,7 +46,7 @@ export const Settings: React.FC = () => {
       await axiosPrivate.patch('/auth/me/', { email_alerts: newValue })
       setEmailAlerts(newValue) // Only update UI if the backend request succeeds 
     } catch {
-      alert("Failed to update email preferences.")
+      toast.error('Failed to update email preferences.')
     }
   }
 
@@ -55,7 +56,7 @@ export const Settings: React.FC = () => {
       await axiosPrivate.patch('/auth/me/', { push_alerts: pushAlerts })
       setPushAlerts(newValue)
     } catch {
-      alert("Failed to update push preferences.")
+      toast.error('Failed to update push preferences.')
     }
   }
   const fetchSessions = async () => {
@@ -74,7 +75,7 @@ export const Settings: React.FC = () => {
       await axiosPrivate.delete(`/auth/session/${id}/`)
       setSessions(sessions.filter(session => session.id !== id))
     } catch {
-      alert("Failed to revoke session. It may have already expired.")
+      toast.error('Failed to revoke session. It may have already expired.')
     }
   }
   return (
@@ -207,7 +208,7 @@ export const Settings: React.FC = () => {
         onClose={() => setIsPasswordModalOpen(false)} 
         onSuccess={() => {
           setIsPasswordModalOpen(false);
-          alert("Password updated successfully!");
+          toast.success('Password updated successfully!');
         }} 
       />
     </div>

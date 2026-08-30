@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useEffect, useState } from 'react';
 import { axiosPrivate } from '../../api/axios';
 import { Calendar, MapPin, Clock, Plus, X } from 'lucide-react';
@@ -69,7 +70,7 @@ export const Activities: React.FC = () => {
       closeModal();
     } catch (err) {
       console.error("Failed to create activity", err);
-      alert("Failed to schedule activity.");
+      toast.error('Failed to schedule activity.');
     } finally {
       setIsSubmitting(false);
     }
