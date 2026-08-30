@@ -37,11 +37,6 @@ class IssueReport(models.Model):
         choices=Status.choices, 
         default=Status.PENDING
     )
-    urgency = models.CharField(
-        max_length = 20,
-        choices=Urgency.choices,
-        default=Urgency.MINOR
-    )
     urgency = models.CharField(max_length=20, choices=Urgency.choices, default=Urgency.MINOR)
     category = models.CharField(max_length=50, choices=Category.choices, default=Category.OTHER)
     incident_datetime = models.DateTimeField(null=True, blank=True, help_text="Exact time the scenario occurred.")

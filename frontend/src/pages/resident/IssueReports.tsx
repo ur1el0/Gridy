@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from "react";
 import { axiosPrivate } from "../../api/axios";
+import toast from 'react-hot-toast';
 
 interface IssueReport {
     id: number
@@ -11,6 +12,15 @@ interface IssueReport {
     image: string | null
     created_at: string
 }
+
+const CardSkeleton = () => (
+  <div className="bg-white rounded-xl border border-slate-200 p-5 animate-pulse space-y-3">
+    <div className="h-5 w-2/3 bg-slate-200 rounded"></div>
+    <div className="h-4 w-full bg-slate-100 rounded"></div>
+    <div className="h-4 w-1/2 bg-slate-100 rounded"></div>
+    <div className="h-6 w-20 bg-slate-200 rounded-full mt-2"></div>
+  </div>
+);
 
 export const ResidentIssueReports: React.FC = () => {
     const [reports, setReports] = useState<IssueReport[]>([])
@@ -59,11 +69,11 @@ export const ResidentIssueReports: React.FC = () => {
             setDescription('')
             setLocation('')
             setImageFile(null)
-            alert('Issue reported successfully!')
+            toast.success('Issue reported successfully! It has been submitted for review.')
             fetchReports()
         } catch (err) {
             console.error("Failed to submit report", err)
-            alert("Failed to submit the report. Please try again.") 
+            toast.error("Failed to submit report. Please check your connection and try again.")
         } finally {
             setIsSubmitting(false)
         }
@@ -141,7 +151,9 @@ export const ResidentIssueReports: React.FC = () => {
         </div>
         
         {loading ? (
-          <div className="p-8 text-center text-slate-500">Loading your history...</div>
+          <div className="p-6 grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[1, 2, 3, 4].map(i => <CardSkeleton key={i} />)}
+          </div>
         ) : reports.length === 0 ? (
           <div className="p-8 text-center text-slate-500">You haven't submitted any reports yet.</div>
         ) : (

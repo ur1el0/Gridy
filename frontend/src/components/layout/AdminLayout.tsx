@@ -64,7 +64,7 @@ export const AdminLayout: React.FC = () => {
 
           {/* Footer */}
           <footer className="pt-8 text-xs text-slate-400 font-medium">
-            © 2026 Gridy Management Suite Management Suite
+            © 2026 Gridy Admin
           </footer>
         </main>
       </div>

@@ -2,7 +2,7 @@ from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
-from gridy_auth.models import User, Resident
+from gridy_auth.models import User, Resident, Barangay
 
 # Create your tests here.
 
@@ -17,6 +17,86 @@ class AuthAPITests(APITestCase):
             email="resident@example.com",
             role=User.Role.RESIDENT
         )
+
+    def test_admin_registration_success(self):
+        barangay = Barangay.objects.create(name="Barangay Central")
+        url = reverse('auth_register_admin')
+        payload = {
+            "full_name": "Juan De La Cruz",
+            "barangay_id": barangay.id,
+            "email": "juandelacruz@example.com",
+            "password": "SecurePassword123!",
+            "confirm_password": "SecurePassword123!",
+            "affirmation": True,
+        }
+        response = self.client.post(url, payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(User.objects.filter(email="juandelacruz@example.com").exists())
+        user = User.objects.get(email="juandelacruz@example.com")
+        self.assertEqual(user.role, User.Role.ADMIN)
+        self.assertEqual(user.first_name, "Juan")
+        self.assertEqual(user.last_name, "De La Cruz")
+        self.assertEqual(user.barangay, barangay)
+        self.assertTrue(user.is_staff)
+
+    def test_admin_registration_password_mismatch(self):
+        url = reverse('auth_register_admin')
+        payload = {
+            "full_name": "Juan De La Cruz",
+            "email": "mismatch@example.com",
+            "password": "SecurePassword123!",
+            "confirm_password": "DifferentPassword123!",
+            "affirmation": True,
+        }
+        response = self.client.post(url, payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("confirm_password", response.data)
+
+    def test_admin_registration_missing_affirmation(self):
+        url = reverse('auth_register_admin')
+        payload = {
+            "full_name": "Juan De La Cruz",
+            "email": "unaffirmed@example.com",
+            "password": "SecurePassword123!",
+            "confirm_password": "SecurePassword123!",
+            "affirmation": False,
+        }
+        response = self.client.post(url, payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("affirmation", response.data)
+
+    def test_admin_registration_duplicate_email(self):
+        User.objects.create_user(
+            username="existing_admin",
+            email="existing@example.com",
+            password="SecurePassword123!",
+            role=User.Role.ADMIN
+        )
+        url = reverse('auth_register_admin')
+        payload = {
+            "full_name": "Duplicate Admin",
+            "email": "existing@example.com",
+            "password": "SecurePassword123!",
+            "confirm_password": "SecurePassword123!",
+            "affirmation": True,
+        }
+        response = self.client.post(url, payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("email", response.data)
+
+    def test_admin_registration_invalid_barangay(self):
+        url = reverse('auth_register_admin')
+        payload = {
+            "full_name": "Juan De La Cruz",
+            "barangay_id": 99999,
+            "email": "bad_brgy@example.com",
+            "password": "SecurePassword123!",
+            "confirm_password": "SecurePassword123!",
+            "affirmation": True,
+        }
+        response = self.client.post(url, payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("barangay_id", response.data)
 
     def test_user_registration_success(self):
         url = reverse('auth_register')

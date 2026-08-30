@@ -1,12 +1,11 @@
 from gridy_reports.models import IssueReport
-from rest_framework.status import HTTP_403_FORBIDDEN
-from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
 from gridy_auth.models import User
 from gridy_services.models import DocumentRequest, QueueTicket
 from gridy_audit.models import AuditLog
+from unittest.mock import patch
 
 # Create your tests here.
 
@@ -175,3 +174,18 @@ class SystemHealthAPITests(APITestCase):
         self.assertEqual(response.data["services"]["cache"]["status"], "healthy")
         self.assertIn("latency_ms", response.data["services"]["database"])
         self.assertIn("latency_ms", response.data["services"]["cache"])
+
+class SystemHealthAPITests(APITestCase):
+    @patch('config.health_views.celery_app.control.ping')
+    def test_health_check_endpoint_success(self, mock_ping):
+        # Fake a healthy worker response so the test doesn't look for Redis
+        mock_ping.return_value = [{'celery@test-worker': {'ok': 'pong'}}]
+        
+        url = reverse('health_check')
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["status"], "healthy")
+        self.assertIn("database", response.data["services"])
+        self.assertIn("cache", response.data["services"])
+        self.assertEqual(response.data["services"]["database"]["status"], "healthy")
+        self.assertEqual(response.data["services"]["cache"]["status"], "healthy")
