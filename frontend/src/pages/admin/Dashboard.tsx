@@ -167,7 +167,7 @@ export const Dashboard: React.FC = () => {
                             Total Registered Residents
                         </h3>
                         <p className="text-3xl font-extrabold text-[#0f172a] mt-1">
-                            {summaryData !== null ? summaryData.total_residents.toLocaleString() : '--'}
+                            {summaryData?.total_residents?.toLocaleString() ?? '--'}                        
                         </p>
                     </div>
                 </div>

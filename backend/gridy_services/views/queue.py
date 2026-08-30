@@ -1,3 +1,4 @@
+from gridy_auth.models import User
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.views import APIView
@@ -119,6 +120,11 @@ class DashboardSummaryView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsBarangayOfficial]
 
     def get(self, request, *args, **kwargs):
+        user = request.user
+
+        # 0. Total Residents for this Barangay
+        total_res = User.objects.filter(role=User.Role.RESIDENT, barangay=user.barangay).count()
+
         # 1. Document request statistics
         doc_total = DocumentRequest.objects.count()
         doc_pending = DocumentRequest.objects.filter(status=DocumentRequest.Status.PENDING).count()
@@ -161,6 +167,7 @@ class DashboardSummaryView(APIView):
         waiting_in_queue_val = QueueTicket.objects.filter(status=QueueTicket.Status.WAITING).count()
 
         data = {
+            "total_residents": total_res,
             "document_requests": {
                 "total": doc_total,
                 "pending": doc_pending,
