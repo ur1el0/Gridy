@@ -56,17 +56,42 @@ class ActivityScheduleModel {
         eventDatetime.day == now.day;
   }
 
-  /// Formatted date tag for timeline (e.g. "TODAY • 09:00 AM" or "OCT 24 • 04:00 PM")
-  String get timelineDateTag {
+  /// Checks if event falls on the same calendar day as the specified date
+  bool isSameDay(DateTime other) {
+    return eventDatetime.year == other.year &&
+        eventDatetime.month == other.month &&
+        eventDatetime.day == other.day;
+  }
+
+  /// Formatted time string (e.g. "08:00 AM" or "02:30 PM")
+  String get formattedTime {
     final hour = eventDatetime.hour > 12
         ? eventDatetime.hour - 12
         : (eventDatetime.hour == 0 ? 12 : eventDatetime.hour);
     final period = eventDatetime.hour >= 12 ? 'PM' : 'AM';
     final minuteStr = eventDatetime.minute.toString().padLeft(2, '0');
-    final timeStr = '${hour.toString().padLeft(2, '0')}:$minuteStr $period';
+    return '${hour.toString().padLeft(2, '0')}:$minuteStr $period';
+  }
 
+  /// Formatted date string (e.g. "Oct 24")
+  String get formattedShortDate {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    final monthStr = months[eventDatetime.month - 1];
+    return '$monthStr ${eventDatetime.day}';
+  }
+
+  /// Formatted event date & time for reference UI (e.g. "Oct 24 • 08:00 AM - 12:00 PM" or "Oct 24 • 04:00 PM")
+  String get formattedEventDateTime {
+    return '$formattedShortDate • $formattedTime';
+  }
+
+  /// Formatted date tag for timeline (e.g. "TODAY • 09:00 AM" or "OCT 24 • 04:00 PM")
+  String get timelineDateTag {
     if (isToday) {
-      return 'TODAY • $timeStr';
+      return 'TODAY • $formattedTime';
     }
 
     const months = [
@@ -76,6 +101,6 @@ class ActivityScheduleModel {
     final monthStr = months[eventDatetime.month - 1];
     final dayStr = eventDatetime.day.toString().padLeft(2, '0');
 
-    return '$monthStr $dayStr • $timeStr';
+    return '$monthStr $dayStr • $formattedTime';
   }
 }
