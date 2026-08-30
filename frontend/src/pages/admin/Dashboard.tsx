@@ -273,7 +273,7 @@ export const Dashboard: React.FC = () => {
                                 Today's Appointments
                             </h2>
                             <NavLink 
-                                to="/activities" 
+                                to="/communications" 
                                 className="text-xs lg:text-sm font-semibold text-[#0047BA] hover:underline"
                             >
                                 View All Schedule
