@@ -21,3 +21,8 @@ backend/media/
 # Instructions + Further Context
 .agents/AGENTS.md
 .agents/MEMORY.md
+
+
+# Cmake build artifacts
+build/
+clearance.pdf

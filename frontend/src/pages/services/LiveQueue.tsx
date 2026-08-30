@@ -2,6 +2,7 @@ import _useWebSocket from 'react-use-websocket';
 const useWebSocket = (_useWebSocket as any).default || _useWebSocket;
 import React, { useEffect, useState, useMemo } from 'react';
 import { axiosPrivate } from '../../api/axios';
+import toast from 'react-hot-toast';
 import { History, Plus, X, SkipForward, CheckCircle, Bell } from 'lucide-react';
 
 import { QueueMetrics } from '../../components/queue/QueueMetrics';
@@ -132,7 +133,7 @@ export const LiveQueue: React.FC = () => {
       showNotification(`Now serving ticket ${waitingTickets[0]?.ticket_number || ''}`);
     } catch (err) {
       console.error('Failed to advance queue:', err);
-      alert('Failed to advance queue.');
+      toast.error('Failed to advance queue.');
     } finally {
       setIsUpdating(false);
     }
@@ -148,7 +149,7 @@ export const LiveQueue: React.FC = () => {
       showNotification(`Ticket ${servingTicket.ticket_number} marked as completed.`);
     } catch (err) {
       console.error('Failed to complete ticket:', err);
-      alert('Failed to complete ticket.');
+      toast.error('Failed to complete ticket.');
     } finally {
       setIsUpdating(false);
     }
@@ -165,7 +166,7 @@ export const LiveQueue: React.FC = () => {
       await fetchTickets();
     } catch (err) {
       console.error('Failed to call ticket:', err);
-      alert('Failed to update ticket status.');
+      toast.error('Failed to update ticket status.');
     } finally {
       setIsUpdating(false);
     }
@@ -190,10 +191,10 @@ export const LiveQueue: React.FC = () => {
     try {
       await axiosPrivate.delete(`/tickets/${ticketId}/`);
       setTickets(prev => prev.filter(t => t.ticket_id !== ticketId));
-      alert("Queue record deleted successfully.");
+      toast.success('Queue record deleted successfully.');
     } catch (err) {
       console.error(err);
-      alert("Failed to delete queue record.");
+      toast.error('Failed to delete queue record.');
     }
   };
 
@@ -203,7 +204,7 @@ export const LiveQueue: React.FC = () => {
   const handleCreateManualTicket = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!serviceRequired) {
-      alert('Please select a service category.');
+      toast.error('Please select a service category.');
       return;
     }
     setIsSubmittingNew(true);
@@ -227,7 +228,7 @@ export const LiveQueue: React.FC = () => {
       showNotification('New queue ticket issued successfully.');
     } catch (err) {
       console.error('Failed to create ticket:', err);
-      alert('Failed to create manual ticket.');
+      toast.error('Failed to create manual ticket.');
     } finally {
       setIsSubmittingNew(false);
     }
@@ -338,7 +339,7 @@ export const LiveQueue: React.FC = () => {
         <button
           onClick={() => {
             if (servingTicket) {
-              alert(`Paging ticket ${servingTicket.ticket_number}...`);
+              toast.success(`Paging ticket ${servingTicket.ticket_number}...`);
             }
           }}
           disabled={!servingTicket}

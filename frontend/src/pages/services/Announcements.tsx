@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useEffect, useState } from 'react';
 import { axiosPrivate } from '../../api/axios';
 import { Pin, Megaphone, Plus, X, Trash } from 'lucide-react';
@@ -59,7 +60,7 @@ export const Announcements: React.FC = () => {
             setAnnouncements(prev => prev.filter(a => a.id !== id));
         } catch (err) {
             console.error("Failed to delete announcement", err);
-            alert("Failed to delete announcement.");
+            toast.error('Failed to delete announcement.');
         }
     };
 
@@ -80,7 +81,7 @@ export const Announcements: React.FC = () => {
             closeModal();
         } catch (err) {
             console.error('Failed to create announcement.', err);
-            alert('Failed to create announcement.');
+            toast.error('Failed to create announcement.');
         } finally {
             setIsSubmitting(false);
         }

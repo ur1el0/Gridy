@@ -1,3 +1,4 @@
+import toast from 'react-hot-toast';
 import React, { useEffect, useState } from 'react'
 import { axiosPrivate } from '../../api/axios'
 
@@ -39,7 +40,7 @@ export const AdminIssueManagement: React.FC = () => {
             setReports(prev => prev.map(report => report.id === id ? { ...report, [field]: value } : report))
         } catch (err) {
             console.error(`Failed to updat ${field}`, err)
-            alert(`Failed to update ${field}. Please try again`)
+            toast.error(`Failed to update ${field}. Please try again`)
         } finally {
             setUpdatingId(null)
         }
