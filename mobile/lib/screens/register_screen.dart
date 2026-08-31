@@ -2,35 +2,37 @@ import 'package:flutter/material.dart';
 import '../core/network/api_client.dart';
 import '../core/network/api_exception.dart';
 import '../core/theme/app_colors.dart';
-import '../models/auth_response.dart';
+import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../services/storage_service.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/gridy_logo.dart';
-import 'dashboard_screen.dart';
-import 'register_screen.dart';
+import 'login_screen.dart';
 
-class LoginScreen extends StatefulWidget {
+class RegisterScreen extends StatefulWidget {
   final AuthService? authService;
 
-  const LoginScreen({
+  const RegisterScreen({
     super.key,
     this.authService,
   });
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  State<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _RegisterScreenState extends State<RegisterScreen> {
   final _formKey = GlobalKey<FormState>();
+  final TextEditingController _fullNameController = TextEditingController();
   final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
+  final TextEditingController _confirmPasswordController = TextEditingController();
 
   AuthService? _authService;
   bool _obscurePassword = true;
-  bool _rememberMe = false;
+  bool _obscureConfirmPassword = true;
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -51,28 +53,19 @@ class _LoginScreenState extends State<LoginScreen> {
         storageService: storage,
       );
     }
-
-    // Populate remembered username if configured
-    if (_authService != null) {
-      final savedUser = _authService!.getSavedUsername();
-      final rememberMe = _authService!.isRememberMeEnabled();
-      if (mounted && savedUser != null && savedUser.isNotEmpty) {
-        setState(() {
-          _rememberMe = rememberMe;
-          _usernameController.text = savedUser;
-        });
-      }
-    }
   }
 
   @override
   void dispose() {
+    _fullNameController.dispose();
     _usernameController.dispose();
+    _emailController.dispose();
     _passwordController.dispose();
+    _confirmPasswordController.dispose();
     super.dispose();
   }
 
-  Future<void> _handleLogin() async {
+  Future<void> _handleRegister() async {
     FocusScope.of(context).unfocus();
 
     if (_errorMessage != null) {
@@ -90,7 +83,6 @@ class _LoginScreenState extends State<LoginScreen> {
     });
 
     try {
-      // Ensure auth service is initialized
       if (_authService == null) {
         final storage = await StorageService.init();
         final apiClient = ApiClient();
@@ -100,10 +92,11 @@ class _LoginScreenState extends State<LoginScreen> {
         );
       }
 
-      final AuthResponse authResponse = await _authService!.login(
+      final UserModel user = await _authService!.register(
+        fullName: _fullNameController.text.trim(),
         username: _usernameController.text.trim(),
+        email: _emailController.text.trim(),
         password: _passwordController.text,
-        rememberMe: _rememberMe,
       );
 
       if (!mounted) return;
@@ -113,9 +106,7 @@ class _LoginScreenState extends State<LoginScreen> {
         _errorMessage = null;
       });
 
-      final displayName = authResponse.user.fullName.isNotEmpty
-          ? authResponse.user.fullName
-          : authResponse.user.username;
+      final displayName = user.fullName.isNotEmpty ? user.fullName : user.username;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -125,7 +116,7 @@ class _LoginScreenState extends State<LoginScreen> {
               const SizedBox(width: 10),
               Expanded(
                 child: Text(
-                  'Welcome back, $displayName!',
+                  'Account created for $displayName! Please sign in.',
                   style: const TextStyle(fontWeight: FontWeight.w600),
                 ),
               ),
@@ -139,22 +130,7 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
 
-      // Navigate to resident dashboard
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const DashboardScreen()),
-      );
-    } on ForbiddenException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _errorMessage = e.message;
-      });
-    } on UnauthorizedException catch (e) {
-      if (!mounted) return;
-      setState(() {
-        _isLoading = false;
-        _errorMessage = e.message;
-      });
+      _navigateToLogin();
     } on ValidationException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -177,8 +153,18 @@ class _LoginScreenState extends State<LoginScreen> {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _errorMessage = 'An unexpected error occurred. Please try again.';
+        _errorMessage = 'An unexpected error occurred during registration. Please try again.';
       });
+    }
+  }
+
+  void _navigateToLogin() {
+    if (Navigator.of(context).canPop()) {
+      Navigator.of(context).pop();
+    } else {
+      Navigator.of(context).pushReplacement(
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
     }
   }
 
@@ -199,23 +185,22 @@ class _LoginScreenState extends State<LoginScreen> {
                   child: Form(
                     key: _formKey,
                     child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                      crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        const SizedBox(height: 36),
+                        const SizedBox(height: 32),
 
                         // Logo & Brand Name
-                        const Center(
-                          child: GridyLogo(
-                            iconSize: 64,
-                            textSize: 24,
-                          ),
+                        const GridyLogo(
+                          iconSize: 64,
+                          textSize: 24,
                         ),
 
-                        const SizedBox(height: 40),
+                        const SizedBox(height: 32),
 
                         // Header Typography
                         const Text(
-                          'Welcome Back',
+                          'Create an Account',
+                          textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 28,
                             fontWeight: FontWeight.w800,
@@ -225,7 +210,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                         const SizedBox(height: 8),
                         const Text(
-                          'Please enter your citizen credentials to continue',
+                          'Please provide your details to join our\ncommunity.',
+                          textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 14.5,
                             fontWeight: FontWeight.w400,
@@ -289,34 +275,74 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 28),
 
-                        // Citizen ID / Username Input
+                        // Full Name Input
                         CustomTextField(
-                          label: 'Citizen ID / Username',
-                          controller: _usernameController,
-                          hintText: 'resident',
+                          label: 'FULL NAME',
+                          controller: _fullNameController,
+                          hintText: 'Johnathan Doe',
                           prefixIcon: Icons.person_outline_rounded,
                           textInputAction: TextInputAction.next,
                           enabled: !_isLoading,
                           validator: (value) {
                             if (value == null || value.trim().isEmpty) {
-                              return 'Please enter your citizen ID or username';
+                              return 'Please enter your full name';
                             }
                             return null;
                           },
                         ),
 
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 18),
+
+                        // Barangay ID / Username Input
+                        CustomTextField(
+                          label: 'BARANGAY ID / USERNAME',
+                          controller: _usernameController,
+                          hintText: 'CID-99201',
+                          prefixIcon: Icons.fingerprint_rounded,
+                          textInputAction: TextInputAction.next,
+                          enabled: !_isLoading,
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Please enter your barangay ID or username';
+                            }
+                            return null;
+                          },
+                        ),
+
+                        const SizedBox(height: 18),
+
+                        // Email Address Input
+                        CustomTextField(
+                          label: 'EMAIL ADDRESS',
+                          controller: _emailController,
+                          hintText: 'name@civic.gov',
+                          prefixIcon: Icons.mail_outline_rounded,
+                          keyboardType: TextInputType.emailAddress,
+                          textInputAction: TextInputAction.next,
+                          enabled: !_isLoading,
+                          validator: (value) {
+                            if (value == null || value.trim().isEmpty) {
+                              return 'Please enter your email address';
+                            }
+                            final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
+                            if (!emailRegex.hasMatch(value.trim())) {
+                              return 'Please enter a valid email address';
+                            }
+                            return null;
+                          },
+                        ),
+
+                        const SizedBox(height: 18),
 
                         // Password Input
                         CustomTextField(
-                          label: 'Password',
+                          label: 'PASSWORD',
                           controller: _passwordController,
                           hintText: '••••••••',
                           prefixIcon: Icons.lock_outline_rounded,
                           obscureText: _obscurePassword,
-                          textInputAction: TextInputAction.done,
+                          textInputAction: TextInputAction.next,
                           enabled: !_isLoading,
-                          onFieldSubmitted: (_) => _handleLogin(),
                           suffixIcon: IconButton(
                             icon: Icon(
                               _obscurePassword
@@ -333,129 +359,71 @@ class _LoginScreenState extends State<LoginScreen> {
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Please enter your password';
+                              return 'Please enter a password';
+                            }
+                            if (value.length < 8) {
+                              return 'Password must be at least 8 characters';
                             }
                             return null;
                           },
                         ),
 
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 18),
 
-                        // Remember Me & Forgot ID Row
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            // Remember Me Checkbox
-                            InkWell(
-                              onTap: _isLoading
-                                  ? null
-                                  : () {
-                                      setState(() {
-                                        _rememberMe = !_rememberMe;
-                                      });
-                                    },
-                              borderRadius: BorderRadius.circular(6),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 4.0,
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    AnimatedContainer(
-                                      duration: const Duration(milliseconds: 200),
-                                      width: 20,
-                                      height: 20,
-                                      decoration: BoxDecoration(
-                                        color: _rememberMe
-                                            ? AppColors.primaryNavy
-                                            : AppColors.inputBackground,
-                                        borderRadius: BorderRadius.circular(5),
-                                        border: Border.all(
-                                          color: _rememberMe
-                                             ? AppColors.primaryNavy
-                                             : const Color(0xFFCBD5E1),
-                                          width: 1.5,
-                                        ),
-                                      ),
-                                      child: _rememberMe
-                                          ? const Icon(
-                                              Icons.check,
-                                              size: 14,
-                                              color: Colors.white,
-                                            )
-                                          : null,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    const Text(
-                                      'Remember me',
-                                      style: TextStyle(
-                                        fontSize: 13.5,
-                                        fontWeight: FontWeight.w500,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
-                              ),
+                        // Confirm Password Input
+                        CustomTextField(
+                          label: 'CONFIRM PASSWORD',
+                          controller: _confirmPasswordController,
+                          hintText: '••••••••',
+                          prefixIcon: Icons.shield_outlined,
+                          obscureText: _obscureConfirmPassword,
+                          textInputAction: TextInputAction.done,
+                          enabled: !_isLoading,
+                          onFieldSubmitted: (_) => _handleRegister(),
+                          suffixIcon: IconButton(
+                            icon: Icon(
+                              _obscureConfirmPassword
+                                  ? Icons.visibility_outlined
+                                  : Icons.visibility_off_outlined,
+                              color: AppColors.textMuted,
+                              size: 20,
                             ),
-
-                            // Forgot ID Link
-                            TextButton(
-                              onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Forgot ID / Password recovery coming soon'),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              },
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              child: const Text(
-                                'Forgot ID?',
-                                style: TextStyle(
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.primaryNavy,
-                                ),
-                              ),
-                            ),
-                          ],
+                            onPressed: () {
+                              setState(() {
+                                _obscureConfirmPassword = !_obscureConfirmPassword;
+                              });
+                            },
+                          ),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) {
+                              return 'Please confirm your password';
+                            }
+                            if (value != _passwordController.text) {
+                              return 'Passwords do not match';
+                            }
+                            return null;
+                          },
                         ),
 
                         const SizedBox(height: 28),
 
-                        // Login Action Button
+                        // Register Account Action Button
                         CustomButton(
-                          text: 'Login to',
+                          text: 'Register Account',
                           isLoading: _isLoading,
                           icon: Icons.arrow_forward_rounded,
-                          onPressed: _handleLogin,
+                          onPressed: _handleRegister,
                         ),
 
-                        const SizedBox(height: 32),
+                        const SizedBox(height: 24),
 
-                        // Don't have an account? Register here
+                        // Already have an account? Login here
                         Center(
                           child: GestureDetector(
-                            onTap: _isLoading
-                                ? null
-                                : () {
-                                    Navigator.of(context).push(
-                                      MaterialPageRoute(
-                                        builder: (_) => RegisterScreen(
-                                          authService: _authService,
-                                        ),
-                                      ),
-                                    );
-                                  },
+                            onTap: _isLoading ? null : _navigateToLogin,
                             child: Text.rich(
                               const TextSpan(
-                                text: "Don't have an account? ",
+                                text: 'Already have an account? ',
                                 style: TextStyle(
                                   fontSize: 14,
                                   color: AppColors.textSecondary,
@@ -463,7 +431,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                                 children: [
                                   TextSpan(
-                                    text: 'Register here',
+                                    text: 'Login here',
                                     style: TextStyle(
                                       color: AppColors.primaryNavy,
                                       fontWeight: FontWeight.w800,
@@ -477,47 +445,19 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
 
                         const Spacer(),
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 28),
 
-                        // Footer Links: Privacy Policy • Support
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.center,
-                          children: [
-                            GestureDetector(
-                              onTap: () {},
-                              child: const Text(
-                                'PRIVACY POLICY',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textMuted,
-                                  letterSpacing: 0.8,
-                                ),
-                              ),
-                            ),
-                            const Padding(
-                              padding: EdgeInsets.symmetric(horizontal: 10.0),
-                              child: Text(
-                                '•',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.textMuted,
-                                ),
-                              ),
-                            ),
-                            GestureDetector(
-                              onTap: () {},
-                              child: const Text(
-                                'SUPPORT',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textMuted,
-                                  letterSpacing: 0.8,
-                                ),
-                              ),
-                            ),
-                          ],
+                        // Footer Terms & Privacy Notice
+                        const Text(
+                          'BY REGISTERING, YOU AGREE TO OUR\nTERMS OF SERVICE & PRIVACY POLICY.',
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            fontSize: 10.5,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textHint,
+                            letterSpacing: 0.8,
+                            height: 1.4,
+                          ),
                         ),
 
                         const SizedBox(height: 20),
