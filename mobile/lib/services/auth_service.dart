@@ -76,6 +76,37 @@ class AuthService {
     return authResponse;
   }
 
+  /// Register a new resident account against Django backend `/api/v1/auth/register/`
+  Future<UserModel> register({
+    required String fullName,
+    required String username,
+    required String email,
+    required String password,
+    String? contactNumber,
+    String? birthDate,
+  }) async {
+    final response = await apiClient.post(
+      AppConfig.registerEndpoint,
+      body: {
+        'full_name': fullName.trim(),
+        'username': username.trim(),
+        'email': email.trim().toLowerCase(),
+        'password': password,
+        'birth_date': birthDate ?? '2000-01-01',
+        'voter_status': false,
+        if (contactNumber != null && contactNumber.isNotEmpty)
+          'contact_number': contactNumber.trim(),
+      },
+      requiresAuth: false,
+    );
+
+    final Map<String, dynamic> responseData = jsonDecode(
+      utf8.decode(response.bodyBytes),
+    );
+
+    return UserModel.fromJson(responseData);
+  }
+
   /// Fetch currently authenticated resident profile `/api/v1/auth/me/`
   Future<UserModel> getProfile() async {
     final response = await apiClient.get(
