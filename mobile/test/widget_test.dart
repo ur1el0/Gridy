@@ -9,6 +9,13 @@ void main() {
   });
 
   testWidgets('Login screen renders key elements correctly', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
     await tester.pumpWidget(const GridyApp());
     await tester.pumpAndSettle();
 
@@ -23,6 +30,13 @@ void main() {
   });
 
   testWidgets('Submitting empty form triggers validation error messages', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
     await tester.pumpWidget(const GridyApp());
     await tester.pumpAndSettle();
 
@@ -37,6 +51,13 @@ void main() {
   });
 
   testWidgets('Toggling remember me checkbox updates visual state', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
     await tester.pumpWidget(const GridyApp());
     await tester.pumpAndSettle();
 
@@ -53,5 +74,29 @@ void main() {
 
     // Now check icon should be rendered
     expect(find.byIcon(Icons.check), findsOneWidget);
+  });
+
+  testWidgets('Tapping Register here navigates from LoginScreen to RegisterScreen', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await tester.pumpWidget(const GridyApp());
+    await tester.pumpAndSettle();
+
+    final registerLinkFinder = find.byWidgetPredicate(
+      (widget) => widget is Text && widget.textSpan?.toPlainText().contains('Register here') == true,
+    );
+    expect(registerLinkFinder, findsOneWidget);
+
+    await tester.tap(registerLinkFinder);
+    await tester.pumpAndSettle();
+
+    // Verify RegisterScreen is now visible
+    expect(find.text('Create an Account'), findsOneWidget);
+    expect(find.text('Register Account'), findsOneWidget);
   });
 }
