@@ -1,7 +1,7 @@
 from rest_framework import viewsets, permissions
 from gridy_auth.permissions import IsBarangayOfficial
-from gridy_communications.models import Announcement, ActivitySchedule
-from gridy_communications.serializers import AnnouncementSerializer, ActivityScheduleSerializer
+from gridy_communications.models import Announcement, ActivitySchedule, FCMDevice, EmergencyHotline
+from gridy_communications.serializers import AnnouncementSerializer, ActivityScheduleSerializer, FCMDeviceSerializer, EmergencyHotlineSerializer
 from gridy_communications.tasks import async_send_fcm_topic_notification
 from gridy_communications.models import FCMDevice
 from gridy_communications.serializers import FCMDeviceSerializer
@@ -90,3 +90,29 @@ class FCMDeviceViewSet(viewsets.ModelViewSet):
     # Security: Force the device to belong to the logged-in user!
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
+
+
+class EmergencyHotlineViewSet(viewsets.ModelViewSet):
+    serializer_class = EmergencyHotlineSerializer
+
+    def get_queryset(self):
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            return EmergencyHotline.objects.none()
+        
+        if user.role == User.Role.DILG_ADMIN:
+            return EmergencyHotline.objects.all()
+        
+        return EmergencyHotline.objects.filter(
+            created_by__barangay=user.barangay
+        )
+    
+    def get_permissions(self):
+        if self.action in ['list', 'retrieve']:
+            # Residents can read the hotline directory
+            return [permissions.IsAuthenticated()]
+        # Only Officials can manage (create, edit, delete)
+        return [IsBarangayOfficial()]
+    
+    def perform_create(self, serializer):
+        serializer.save(created_by=self.request.user)

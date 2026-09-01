@@ -1,47 +1,46 @@
 import React, { useState } from 'react';
 import { Announcements } from './Announcements';
 import { Activities } from './Activities';
+import { HotlineManagement } from '../admin/HotlineManagement';
 
 export const Communications: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'announcements' | 'activities'>('announcements');
+  const [activeTab, setActiveTab] = useState<'announcements' | 'activities' | 'hotlines'>('announcements');
+
+  const tabs = [
+    { key: 'announcements', label: 'Announcements' },
+    { key: 'activities', label: 'Activity Schedules' },
+    { key: 'hotlines', label: 'Emergency Hotlines' },
+  ] as const;
 
   return (
     <div className="space-y-6">
-      {/* Header Section */}
       <div>
         <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Communications Center</h2>
-        <p className="text-sm text-slate-500 mt-1">Broadcast announcements and schedule community events.</p>
+        <p className="text-sm text-slate-500 mt-1">Broadcast announcements, schedule events, and manage emergency contacts.</p>
       </div>
 
-      {/* Tabs */}
       <div className="border-b border-slate-200">
         <nav className="-mb-px flex space-x-8" aria-label="Tabs">
-          <button
-            onClick={() => setActiveTab('announcements')}
-            className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-              activeTab === 'announcements'
-                ? 'border-[#0047BA] text-[#0047BA]'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-            }`}
-          >
-            Announcements
-          </button>
-          <button
-            onClick={() => setActiveTab('activities')}
-            className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-              activeTab === 'activities'
-                ? 'border-[#0047BA] text-[#0047BA]'
-                : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
-            }`}
-          >
-            Activity Schedules
-          </button>
+          {tabs.map(tab => (
+            <button
+              key={tab.key}
+              onClick={() => setActiveTab(tab.key)}
+              className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
+                activeTab === tab.key
+                  ? 'border-[#0047BA] text-[#0047BA]'
+                  : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
         </nav>
       </div>
 
-      {/* Render the Active Tab */}
       <div className="mt-4">
-        {activeTab === 'announcements' ? <Announcements /> : <Activities />}
+        {activeTab === 'announcements' && <Announcements />}
+        {activeTab === 'activities' && <Activities />}
+        {activeTab === 'hotlines' && <HotlineManagement />}
       </div>
     </div>
   );

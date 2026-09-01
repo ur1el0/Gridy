@@ -47,3 +47,34 @@ class FCMDevice(models.Model):
 
     def __str__(self):
         return f"{self.user.username}'s Device ({self.token[:20]}...)"
+
+class EmergencyHotline(models.Model):
+    class Category(models.TextChoices):
+        POLICE = 'POLICE', 'Police'
+        FIRE = 'FIRE', 'Fire Department'
+        MEDICAL = 'MEDICAL', 'Medical / Hospital'
+        BARANGAY = 'BARANGAY', 'Barangay Desk'
+        OTHER = 'OTHER', 'Other'
+
+    name = models.CharField(max_length=255)
+    number = models.CharField(max_length=50)
+    category = models.CharField(
+        max_length=20,
+        choices=Category.choices,
+        default=Category.OTHER
+    )
+    # Security: Track which barangay admin created this hotline
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='hotlines'
+    )
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    def __str__(self):
+        return f"{self.name} - {self.number}"
+    
+    class Meta:
+        ordering = ['category', 'name']
