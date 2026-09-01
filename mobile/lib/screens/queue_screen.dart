@@ -35,7 +35,6 @@ class QueueScreen extends StatefulWidget {
 class _QueueScreenState extends State<QueueScreen> {
   QueueService? _queueService;
   AuthService? _authService;
-  StorageService? _storageService;
   UserModel? _currentUser;
   QueueLiveStatusModel _queueStatus = const QueueLiveStatusModel();
   bool _isLoading = true;
@@ -52,7 +51,6 @@ class _QueueScreenState extends State<QueueScreen> {
     _authService = widget.authService;
 
     final storage = await StorageService.init();
-    _storageService = storage;
     _currentUser = storage.getUser();
 
     final apiClient = ApiClient();
