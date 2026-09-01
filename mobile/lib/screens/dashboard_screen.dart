@@ -1,3 +1,4 @@
+import 'report_issue_screen.dart';
 import '../services/push_notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -310,11 +311,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         );
                       },
                       onReportIssue: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Report Issue flow opened'),
-                            behavior: SnackBarBehavior.floating,
-                          ),
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const ReportIssueScreen()),
                         );
                       },
                       onBarangayHotline: () {
