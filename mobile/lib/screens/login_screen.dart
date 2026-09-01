@@ -30,7 +30,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
   AuthService? _authService;
   bool _obscurePassword = true;
-  bool _rememberMe = false;
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -50,18 +49,6 @@ class _LoginScreenState extends State<LoginScreen> {
         apiClient: apiClient,
         storageService: storage,
       );
-    }
-
-    // Populate remembered username if configured
-    if (_authService != null) {
-      final savedUser = _authService!.getSavedUsername();
-      final rememberMe = _authService!.isRememberMeEnabled();
-      if (mounted && savedUser != null && savedUser.isNotEmpty) {
-        setState(() {
-          _rememberMe = rememberMe;
-          _usernameController.text = savedUser;
-        });
-      }
     }
   }
 
@@ -103,7 +90,6 @@ class _LoginScreenState extends State<LoginScreen> {
       final AuthResponse authResponse = await _authService!.login(
         username: _usernameController.text.trim(),
         password: _passwordController.text,
-        rememberMe: _rememberMe,
       );
 
       if (!mounted) return;
@@ -341,90 +327,25 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 16),
 
-                        // Remember Me & Forgot ID Row
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            // Remember Me Checkbox
-                            InkWell(
-                              onTap: _isLoading
-                                  ? null
-                                  : () {
-                                      setState(() {
-                                        _rememberMe = !_rememberMe;
-                                      });
-                                    },
-                              borderRadius: BorderRadius.circular(6),
-                              child: Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  vertical: 4.0,
-                                ),
-                                child: Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    AnimatedContainer(
-                                      duration: const Duration(milliseconds: 200),
-                                      width: 20,
-                                      height: 20,
-                                      decoration: BoxDecoration(
-                                        color: _rememberMe
-                                            ? AppColors.primaryNavy
-                                            : AppColors.inputBackground,
-                                        borderRadius: BorderRadius.circular(5),
-                                        border: Border.all(
-                                          color: _rememberMe
-                                             ? AppColors.primaryNavy
-                                             : const Color(0xFFCBD5E1),
-                                          width: 1.5,
-                                        ),
-                                      ),
-                                      child: _rememberMe
-                                          ? const Icon(
-                                              Icons.check,
-                                              size: 14,
-                                              color: Colors.white,
-                                            )
-                                          : null,
-                                    ),
-                                    const SizedBox(width: 8),
-                                    const Text(
-                                      'Remember me',
-                                      style: TextStyle(
-                                        fontSize: 13.5,
-                                        fontWeight: FontWeight.w500,
-                                        color: AppColors.textSecondary,
-                                      ),
-                                    ),
-                                  ],
-                                ),
+                        // Forgot ID / Password Row
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: TextButton(
+                            onPressed: () => _showPasswordResetModal(context),
+                            style: TextButton.styleFrom(
+                              padding: EdgeInsets.zero,
+                              minimumSize: Size.zero,
+                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                            ),
+                            child: const Text(
+                              'Forgot ID?',
+                              style: TextStyle(
+                                fontSize: 13.5,
+                                fontWeight: FontWeight.w700,
+                                color: AppColors.primaryNavy,
                               ),
                             ),
-
-                            // Forgot ID Link
-                            TextButton(
-                              onPressed: () {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(
-                                    content: Text('Forgot ID / Password recovery coming soon'),
-                                    behavior: SnackBarBehavior.floating,
-                                  ),
-                                );
-                              },
-                              style: TextButton.styleFrom(
-                                padding: EdgeInsets.zero,
-                                minimumSize: Size.zero,
-                                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                              ),
-                              child: const Text(
-                                'Forgot ID?',
-                                style: TextStyle(
-                                  fontSize: 13.5,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.primaryNavy,
-                                ),
-                              ),
-                            ),
-                          ],
+                          ),
                         ),
 
                         const SizedBox(height: 28),
@@ -484,7 +405,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
                             GestureDetector(
-                              onTap: () {},
+                              onTap: () => _showPrivacyPolicyModal(context),
                               child: const Text(
                                 'PRIVACY POLICY',
                                 style: TextStyle(
@@ -506,7 +427,7 @@ class _LoginScreenState extends State<LoginScreen> {
                               ),
                             ),
                             GestureDetector(
-                              onTap: () {},
+                              onTap: () => _showSupportModal(context),
                               child: const Text(
                                 'SUPPORT',
                                 style: TextStyle(
@@ -530,6 +451,366 @@ class _LoginScreenState extends State<LoginScreen> {
           },
         ),
       ),
+    );
+  }
+
+  void _showPrivacyPolicyModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Privacy Policy & Data Protection',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 12),
+            const Text(
+              'Gridy Resident Portal is committed to protecting your personal information. '
+              'All data submitted during login, registration, document requests, and queue ticketing '
+              'is encrypted and processed in full compliance with the Republic Act No. 10173 (Data Privacy Act of 2012).\n\n'
+              'Your citizen ID, contact information, and request logs are accessible strictly by authorized Barangay Officials.',
+              style: TextStyle(
+                fontSize: 13.5,
+                color: AppColors.textSecondary,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryNavy,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Close', style: TextStyle(color: Colors.white)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showSupportModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) => Container(
+        padding: const EdgeInsets.all(24.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Center(
+              child: Container(
+                width: 40,
+                height: 4,
+                decoration: BoxDecoration(
+                  color: Colors.grey[300],
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Text(
+              'Barangay Resident Support',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Row(
+              children: [
+                Icon(Icons.phone_rounded, color: AppColors.primaryNavy, size: 20),
+                SizedBox(width: 12),
+                Text('(02) 8920-0000 / Hotline 161', style: TextStyle(fontWeight: FontWeight.w600)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            const Row(
+              children: [
+                Icon(Icons.email_rounded, color: AppColors.primaryNavy, size: 20),
+                SizedBox(width: 12),
+                Text('support@gridy.gov.ph', style: TextStyle(fontWeight: FontWeight.w600)),
+              ],
+            ),
+            const SizedBox(height: 12),
+            const Row(
+              children: [
+                Icon(Icons.access_time_filled_rounded, color: AppColors.primaryNavy, size: 20),
+                SizedBox(width: 12),
+                Text('Mon - Fri: 8:00 AM - 5:00 PM', style: TextStyle(fontWeight: FontWeight.w600)),
+              ],
+            ),
+            const SizedBox(height: 24),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryNavy,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('Close', style: TextStyle(color: Colors.white)),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _showPasswordResetModal(BuildContext context) {
+    final emailController = TextEditingController();
+    final tokenController = TextEditingController();
+    final uidController = TextEditingController();
+    final newPasswordController = TextEditingController();
+    bool isSubmitting = false;
+    bool resetRequested = false;
+    String? modalError;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return StatefulBuilder(
+          builder: (context, setModalState) {
+            return Padding(
+              padding: EdgeInsets.only(
+                left: 24.0,
+                right: 24.0,
+                top: 24.0,
+                bottom: MediaQuery.of(context).viewInsets.bottom + 24.0,
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    children: [
+                      const Icon(Icons.lock_reset_rounded, color: AppColors.primaryNavy, size: 24),
+                      const SizedBox(width: 10),
+                      Text(
+                        resetRequested ? 'Set New Password' : 'Password Recovery',
+                        style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    resetRequested
+                        ? 'Enter the reset token sent to your email, user ID, and your new password.'
+                        : 'Enter your registered email address below to receive a password reset token.',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: AppColors.textSecondary,
+                    ),
+                  ),
+                  if (modalError != null) ...[
+                    const SizedBox(height: 12),
+                    Text(
+                      modalError!,
+                      style: const TextStyle(color: Colors.red, fontSize: 12.5),
+                    ),
+                  ],
+                  const SizedBox(height: 16),
+                  if (!resetRequested) ...[
+                    CustomTextField(
+                      label: 'REGISTERED EMAIL',
+                      controller: emailController,
+                      hintText: 'resident@example.com',
+                      prefixIcon: Icons.email_outlined,
+                      keyboardType: TextInputType.emailAddress,
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: isSubmitting
+                            ? null
+                            : () async {
+                                final email = emailController.text.trim();
+                                if (email.isEmpty) {
+                                  setModalState(() => modalError = 'Please enter your email.');
+                                  return;
+                                }
+                                setModalState(() {
+                                  isSubmitting = true;
+                                  modalError = null;
+                                });
+                                try {
+
+                                  if (_authService == null) {
+                                    final storage = await StorageService.init();
+                                    final apiClient = ApiClient();
+                                    _authService = AuthService(apiClient: apiClient, storageService: storage);
+                                  }
+                                  await _authService!.requestPasswordReset(email);
+                                  setModalState(() {
+                                    isSubmitting = false;
+                                    resetRequested = true;
+                                  });
+                                } catch (e) {
+                                  setModalState(() {
+                                    isSubmitting = false;
+                                    modalError = 'Error: ${e.toString().replaceAll('Exception:', '').trim()}';
+                                  });
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryNavy,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: isSubmitting
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              )
+                            : const Text('Send Reset Link', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ] else ...[
+                    CustomTextField(
+                      label: 'USER ID (UID)',
+                      controller: uidController,
+                      hintText: 'e.g. MQ',
+                      prefixIcon: Icons.badge_outlined,
+                    ),
+                    const SizedBox(height: 12),
+                    CustomTextField(
+                      label: 'RESET TOKEN',
+                      controller: tokenController,
+                      hintText: 'Enter email token',
+                      prefixIcon: Icons.key_outlined,
+                    ),
+                    const SizedBox(height: 12),
+                    CustomTextField(
+                      label: 'NEW PASSWORD',
+                      controller: newPasswordController,
+                      hintText: 'Minimum 8 characters',
+                      prefixIcon: Icons.lock_outline_rounded,
+                      obscureText: true,
+                    ),
+                    const SizedBox(height: 20),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: isSubmitting
+                            ? null
+                            : () async {
+                                final uid = uidController.text.trim();
+                                final token = tokenController.text.trim();
+                                final newPass = newPasswordController.text;
+                                if (uid.isEmpty || token.isEmpty || newPass.length < 8) {
+                                  setModalState(() => modalError = 'Please complete all fields (password min 8 chars).');
+                                  return;
+                                }
+                                setModalState(() {
+                                  isSubmitting = true;
+                                  modalError = null;
+                                });
+                                try {
+                                  await _authService!.confirmPasswordReset(
+                                    newPassword: newPass,
+                                    uidb64: uid,
+                                    token: token,
+                                  );
+                                  if (context.mounted) {
+                                    Navigator.pop(context);
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('Password updated successfully! You can now log in.'),
+                                        backgroundColor: Color(0xFF10B981),
+                                        behavior: SnackBarBehavior.floating,
+                                      ),
+                                    );
+                                  }
+                                } catch (e) {
+                                  setModalState(() {
+                                    isSubmitting = false;
+                                    modalError = 'Failed: ${e.toString().replaceAll('Exception:', '').trim()}';
+                                  });
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primaryNavy,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        child: isSubmitting
+                            ? const SizedBox(
+                                height: 20,
+                                width: 20,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              )
+                            : const Text('Update Password', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
