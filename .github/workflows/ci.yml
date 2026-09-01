@@ -82,7 +82,7 @@ jobs:
           cd frontend
           npx vitest run
 
-    mobile-tests:
+  mobile-tests:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code

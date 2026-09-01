@@ -15,8 +15,6 @@ class DocumentRequestCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isCompleted = request.isReadyForPickup || request.isReleased;
-
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(

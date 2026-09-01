@@ -85,7 +85,7 @@ class CalendarDayStrip extends StatelessWidget {
             scrollDirection: Axis.horizontal,
             physics: const BouncingScrollPhysics(),
             itemCount: weekDays.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 10),
+            separatorBuilder: (_, _) => const SizedBox(width: 10),
             itemBuilder: (context, index) {
               final date = weekDays[index];
               final isSelected = date.year == selectedDate.year &&

@@ -464,7 +464,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: appointments.length > 2 ? 2 : appointments.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 12),
+                        separatorBuilder: (_, _) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final req = appointments[index];
                           return AppointmentScheduleCard(
@@ -555,7 +555,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
                         itemCount: displayedActivities.length,
-                        separatorBuilder: (_, __) => const SizedBox(height: 16),
+                        separatorBuilder: (_, _) => const SizedBox(height: 16),
                         itemBuilder: (context, index) {
                           final activity = displayedActivities[index];
                           return ScheduleEventCard(

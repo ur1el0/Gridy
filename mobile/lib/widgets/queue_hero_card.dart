@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../core/theme/app_colors.dart';
 
 /// Primary hero card displaying the currently served queue ticket at the counter
 class QueueHeroCard extends StatelessWidget {
