@@ -30,7 +30,6 @@ class AuthService {
   Future<AuthResponse> login({
     required String username,
     required String password,
-    bool rememberMe = false,
   }) async {
     final response = await apiClient.post(
       AppConfig.loginEndpoint,
@@ -60,12 +59,6 @@ class AuthService {
       refreshCookie: cookieHeader,
     );
     await storageService.saveUser(authResponse.user);
-
-    // Save or clear Remember Me username
-    await storageService.saveRememberMe(
-      rememberMe: rememberMe,
-      username: username.trim(),
-    );
 
     // Update active in-memory headers in ApiClient
     apiClient.setAuthCredentials(
@@ -192,13 +185,29 @@ class AuthService {
     return storageService.getUser();
   }
 
-  /// Retrieve remembered username for login auto-fill
-  String? getSavedUsername() {
-    return storageService.getSavedUsername();
+  /// Request a password reset email/token for the given registered email
+  Future<void> requestPasswordReset(String email) async {
+    await apiClient.post(
+      '/auth/password-reset/',
+      body: {'email': email.trim().toLowerCase()},
+      requiresAuth: false,
+    );
   }
 
-  /// Retrieve Remember Me checkbox state
-  bool isRememberMeEnabled() {
-    return storageService.isRememberMeEnabled();
+  /// Confirm password reset using the token, UID, and new password
+  Future<void> confirmPasswordReset({
+    required String newPassword,
+    required String uidb64,
+    required String token,
+  }) async {
+    await apiClient.post(
+      '/auth/password-reset/confirm/',
+      body: {
+        'new_password': newPassword,
+        'uidb64': uidb64,
+        'token': token,
+      },
+      requiresAuth: false,
+    );
   }
 }
