@@ -3,6 +3,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import '../core/network/api_client.dart';
 import '../core/theme/app_colors.dart';
 import '../models/user_model.dart';
+import '../models/notification_item_model.dart';
 import '../services/auth_service.dart';
 import '../services/dashboard_service.dart';
 import '../services/storage_service.dart';
@@ -16,6 +17,7 @@ import 'documents_screen.dart';
 import 'login_screen.dart';
 import 'queue_screen.dart';
 import 'schedule_screen.dart';
+import 'hotlines_screen.dart';
 
 /// Resident Dashboard Screen matching the exact reference UI and connected to backend data
 class DashboardScreen extends StatefulWidget {
@@ -37,7 +39,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   AuthService? _authService;
   DashboardData _data = const DashboardData();
   bool _isLoading = true;
-  int _selectedNavIndex = 0;
+  final int _selectedNavIndex = 0;
 
   @override
   void initState() {
@@ -280,14 +282,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     // 3. Recent Notifications Section
                     RecentNotificationsSection(
                       notifications: _data.notifications,
-                      onViewAll: () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text('Notifications center coming soon'),
-                            behavior: SnackBarBehavior.floating,
-                          ),
-                        );
-                      },
+                      onViewAll: () => _showNotificationModalSheet(context),
                     ),
 
                     const SizedBox(height: 24),
@@ -310,21 +305,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         );
                       },
                       onBarangayHotline: () {
-                        showDialog(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: const Text('Barangay Hotline'),
-                            content: const Text(
-                              'Emergency Hotline: (02) 8123-4567\n'
-                              'Barangay Action Desk: 0917-123-4567\n'
-                              'Police / Rescue Desk: 911',
-                            ),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx),
-                                child: const Text('Close'),
-                              ),
-                            ],
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) => const HotlinesScreen(),
                           ),
                         );
                       },
@@ -386,6 +369,139 @@ class _DashboardScreenState extends State<DashboardScreen> {
           }
         },
       ),
+    );
+  }
+
+  void _showNotificationModalSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        final notifications = _data.notifications;
+        return DraggableScrollableSheet(
+          initialChildSize: 0.6,
+          minChildSize: 0.4,
+          maxChildSize: 0.85,
+          expand: false,
+          builder: (context, scrollController) {
+            return Container(
+              padding: const EdgeInsets.all(20.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey[300],
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      const Text(
+                        'Notification Center',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.textPrimary,
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: AppColors.primaryNavy.withValues(alpha: 0.1),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '${notifications.length} Active',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            color: AppColors.primaryNavy,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 16),
+                  Expanded(
+                    child: notifications.isEmpty
+                        ? const Center(
+                            child: Text(
+                              'No recent notifications',
+                              style: TextStyle(color: AppColors.textMuted),
+                            ),
+                          )
+                        : ListView.separated(
+                            controller: scrollController,
+                            itemCount: notifications.length,
+                            separatorBuilder: (_, _) => const Divider(height: 20),
+                            itemBuilder: (context, index) {
+                              final item = notifications[index];
+                              return Row(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Container(
+                                    padding: const EdgeInsets.all(8),
+                                    decoration: BoxDecoration(
+                                      color: item.type == NotificationType.approved
+                                          ? const Color(0xFFDCFCE7)
+                                          : const Color(0xFFFEF3C7),
+                                      shape: BoxShape.circle,
+                                    ),
+                                    child: Icon(
+                                      item.type == NotificationType.approved
+                                          ? Icons.check_circle_rounded
+                                          : Icons.info_rounded,
+                                      color: item.type == NotificationType.approved
+                                          ? const Color(0xFF15803D)
+                                          : const Color(0xFFB45309),
+                                      size: 20,
+                                    ),
+                                  ),
+                                  const SizedBox(width: 12),
+                                  Expanded(
+                                    child: Column(
+                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      children: [
+                                        Text(
+                                          item.title,
+                                          style: const TextStyle(
+                                            fontSize: 14,
+                                            fontWeight: FontWeight.bold,
+                                            color: AppColors.textPrimary,
+                                          ),
+                                        ),
+                                        const SizedBox(height: 2),
+                                        Text(
+                                          item.category,
+                                          style: const TextStyle(
+                                            fontSize: 12,
+                                            color: AppColors.textMuted,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                  ),
+                                ],
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 }
