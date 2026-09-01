@@ -87,4 +87,4 @@ webencodings==0.5.1
 xhtml2pdf==0.2.16
 daphne==4.2.2
 channels==4.1.0
-channels-redis==4.2.1
+channels-redis==4.2.1whitenoise==6.12.0

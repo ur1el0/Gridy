@@ -1,0 +1,200 @@
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
+import '../core/network/api_client.dart';
+import '../services/issue_service.dart';
+import '../services/storage_service.dart';
+
+class ReportIssueScreen extends StatefulWidget {
+  const ReportIssueScreen({super.key});
+
+  @override
+  State<ReportIssueScreen> createState() => _ReportIssueScreenState();
+}
+
+class _ReportIssueScreenState extends State<ReportIssueScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _titleController = TextEditingController();
+  final _locationController = TextEditingController();
+  final _descriptionController = TextEditingController();
+
+  final ImagePicker _picker = ImagePicker();
+  XFile? _selectedImage;
+  bool _isLoading = false;
+  
+  IssueService? _issueService;
+
+  @override
+  void initState() {
+    super.initState();
+    _initService();
+  }
+
+  Future<void> _initService() async {
+    final storage = await StorageService.init();
+    final apiClient = ApiClient();
+    final token = storage.getAccessToken();
+    if (token != null) {
+      apiClient.setAuthCredentials(accessToken: token);
+    }
+    setState(() {
+      _issueService = IssueService(apiClient: apiClient);
+    });
+  }
+
+  @override
+  void dispose() {
+    _titleController.dispose();
+    _locationController.dispose();
+    _descriptionController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final XFile? image = await _picker.pickImage(source: ImageSource.gallery);
+    if (image != null) {
+      setState(() {
+        _selectedImage = image;
+      });
+    }
+  }
+
+  Future<void> _submitReport() async {
+    if (!_formKey.currentState!.validate()) return;
+    if (_issueService == null) return;
+
+    setState(() => _isLoading = true);
+
+    try {
+      await _issueService!.submitIssue(
+        title: _titleController.text,
+        description: _descriptionController.text,
+        location: _locationController.text,
+        imageFile: _selectedImage,
+      );
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Issue reported successfully!')),
+        );
+        Navigator.pop(context); // Return to dashboard
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Error: $e')),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: const Text('Report an Issue'),
+      ),
+      body: _issueService == null
+          ? const Center(child: CircularProgressIndicator())
+          : SingleChildScrollView(
+              padding: const EdgeInsets.all(24),
+              child: Form(
+                key: _formKey,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextFormField(
+                      controller: _titleController,
+                      decoration: const InputDecoration(
+                        labelText: 'Issue Title',
+                        hintText: 'e.g. Broken Streetlight',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) =>
+                          value!.isEmpty ? 'Please enter a title' : null,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _locationController,
+                      decoration: const InputDecoration(
+                        labelText: 'Location',
+                        hintText: 'e.g. Main St. corner Elm St.',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) =>
+                          value!.isEmpty ? 'Please enter a location' : null,
+                    ),
+                    const SizedBox(height: 16),
+                    TextFormField(
+                      controller: _descriptionController,
+                      maxLines: 4,
+                      decoration: const InputDecoration(
+                        labelText: 'Description',
+                        hintText: 'Describe the issue in detail...',
+                        border: OutlineInputBorder(),
+                      ),
+                      validator: (value) =>
+                          value!.isEmpty ? 'Please enter a description' : null,
+                    ),
+                    const SizedBox(height: 24),
+                    
+                    // Image Picker Section
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.grey.shade300),
+                      ),
+                      child: Column(
+                        children: [
+                          Icon(
+                            _selectedImage == null
+                                ? Icons.add_a_photo_outlined
+                                : Icons.check_circle_outline,
+                            size: 40,
+                            color: _selectedImage == null ? Colors.grey : Colors.green,
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            _selectedImage == null
+                                ? 'No photo attached'
+                                : 'Photo selected: ${_selectedImage!.name}',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.grey.shade700),
+                          ),
+                          const SizedBox(height: 12),
+                          OutlinedButton.icon(
+                            onPressed: _pickImage,
+                            icon: const Icon(Icons.image),
+                            label: Text(_selectedImage == null ? 'Attach Photo' : 'Change Photo'),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 32),
+                    
+                    // Submit Button
+                    SizedBox(
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: _isLoading ? null : _submitReport,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF0047BA),
+                          foregroundColor: Colors.white,
+                        ),
+                        child: _isLoading
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text('Submit Report', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+    );
+  }
+}
