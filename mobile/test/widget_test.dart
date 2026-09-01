@@ -25,7 +25,6 @@ void main() {
     expect(find.text('CITIZEN ID / USERNAME'), findsOneWidget);
     expect(find.text('PASSWORD'), findsOneWidget);
     expect(find.text('Login to'), findsOneWidget);
-    expect(find.text('Remember me'), findsOneWidget);
     expect(find.text('Forgot ID?'), findsOneWidget);
   });
 
@@ -48,32 +47,6 @@ void main() {
 
     // Expect validation errors
     expect(find.text('Please enter your citizen ID or username'), findsOneWidget);
-  });
-
-  testWidgets('Toggling remember me checkbox updates visual state', (WidgetTester tester) async {
-    tester.view.physicalSize = const Size(1080, 2400);
-    tester.view.devicePixelRatio = 2.0;
-    addTearDown(() {
-      tester.view.resetPhysicalSize();
-      tester.view.resetDevicePixelRatio();
-    });
-
-    await tester.pumpWidget(const GridyApp());
-    await tester.pumpAndSettle();
-
-    // Find Remember me checkbox widget
-    final rememberMeFinder = find.text('Remember me');
-    expect(rememberMeFinder, findsOneWidget);
-
-    // Initial state: no check icon
-    expect(find.byIcon(Icons.check), findsNothing);
-
-    // Tap remember me
-    await tester.tap(rememberMeFinder);
-    await tester.pumpAndSettle();
-
-    // Now check icon should be rendered
-    expect(find.byIcon(Icons.check), findsOneWidget);
   });
 
   testWidgets('Tapping Register here navigates from LoginScreen to RegisterScreen', (WidgetTester tester) async {

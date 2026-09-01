@@ -113,6 +113,7 @@ void main() {
     expect(find.text('Request Document'), findsOneWidget);
     expect(find.text('Report Issue'), findsOneWidget);
     expect(find.text('Barangay Hotline'), findsOneWidget);
+    expect(find.text('My Reports'), findsOneWidget);
 
     // 6. Community Schedule Timeline
     expect(find.text('Community Schedule'), findsOneWidget);

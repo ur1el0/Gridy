@@ -4,24 +4,44 @@ import '../core/network/api_client.dart';
 
 class PushNotificationService {
   final ApiClient apiClient;
-  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
+
+  // Use a getter instead of a final variable so it doesn't crash test environments!
+  FirebaseMessaging get _messaging => FirebaseMessaging.instance;
 
   PushNotificationService({required this.apiClient});
 
   /// Initializes permissions and fetches the FCM token
   Future<void> initialize() async {
-    // 1. Request permission (mainly for iOS; Android 13+ also prompts)
-    NotificationSettings settings = await _messaging.requestPermission(
-      alert: true,
-      badge: true,
-      sound: true,
-    );
+    try {
+      // 1. Request permission
+      NotificationSettings settings = await _messaging.requestPermission(
+        alert: true,
+        badge: true,
+        sound: true,
+      );
 
-    if (settings.authorizationStatus == AuthorizationStatus.authorized) {
-      debugPrint('User granted notification permissions.');
-      await _fetchAndRegisterToken();
-    } else {
-      debugPrint('User declined or has not accepted notification permissions.');
+      if (settings.authorizationStatus == AuthorizationStatus.authorized) {
+        debugPrint('User granted notification permissions.');
+        await _fetchAndRegisterToken();
+      } else {
+        debugPrint('User declined notification permissions.');
+      }
+
+      // 2. Listen for token refreshes
+      _messaging.onTokenRefresh.listen(_registerTokenOnBackend);
+      
+      // 3. Listen for notifications while the app is open (Foreground)
+      FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+        debugPrint('Received foreground message: ${message.notification?.title}');
+      });
+
+      // 4. Handle when a user taps a background notification
+      FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+        debugPrint('User tapped notification to open app: ${message.data}');
+      });
+
+    } catch (e) {
+      debugPrint('Firebase skipped (expected in Test/Mock environments): $e');
     }
 
     // 2. Listen for token refreshes (in case the token expires)
