@@ -103,10 +103,15 @@ class EmergencyHotlineViewSet(viewsets.ModelViewSet):
         if user.role == User.Role.DILG_ADMIN:
             return EmergencyHotline.objects.all()
         
-        return EmergencyHotline.objects.filter(
-            created_by__barangay=user.barangay
-        )
-    
+        # Base query: scope to the user's barangay
+        qs = EmergencyHotline.objects.filter(created_by__barangay=user.barangay)
+
+        # Security: Residents only see the active hotlines; Officials see everything (to toggle them)
+        if user.role == User.Role.RESIDENT:
+            qs = qs.filter(is_active=True)
+
+        return qs
+
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
             # Residents can read the hotline directory

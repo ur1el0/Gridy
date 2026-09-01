@@ -1,5 +1,12 @@
 # Project-level configuration.
 cmake_minimum_required(VERSION 3.13)
+
+find_program(CLANGPP_EXECUTABLE clang++)
+if(NOT CLANGPP_EXECUTABLE)
+  set(CMAKE_CXX_COMPILER "g++")
+  set(CMAKE_C_COMPILER "gcc")
+endif()
+
 project(runner LANGUAGES CXX)
 
 # The name of the executable created for the application. Change this to change

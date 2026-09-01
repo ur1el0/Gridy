@@ -1,3 +1,4 @@
+import '../services/push_notification_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import '../core/network/api_client.dart';
@@ -47,13 +48,21 @@ class _DashboardScreenState extends State<DashboardScreen> {
     _initializeAndLoad();
   }
 
-  Future<void> _initializeAndLoad() async {
+    Future<void> _initializeAndLoad() async {
     _dashboardService = widget.dashboardService;
     _authService = widget.authService;
 
+    // Initialize core services
+    final storage = await StorageService.init();
+    final apiClient = ApiClient();
+    
+    // Ensure the token is attached so backend calls succeed after an app restart
+    final token = storage.getAccessToken();
+    if (token != null) {
+      apiClient.setAuthCredentials(accessToken: token);
+    }
+
     if (_dashboardService == null || _authService == null) {
-      final storage = await StorageService.init();
-      final apiClient = ApiClient();
       _authService ??= AuthService(
         apiClient: apiClient,
         storageService: storage,
@@ -63,6 +72,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         storageService: storage,
       );
     }
+
+    // FIREBASE: Request permissions & register device token
+    final pushService = PushNotificationService(apiClient: apiClient);
+    pushService.initialize();
 
     await _loadDashboardData();
   }

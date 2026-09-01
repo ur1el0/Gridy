@@ -5,6 +5,7 @@ import '../core/network/api_client.dart';
 import '../models/hotline_model.dart';
 import '../services/hotline_services.dart';
 import '../services/storage_service.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class HotlinesScreen extends StatefulWidget {
   const HotlinesScreen({super.key});
@@ -61,6 +62,22 @@ class _HotlinesScreenState extends State<HotlinesScreen> {
           _error = 'Failed to load hotlines.';
           _isLoading = false;
         });
+      }
+    }
+  }
+
+  Future<void> _makePhoneCall(String phoneNumber) async {
+    // Strip out dashes, spaces, or parentheses so the dialer doesn't break
+    final cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
+    final Uri launchUri = Uri(scheme: 'tel', path: cleanNumber);
+    
+    if (await canLaunchUrl(launchUri)) {
+      await launchUrl(launchUri);
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not launch phone dialer')),
+        );
       }
     }
   }
@@ -136,6 +153,7 @@ class _HotlinesScreenState extends State<HotlinesScreen> {
                               style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
                             ),
                             trailing: GestureDetector(
+                              onTap: () => _makePhoneCall(h.number),
                               onLongPress: () {
                                 Clipboard.setData(ClipboardData(text: h.number));
                                 ScaffoldMessenger.of(context).showSnackBar(
@@ -146,18 +164,25 @@ class _HotlinesScreenState extends State<HotlinesScreen> {
                                 mainAxisAlignment: MainAxisAlignment.center,
                                 crossAxisAlignment: CrossAxisAlignment.end,
                                 children: [
-                                  Text(
-                                    h.number,
-                                    style: TextStyle(
-                                      color: color,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
-                                      fontFamily: 'monospace',
-                                    ),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.call, color: color, size: 14),
+                                      const SizedBox(width: 4),
+                                      Text(
+                                        h.number,
+                                        style: TextStyle(
+                                          color: color,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15,
+                                          fontFamily: 'monospace',
+                                        ),
+                                      ),
+                                    ],
                                   ),
                                   Text(
-                                    'hold to copy',
-                                    style: TextStyle(fontSize: 10, color: Colors.grey.shade400),
+                                    'tap to call • hold to copy',
+                                    style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
                                   ),
                                 ],
                               ),
