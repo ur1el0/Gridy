@@ -16,6 +16,7 @@ firebase-*.json
 # Media and Uploads
 media/
 backend/media/
+backend/issue_reports/
 
 
 # Instructions + Further Context

@@ -6,12 +6,14 @@ class QuickServicesSection extends StatelessWidget {
   final VoidCallback? onRequestDocument;
   final VoidCallback? onReportIssue;
   final VoidCallback? onBarangayHotline;
+  final VoidCallback? onMyReports;
 
   const QuickServicesSection({
     super.key,
     this.onRequestDocument,
     this.onReportIssue,
     this.onBarangayHotline,
+    this.onMyReports,
   });
 
   @override
@@ -52,7 +54,7 @@ class QuickServicesSection extends StatelessWidget {
         ),
         const SizedBox(height: 12),
 
-        // Row 2: Barangay Hotline
+        // Row 2: Barangay Hotline & My Reports
         Row(
           children: [
             Expanded(
@@ -63,7 +65,13 @@ class QuickServicesSection extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 14),
-            const Expanded(child: SizedBox()), // Placeholder spacer to match grid layout
+            Expanded(
+              child: _QuickServiceCard(
+                icon: Icons.history_outlined,
+                title: 'My Reports',
+                onTap: onMyReports,
+              ),
+            ),
           ],
         ),
       ],
@@ -113,7 +121,6 @@ class _QuickServiceCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                // Soft blue container around icon
                 Container(
                   padding: const EdgeInsets.all(6),
                   decoration: BoxDecoration(
@@ -126,7 +133,6 @@ class _QuickServiceCard extends StatelessWidget {
                     size: 18,
                   ),
                 ),
-
                 Text(
                   title,
                   style: const TextStyle(
