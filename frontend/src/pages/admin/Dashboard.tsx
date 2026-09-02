@@ -87,7 +87,10 @@ const ChartSkeleton = ({ }: { title: string }) => (
     </div>
 );
 
+import { useAuth } from '../../context/AuthContext';
+
 export const Dashboard: React.FC = () => {
+    const { user } = useAuth();
     const navigate = useNavigate();
     const [summaryData, setSummaryData] = useState<DashboardSummary | null>(null);
     const [activities, setActivities] = useState<ActivityItem[]>([]);
@@ -166,7 +169,7 @@ export const Dashboard: React.FC = () => {
                         Administrative Overview
                     </h1>
                     <p className="text-[#64748b] text-sm mt-1">
-                        Real-time status of Barangay Ibabang Dupay services and community records.
+                        Real-time status of {user?.barangay?.name ? `Barangay ${user.barangay.name}` : 'your Barangay'} services and community records.
                     </p>
                 </div>
                 <button 
@@ -303,7 +306,7 @@ export const Dashboard: React.FC = () => {
             {/* Bottom Row: Today's Appointments Table & Hall Photo */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
                 {/* Left: Today's Appointments Table Card */}
-                <div className="lg:col-span-7 bg-white rounded-2xl p-6 shadow-xs border border-[#E2E8F0]/80 flex flex-col justify-between">
+                <div className="lg:col-span-12 bg-white rounded-2xl p-6 shadow-xs border border-[#E2E8F0]/80 flex flex-col justify-between">
                     <div>
                         <div className="flex items-center justify-between mb-5">
                             <h2 className="text-base lg:text-lg font-bold text-[#0f172a]">
@@ -385,15 +388,6 @@ export const Dashboard: React.FC = () => {
                             </table>
                         </div>
                     </div>
-                </div>
-
-                {/* Right: Barangay Hall Photo Card */}
-                <div className="lg:col-span-5 rounded-2xl overflow-hidden shadow-xs border border-[#E2E8F0]/80 bg-white">
-                    <img 
-                        src="/barangay-hall.png" 
-                        alt="Barangay Ibabang Dupay Hall" 
-                        className="w-full h-full min-h-[260px] object-cover"
-                    />
                 </div>
             </div>
         </div>
