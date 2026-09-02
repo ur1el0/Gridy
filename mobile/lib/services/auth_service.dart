@@ -1,3 +1,4 @@
+import '../core/network/api_exception.dart';
 import 'dart:convert';
 import '../core/config/app_config.dart';
 import '../core/network/api_client.dart';
@@ -75,8 +76,9 @@ class AuthService {
     required String username,
     required String email,
     required String password,
+    required String birthDate,
+    required bool voterStatus,
     String? contactNumber,
-    String? birthDate,
   }) async {
     final response = await apiClient.post(
       AppConfig.registerEndpoint,
@@ -85,8 +87,8 @@ class AuthService {
         'username': username.trim(),
         'email': email.trim().toLowerCase(),
         'password': password,
-        'birth_date': birthDate ?? '2000-01-01',
-        'voter_status': false,
+        'birth_date': birthDate,
+        'voter_status': voterStatus,
         if (contactNumber != null && contactNumber.isNotEmpty)
           'contact_number': contactNumber.trim(),
       },
@@ -97,23 +99,47 @@ class AuthService {
       utf8.decode(response.bodyBytes),
     );
 
-    return UserModel.fromJson(responseData);
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      return UserModel.fromJson(responseData);
+    } else {
+      throw ApiException(
+        'Registration failed',
+        statusCode: response.statusCode,
+        details: responseData,
+      );
+    }
   }
-
   /// Fetch currently authenticated resident profile `/api/v1/auth/me/`
-  Future<UserModel> getProfile() async {
-    final response = await apiClient.get(
+  Future<UserModel> updateProfile({
+    String? fullName,
+    String? contactNumber,
+    String? birthDate,
+    bool? voterStatus,
+  }) async {
+    final Map<String, dynamic> profileData = {};
+    if (fullName != null) profileData['full_name'] = fullName;
+    if (contactNumber != null) profileData['contact_number'] = contactNumber;
+    if (birthDate != null) profileData['birth_date'] = birthDate;
+    if (voterStatus != null) profileData['voter_status'] = voterStatus;
+    final response = await apiClient.patch(
       AppConfig.userProfileEndpoint,
+      body: {'profile': profileData},
       requiresAuth: true,
     );
-
     final Map<String, dynamic> responseData = jsonDecode(
       utf8.decode(response.bodyBytes),
     );
-
-    final user = UserModel.fromJson(responseData);
-    await storageService.saveUser(user);
-    return user;
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final updatedUser = UserModel.fromJson(responseData);
+      await storageService.saveUser(updatedUser);
+      return updatedUser;
+    } else {
+      throw ApiException(
+        'Failed to update profile',
+        statusCode: response.statusCode,
+        details: responseData,
+      );
+    }
   }
 
   /// Renew expired JWT access token using the backend refresh endpoint
