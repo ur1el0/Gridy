@@ -33,7 +33,7 @@ export const HotlineManagement: React.FC = () => {
 
   const fetchHotlines = async () => {
     try {
-      const res = await axiosPrivate.get('/communications/hotlines/')
+      const res = await axiosPrivate.get('/hotlines/')
       setHotlines(res.data.results || res.data)
     } catch {
       toast.error('Failed to load hotlines.')
@@ -48,7 +48,7 @@ export const HotlineManagement: React.FC = () => {
     e.preventDefault()
     setIsSubmitting(true)
     try {
-      const res = await axiosPrivate.post('/communications/hotlines/', form)
+      const res = await axiosPrivate.post('/hotlines/', form)
       setHotlines(prev => [...prev, res.data])
       setIsModalOpen(false)
       setForm({ name: '', number: '', category: 'OTHER' })
@@ -63,7 +63,7 @@ export const HotlineManagement: React.FC = () => {
   const handleDelete = async (id: number) => {
     if (!window.confirm('Delete this hotline?')) return
     try {
-      await axiosPrivate.delete(`/communications/hotlines/${id}/`)
+      await axiosPrivate.delete(`/hotlines/${id}/`)
       setHotlines(prev => prev.filter(h => h.id !== id))
       toast.success('Hotline removed.')
     } catch {
