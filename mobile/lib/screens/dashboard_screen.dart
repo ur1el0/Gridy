@@ -19,6 +19,8 @@ import 'documents_screen.dart';
 import 'login_screen.dart';
 import 'queue_screen.dart';
 import 'schedule_screen.dart';
+import '../services/storage_service.dart';
+import 'profile_screen.dart';
 
 
 class DashboardScreen extends StatefulWidget {
@@ -98,88 +100,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
         });
       }
     }
-  }
-
-  void _showProfileModal(BuildContext context) {
-    final user = _data.user;
-    showModalBottomSheet(
-      context: context,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (ctx) {
-        return Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 28.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                width: 48,
-                height: 5,
-                decoration: BoxDecoration(
-                  color: const Color(0xFFCBD5E1),
-                  borderRadius: BorderRadius.circular(3),
-                ),
-              ),
-              const SizedBox(height: 20),
-              CircleAvatar(
-                radius: 32,
-                backgroundColor: AppColors.primaryNavy,
-                child: Text(
-                  user != null && user.fullName.isNotEmpty
-                      ? user.fullName[0].toUpperCase()
-                      : 'R',
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                  ),
-                ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                user?.fullName ?? user?.username ?? 'Resident',
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.w800,
-                  color: AppColors.textPrimary,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                user?.email ?? '',
-                style: const TextStyle(
-                  fontSize: 13.5,
-                  color: AppColors.textMuted,
-                ),
-              ),
-              const SizedBox(height: 24),
-              ListTile(
-                leading: const Icon(Icons.logout_rounded, color: Color(0xFFEF4444)),
-                title: const Text(
-                  'Logout',
-                  style: TextStyle(
-                    fontWeight: FontWeight.w700,
-                    color: Color(0xFFEF4444),
-                  ),
-                ),
-                onTap: () async {
-                  final navigator = Navigator.of(context);
-                  Navigator.pop(ctx);
-                  await _authService?.logout();
-                  if (!mounted) return;
-                  navigator.pushAndRemoveUntil(
-                    MaterialPageRoute(builder: (_) => const LoginScreen()),
-                    (route) => false,
-                  );
-                },
-              ),
-            ],
-          ),
-        );
-      },
-    );
   }
 
   @override
