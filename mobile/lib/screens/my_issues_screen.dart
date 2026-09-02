@@ -41,124 +41,188 @@ class _MyIssuesScreenState extends State<MyIssuesScreen> {
     }
   }
 
+  // Premium Tailwind UI Color Palette for Statuses
   Color _getStatusColor(String status) {
     switch (status.toUpperCase()) {
       case 'RESOLVED':
-        return Colors.green;
+        return const Color(0xFF10B981); // Emerald 500
       case 'IN_PROGRESS':
-        return Colors.blue;
+        return const Color(0xFF3B82F6); // Blue 500
+      case 'REJECTED':
+        return const Color(0xFFEF4444); // Red 500
       default:
-        return Colors.orange;
+        return const Color(0xFFF59E0B); // Amber 500
+    }
+  }
+
+  // Helper to format the ISO timestamp from Django
+  String _formatDate(String isoString) {
+    try {
+      final date = DateTime.parse(isoString).toLocal();
+      final months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+      return "${months[date.month - 1]} ${date.day}, ${date.year}";
+    } catch (e) {
+      return isoString;
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC), // slate-50 background
       appBar: AppBar(
-        title: const Text('My Reports'),
+        title: const Text(
+          'My Report History',
+          style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F172A), fontSize: 20),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Color(0xFF0F172A)),
+        bottom: PreferredSize(
+          preferredSize: const Size.fromHeight(1),
+          child: Container(color: const Color(0xFFE2E8F0), height: 1), // subtle bottom border
+        ),
       ),
       body: _issueService == null
           ? const Center(child: CircularProgressIndicator())
           : RefreshIndicator(
               onRefresh: _refresh,
+              color: const Color(0xFF2563EB),
               child: FutureBuilder<List<IssueReport>>(
                 future: _issuesFuture,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator());
+                    return const Center(child: CircularProgressIndicator(color: Color(0xFF2563EB)));
                   } else if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}'));
+                    return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red)));
                   } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
-                    return const Center(
-                      child: Text('You have not reported any issues yet.'),
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.assignment_outlined, size: 64, color: Color(0xFFCBD5E1)),
+                          const SizedBox(height: 16),
+                          Text('No reports submitted yet.', style: TextStyle(color: Color(0xFF64748B), fontSize: 16)),
+                        ],
+                      ),
                     );
                   }
 
                   final issues = snapshot.data!;
-                  return ListView.separated(
+                  return ListView.builder(
                     padding: const EdgeInsets.all(16),
                     itemCount: issues.length,
-                    separatorBuilder: (context, index) => const SizedBox(height: 16),
                     itemBuilder: (context, index) {
                       final issue = issues[index];
-                      return Card(
-                        elevation: 2,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
+                      final statusColor = _getStatusColor(issue.status);
+
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFE2E8F0)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: const Color(0xFF0F172A).withValues(alpha: 0.04),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(16),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              // Header: Title and Status Badge
+                              // Top Row: Date and Status Badge
                               Row(
                                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Expanded(
-                                    child: Text(
-                                      issue.title,
-                                      style: const TextStyle(
-                                          fontSize: 18,
-                                          fontWeight: FontWeight.bold),
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
+                                  Text(
+                                    _formatDate(issue.createdAt),
+                                    style: const TextStyle(
+                                      color: Color(0xFF64748B),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w600,
+                                      letterSpacing: 0.5,
                                     ),
                                   ),
                                   Container(
-                                    padding: const EdgeInsets.symmetric(
-                                        horizontal: 12, vertical: 6),
+                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                                     decoration: BoxDecoration(
-                                      color: _getStatusColor(issue.status)
-                                          .withValues(alpha: 0.1),
+                                      color: statusColor.withValues(alpha: 0.1),
                                       borderRadius: BorderRadius.circular(20),
+                                      border: Border.all(color: statusColor.withValues(alpha: 0.2)),
                                     ),
                                     child: Text(
                                       issue.status.replaceAll('_', ' '),
-                                      style: TextStyle(
-                                        color: _getStatusColor(issue.status),
-                                        fontWeight: FontWeight.bold,
-                                        fontSize: 12,
-                                      ),
+                                      style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 10),
                                     ),
                                   ),
                                 ],
                               ),
-                              const SizedBox(height: 8),
+                              const SizedBox(height: 12),
+                              
+                              // Title
+                              Text(
+                                issue.title,
+                                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                              ),
+                              const SizedBox(height: 6),
                               
                               // Description
                               Text(
                                 issue.description,
-                                style: TextStyle(color: Colors.grey.shade700),
+                                style: const TextStyle(color: Color(0xFF475569), height: 1.4, fontSize: 14),
                               ),
-                              const SizedBox(height: 16),
                               
-                              // Optional Cloudinary Image
-                              if (issue.imageUrl != null) ...[
+                                                            // Optional Image
+                              if (issue.imageUrl != null && issue.imageUrl!.isNotEmpty) ...[
+                                const SizedBox(height: 16),
                                 ClipRRect(
-                                  borderRadius: BorderRadius.circular(8),
+                                  borderRadius: BorderRadius.circular(12),
                                   child: Image.network(
                                     issue.imageUrl!,
-                                    height: 150,
+                                    height: 160,
                                     width: double.infinity,
                                     fit: BoxFit.cover,
+                                    // Gracefully handle 404s or network failures
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Container(
+                                        height: 160,
+                                        width: double.infinity,
+                                        color: const Color(0xFFF1F5F9), // slate-100
+                                        child: Column(
+                                          mainAxisAlignment: MainAxisAlignment.center,
+                                          children: [
+                                            Icon(Icons.broken_image_outlined, color: Color(0xFF94A3B8), size: 32),
+                                            const SizedBox(height: 8),
+                                            Text(
+                                              'Image unavailable',
+                                              style: TextStyle(color: Color(0xFF64748B), fontSize: 12),
+                                            ),
+                                          ],
+                                        ),
+                                      );
+                                    },
                                   ),
                                 ),
-                                const SizedBox(height: 12),
                               ],
                               
-                              // Location Footer
+                              const SizedBox(height: 16),
+                              const Divider(color: Color(0xFFF1F5F9), height: 1),
+                              const SizedBox(height: 12),
+                              
+                              // Footer: Location
                               Row(
                                 children: [
-                                  const Icon(Icons.location_on,
-                                      size: 16, color: Colors.grey),
-                                  const SizedBox(width: 4),
+                                  const Icon(Icons.location_on_outlined, size: 16, color: Color(0xFF64748B)),
+                                  const SizedBox(width: 6),
                                   Expanded(
                                     child: Text(
                                       issue.location,
-                                      style: const TextStyle(
-                                          color: Colors.grey, fontSize: 13),
+                                      style: const TextStyle(color: Color(0xFF64748B), fontSize: 13, fontWeight: FontWeight.w500),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
