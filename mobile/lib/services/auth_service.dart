@@ -79,6 +79,7 @@ class AuthService {
     required String birthDate,
     required bool voterStatus,
     String? contactNumber,
+    String? guardianId,
   }) async {
     final response = await apiClient.post(
       AppConfig.registerEndpoint,
@@ -91,6 +92,7 @@ class AuthService {
         'voter_status': voterStatus,
         if (contactNumber != null && contactNumber.isNotEmpty)
           'contact_number': contactNumber.trim(),
+        if (guardianId != null && guardianId.isNotEmpty) 'guardian_id': guardianId,
       },
       requiresAuth: false,
     );
