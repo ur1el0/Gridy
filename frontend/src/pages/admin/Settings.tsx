@@ -62,14 +62,16 @@ export const Settings: React.FC = () => {
   const fetchSessions = async () => {
     try {
       const response = await axiosPrivate.get('/auth/sessions/')
-      setSessions(response.data)
+      // Handle DRF global pagination by extracting the 'results' array if present
+      const sessionData = response.data.results ? response.data.results : response.data
+      setSessions(sessionData)
     } catch (error) {
       console.error("Failed to fetch sessions", error)
     } finally {
       setIsLoadingSessions(false)
     }
   }
-
+  
   const handleRevokeSession = async (id: number) => {
     try {
       await axiosPrivate.delete(`/auth/session/${id}/`)
