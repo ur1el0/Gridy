@@ -3,6 +3,7 @@ from django.db import transaction
 from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from gridy_auth.models import User, Resident, Barangay
+from datetime import date
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -10,17 +11,46 @@ class RegisterSerializer(serializers.ModelSerializer):
     birth_date = serializers.DateField(write_only=True)
     voter_status = serializers.BooleanField(write_only=True, default=False)
     contact_number = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    guardian_id = serializers.CharField(write_only=True, required=False, allow_blank=True)
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'full_name', 'birth_date', 'voter_status', 'contact_number']
+        fields = ['username', 'email', 'password', 'full_name', 'birth_date', 'voter_status', 'contact_number', 'guardian_id']
 
+    # 1. This validates JUST the password
     def validate_password(self, value):
         try:
             validate_password(value)
         except DjangoValidationError as e:
             raise serializers.ValidationError(list(e.messages))
         return value
+
+    # 2. This validates the ENTIRE payload (attrs)
+    def validate(self, attrs):
+        birth_date = attrs.get('birth_date')
+        guardian_id = attrs.get('guardian_id')
+
+        # Calculate precise age server-side
+        age = None
+        if birth_date:
+            today = date.today()
+            age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
+
+        # Enforce minor constraint barrier
+        if age is not None and age < 18 and not guardian_id:
+            raise serializers.ValidationError({"guardian_id": "Residents under 18 must provide a guardian's Registered ID."})
+        
+        # Validate Guardian ID mapping
+        if guardian_id:
+            try:
+                # The mobile app uses 'username' as the Barangay ID/Registered ID
+                guardian_user = User.objects.get(username=guardian_id, role=User.Role.RESIDENT)
+                # Stash the actual Resident object in attrs for the create() method
+                attrs['guardian_resident'] = guardian_user.profile
+            except (User.DoesNotExist, Resident.DoesNotExist):
+                raise serializers.ValidationError({"guardian_id": "No resident found with this Registered ID."})
+            
+        return attrs
 
     def create(self, validated_data):
         profile_data = {
@@ -30,6 +60,10 @@ class RegisterSerializer(serializers.ModelSerializer):
             'contact_number': validated_data.pop('contact_number', ''),
         }
 
+        # Extract the resolved guardian Resident objects
+        guardian_resident = validated_data.pop('guardian_resident', None)
+        validated_data.pop('guardian_id', None)
+
         with transaction.atomic():
             user = User.objects.create_user(
                 username=validated_data['username'],
@@ -37,7 +71,7 @@ class RegisterSerializer(serializers.ModelSerializer):
                 password=validated_data['password'],
                 role=User.Role.RESIDENT
             )
-            Resident.objects.create(user=user, **profile_data)
+            Resident.objects.create(user=user, guardian=guardian_resident, **profile_data)
 
         return user
 
