@@ -1,3 +1,4 @@
+import 'hotlines_screen.dart';
 import 'report_issue_screen.dart';
 import '../services/push_notification_service.dart';
 import 'package:flutter/material.dart';
@@ -19,9 +20,8 @@ import 'documents_screen.dart';
 import 'login_screen.dart';
 import 'queue_screen.dart';
 import 'schedule_screen.dart';
-import 'hotlines_screen.dart';
+import 'profile_screen.dart';
 
-/// Resident Dashboard Screen matching the exact reference UI and connected to backend data
 class DashboardScreen extends StatefulWidget {
   final DashboardService? dashboardService;
   final AuthService? authService;
@@ -228,7 +228,19 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                 // Right Profile Avatar Circle
                 GestureDetector(
-                  onTap: () => _showProfileModal(context),
+                  onTap: () {
+                    if (_data.user != null && _authService != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (_) => ProfileScreen(
+                            user: _data.user!,
+                            authService: _authService!,
+                          ),
+                        ),
+                      );
+                    }
+                  },
                   child: Container(
                     width: 40,
                     height: 40,
@@ -319,7 +331,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       onBarangayHotline: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
-                            builder: (_) => const HotlinesScreen(),
+                            builder: (_) => HotlinesScreen(),
                           ),
                         );
                       },
