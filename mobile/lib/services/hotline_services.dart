@@ -40,6 +40,7 @@ class HotlineService {
         number: '911 / 117',
         category: 'POLICE',
         categoryDisplay: 'Police',
+        isActive: true,
       ),
       HotlineModel(
         id: 2,
@@ -47,6 +48,7 @@ class HotlineService {
         number: '(02) 8426-0219',
         category: 'FIRE',
         categoryDisplay: 'Fire Department',
+        isActive: true,
       ),
       HotlineModel(
         id: 3,
@@ -54,6 +56,7 @@ class HotlineService {
         number: '(02) 8920-1111',
         category: 'MEDICAL',
         categoryDisplay: 'Medical / Hospital',
+        isActive: true,
       ),
       HotlineModel(
         id: 4,
@@ -61,6 +64,7 @@ class HotlineService {
         number: '(02) 8920-0000',
         category: 'BARANGAY',
         categoryDisplay: 'Barangay Desk',
+        isActive: true,
       ),
     ];
   }
