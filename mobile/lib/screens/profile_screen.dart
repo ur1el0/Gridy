@@ -220,7 +220,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
                 ),
                 value: _voterStatus,
-                activeColor: AppColors.primaryNavy,
+                activeThumbColor: AppColors.primaryNavy,
                 contentPadding: EdgeInsets.zero,
                 onChanged: _isSaving ? null : (bool value) {
                   setState(() => _voterStatus = value);

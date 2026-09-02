@@ -489,7 +489,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
                           ),
                           value: _voterStatus,
-                          activeColor: AppColors.primaryNavy,
+                          activeThumbColor: AppColors.primaryNavy,
                           contentPadding: EdgeInsets.zero,
                           onChanged: _isLoading ? null : (bool value) {
                             setState(() {
