@@ -32,6 +32,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _contactNumberController = TextEditingController();
   DateTime? _birthDate;
   bool _voterStatus = false;
+  bool _requiresGuardian = false;
+  late TextEditingController _guardianController;
 
   AuthService? _authService;
   bool _obscurePassword = true;
@@ -43,6 +45,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
   void initState() {
     super.initState();
     _initializeAuthService();
+    _guardianController = TextEditingController();
   }
 
   Future<void> _initializeAuthService() async {
@@ -65,6 +68,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     _emailController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
+    _guardianController.dispose();
     super.dispose();
   }
 
@@ -81,6 +85,15 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
+    if (_requiresGuardian && _guardianController.text.trim().isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please provide your Guardian\'s Registered ID'),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
     setState(() {
       _isLoading = true;
     });
@@ -105,6 +118,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           : "2000-01-01", 
         voterStatus: _voterStatus,
         contactNumber: _contactNumberController.text,
+        guardianId: _requiresGuardian ? _guardianController.text.trim() : null,
       );
 
       if (!mounted) return;
@@ -174,8 +188,16 @@ class _RegisterScreenState extends State<RegisterScreen> {
       lastDate: DateTime.now(),
     );
     if (picked != null && picked != _birthDate) {
+      // Calculate age
+      final today = DateTime.now();
+      int age = today.year - picked.year;
+      if (today.month < picked.month || (today.month == picked.month && today.day < picked.day)) {
+        age--;
+      }
+
       setState(() {
         _birthDate = picked;
+        _requiresGuardian = age < 18;
       });
     }
   }
@@ -482,6 +504,27 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                           ),
                         ),
+
+                        if (_requiresGuardian) ...[
+                          const SizedBox(height: 24),
+                          CustomTextField(
+                            label: "GUARDIAN'S REGISTERED ID (REQUIRED)",
+                            controller: _guardianController,
+                            hintText: 'CID-XXXXX',
+                            prefixIcon: Icons.supervisor_account_outlined,
+                            enabled: !_isLoading,
+                          ),
+                          const SizedBox(height: 8),
+                          const Text(
+                            'Residents under 18 must be registered under a verified parent or guardian.',
+                            style: TextStyle(
+                              fontSize: 12, 
+                              color: Color(0xFFEF4444),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ],
+
                         const SizedBox(height: 16),
                         SwitchListTile(
                           title: const Text(
