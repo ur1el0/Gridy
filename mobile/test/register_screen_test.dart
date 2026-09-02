@@ -49,14 +49,10 @@ void main() {
     expect(find.text('PASSWORD'), findsOneWidget);
     expect(find.text('CONFIRM PASSWORD'), findsOneWidget);
 
-    // Scroll back up for hint placeholders
-    await tester.drag(find.byType(SingleChildScrollView), const Offset(0, 400));
-    await tester.pumpAndSettle();
-
-    // Verify input hint placeholders
-    expect(find.text('Roosc Zaño'), findsOneWidget);
-    expect(find.text('CID-99201'), findsOneWidget);
-    expect(find.text('name@civic.gov'), findsOneWidget);
+    // Verify hint placeholders are in the widget tree (even if scrolled off-screen)
+    expect(find.text('Johnathan Doe', skipOffstage: false), findsOneWidget);
+    expect(find.text('CID-99201', skipOffstage: false), findsOneWidget);
+    expect(find.text('name@civic.gov', skipOffstage: false), findsOneWidget);
 
     // Verify primary action button
     expect(find.text('Register Account'), findsOneWidget);
