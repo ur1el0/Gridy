@@ -40,7 +40,7 @@ void main() {
     expect(find.text('CONFIRM PASSWORD'), findsOneWidget);
 
     // Verify input hint placeholders
-    expect(find.text('Johnathan Doe'), findsOneWidget);
+    expect(find.text('Roosc Zaño'), findsOneWidget);
     expect(find.text('CID-99201'), findsOneWidget);
     expect(find.text('name@civic.gov'), findsOneWidget);
     expect(find.text('••••••••'), findsNWidgets(2));
