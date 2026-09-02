@@ -29,6 +29,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
   final TextEditingController _emailController = TextEditingController();
   final TextEditingController _passwordController = TextEditingController();
   final TextEditingController _confirmPasswordController = TextEditingController();
+  final TextEditingController _contactNumberController = TextEditingController();
+  DateTime? _birthDate;
+  bool _voterStatus = false;
 
   AuthService? _authService;
   bool _obscurePassword = true;
@@ -97,6 +100,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
         username: _usernameController.text.trim(),
         email: _emailController.text.trim(),
         password: _passwordController.text,
+        birthDate: _birthDate != null 
+          ? "${_birthDate!.year}-${_birthDate!.month.toString().padLeft(2, '0')}-${_birthDate!.day.toString().padLeft(2, '0')}" 
+          : "2000-01-01", 
+        voterStatus: _voterStatus,
+        contactNumber: _contactNumberController.text,
       );
 
       if (!mounted) return;
@@ -154,6 +162,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
       setState(() {
         _isLoading = false;
         _errorMessage = 'An unexpected error occurred during registration. Please try again.';
+      });
+    }
+  }
+
+  Future<void> _selectBirthDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: _birthDate ?? DateTime(2000),
+      firstDate: DateTime(1900),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null && picked != _birthDate) {
+      setState(() {
+        _birthDate = picked;
       });
     }
   }
@@ -416,6 +438,67 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
 
                         const SizedBox(height: 24),
+
+                        CustomTextField(
+                          label: 'CONTACT NUMBER (OPTIONAL)',
+                          controller: _contactNumberController,
+                          hintText: '09123456789',
+                          prefixIcon: Icons.phone_outlined,
+                          keyboardType: TextInputType.phone,
+                          enabled: !_isLoading,
+                        ),
+                        const SizedBox(height: 24),
+
+                        const Text(
+                          'BIRTH DATE',
+                          style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B), letterSpacing: 0.5),
+                        ),
+                        const SizedBox(height: 8),
+                        InkWell(
+                          onTap: _isLoading ? null : () => _selectBirthDate(context),
+                          borderRadius: BorderRadius.circular(16),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFFF8FAFC),
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+                            ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.calendar_today_rounded, color: Color(0xFF94A3B8), size: 20),
+                                const SizedBox(width: 12),
+                                Text(
+                                  _birthDate != null 
+                                      ? "${_birthDate!.year}-${_birthDate!.month.toString().padLeft(2, '0')}-${_birthDate!.day.toString().padLeft(2, '0')}"
+                                      : "Select your birth date",
+                                  style: TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                    color: _birthDate != null ? AppColors.textPrimary : const Color(0xFF94A3B8),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        SwitchListTile(
+                          title: const Text(
+                            'Registered Voter in this Barangay',
+                            style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                          ),
+                          value: _voterStatus,
+                          activeColor: AppColors.primaryNavy,
+                          contentPadding: EdgeInsets.zero,
+                          onChanged: _isLoading ? null : (bool value) {
+                            setState(() {
+                              _voterStatus = value;
+                            });
+                          },
+                        ),
+                        const SizedBox(height: 24),
+                        
 
                         // Already have an account? Login here
                         Center(
