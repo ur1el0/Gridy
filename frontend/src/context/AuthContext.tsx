@@ -7,6 +7,9 @@ export interface User {
     username?: string
     full_name?: string
     role?: string
+    barangay?: {
+        name: string
+    }
 }
 
 interface AuthContextType {
