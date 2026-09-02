@@ -43,26 +43,6 @@ class PushNotificationService {
     } catch (e) {
       debugPrint('Firebase skipped (expected in Test/Mock environments): $e');
     }
-
-    // 2. Listen for token refreshes (in case the token expires)
-    _messaging.onTokenRefresh.listen(_registerTokenOnBackend);
-        // 3. Listen for notifications while the app is open (Foreground)
-    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-      debugPrint('Received foreground message: ${message.notification?.title}');
-      
-      if (message.notification != null) {
-        // Here we could trigger a local flushbar/snackbar or add to an internal notification counter.
-        // For now, we will just print it to the console.
-        debugPrint('Title: ${message.notification!.title}');
-        debugPrint('Body: ${message.notification!.body}');
-      }
-    });
-
-    // 4. Handle when a user taps a background notification to open the app
-    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
-      debugPrint('User tapped notification to open app: ${message.data}');
-      // Here we could navigate them to a specific screen based on message.data['route']
-    });
   }
 
   Future<void> _fetchAndRegisterToken() async {

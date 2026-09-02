@@ -20,12 +20,12 @@ class ActivityScheduleSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ['created_by']
 
-class EmergencyHotlineSerializer(serializers.Serializer):
+class EmergencyHotlineSerializer(serializers.ModelSerializer):
     category_display = serializers.CharField(
         source='get_category_display', read_only=True
     )
 
     class Meta:
-        models = EmergencyHotline
-        fields = ['id', 'name', 'number', 'category', 'category_display', 'is_active', 'created_by', 'created_at']
-        read_only_fields = ['created_by', 'created_at']
+        model = EmergencyHotline
+        fields = ['id', 'name', 'number', 'category', 'category_display', 'is_active', 'created_by']
+        read_only_fields = ['created_by']

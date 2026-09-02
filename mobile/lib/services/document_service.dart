@@ -18,7 +18,11 @@ class DocumentService {
   Future<List<DocumentRequestModel>> fetchDocumentRequests() async {
     try {
       final response = await apiClient.get('/document-requests/', requiresAuth: true);
-      final List<dynamic> list = jsonDecode(utf8.decode(response.bodyBytes));
+      final Map<String, dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+      
+      // Handle Django DRF PageNumberPagination by safely extracting the 'results' array
+      final List<dynamic> list = data.containsKey('results') ? data['results'] : data.values.toList();
+      
       return list
           .map((item) => DocumentRequestModel.fromJson(item as Map<String, dynamic>))
           .toList();
