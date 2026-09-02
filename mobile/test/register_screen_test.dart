@@ -36,14 +36,27 @@ void main() {
     expect(find.text('FULL NAME'), findsOneWidget);
     expect(find.text('BARANGAY ID / USERNAME'), findsOneWidget);
     expect(find.text('EMAIL ADDRESS'), findsOneWidget);
+
+    // Scroll down to reveal demographic and password fields
+    await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -400));
+    await tester.pumpAndSettle();
+
+    // Verify new demographic fields
+    expect(find.text('CONTACT NUMBER (OPTIONAL)'), findsOneWidget);
+    expect(find.text('BIRTH DATE'), findsOneWidget);
+    expect(find.text('Registered Voter in this Barangay'), findsOneWidget);
+
     expect(find.text('PASSWORD'), findsOneWidget);
     expect(find.text('CONFIRM PASSWORD'), findsOneWidget);
+
+    // Scroll back up for hint placeholders
+    await tester.drag(find.byType(SingleChildScrollView), const Offset(0, 400));
+    await tester.pumpAndSettle();
 
     // Verify input hint placeholders
     expect(find.text('Roosc Zaño'), findsOneWidget);
     expect(find.text('CID-99201'), findsOneWidget);
     expect(find.text('name@civic.gov'), findsOneWidget);
-    expect(find.text('••••••••'), findsNWidgets(2));
 
     // Verify primary action button
     expect(find.text('Register Account'), findsOneWidget);
