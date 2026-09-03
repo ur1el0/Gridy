@@ -13,12 +13,16 @@ class IssueService {
     required String title,
     required String description,
     required String location,
+    required String category,
+    required String urgency,
     XFile? imageFile,
   }) async {
     final fields = {
       'title': title.trim(),
       'description': description.trim(),
       'location': location.trim(),
+      'category': category,
+      'urgency': urgency,
     };
 
     List<http.MultipartFile>? files;
