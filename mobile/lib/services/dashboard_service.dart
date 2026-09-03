@@ -99,7 +99,8 @@ class DashboardService {
   Future<List<AnnouncementModel>> _fetchAnnouncements() async {
     try {
       final response = await apiClient.get('/announcements/', requiresAuth: true);
-      final List<dynamic> list = jsonDecode(utf8.decode(response.bodyBytes));
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      final List<dynamic> list = (data is Map<String, dynamic> ? data['results'] : data) ?? [];
       return list.map((item) => AnnouncementModel.fromJson(item as Map<String, dynamic>)).toList();
     } catch (_) {
       return [];
@@ -109,7 +110,8 @@ class DashboardService {
   Future<List<DocumentRequestModel>> _fetchDocumentRequests() async {
     try {
       final response = await apiClient.get('/document-requests/', requiresAuth: true);
-      final List<dynamic> list = jsonDecode(utf8.decode(response.bodyBytes));
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      final List<dynamic> list = (data is Map<String, dynamic> ? data['results'] : data) ?? [];
       return list.map((item) => DocumentRequestModel.fromJson(item as Map<String, dynamic>)).toList();
     } catch (_) {
       return [];
@@ -119,7 +121,8 @@ class DashboardService {
   Future<List<ActivityScheduleModel>> _fetchActivities() async {
     try {
       final response = await apiClient.get('/activities/', requiresAuth: true);
-      final List<dynamic> list = jsonDecode(utf8.decode(response.bodyBytes));
+      final data = jsonDecode(utf8.decode(response.bodyBytes));
+      final List<dynamic> list = (data is Map<String, dynamic> ? data['results'] : data) ?? [];
       return list.map((item) => ActivityScheduleModel.fromJson(item as Map<String, dynamic>)).toList();
     } catch (_) {
       return [];
