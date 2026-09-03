@@ -3,6 +3,7 @@ from http.client import PROCESSING
 from django.db.models import indexes
 from django.db import models
 from django.conf import settings
+from django.utils import timezone
 
 # Create your models here.
 
@@ -99,15 +100,21 @@ class QueueTicket(models.Model):
     def save(self, *args, **kwargs):
         if not self.ticket_number:
             # Sequence ticket numbers liek T001, T002, etc.
-            last_ticket = QueueTicket.objects.all().order_by('id').last()
-            if last_ticket:
+            today = timezone.now().date()
+
+            # Filter to find the last ticket created specifically TODAY
+            last_ticket = QueueTicket.objects.filter(created_at__date=today).order_by('id').last()
+            
+            if last_ticket and last_ticket.ticket_number.startswith('T'):
                 try:
                     last_num = int(last_ticket.ticket_number[1:])
                     new_num = last_num + 1
                 except ValueError:
                     new_num = 1
             else:
+                # Reset to T001 for a new day
                 new_num = 1
+                
             self.ticket_number = f"T{new_num:03d}"
         super().save(*args, **kwargs)
 

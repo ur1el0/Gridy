@@ -150,6 +150,15 @@ export default function ResidentVerification() {
                                         <div className="font-semibold text-slate-800">{resident.full_name}</div>
                                         <div className="text-xs text-slate-500 mt-1">DOB: {resident.birth_date}</div>
                                     </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">
+                                        {resident.birth_date}
+                                        {/* Add this new block right below the birth_date */}
+                                        {resident.guardian && (
+                                        <div className="mt-1 flex items-center text-xs font-bold text-amber-600 bg-amber-50 px-2 py-1 rounded-md w-max border border-amber-200">
+                                            Minor (Guardian: CID-{resident.guardian})
+                                        </div>
+                                        )}
+                                    </td>
                                     <td className="px-6 py-4">
                                         <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800">
                                             {resident.purok ? `Purok ${resident.purok}` : 'Unassigned'}

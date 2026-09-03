@@ -20,6 +20,15 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
 
   final ImagePicker _picker = ImagePicker();
   XFile? _selectedImage;
+  String _selectedCategory = 'OTHER';
+  String _selectedUrgency = 'MINOR';
+
+  final List<String> _categories = [
+    'PEACE_AND_ORDER', 'PUBLIC_HEALTH', 'INFRASTRUCTURE', 'ENVIRONMENT', 'OTHER'
+  ];
+  final List<String> _urgencies = [
+    'MINOR', 'MODERATE', 'HAZARD', 'EMERGENCY'
+  ];
   bool _isLoading = false;
   
   IssueService? _issueService;
@@ -70,6 +79,8 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
         title: _titleController.text,
         description: _descriptionController.text,
         location: _locationController.text,
+        category: _selectedCategory,
+        urgency: _selectedUrgency,
         imageFile: _selectedImage,
       );
 
@@ -149,6 +160,32 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                       ),
                       validator: (value) =>
                           value!.isEmpty ? 'Please enter a location' : null,
+                    ),
+                    const SizedBox(height: 16),
+                                        DropdownButtonFormField<String>(
+                      value: _selectedCategory,
+                      decoration: const InputDecoration(
+                        labelText: 'Category',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: _categories.map((c) => DropdownMenuItem(
+                        value: c, 
+                        child: Text(c.replaceAll('_', ' '))
+                      )).toList(),
+                      onChanged: (val) => setState(() => _selectedCategory = val!),
+                    ),
+                    const SizedBox(height: 16),
+                    DropdownButtonFormField<String>(
+                      value: _selectedUrgency,
+                      decoration: const InputDecoration(
+                        labelText: 'Urgency',
+                        border: OutlineInputBorder(),
+                      ),
+                      items: _urgencies.map((u) => DropdownMenuItem(
+                        value: u, 
+                        child: Text(u)
+                      )).toList(),
+                      onChanged: (val) => setState(() => _selectedUrgency = val!),
                     ),
                     const SizedBox(height: 16),
                     TextFormField(
