@@ -9,6 +9,7 @@ interface IssueReport {
     location: string
     status: string
     urgency: string
+    category: string
     image: string | null
     created_at: string
 }
@@ -74,6 +75,7 @@ export const AdminIssueManagement: React.FC = () => {
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Issue</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Location</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Urgency</th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Category</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Status</th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">Photo</th>
               </tr>
@@ -93,6 +95,12 @@ export const AdminIssueManagement: React.FC = () => {
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">
                       {report.location}
+                    </td>
+                    {/* New Category Cell */}
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-slate-100 text-slate-800 border border-slate-200">
+                        {report.category.replace('_', ' ')}
+                      </span>
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap">
                       {/* Urgency Dropdown */}
