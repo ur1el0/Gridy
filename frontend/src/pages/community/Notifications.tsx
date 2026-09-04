@@ -1,32 +1,46 @@
-import React, { useState } from 'react';
-import { Bell, CheckCircle, Clock, AlertTriangle, FileText, Users, Trash2, CheckSquare, Square, Check } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Bell, CheckCircle, Clock, AlertTriangle, FileText, Users, Trash2, CheckSquare, Square, Check, Loader2 } from 'lucide-react';
+import { axiosPrivate } from '../../api/axios';
+import toast from 'react-hot-toast';
+
+interface AdminNotification {
+  id: number;
+  notification_type: 'queue' | 'document' | 'system' | 'alert';
+  title: string;
+  message: string;
+  is_read: boolean;
+  created_at: string;
+}
+
+const TYPE_CONFIG = {
+  queue: { icon: Users, color: 'text-orange-600', bg: 'bg-orange-50' },
+  document: { icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50' },
+  system: { icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50' },
+  alert: { icon: AlertTriangle, color: 'text-red-600', bg: 'bg-red-50' },
+};
 
 export const Notifications: React.FC = () => {
-  // We moved the mock data into React State so we can actually modify it!
-  const [notifications, setNotifications] = useState([
-    {
-      id: 1, type: 'queue', title: 'High Traffic Alert',
-      message: 'The Live Queue currently has over 20 residents waiting. Please open an additional window if possible.',
-      time: '10 minutes ago', read: false, icon: Users, color: 'text-orange-600', bg: 'bg-orange-50'
-    },
-    {
-      id: 2, type: 'document', title: 'New Walk-in Request',
-      message: 'Maria Clara submitted a manual request for a Certificate of Indigency.',
-      time: '1 hour ago', read: false, icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50'
-    },
-    {
-      id: 3, type: 'system', title: 'System Update Completed',
-      message: 'Gridy backend services were successfully restarted and cache was cleared.',
-      time: 'Yesterday', read: true, icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50'
-    },
-    {
-      id: 4, type: 'alert', title: 'Failed Resident Verification',
-      message: 'An uploaded ID for Juan Dela Cruz could not be verified automatically. Manual review required.',
-      time: 'Yesterday', read: true, icon: AlertTriangle, color: 'text-red-600', bg: 'bg-red-50'
-    }
-  ]);
-
+  const [notifications, setNotifications] = useState<AdminNotification[]>([]);
   const [selectedIds, setSelectedIds] = useState<number[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // 1. Fetch notifications from backend
+  const fetchNotifications = async () => {
+    try {
+      const response = await axiosPrivate.get('/admin-notifications/');
+      const data = response.data.results || response.data;
+      setNotifications(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Failed to fetch notifications:", err);
+      toast.error("Failed to load notifications.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
 
   // Selection Logic
   const handleSelectAll = () => {
@@ -41,26 +55,52 @@ export const Notifications: React.FC = () => {
     setSelectedIds(prev => prev.includes(id) ? prev.filter(i => i !== id) : [...prev, id]);
   };
 
-  // Action Logic
-  const handleMarkAsRead = () => {
-    setNotifications(prev => prev.map(n => {
-      // If nothing is selected, mark ALL as read. Otherwise, only mark selected.
-      if (selectedIds.length === 0 || selectedIds.includes(n.id)) {
-        return { ...n, read: true };
+  // 2. Action Logic: Mark as Read
+  const handleMarkAsRead = async () => {
+    try {
+      if (selectedIds.length === 0) {
+        // Mark all as read via backend custom endpoint
+        await axiosPrivate.post('/admin-notifications/mark_all_read/');
+        setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+        toast.success("All notifications marked as read.");
+      } else {
+        // Mark selected as read
+        await Promise.all(
+          selectedIds.map(id => axiosPrivate.patch(`/admin-notifications/${id}/`, { is_read: true }))
+        );
+        setNotifications(prev => prev.map(n => selectedIds.includes(n.id) ? { ...n, is_read: true } : n));
+        toast.success(`Marked ${selectedIds.length} notification(s) as read.`);
       }
-      return n;
-    }));
-    setSelectedIds([]); // Clear selection after action
+      setSelectedIds([]);
+    } catch (err) {
+      console.error("Failed to update notifications:", err);
+      toast.error("Failed to update notification status.");
+    }
   };
 
-  const handleDelete = () => {
-    if (selectedIds.length === 0) {
-      // If nothing selected, clear all
-      setNotifications([]);
-    } else {
-      // Clear only selected
-      setNotifications(prev => prev.filter(n => !selectedIds.includes(n.id)));
+  // 3. Action Logic: Delete
+  const handleDelete = async () => {
+    try {
+      const idsToDelete = selectedIds.length === 0 ? notifications.map(n => n.id) : selectedIds;
+      await Promise.all(
+        idsToDelete.map(id => axiosPrivate.delete(`/admin-notifications/${id}/`))
+      );
+      setNotifications(prev => prev.filter(n => !idsToDelete.includes(n.id)));
       setSelectedIds([]);
+      toast.success("Notification(s) deleted.");
+    } catch (err) {
+      console.error("Failed to delete notifications:", err);
+      toast.error("Failed to delete notifications.");
+    }
+  };
+
+  // Helper to format ISO timestamp into readable time
+  const formatTime = (isoString: string) => {
+    try {
+      const date = new Date(isoString);
+      return date.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) + ' - ' + date.toLocaleDateString();
+    } catch (_) {
+      return isoString;
     }
   };
 
@@ -108,57 +148,65 @@ export const Notifications: React.FC = () => {
           </div>
         )}
 
-        <div className="divide-y divide-slate-100">
-          {notifications.map((notif) => {
-            const Icon = notif.icon;
-            const isSelected = selectedIds.includes(notif.id);
-            
-            return (
-              <div 
-                key={notif.id} 
-                className={`p-4 flex items-start gap-4 transition-colors hover:bg-slate-50 cursor-pointer ${!notif.read ? 'bg-blue-50/30' : ''} ${isSelected ? 'bg-blue-50/50' : ''}`}
-                onClick={() => toggleSelection(notif.id)}
-              >
-                {/* Checkbox */}
-                <div className="mt-2.5">
-                  {isSelected ? (
-                    <CheckSquare className="w-5 h-5 text-blue-600" />
-                  ) : (
-                    <Square className="w-5 h-5 text-slate-300" />
+        {loading ? (
+          <div className="p-16 flex flex-col items-center justify-center text-slate-400">
+            <Loader2 className="w-8 h-8 animate-spin mb-2" />
+            <span>Loading notifications...</span>
+          </div>
+        ) : (
+          <div className="divide-y divide-slate-100">
+            {notifications.map((notif) => {
+              const config = TYPE_CONFIG[notif.notification_type] || TYPE_CONFIG.system;
+              const Icon = config.icon;
+              const isSelected = selectedIds.includes(notif.id);
+              
+              return (
+                <div 
+                  key={notif.id} 
+                  className={`p-4 flex items-start gap-4 transition-colors hover:bg-slate-50 cursor-pointer ${!notif.is_read ? 'bg-blue-50/30' : ''} ${isSelected ? 'bg-blue-50/50' : ''}`}
+                  onClick={() => toggleSelection(notif.id)}
+                >
+                  {/* Checkbox */}
+                  <div className="mt-2.5">
+                    {isSelected ? (
+                      <CheckSquare className="w-5 h-5 text-blue-600" />
+                    ) : (
+                      <Square className="w-5 h-5 text-slate-300" />
+                    )}
+                  </div>
+
+                  {/* Icon */}
+                  <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${config.bg} ${config.color}`}>
+                    <Icon className="w-5 h-5" />
+                  </div>
+                  
+                  {/* Content */}
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center justify-between gap-2 mb-1">
+                      <h3 className={`text-sm font-bold truncate ${!notif.is_read ? 'text-slate-900' : 'text-slate-700'}`}>
+                        {notif.title}
+                      </h3>
+                      <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 shrink-0">
+                        <Clock className="w-3.5 h-3.5" />
+                        {formatTime(notif.created_at)}
+                      </div>
+                    </div>
+                    <p className="text-sm text-slate-500 leading-relaxed">
+                      {notif.message}
+                    </p>
+                  </div>
+                  
+                  {/* Unread Indicator Dot */}
+                  {!notif.is_read && (
+                    <div className="w-2.5 h-2.5 bg-blue-600 rounded-full shrink-0 mt-1.5"></div>
                   )}
                 </div>
-
-                {/* Icon */}
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${notif.bg} ${notif.color}`}>
-                  <Icon className="w-5 h-5" />
-                </div>
-                
-                {/* Content */}
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <h3 className={`text-sm font-bold truncate ${!notif.read ? 'text-slate-900' : 'text-slate-700'}`}>
-                      {notif.title}
-                    </h3>
-                    <div className="flex items-center gap-1.5 text-xs font-semibold text-slate-400 shrink-0">
-                      <Clock className="w-3.5 h-3.5" />
-                      {notif.time}
-                    </div>
-                  </div>
-                  <p className="text-sm text-slate-500 leading-relaxed">
-                    {notif.message}
-                  </p>
-                </div>
-                
-                {/* Unread Dot */}
-                {!notif.read && (
-                  <div className="w-2.5 h-2.5 bg-blue-600 rounded-full shrink-0 mt-1.5"></div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
         
-        {notifications.length === 0 && (
+        {!loading && notifications.length === 0 && (
           <div className="p-16 text-center flex flex-col items-center">
             <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6">
               <Bell className="w-10 h-10 text-slate-300" />
