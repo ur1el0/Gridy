@@ -162,8 +162,8 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                           value!.isEmpty ? 'Please enter a location' : null,
                     ),
                     const SizedBox(height: 16),
-                                        DropdownButtonFormField<String>(
-                      value: _selectedCategory,
+                      DropdownButtonFormField<String>(
+                      initialValue: _selectedUrgency,
                       decoration: const InputDecoration(
                         labelText: 'Category',
                         border: OutlineInputBorder(),
@@ -176,7 +176,7 @@ class _ReportIssueScreenState extends State<ReportIssueScreen> {
                     ),
                     const SizedBox(height: 16),
                     DropdownButtonFormField<String>(
-                      value: _selectedUrgency,
+                      initialValue: _selectedUrgency,
                       decoration: const InputDecoration(
                         labelText: 'Urgency',
                         border: OutlineInputBorder(),
