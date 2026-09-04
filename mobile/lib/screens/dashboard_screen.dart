@@ -20,7 +20,7 @@ import 'queue_screen.dart';
 import 'schedule_screen.dart';
 import '../services/storage_service.dart';
 import 'profile_screen.dart';
-
+import 'announcements_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final DashboardService? dashboardService;
@@ -219,6 +219,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       announcementCount: _data.announcements.length,
                       pendingRequestCount: _data.pendingRequestsCount,
                       hasNewAnnouncements: _data.announcements.isNotEmpty,
+                      onAnnouncementsTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const AnnouncementsScreen()),
+                        );
+                      },
+                      onPendingRequestsTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const DocumentsScreen()),
+                        );
+                      },
                     ),
 
                     const SizedBox(height: 24),
