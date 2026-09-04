@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from gridy_communications.models import Announcement, ActivitySchedule, FCMDevice, EmergencyHotline
+from gridy_communications.models import Announcement, ActivitySchedule, FCMDevice, EmergencyHotline, FAQ, AdminNotification
 
 class FCMDeviceSerializer(serializers.ModelSerializer):
     class Meta:
@@ -29,3 +29,14 @@ class EmergencyHotlineSerializer(serializers.ModelSerializer):
         model = EmergencyHotline
         fields = ['id', 'name', 'number', 'category', 'category_display', 'is_active', 'created_by']
         read_only_fields = ['created_by']
+
+class FAQSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FAQ
+        fields = '__all__'
+
+class AdminNotificationSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AdminNotification
+        fields = '__all__'
+        read_only_fields = ['user', 'created_at']

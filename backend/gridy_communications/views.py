@@ -1,12 +1,14 @@
 from rest_framework import viewsets, permissions
 from gridy_auth.permissions import IsBarangayOfficial
-from gridy_communications.models import Announcement, ActivitySchedule, FCMDevice, EmergencyHotline
+from gridy_communications.models import Announcement, ActivitySchedule, FCMDevice, EmergencyHotline, FAQ, AdminNotification
 from gridy_communications.serializers import AnnouncementSerializer, ActivityScheduleSerializer, FCMDeviceSerializer, EmergencyHotlineSerializer
 from gridy_communications.tasks import async_send_fcm_topic_notification
 from gridy_communications.models import FCMDevice
-from gridy_communications.serializers import FCMDeviceSerializer
+from gridy_communications.serializers import FCMDeviceSerializer, EmergencyHotlineSerializer, FAQSerializer, AdminNotificationSerializer
 from gridy_auth.models import User
 import logging
+from rest_framework.decorators import action
+from rest_framework.response import Response
 
 logger = logging.getLogger(__name__)
 
@@ -121,3 +123,27 @@ class EmergencyHotlineViewSet(viewsets.ModelViewSet):
     
     def perform_create(self, serializer):
         serializer.save(created_by=self.request.user)
+
+class FAQViewSet(viewsets.ModelViewSet):
+    queryset = FAQ.objects.all()
+    serializer_class = FAQSerializer
+
+    def get_permissions(self):
+        # Anyone authenticated can read FAQs, but only Officials can create/edit them
+        if self.action in ['list', 'retrieve']:
+            return [permissions.IsAuthenticated()]
+        return [IsBarangayOfficial()]
+    
+class AdminNotificationViewSet(viewsets.ModelViewSet):
+    serializer_class = AdminNotificationSerializer
+    permission_classes = [permissions.IsAuthenticated, IsBarangayOfficial]
+
+    def get_queryset(self):
+        # SECURITY: Admins can ONLY see their own personal notifications
+        return AdminNotification.objects.filter(user=self.request.user)
+    
+    @action(detail=False, methods=['post'])
+    def mark_all_read(self, request):
+        # Custom endpoint to clear the notification bell badge
+        self.get_queryset().filter(is_read=False).update(is_read=True)
+        return Response({"status": "success", "message": "All notifications marked as read."})
