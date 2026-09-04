@@ -64,7 +64,7 @@ class QueueService {
       body: {
         'service_type': serviceType,
         'is_priority': isPriority,
-        'notes': ?notes,
+        'notes': notes,
       },
     );
 
