@@ -11,14 +11,14 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
 from gridy_auth.models import User
-from gridy_auth.permissions import IsBarangayOfficial
+from gridy_auth.permissions import IsBarangayOfficial, IsBarangayOfficialOrField
 from gridy_services.models import QueueTicket, DocumentRequest
 from gridy_reports.models import IssueReport
 from gridy_services.serializers import QueueTicketSerializer, DashboardSummarySerializer
 from gridy_communications.tasks import send_notification_to_user_task
 from gridy_audit.services import log_action
 from gridy_audit.models import AuditLog
-
+from rest_framework.exceptions import PermissionDenied
 
 def broadcast_queue_update():
     """Helper to notify all connected WebSockets that the queue has changed."""
@@ -37,29 +37,34 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ['list', 'retrieve', 'create', 'live_status']:
             return [permissions.IsAuthenticated()]
-        return [IsBarangayOfficial()]
-
+        return [IsBarangayOfficialOrField()]
+    
     def get_queryset(self):
         user = self.request.user
         if not user or not user.is_authenticated:
             return QueueTicket.objects.none()
 
-        if user.role == User.Role.ADMIN:
+        if user.role in [User.Role.ADMIN, User.Role.FIELD_OFFICIAL]:
             return QueueTicket.objects.filter(barangay=user.barangay).order_by('-created_at')
-
+        
         if user.role == User.Role.DILG_ADMIN:
             return QueueTicket.objects.all().order_by('-created_at')
 
         return QueueTicket.objects.filter(user=user).order_by('-created_at')
-
     def perform_create(self, serializer):
         user = self.request.user
-        if user and user.is_authenticated and user.role == User.Role.ADMIN:
+        if not user or not user.is_authenticated:
+            raise PermissionDenied("Authentication required to generate queue tickets.")
+
+        if user.role == User.Role.ADMIN:
+            # Executive Desk Admin generates walk-in ticket for physical visitor
             serializer.save(user=None, barangay=user.barangay)
-        else: 
-            serializer.save(user=user if user.is_authenticated else None, barangay=user.barangay if hasattr(user, 'barangay') else None)
-        
-        broadcast_queue_update()
+        elif user.role == User.Role.RESIDENT:
+            # Citizen generates remote queue ticket for themselves
+            serializer.save(user=user, barangay=user.barangay)
+        else:
+            # Field officials (Tanods) cannot generate tickets for themselves
+            raise PermissionDenied("Field officials cannot generate queue tickets.")
 
     def perform_update(self, serializer):
         serializer.save()
@@ -76,7 +81,7 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
             "avg_wait_mins": total_waiting * 2 
         }, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=['post'], url_path='next', permission_classes=[IsBarangayOfficial])
+    @action(detail=False, methods=['post'], permission_classes=[IsBarangayOfficialOrField], url_path='next')    
     def next_ticket(self, request):
         with transaction.atomic():
             QueueTicket.objects.filter(status=QueueTicket.Status.SERVING).update(status=QueueTicket.Status.COMPLETED)

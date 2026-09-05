@@ -20,6 +20,7 @@ class User(AbstractUser):
         ADMIN = 'ADMIN', 'Admin'
         RESIDENT = 'RESIDENT', 'Resident'
         DILG_ADMIN = 'DILG_ADMIN', 'DILG Admin'
+        FIELD_OFFICIAL = 'FIELD_OFFICIAL', 'Field Official'
 
     role = models.CharField(
         max_length=50,

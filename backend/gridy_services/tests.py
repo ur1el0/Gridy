@@ -35,7 +35,33 @@ class ServiceAPITests(APITestCase):
         }
         response = self.client.post(url, payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(DocumentRequest.objects.count(), 1)        
+        self.assertEqual(DocumentRequest.objects.count(), 1)   
+          
+    def test_official_cannot_create_document_request(self):
+        # Officials are strictly for validating/approving, not filing resident clearance requests
+        self.client.force_login(self.official)
+        url = reverse('document-request-list')
+        payload = {
+            "document_type": "Barangay Clearance",
+        }
+        response = self.client.post(url, payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_field_official_cannot_create_queue_ticket(self):
+        # Field officials monitor ticker and call next ticket, but cannot take tickets for themselves
+        field_official = User.objects.create_user(
+            username="tanod_test",
+            password="SecurePassword123!",
+            email="tanod@example.com",
+            role=User.Role.FIELD_OFFICIAL
+        )
+        self.client.force_login(field_official)
+        url = reverse('ticket-list')
+        payload = {
+            "service_type": "DOCUMENT"
+        }
+        response = self.client.post(url, payload, format="json")
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)   
         
     def test_resident_validated_blocked(self):
         self.client.force_login(self.resident)

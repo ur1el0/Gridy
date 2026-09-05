@@ -2,7 +2,7 @@ import json
 from pathlib import Path
 from django.core.management.base import BaseCommand
 from django.contrib.auth import get_user_model
-from gridy_auth.models import Resident
+from gridy_auth.models import Resident, Barangay
 from gridy_communications.models import Announcement, ActivitySchedule
 from django.conf import settings
 
@@ -14,23 +14,37 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         fixtures_dir = Path(settings.BASE_DIR) / 'gridy_auth' / 'fixtures'
 
+        # Ensure default Barangay exists for multi-tenant isolation
+        barangay, _ = Barangay.objects.get_or_create(
+            name="Barangay Central",
+            defaults={
+                "captain_name": "Hon. Roberto Dela Cruz",
+                "office_contact": "(02) 8920-1234"
+            }
+        )
+
         # Seed Users
         with open(fixtures_dir / 'seed_users.json', 'r') as f:
             users_data = json.load(f)
             for u_data in users_data:
                 profile_data = u_data.pop('resident_profile', None)
                 password = u_data.pop('password')
+
+                # Assign local barangay to non-DILG users
+                if u_data.get('role') != User.Role.DILG_ADMIN:
+                    u_data['barangay'] = barangay
+
                 user, created = User.objects.get_or_create(username=u_data['username'], defaults=u_data)
                 if created:
                     user.set_password(password)
                     user.save()
                     if profile_data:
                         Resident.objects.get_or_create(user=user, defaults=profile_data)
-                    self.stdout.write(self.style.SUCCESS(f'Created user {user.username}'))
+                    self.stdout.write(self.style.SUCCESS(f'Created user {user.username} ({user.role})'))
                 else:
                     self.stdout.write(f'User {user.username} already exists')
 
-        # Admin user to assign as creator
+        # Admin user to assign as creator for announcements and activities
         admin = User.objects.filter(role=User.Role.ADMIN).first()
         if not admin:
             self.stdout.write(self.style.ERROR('No admin user found to associate announcements/activities with.'))

@@ -53,4 +53,21 @@ class IssueReportAPITests(APITestCase):
         }
         response = self.client.post(self.url, payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_official_cannot_create_issue_report(self):
+        # Officials triage and resolve reports; only citizens submit resident community issues
+        official = User.objects.create_user(
+            username="captain_test",
+            password="SecurePassword123!",
+            email="captain@example.com",
+            role=User.Role.ADMIN
+        )
+        self.client.force_login(official)
+        payload = {
+            "title": "Broken pipe",
+            "description": "Leaking water",
+            "location": "Purok 4"
+        }
+        response = self.client.post(self.url, payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
     
