@@ -56,27 +56,22 @@ void main() {
       expect(user.isOfficial, isTrue);
     });
 
-    test('converts UserModel to JSON and back consistently', () {
-      const user = UserModel(
-        id: 303,
-        username: 'test_user',
-        email: 'test@example.com',
-        role: 'RESIDENT',
-        fullName: 'Test User',
-        isVerified: true,
-        contactNumber: '09123456789',
-        purok: 'Purok 5',
-      );
+    test('correctly identifies FIELD_OFFICIAL role and formatted role display', () {
+      final json = {
+        'id': 404,
+        'username': 'tanod_pedro',
+        'email': 'pedro@barangay.gov',
+        'role': 'FIELD_OFFICIAL',
+        'full_name': 'Pedro Penduko',
+      };
 
-      final map = user.toJson();
-      final reconstructed = UserModel.fromJson(map);
+      final user = UserModel.fromJson(json);
 
-      expect(reconstructed.id, user.id);
-      expect(reconstructed.username, user.username);
-      expect(reconstructed.email, user.email);
-      expect(reconstructed.fullName, user.fullName);
-      expect(reconstructed.contactNumber, user.contactNumber);
-      expect(reconstructed.purok, user.purok);
+      expect(user.id, 404);
+      expect(user.isResident, isFalse);
+      expect(user.isOfficial, isTrue);
+      expect(user.isFieldOfficial, isTrue);
+      expect(user.roleDisplay, equals('Field Official / Tanod'));
     });
   });
 

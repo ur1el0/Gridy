@@ -66,13 +66,34 @@ class UserModel {
       'voter_status': voterStatus,
     };
   }
-
+  
   /// Convenience getter to check if the user is a resident
   bool get isResident => role.toUpperCase() == 'RESIDENT';
 
   /// Convenience getter to check if the user is an official or admin
-  bool get isOfficial => role.toUpperCase() == 'BARANGAY_OFFICIAL' || role.toUpperCase() == 'ADMIN';
+  bool get isOfficial =>
+      role.toUpperCase() == 'BARANGAY_OFFICIAL' ||
+      role.toUpperCase() == 'ADMIN' ||
+      role.toUpperCase() == 'FIELD_OFFICIAL' ||
+      role.toUpperCase() == 'DILG_ADMIN';
 
-  @override
+  /// Convenience getter to check specifically if user has field duties
+  bool get isFieldOfficial =>
+      role.toUpperCase() == 'FIELD_OFFICIAL' ||
+      role.toUpperCase() == 'ADMIN';
+
+  /// Formatted role string for badges and official profile headers
+  String get roleDisplay {
+    switch (role.toUpperCase()) {
+      case 'ADMIN':
+        return 'Barangay Executive';
+      case 'FIELD_OFFICIAL':
+        return 'Field Official / Tanod';
+      case 'DILG_ADMIN':
+        return 'DILG Super Admin';
+      default:
+        return 'Resident';
+    }
+  }
   String toString() => 'UserModel(id: $id, username: $username, fullName: $fullName, role: $role)';
 }
