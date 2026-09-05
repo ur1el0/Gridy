@@ -21,6 +21,7 @@ import 'schedule_screen.dart';
 import '../services/storage_service.dart';
 import 'profile_screen.dart';
 import 'my_issues_screen.dart';
+import 'announcements_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final DashboardService? dashboardService;
