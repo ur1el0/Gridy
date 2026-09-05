@@ -45,7 +45,7 @@ class UserModel {
       fullName: resolvedFullName,
       isVerified: resolvedVerification,
       contactNumber: profile?['contact_number'] as String? ?? json['contact_number'] as String?,
-      purok: profile?['purok'] as String? ?? json['purok'] as String?,
+      purok: profile?['purok']?.toString() ?? json['purok']?.toString(),
       birthDate: profile?['birth_date'] as String? ?? json['birth_date'] as String?,
       voterStatus: profile?['voter_status'] as bool? ?? json['voter_status'] as bool?,
     );

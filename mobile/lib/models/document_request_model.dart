@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 class DocumentRequestModel {
   final int id;
   final String documentType;
+  final String? purpose;
   final String urgencyTag;
   final String status;
   final String? adminNotes;
@@ -13,6 +14,7 @@ class DocumentRequestModel {
   const DocumentRequestModel({
     required this.id,
     required this.documentType,
+    this.purpose,
     this.urgencyTag = 'REGULAR',
     this.status = 'PENDING',
     this.adminNotes,
@@ -24,6 +26,7 @@ class DocumentRequestModel {
     return DocumentRequestModel(
       id: (json['request_id'] ?? json['id']) as int? ?? 0,
       documentType: json['document_type'] as String? ?? 'Document Request',
+      purpose: json['purpose'] as String?,
       urgencyTag: json['urgency_tag'] as String? ?? 'REGULAR',
       status: json['status'] as String? ?? 'PENDING',
       adminNotes: json['admin_notes'] as String?,
