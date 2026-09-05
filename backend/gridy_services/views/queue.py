@@ -11,7 +11,7 @@ from asgiref.sync import async_to_sync
 from channels.layers import get_channel_layer
 
 from gridy_auth.models import User
-from gridy_auth.permissions import IsBarangayOfficial
+from gridy_auth.permissions import IsBarangayOfficial, IsBarangayOfficialOrField
 from gridy_services.models import QueueTicket, DocumentRequest
 from gridy_reports.models import IssueReport
 from gridy_services.serializers import QueueTicketSerializer, DashboardSummarySerializer
@@ -37,16 +37,16 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ['list', 'retrieve', 'create', 'live_status']:
             return [permissions.IsAuthenticated()]
-        return [IsBarangayOfficial()]
-
+        return [IsBarangayOfficialOrField()]
+    
     def get_queryset(self):
         user = self.request.user
         if not user or not user.is_authenticated:
             return QueueTicket.objects.none()
 
-        if user.role == User.Role.ADMIN:
+        if user.role in [User.Role.ADMIN, User.Role.FIELD_OFFICIAL]:
             return QueueTicket.objects.filter(barangay=user.barangay).order_by('-created_at')
-
+        
         if user.role == User.Role.DILG_ADMIN:
             return QueueTicket.objects.all().order_by('-created_at')
 
@@ -76,7 +76,7 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
             "avg_wait_mins": total_waiting * 2 
         }, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=['post'], url_path='next', permission_classes=[IsBarangayOfficial])
+    @action(detail=False, methods=['post'], permission_classes=[IsBarangayOfficialOrField], url_path='next')    
     def next_ticket(self, request):
         with transaction.atomic():
             QueueTicket.objects.filter(status=QueueTicket.Status.SERVING).update(status=QueueTicket.Status.COMPLETED)

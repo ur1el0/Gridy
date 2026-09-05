@@ -27,8 +27,8 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if not user or not user.is_authenticated:
             return DocumentRequest.objects.none()
-
-        if user.role == User.Role.ADMIN:
+        
+        if user.role in [User.Role.ADMIN, User.Role.FIELD_OFFICIAL]:
             return DocumentRequest.objects.filter(user__barangay=user.barangay).order_by('-created_at')
 
         if user.role == User.Role.DILG_ADMIN:
