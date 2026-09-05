@@ -35,6 +35,7 @@ class DocumentService {
   Future<DocumentRequestModel> createDocumentRequest({
     required String documentType,
     String urgencyTag = 'REGULAR',
+    String? purpose,
   }) async {
     try {
       final response = await apiClient.post(
@@ -42,6 +43,7 @@ class DocumentService {
         body: {
           'document_type': documentType,
           'urgency_tag': urgencyTag.toUpperCase(),
+          'purpose': ?purpose,
         },
         requiresAuth: true,
       );

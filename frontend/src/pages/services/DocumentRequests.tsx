@@ -6,9 +6,13 @@ import { ReviewDocumentModal } from '../../components/documents/ReviewDocumentMo
 
 export interface DocumentRequest {
   id: number;
+  request_id?: number;
+  requester_name?: string;
   document_type: string;
-  purpose: string;
+  purpose?: string;
+  urgency_tag?: 'REGULAR' | 'URGENT';
   status: string;
+  admin_notes?: string;
   created_at: string;
 }
 

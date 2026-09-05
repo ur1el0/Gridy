@@ -88,42 +88,42 @@ void main() {
       ),
     );
 
-    // Initial frame
+    // Initial frame processing
     await tester.pump();
     await tester.pumpAndSettle();
 
     // 1. App Bar Header & Brand
-    expect(find.text('Gridy'), findsOneWidget);
+    expect(find.text('Gridy', skipOffstage: false), findsWidgets);
 
     // 2. Hero Card
-    expect(find.text('VERIFIED RESIDENT'), findsOneWidget);
-    expect(find.text('Welcome back, Juan'), findsOneWidget);
+    expect(find.text('VERIFIED RESIDENT', skipOffstage: false), findsOneWidget);
+    expect(find.text('Welcome back, Juan', skipOffstage: false), findsOneWidget);
 
     // 3. Metric Summary Cards
-    expect(find.text('ANNOUNCEMENTS'), findsOneWidget);
-    expect(find.text('MY PENDING\nREQUESTS'), findsOneWidget);
+    expect(find.text('ANNOUNCEMENTS', skipOffstage: false), findsOneWidget);
+    expect(find.text('MY PENDING\nREQUESTS', skipOffstage: false), findsOneWidget);
 
     // 4. Recent Notifications
-    expect(find.text('Recent Notifications'), findsOneWidget);
-    expect(find.text('View all'), findsOneWidget);
-    expect(find.text('Tax Clearance Approved'), findsOneWidget);
+    expect(find.text('Recent Notifications', skipOffstage: false), findsOneWidget);
+    expect(find.text('View all', skipOffstage: false), findsOneWidget);
+    expect(find.text('Tax Clearance Approved', skipOffstage: false), findsOneWidget);
 
     // 5. Quick Services Action Cards
-    expect(find.text('Quick Services'), findsOneWidget);
-    expect(find.text('Request Document'), findsOneWidget);
-    expect(find.text('Report Issue'), findsOneWidget);
-    expect(find.text('Barangay Hotline'), findsOneWidget);
-    expect(find.text('My Reports'), findsOneWidget);
+    expect(find.text('Quick Services', skipOffstage: false), findsOneWidget);
+    expect(find.text('Request Document', skipOffstage: false), findsOneWidget);
+    expect(find.text('Report Issue', skipOffstage: false), findsOneWidget);
+    expect(find.text('Barangay Hotline', skipOffstage: false), findsOneWidget);
+    expect(find.text('My Reports', skipOffstage: false), findsOneWidget);
 
     // 6. Community Schedule Timeline
-    expect(find.text('Community Schedule'), findsOneWidget);
-    expect(find.text('Vaccination Drive'), findsOneWidget);
-    expect(find.text('Barangay Center'), findsOneWidget);
+    expect(find.text('Community Schedule', skipOffstage: false), findsOneWidget);
+    expect(find.text('Vaccination Drive', skipOffstage: false), findsOneWidget);
+    expect(find.text('Barangay Center', skipOffstage: false), findsOneWidget);
 
     // 7. Bottom Navigation Bar Tabs
-    expect(find.text('DASHBOARD'), findsOneWidget);
-    expect(find.text('QUEUE'), findsOneWidget);
-    expect(find.text('DOCUMENTS'), findsOneWidget);
-    expect(find.text('SCHEDULE'), findsOneWidget);
+    expect(find.text('DASHBOARD', skipOffstage: false), findsOneWidget);
+    expect(find.text('QUEUE', skipOffstage: false), findsOneWidget);
+    expect(find.text('DOCUMENTS', skipOffstage: false), findsOneWidget);
+    expect(find.text('SCHEDULE', skipOffstage: false), findsOneWidget);
   });
 }

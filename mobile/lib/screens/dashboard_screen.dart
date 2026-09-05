@@ -219,6 +219,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       announcementCount: _data.announcements.length,
                       pendingRequestCount: _data.pendingRequestsCount,
                       hasNewAnnouncements: _data.announcements.isNotEmpty,
+                      onAnnouncementsTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const AnnouncementsScreen()),
+                        );
+                      },
+                      onPendingRequestsTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const DocumentsScreen()),
+                        );
+                      },
                     ),
 
                     const SizedBox(height: 24),
