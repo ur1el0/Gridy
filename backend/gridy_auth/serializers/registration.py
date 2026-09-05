@@ -141,7 +141,8 @@ class AdminRegisterSerializer(serializers.Serializer):
                 last_name=last_name,
                 role=User.Role.ADMIN,
                 barangay=barangay,
-                is_staff=True
+                is_staff=True,
+                is_active=False
             )
 
         return user

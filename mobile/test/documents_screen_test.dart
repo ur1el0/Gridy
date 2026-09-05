@@ -47,6 +47,7 @@ class MockDocumentService extends DocumentService {
   Future<DocumentRequestModel> createDocumentRequest({
     required String documentType,
     String urgencyTag = 'REGULAR',
+    String? purpose,
   }) async {
     return DocumentRequestModel(
       id: 999,

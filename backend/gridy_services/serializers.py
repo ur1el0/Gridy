@@ -8,9 +8,11 @@ class DocumentRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = DocumentRequest
         fields = [
+            'id',
             'request_id',
             'requester_name',
             'document_type',
+            'purpose',
             'urgency_tag',
             'status',
             'admin_notes',

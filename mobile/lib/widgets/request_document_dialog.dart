@@ -44,6 +44,8 @@ class _RequestDocumentDialogState extends State<RequestDocumentDialog> {
         : availableTypes.first;
   }
 
+  final TextEditingController _purposeController = TextEditingController();
+
   Future<void> _submitRequest() async {
     setState(() {
       _isSubmitting = true;
@@ -54,6 +56,7 @@ class _RequestDocumentDialogState extends State<RequestDocumentDialog> {
       final newDoc = await widget.documentService.createDocumentRequest(
         documentType: _selectedType,
         urgencyTag: _selectedUrgency,
+        purpose: _purposeController.text.isNotEmpty ?_purposeController.text : null,
       );
 
       if (mounted) {
@@ -171,7 +174,35 @@ class _RequestDocumentDialogState extends State<RequestDocumentDialog> {
             ),
           ),
           const SizedBox(height: 18),
-
+          
+          const Text(
+            'STATED PURPOSE (OPTIONAL)',
+            style: TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textLabel,
+              letterSpacing: 0.5,
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _purposeController,
+            decoration: InputDecoration(
+              hintText: 'e.g. For local employment application',
+              hintStyle: const TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+              filled: true,
+              fillColor: const Color(0xFFF8FAFC),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+              ),
+            ),
+          ),
           // Processing Urgency
           const Text(
             'PROCESSING SPEED',
