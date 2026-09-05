@@ -1,26 +1,54 @@
 [
   {
-    "username": "admin1",
+    "username": "dilg_admin",
     "password": "Password123!",
-    "email": "admin1@gridy.local",
-    "role": "ADMIN",
-    "first_name": "Admin",
-    "last_name": "One",
+    "email": "dilg.admin@gridy.local",
+    "role": "DILG_ADMIN",
+    "first_name": "Hon. Carlos",
+    "last_name": "Mendoza",
     "is_staff": true,
-    "is_superuser": true
+    "is_superuser": true,
+    "is_active": true
   },
   {
-    "username": "resident1",
+    "username": "admin_captain",
     "password": "Password123!",
-    "email": "resident1@gridy.local",
+    "email": "captain.delacruz@gridy.local",
+    "role": "ADMIN",
+    "first_name": "Hon. Roberto",
+    "last_name": "Dela Cruz",
+    "is_staff": true,
+    "is_superuser": false,
+    "is_active": true
+  },
+  {
+    "username": "field_tanod",
+    "password": "Password123!",
+    "email": "tanod.pedro@gridy.local",
+    "role": "FIELD_OFFICIAL",
+    "first_name": "Pedro",
+    "last_name": "Penduko",
+    "is_staff": false,
+    "is_superuser": false,
+    "is_active": true
+  },
+  {
+    "username": "resident_juan",
+    "password": "Password123!",
+    "email": "juan.delacruz@gridy.local",
     "role": "RESIDENT",
-    "first_name": "Resident",
-    "last_name": "One",
+    "first_name": "Juan",
+    "last_name": "Dela Cruz",
+    "is_staff": false,
+    "is_superuser": false,
+    "is_active": true,
     "resident_profile": {
-      "full_name": "Resident One",
-      "birth_date": "1990-01-01",
+      "full_name": "Juan Dela Cruz",
+      "birth_date": "1995-06-12",
       "voter_status": true,
-      "contact_number": "09123456789"
+      "contact_number": "09171234567",
+      "purok": 1,
+      "is_verified": true
     }
   }
 ]
