@@ -20,6 +20,7 @@ import 'queue_screen.dart';
 import 'schedule_screen.dart';
 import '../services/storage_service.dart';
 import 'profile_screen.dart';
+import 'my_issues_screen.dart';
 import 'announcements_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
@@ -263,6 +264,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           MaterialPageRoute(
                             builder: (_) => HotlinesScreen(),
                           ),
+                        );
+                      },
+                      onMyReports: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const MyIssuesScreen()),
                         );
                       },
                     ),
