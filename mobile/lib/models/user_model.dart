@@ -95,5 +95,6 @@ class UserModel {
         return 'Resident';
     }
   }
+  @override
   String toString() => 'UserModel(id: $id, username: $username, fullName: $fullName, role: $role)';
 }

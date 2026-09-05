@@ -62,6 +62,8 @@ class IssueReport {
   final String description;
   final String location;
   final String status;
+  final String category;
+  final String urgency;
   final String? imageUrl;
   final String createdAt;
 
@@ -71,19 +73,23 @@ class IssueReport {
     required this.description,
     required this.location,
     required this.status,
+    this.category = 'OTHER',
+    this.urgency = 'MINOR',
     this.imageUrl,
     required this.createdAt,
   });
 
   factory IssueReport.fromJson(Map<String, dynamic> json) {
     return IssueReport(
-      id: json['id'],
-      title: json['title'] ?? 'Unknown Issue',
-      description: json['description'] ?? '',
-      location: json['location'] ?? '',
-      status: json['status'] ?? 'PENDING',
-      imageUrl: json['image'], 
-      createdAt: json['created_at'] ?? '',
+      id: json['id'] as int? ?? 0,
+      title: json['title'] as String? ?? 'Unknown Issue',
+      description: json['description'] as String? ?? '',
+      location: json['location'] as String? ?? '',
+      status: json['status'] as String? ?? 'PENDING',
+      category: json['category'] as String? ?? 'OTHER',
+      urgency: json['urgency'] as String? ?? 'MINOR',
+      imageUrl: json['image'] as String?,
+      createdAt: json['created_at'] as String? ?? '',
     );
   }
 }
