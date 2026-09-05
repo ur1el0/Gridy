@@ -141,11 +141,12 @@ All endpoints enforce authorization using JWT Bearer tokens in the HTTP `Authori
     ```json
     [
       {
-        "request_id": 12,
+        "id": 12,
         "document_type": "Barangay Clearance",
+        "purpose": "Employment Requirement",
         "status": "PENDING",
         "urgency_tag": "REGULAR",
-        "requester_name": "Juan Dela Cruz"
+        "admin_notes": ""
       }
     ]
     ```
@@ -155,17 +156,19 @@ All endpoints enforce authorization using JWT Bearer tokens in the HTTP `Authori
 *   **Payload (JSON):**
     ```json
     {
-      "document_type": "Certificate of Indigency",
-      "urgency_tag": "URGENT"
+      "document_type": "Barangay Clearance",
+      "purpose": "Employment Requirement",
+      "urgency_tag": "REGULAR"
     }
     ```
 *   **Response (201 Created):**
     ```json
     {
-      "request_id": 13,
-      "document_type": "Certificate of Indigency",
+      "id": 13,
+      "document_type": "Barangay Clearance",
+      "purpose": "Employment Requirement",
       "status": "PENDING",
-      "urgency_tag": "URGENT"
+      "urgency_tag": "REGULAR"
     }
     ```
 
@@ -181,7 +184,7 @@ All endpoints enforce authorization using JWT Bearer tokens in the HTTP `Authori
 *   **Response (200 OK):**
     ```json
     {
-      "request_id": 13,
+      "id": 13,
       "status": "APPROVED",
       "admin_notes": "Please pick up this document on Friday."
     }
@@ -207,3 +210,97 @@ All endpoints enforce authorization using JWT Bearer tokens in the HTTP `Authori
       "image_url": "https://res.cloudinary.com/gridy/image/upload/v1234/report_98.jpg"
     }
     ```
+
+---
+
+### 2.6 Activity Schedule Module
+
+#### GET `/api/v1/activities/`
+*   **Description:** List community activities and events (Filtered by user's barangay).
+*   **Response (200 OK):**
+    ```json
+    [
+      {
+        "id": 1,
+        "title": "Barangay Assembly",
+        "description": "Quarterly community meeting.",
+        "event_datetime": "2026-10-15T09:00:00Z",
+        "location": "Barangay Covered Court",
+        "created_by": 2,
+        "created_at": "2026-09-01T08:00:00Z"
+      }
+    ]
+    ```
+
+#### POST `/api/v1/activities/`
+*   **Description:** Create a new community event (Barangay Official only).
+*   **Payload (JSON):**
+    ```json
+    {
+      "title": "Medical Mission 2026",
+      "description": "Free consultations and medicines.",
+      "event_datetime": "2026-10-20T08:00:00Z",
+      "location": "Health Center"
+    }
+    ```
+*   **Response (201 Created):**
+    ```json
+    {
+      "id": 2,
+      "title": "Medical Mission 2026",
+      "description": "Free consultations and medicines.",
+      "event_datetime": "2026-10-20T08:00:00Z",
+      "location": "Health Center"
+    }
+    ```
+
+#### DELETE `/api/v1/activities/<id>/`
+*   **Description:** Cancel/delete a scheduled event (Barangay Official only).
+*   **Response:** `204 No Content`
+
+---
+
+### 2.7 Emergency Hotlines Module
+
+#### GET `/api/v1/hotlines/`
+*   **Description:** Retrieve emergency hotlines for the citizen's barangay.
+*   **Response (200 OK):**
+    ```json
+    [
+      {
+        "id": 1,
+        "name": "Barangay Police Desk",
+        "number": "09171234567",
+        "category": "POLICE",
+        "category_display": "Police",
+        "is_active": true
+      }
+    ]
+    ```
+
+#### POST `/api/v1/hotlines/`
+*   **Description:** Register a new emergency hotline (Barangay Official only).
+*   **Payload (JSON):**
+    ```json
+    {
+      "name": "Barangay Health Center",
+      "number": "(02) 8123-4567",
+      "category": "MEDICAL",
+      "is_active": true
+    }
+    ```
+*   **Response (201 Created):**
+    ```json
+    {
+      "id": 2,
+      "name": "Barangay Health Center",
+      "number": "(02) 8123-4567",
+      "category": "MEDICAL",
+      "category_display": "Medical / Hospital",
+      "is_active": true
+    }
+    ```
+
+#### DELETE `/api/v1/hotlines/<id>/`
+*   **Description:** Remove an emergency hotline entry (Barangay Official only).
+*   **Response:** `204 No Content`

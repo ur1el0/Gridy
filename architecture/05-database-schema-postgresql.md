@@ -71,8 +71,37 @@ Tracks official requests for documents.
 
 | Column | Data Type | Constraints | Description |
 | :--- | :--- | :--- | :--- |
-| `request_id` | `SERIAL` | PRIMARY KEY | Unique request ID |
-| `resident_id`| `INTEGER` | FK (`residents_resident`), ON DELETE CASCADE | Requester profile |
+| `id` | `SERIAL` | PRIMARY KEY | Unique request ID |
+| `user_id`| `INTEGER` | FK (`auth_user`), ON DELETE CASCADE | Requester profile |
 | `document_type`| `VARCHAR(100)`| NOT NULL | Type (e.g., `'Barangay Clearance'`) |
-| `status` | `VARCHAR(20)` | DEFAULT `'PENDING'`, NOT NULL | `'PENDING'`, `'APPROVED'`, `'REJECTED'`, or `'RELEASED'` |
+| `purpose` | `VARCHAR(255)` | NOT NULL | Custom purpose statement printed on clearance |
+| `status` | `VARCHAR(20)` | DEFAULT `'PENDING'`, NOT NULL | `'PENDING'`, `'PROCESSING'`, `'READY_FOR_PICKUP'`, `'RELEASED'`, or `'REJECTED'` |
 | `urgency_tag`| `VARCHAR(20)` | DEFAULT `'REGULAR'`, NOT NULL | `'REGULAR'` or `'URGENT'` |
+| `admin_notes` | `TEXT` | NULL | Administrative remarks or pickup schedule |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | DEFAULT NOW(), NOT NULL | Request timestamp |
+
+### 2.7 Table: `communications_activityschedule`
+Schedules official community assemblies, medical missions, and events.
+
+| Column | Data Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `SERIAL` | PRIMARY KEY | Unique activity ID |
+| `title` | `VARCHAR(255)` | NOT NULL | Event title |
+| `description` | `TEXT` | NOT NULL | Event agenda and details |
+| `event_datetime` | `TIMESTAMP WITH TIME ZONE` | NOT NULL | Scheduled date and time |
+| `location` | `VARCHAR(255)` | NOT NULL | Physical venue or room |
+| `created_by_id` | `INTEGER` | FK (`auth_user`), ON DELETE CASCADE | Official who scheduled the activity |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | DEFAULT NOW(), NOT NULL | Creation timestamp |
+
+### 2.8 Table: `communications_emergencyhotline`
+Maintains emergency contact numbers per barangay.
+
+| Column | Data Type | Constraints | Description |
+| :--- | :--- | :--- | :--- |
+| `id` | `SERIAL` | PRIMARY KEY | Unique hotline ID |
+| `name` | `VARCHAR(255)` | NOT NULL | Agency or station name |
+| `number` | `VARCHAR(50)` | NOT NULL | Dialable phone or mobile number |
+| `category` | `VARCHAR(20)` | DEFAULT `'OTHER'`, NOT NULL | `'POLICE'`, `'FIRE'`, `'MEDICAL'`, `'BARANGAY'`, or `'OTHER'` |
+| `is_active` | `BOOLEAN` | DEFAULT TRUE, NOT NULL | Active listing status |
+| `created_by_id` | `INTEGER` | FK (`auth_user`), ON DELETE CASCADE | Admin who added the hotline |
+| `created_at` | `TIMESTAMP WITH TIME ZONE` | DEFAULT NOW(), NOT NULL | Creation timestamp |
