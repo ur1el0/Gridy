@@ -1,7 +1,7 @@
 import toast from 'react-hot-toast';
 import React, { useEffect, useState } from 'react';
 import { axiosPrivate } from '../../api/axios';
-import { Calendar, MapPin, Clock, Plus, X } from 'lucide-react';
+import { Calendar, MapPin, Clock, Plus, X, Trash2 } from 'lucide-react';
 
 interface Activity {
   id: number;
@@ -68,6 +68,7 @@ export const Activities: React.FC = () => {
       });
       await fetchActivities();
       closeModal();
+      toast.success('Activity scheduled successfully!');
     } catch (err) {
       console.error("Failed to create activity", err);
       toast.error('Failed to schedule activity.');
@@ -84,6 +85,19 @@ export const Activities: React.FC = () => {
     setEventDate('');
   };
 
+  const handleDelete = async (id: number, title: string) => {
+    if (!window.confirm(`Are you sure you want to cancel and remove "${title}"?`)) {
+      return;
+    }
+    try {
+      await axiosPrivate.delete(`/activities/${id}/`);
+      toast.success('Activity removed successfully.');
+      setActivities(prev => prev.filter(act => act.id !== id));
+    } catch (err) {
+      console.error('Failed to delete activity', err);
+      toast.error('Failed to remove activity.');
+    }
+  };
   if (loading && activities.length === 0) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pt-4">
@@ -139,9 +153,19 @@ export const Activities: React.FC = () => {
                 {/* Details Section */}
                 <div className="p-5 flex-1 flex flex-col justify-between">
                   <div>
-                    <h3 className="text-lg font-bold text-slate-900 leading-tight mb-2 group-hover:text-[#0047BA] transition-colors">
-                      {act.title}
-                    </h3>
+                    <div className="flex items-start justify-between gap-2 mb-2">
+                      <h3 className="text-lg font-bold text-slate-900 leading-tight group-hover:text-[#0047BA] transition-colors">
+                        {act.title}
+                      </h3>
+                      <button
+                        onClick={() => handleDelete(act.id, act.title)}
+                        className="text-slate-400 hover:text-red-600 transition-colors p-1 rounded-lg hover:bg-red-50 shrink-0"
+                        title="Delete Activity"
+                        aria-label={`Delete ${act.title}`}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </div>
                     <p className="text-sm text-slate-600 line-clamp-2 leading-relaxed mb-4">
                       {act.description}
                     </p>
