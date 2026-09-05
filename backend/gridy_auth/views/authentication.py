@@ -58,11 +58,11 @@ class CustomTokenObtainPairView(TokenObtainPairView):
                         status=status.HTTP_403_FORBIDDEN
                     )
 
-            # 2. SECURITY: Enforce Active Status for Barangay Admins & Officials
-            if user.role in [User.Role.ADMIN, User.Role.DILG_ADMIN]:
+            # 2. SECURITY: Enforce Active Status for Barangay Admins & Field Officials
+            if user.role in [User.Role.ADMIN, User.Role.DILG_ADMIN, User.Role.FIELD_OFFICIAL]:
                 if not user.is_active:
                     return Response(
-                        {"detail": "Your admin account is pending verification. Only active, verified barangay officials can log in."},
+                        {"detail": "Your official account is pending verification. Only active, verified barangay personnel can log in."},
                         status=status.HTTP_403_FORBIDDEN
                     )
 
