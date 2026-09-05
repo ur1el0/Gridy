@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../core/config/app_config.dart';
 import '../core/network/api_client.dart';
+import '../core/theme/app_colors.dart';
 import '../models/hotline_model.dart';
 import '../services/hotline_services.dart';
 import '../services/storage_service.dart';
-import 'package:url_launcher/url_launcher.dart';
 
 class HotlinesScreen extends StatefulWidget {
   const HotlinesScreen({super.key});
@@ -17,8 +18,45 @@ class HotlinesScreen extends StatefulWidget {
 class _HotlinesScreenState extends State<HotlinesScreen> {
   HotlineService? _service;
   List<HotlineModel> _hotlines = [];
+  String _selectedCategory = 'ALL';
+  String _searchQuery = '';
   bool _isLoading = true;
-  String? _error;
+
+  // National emergency defaults so residents are NEVER without help
+  static final List<HotlineModel> _nationalFallbacks = [
+    HotlineModel(
+      id: 901,
+      name: 'National Emergency Hotline',
+      number: '911',
+      category: 'MEDICAL',
+      categoryDisplay: 'Emergency Services',
+      isActive: true,
+    ),
+    HotlineModel(
+      id: 902,
+      name: 'Philippine National Police (PNP)',
+      number: '117',
+      category: 'POLICE',
+      categoryDisplay: 'Police Department',
+      isActive: true,
+    ),
+    HotlineModel(
+      id: 903,
+      name: 'Bureau of Fire Protection (BFP)',
+      number: '(02) 8426-0219',
+      category: 'FIRE',
+      categoryDisplay: 'Fire Department',
+      isActive: true,
+    ),
+    HotlineModel(
+      id: 904,
+      name: 'Philippine Red Cross',
+      number: '143',
+      category: 'MEDICAL',
+      categoryDisplay: 'Ambulance & Rescue',
+      isActive: true,
+    ),
+  ];
 
   @override
   void initState() {
@@ -39,7 +77,7 @@ class _HotlinesScreenState extends State<HotlinesScreen> {
     } catch (_) {
       if (mounted) {
         setState(() {
-          _error = 'Failed to initialize hotline service.';
+          _hotlines = _nationalFallbacks;
           _isLoading = false;
         });
       }
@@ -52,14 +90,14 @@ class _HotlinesScreenState extends State<HotlinesScreen> {
       final data = await _service!.fetchHotlines();
       if (mounted) {
         setState(() {
-          _hotlines = data;
+          _hotlines = data.isNotEmpty ? data : _nationalFallbacks;
           _isLoading = false;
         });
       }
     } catch (_) {
       if (mounted) {
         setState(() {
-          _error = 'Failed to load hotlines.';
+          _hotlines = _nationalFallbacks;
           _isLoading = false;
         });
       }
@@ -67,7 +105,6 @@ class _HotlinesScreenState extends State<HotlinesScreen> {
   }
 
   Future<void> _makePhoneCall(String phoneNumber) async {
-    // Strip out dashes, spaces, or parentheses so the dialer doesn't break
     final cleanNumber = phoneNumber.replaceAll(RegExp(r'[^\d+]'), '');
     final Uri launchUri = Uri(scheme: 'tel', path: cleanNumber);
     
@@ -112,85 +149,182 @@ class _HotlinesScreenState extends State<HotlinesScreen> {
     }
   }
 
+  List<HotlineModel> get _filteredHotlines {
+    return _hotlines.where((h) {
+      final matchesCategory = _selectedCategory == 'ALL' || h.category.toUpperCase() == _selectedCategory;
+      final matchesSearch = _searchQuery.isEmpty ||
+          h.name.toLowerCase().contains(_searchQuery.toLowerCase()) ||
+          h.number.contains(_searchQuery);
+      return matchesCategory && matchesSearch;
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
+    final categories = ['ALL', 'POLICE', 'FIRE', 'MEDICAL', 'BARANGAY'];
+
     return Scaffold(
+      backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
-        title: const Text('Emergency Hotlines'),
-        centerTitle: false,
+        title: const Text(
+          'Emergency Hotlines',
+          style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: Color(0xFF0F172A)),
       ),
-      body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
-          : _error != null
-              ? Center(child: Text(_error!, style: const TextStyle(color: Colors.red)))
-              : _hotlines.isEmpty
-                  ? const Center(child: Text('No hotlines available.'))
-                  : ListView.separated(
-                      padding: const EdgeInsets.all(16),
-                      itemCount: _hotlines.length,
-                      separatorBuilder: (_, _) => const SizedBox(height: 10),
-                      itemBuilder: (context, index) {
-                        final h = _hotlines[index];
-                        final color = _categoryColor(h.category);
-                        return Card(
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            side: BorderSide(color: Colors.grey.shade200),
+      body: Column(
+        children: [
+          // Search & Filters Header
+          Container(
+            color: Colors.white,
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+            child: Column(
+              children: [
+                // Search Field
+                Container(
+                  decoration: BoxDecoration(
+                    color: const Color(0xFFF1F5F9),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: TextField(
+                    onChanged: (val) => setState(() => _searchQuery = val),
+                    decoration: const InputDecoration(
+                      hintText: 'Search hotlines, departments...',
+                      hintStyle: TextStyle(fontSize: 13, color: Color(0xFF94A3B8)),
+                      prefixIcon: Icon(Icons.search, size: 20, color: Color(0xFF64748B)),
+                      border: InputBorder.none,
+                      contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                
+                // Category Filter Chips
+                SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: categories.map((cat) {
+                      final isSelected = _selectedCategory == cat;
+                      return Padding(
+                        padding: const EdgeInsets.only(right: 8),
+                        child: ChoiceChip(
+                          label: Text(
+                            cat == 'ALL' ? 'All Services' : cat,
+                            style: TextStyle(
+                              fontSize: 12,
+                              fontWeight: FontWeight.w700,
+                              color: isSelected ? Colors.white : const Color(0xFF475569),
+                            ),
                           ),
-                          child: ListTile(
-                            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                            leading: CircleAvatar(
-                              backgroundColor: color.withValues(alpha: 0.12),
-                              child: Icon(_categoryIcon(h.category), color: color, size: 20),
+                          selected: isSelected,
+                          selectedColor: AppColors.primaryNavy,
+                          backgroundColor: const Color(0xFFF1F5F9),
+                          onSelected: (_) => setState(() => _selectedCategory = cat),
+                        ),
+                      );
+                    }).toList(),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Hotlines List
+          Expanded(
+            child: _isLoading
+                ? const Center(child: CircularProgressIndicator())
+                : _filteredHotlines.isEmpty
+                    ? Center(
+                        child: Text(
+                          'No matching emergency contacts found.',
+                          style: TextStyle(color: Colors.grey.shade500, fontSize: 14),
+                        ),
+                      )
+                    : ListView.separated(
+                        padding: const EdgeInsets.all(16),
+                        itemCount: _filteredHotlines.length,
+                        separatorBuilder: (_, _) => const SizedBox(height: 12),
+                        itemBuilder: (context, index) {
+                          final h = _filteredHotlines[index];
+                          final color = _categoryColor(h.category);
+                          return Container(
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(16),
+                              border: Border.all(color: const Color(0xFFE2E8F0)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.02),
+                                  blurRadius: 6,
+                                  offset: const Offset(0, 2),
+                                ),
+                              ],
                             ),
-                            title: Text(
-                              h.name,
-                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
-                            ),
-                            subtitle: Text(
-                              h.categoryDisplay,
-                              style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
-                            ),
-                            trailing: GestureDetector(
-                              onTap: () => _makePhoneCall(h.number),
-                              onLongPress: () {
-                                Clipboard.setData(ClipboardData(text: h.number));
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Number copied to clipboard')),
-                                );
-                              },
-                              child: Column(
-                                mainAxisAlignment: MainAxisAlignment.center,
-                                crossAxisAlignment: CrossAxisAlignment.end,
-                                children: [
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      Icon(Icons.call, color: color, size: 14),
-                                      const SizedBox(width: 4),
-                                      Text(
-                                        h.number,
-                                        style: TextStyle(
-                                          color: color,
-                                          fontWeight: FontWeight.bold,
-                                          fontSize: 15,
-                                          fontFamily: 'monospace',
+                            child: ListTile(
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              leading: Container(
+                                width: 44,
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: color.withValues(alpha: 0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: Icon(_categoryIcon(h.category), color: color, size: 22),
+                              ),
+                              title: Text(
+                                h.name,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15, color: Color(0xFF0F172A)),
+                              ),
+                              subtitle: Text(
+                                h.categoryDisplay,
+                                style: TextStyle(fontSize: 12, color: Colors.grey.shade600),
+                              ),
+                              trailing: Material(
+                                color: Colors.transparent,
+                                child: InkWell(
+                                  onTap: () => _makePhoneCall(h.number),
+                                  onLongPress: () {
+                                    Clipboard.setData(ClipboardData(text: h.number));
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(content: Text('Number copied to clipboard')),
+                                    );
+                                  },
+                                  borderRadius: BorderRadius.circular(10),
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                    decoration: BoxDecoration(
+                                      color: color.withValues(alpha: 0.08),
+                                      borderRadius: BorderRadius.circular(10),
+                                      border: Border.all(color: color.withValues(alpha: 0.2)),
+                                    ),
+                                    child: Row(
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
+                                        Icon(Icons.call, color: color, size: 16),
+                                        const SizedBox(width: 6),
+                                        Text(
+                                          h.number,
+                                          style: TextStyle(
+                                            color: color,
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 14,
+                                            fontFamily: 'monospace',
+                                          ),
                                         ),
-                                      ),
-                                    ],
+                                      ],
+                                    ),
                                   ),
-                                  Text(
-                                    'tap to call • hold to copy',
-                                    style: TextStyle(fontSize: 10, color: Colors.grey.shade500),
-                                  ),
-                                ],
+                                ),
                               ),
                             ),
-                          ),
-                        );
-                      },
-                    ),
+                          );
+                        },
+                      ),
+          ),
+        ],
+      ),
     );
   }
 }
