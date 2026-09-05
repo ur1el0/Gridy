@@ -96,10 +96,12 @@
     <div class="content">
         <p><strong>TO WHOM IT MAY CONCERN:</strong></p>
         <p>
-            This is to certify that <strong>{{ resident.full_name|upper }}</strong>,
-            {% if resident.birth_date %}{{ age }} years of age,{% endif %}
-            a resident of Purok {{ resident.purok|default:"____" }}, {{ barangay.name }},
-            is a person of good moral character and has no derogatory record on file in this office as of this date.
+            This certification is being issued upon the request of the above-named person for
+            {% if document.purpose %}
+            the purpose of <strong>{{ document.purpose }}</strong>.
+            {% else %}
+            whatever legal purpose it may serve.
+            {% endif %}
         </p>
         <p>
             This certification is being issued upon the request of the above-named person for whatever legal purpose it

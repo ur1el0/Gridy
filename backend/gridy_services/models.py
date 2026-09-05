@@ -26,6 +26,7 @@ class DocumentRequest(models.Model):
         related_name='document_requests'
     )
     document_type = models.CharField(max_length=100)
+    purpose = models.TextField(blank=True, null=True)
     urgency_tag = models.CharField(
         max_length=20,
         choices=UrgencyTag.choices,
