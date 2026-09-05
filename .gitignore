@@ -26,3 +26,11 @@ backend/media/
 # Cmake build artifacts
 build/
 clearance.pdf
+
+# Scratch scripts and temporary test files
+test_*.py
+scratch/
+
+# Issue reports and temporary upload artifacts
+issue_reports/
+backend/issue_reports/
