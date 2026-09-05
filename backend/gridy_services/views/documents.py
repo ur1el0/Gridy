@@ -8,7 +8,7 @@ from django.utils import timezone
 from xhtml2pdf import pisa
 
 from gridy_auth.models import User
-from gridy_auth.permissions import IsBarangayOfficial
+from gridy_auth.permissions import IsBarangayOfficial, IsResident
 from gridy_services.models import DocumentRequest
 from gridy_services.serializers import DocumentRequestSerializer
 from gridy_communications.tasks import send_notification_to_user_task
@@ -19,8 +19,10 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
     serializer_class = DocumentRequestSerializer
     
     def get_permissions(self):
-        if self.action in ['list', 'retrieve', 'create']:
+        if self.action in ['list', 'retrieve']:
             return [permissions.IsAuthenticated()]
+        if self.action == 'create':
+            return [IsResident()]
         return [IsBarangayOfficial()]
 
     def get_queryset(self):

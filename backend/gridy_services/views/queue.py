@@ -18,7 +18,7 @@ from gridy_services.serializers import QueueTicketSerializer, DashboardSummarySe
 from gridy_communications.tasks import send_notification_to_user_task
 from gridy_audit.services import log_action
 from gridy_audit.models import AuditLog
-
+from rest_framework.exceptions import PermissionDenied
 
 def broadcast_queue_update():
     """Helper to notify all connected WebSockets that the queue has changed."""
@@ -51,15 +51,20 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
             return QueueTicket.objects.all().order_by('-created_at')
 
         return QueueTicket.objects.filter(user=user).order_by('-created_at')
-
     def perform_create(self, serializer):
         user = self.request.user
-        if user and user.is_authenticated and user.role == User.Role.ADMIN:
+        if not user or not user.is_authenticated:
+            raise PermissionDenied("Authentication required to generate queue tickets.")
+
+        if user.role == User.Role.ADMIN:
+            # Executive Desk Admin generates walk-in ticket for physical visitor
             serializer.save(user=None, barangay=user.barangay)
-        else: 
-            serializer.save(user=user if user.is_authenticated else None, barangay=user.barangay if hasattr(user, 'barangay') else None)
-        
-        broadcast_queue_update()
+        elif user.role == User.Role.RESIDENT:
+            # Citizen generates remote queue ticket for themselves
+            serializer.save(user=user, barangay=user.barangay)
+        else:
+            # Field officials (Tanods) cannot generate tickets for themselves
+            raise PermissionDenied("Field officials cannot generate queue tickets.")
 
     def perform_update(self, serializer):
         serializer.save()

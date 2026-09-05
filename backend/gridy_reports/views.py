@@ -2,7 +2,7 @@ from rest_framework import viewsets, permissions
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from .models import IssueReport
 from .serializers import IssueReportSerializer
-from gridy_auth.permissions import IsBarangayOfficial, IsBarangayOfficialOrField
+from gridy_auth.permissions import IsBarangayOfficial, IsBarangayOfficialOrField, IsResident
 from gridy_auth.models import User
 
 from gridy_audit.services import log_action
@@ -14,11 +14,15 @@ class IssueReportViewSet(viewsets.ModelViewSet):
     parser_classes = [MultiPartParser, FormParser, JSONParser]
     
     def get_permissions(self):
-        # 1. Residents can view and create, but ONLY officials can update/delete
-        if self.action in ['list', 'retrieve', 'create']:
+        # Only authenticated users can list/retrieve
+        if self.action in ['list', 'retrieve']:
             return [permissions.IsAuthenticated()]
+        # Strictly residents can file new community reports
+        if self.action == 'create':
+            return [IsResident()]
+        # Strictly officials can update status, triage, and resolve
         return [IsBarangayOfficialOrField()]
-
+    
     def get_queryset(self):
         user = self.request.user
         if not user or not user.is_authenticated:
