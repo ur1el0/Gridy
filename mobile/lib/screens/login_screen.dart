@@ -10,6 +10,8 @@ import '../widgets/custom_text_field.dart';
 import '../widgets/gridy_logo.dart';
 import 'dashboard_screen.dart';
 import 'register_screen.dart';
+import 'admin_dashboard_screen.dart';
+import 'field_official_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final AuthService? authService;
@@ -125,9 +127,21 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
 
-      // Navigate to resident dashboard
+      // Navigate to the appropriate screen based on user role tier
+      Widget destinationScreen;
+      if (authResponse.user.role.toUpperCase() == 'FIELD_OFFICIAL') {
+        // Tier 3: Field Official / Tanod Portal
+        destinationScreen = const FieldOfficialScreen();
+      } else if (authResponse.user.isOfficial) {
+        // Tier 2: Barangay Executive Admin Portal
+        destinationScreen = const AdminDashboardScreen();
+      } else {
+        // Tier 4: Citizen Resident Dashboard
+        destinationScreen = const DashboardScreen();
+      }
+
       Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => const DashboardScreen()),
+        MaterialPageRoute(builder: (_) => destinationScreen),
       );
     } on ForbiddenException catch (e) {
       if (!mounted) return;
