@@ -50,10 +50,19 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             except User.DoesNotExist:
                 return Response({"detail": "User not found."}, status=status.HTTP_404_NOT_FOUND)
 
+            # 1. Enforce Resident Verification Status
             if user.role == User.Role.RESIDENT:
                 if hasattr(user, 'profile') and not user.profile.is_verified:
                     return Response(
                         {"detail": "Your resident account is pending verification by the admin. Please try again later."},
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+
+            # 2. SECURITY: Enforce Active Status for Barangay Admins & Officials
+            if user.role in [User.Role.ADMIN, User.Role.DILG_ADMIN]:
+                if not user.is_active:
+                    return Response(
+                        {"detail": "Your admin account is pending verification. Only active, verified barangay officials can log in."},
                         status=status.HTTP_403_FORBIDDEN
                     )
 
@@ -81,7 +90,6 @@ class CustomTokenObtainPairView(TokenObtainPairView):
             del response.data['refresh']
         
         return response
-
 
 class CustomTokenRefreshView(TokenRefreshView):
     def post(self, request, *args, **kwargs):

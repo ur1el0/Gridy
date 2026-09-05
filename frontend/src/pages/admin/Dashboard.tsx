@@ -157,6 +157,7 @@ export const Dashboard: React.FC = () => {
         { name: 'Public Health', count: summaryData.issue_reports.scenario_breakdown.public_health},
         { name: 'Infrastructure', count: summaryData.issue_reports.scenario_breakdown.infrastructure},
         { name: 'Environment', count: summaryData.issue_reports.scenario_breakdown.environment},
+        { name: 'Other', count: summaryData.issue_reports.scenario_breakdown.other || 0 },
     ]
     : []
 
