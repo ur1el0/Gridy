@@ -38,6 +38,6 @@ Per **ADR 008**, the citizen portal is decoupled from the administrative command
 ---
 
 ## 4. Secret Role-Switching Demarcation (`Shift + \`)
-To prevent public exposure of administrative routes while facilitating single-browser defense presentations:
+To prevent public exposure of administrative routes while facilitating unified workstation administration:
 *   **Keyboard Trigger:** Pressing `Shift + \` opens the Demarcation Gateway.
 *   **Permission Verification:** The modal interrogates the session JWT. If the user possesses `ADMIN` or `DILG_ADMIN` privileges, they can switch directly to the Executive Desk (`/admin/dashboard`). Unprivileged resident accounts receive an access denied notification.

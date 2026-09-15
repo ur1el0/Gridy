@@ -8,7 +8,7 @@ A unified municipality web client serves two diametrically opposed personas:
 1. **Constituents / Residents**: Need a simple, distraction-free self-service portal for clearances, incident reports, and queue tickets.
 2. **Barangay Staff & Executives**: Require complex management tables, financial auditing, triage controls, and census imports.
 
-Exposing administrative interfaces directly on the public login view invites credential stuffing attacks and creates UX clutter for ordinary residents. Furthermore, during live capstone evaluations and quality assurance workflows, repeatedly logging out and logging in as different roles disrupts demonstration flow.
+Exposing administrative interfaces directly on the public login view invites credential stuffing attacks and creates UX clutter for ordinary residents. Furthermore, in multi-role administrative environments and field auditing workflows, repeatedly logging out and logging in across different authorization levels creates operational friction.
 
 ## Decision
 We engineered a **Dual-Portal Segregated Architecture**:
@@ -21,6 +21,6 @@ We engineered a **Dual-Portal Segregated Architecture**:
 
 ## Consequences
 * **Positive**: Delivers a clean, government-standard constituent experience without exposing internal administrative tools.
-* **Positive**: Enables seamless, single-browser presentation flow during capstone defenses and stakeholder reviews.
+* **Positive**: Enables seamless, single-browser operational switching during administrative audits and stakeholder demonstrations.
 * **Positive**: Mitigates opportunistic probing and visual clutter on the public interface.
 * **Negative**: Requires careful listener cleanup (`keydown` and gesture event listeners in React `useEffect` hooks) to prevent memory leaks and duplicate handler bindings.
