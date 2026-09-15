@@ -12,7 +12,7 @@ This guide outlines how to generate service credentials and configure the backen
 ## 🛠️ Step 1: Generate Firebase Service Account Key
 
 1. Open the [Firebase Console](https://console.firebase.google.com/).
-2. Select your Gridy Capstone project.
+2. Select your Gridy Firebase project.
 3. Click the gear icon next to **Project Overview** in the left sidebar and select **Project settings**.
 4. Navigate to the **Service accounts** tab.
 5. Click **Generate new private key**, then confirm by clicking **Generate key**.
