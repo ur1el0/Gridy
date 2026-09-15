@@ -4,7 +4,7 @@
 
 Gridy is a comprehensive Web and Mobile-Based Barangay Information and Service Management System designed to transition local governance from fragmented, manual processes to a centralized digital ecosystem. It is built to support a hybrid communication approach, bridging digital applications with traditional face-to-face local transactions.
 
-Following the SDLC approach mandated by the capstone panel, the objectives are:
+Following the enterprise software engineering lifecycle, the system objectives are:
 
 - **Analyze:** Current information dissemination and manual queue practices within local government units.
 - **Design:** A scalable, secure client-server architecture including a Web Admin Dashboard (ReactJS) and Resident Mobile App (Flutter).

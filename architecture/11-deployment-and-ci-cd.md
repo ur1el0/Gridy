@@ -12,4 +12,4 @@ Strict separation of `.env` files for development and production [cite: 7]. Prod
 
 ## 3. Mobile Distribution
 *   The Flutter application will be compiled into an Android `.apk` (and optionally an iOS `.ipa`) [cite: 7].
-*   For the capstone defense, direct APK distribution or Firebase App Distribution will be utilized [cite: 7].
+*   For staged LGU field rollouts, direct APK distribution via GitHub Releases or Firebase App Distribution is utilized.
