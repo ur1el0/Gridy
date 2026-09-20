@@ -1,10 +1,3 @@
-
----
-
-### 3. Bulk RBI Census CSV Import
-#### Target File: ...
-
-```markdown
 # Feature Specification: Bulk RBI Census CSV Import
 
 ## 1. Overview

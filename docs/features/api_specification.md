@@ -6,7 +6,9 @@ This document provides detailed request/response payloads and routing instructio
 
 ## 1. Authentication & User Management
 
-### 1.1 Register Account
+### 1.1 Register Account (Dual-Mode)
+
+#### A. Resident Registration
 * **Endpoint:** `POST /api/v1/auth/register/`
 * **Headers:** `Content-Type: application/json`
 * **Request Payload:**
@@ -15,18 +17,27 @@ This document provides detailed request/response payloads and routing instructio
     "username": "juan_resident",
     "password": "SecurePassword123!",
     "email": "juan@example.com",
-    "role": "Resident",
     "full_name": "Juan Dela Cruz",
     "birth_date": "1994-05-12",
-    "contact_number": "09171234567"
+    "contact_number": "09171234567",
+    "barangay_id": 1,
+    "guardian_name": "",
+    "guardian_contact": ""
   }
   ```
-* **Success Response (201 Created):**
+
+#### B. Administrative Personnel Registration
+* **Endpoint:** `POST /api/v1/auth/register/admin/`
+* **Headers:** `Content-Type: application/json`
+* **Request Payload:**
   ```json
   {
-    "username": "juan_resident",
-    "email": "juan@example.com",
-    "role": "Resident"
+    "username": "official_santos",
+    "password": "SecureAdminPassword123!",
+    "email": "official@barangay.gov.ph",
+    "full_name": "Hon. Maria Santos",
+    "position": "Barangay Secretary",
+    "barangay_id": 1
   }
   ```
 
@@ -115,26 +126,44 @@ This document provides detailed request/response payloads and routing instructio
   }
   ```
 
-### 2.2 Validate/Process Document (Official Only)
+### 2.2 Validate/Process Document & Record Treasury Assessment (Official Only)
 * **Endpoint:** `PATCH /api/v1/document-requests/<id>/validate/`
 * **Headers:** `Authorization: Bearer <access_token>` (Admin only)
 * **Request Payload:**
   ```json
   {
-    "status": "APPROVED" 
+    "status": "RELEASED",
+    "or_number": "OR-2026-00412",
+    "fee_amount": "50.00",
+    "admin_notes": "Verified against physical RBI records and treasury booklet."
   }
   ```
-  *(Status options: `APPROVED`, `REJECTED`)*
+  *(Status options: `PROCESSING`, `READY_FOR_PICKUP`, `RELEASED`, `REJECTED`)*
 * **Success Response (200 OK):**
   ```json
   {
     "id": 1,
-    "status": "APPROVED"
+    "user": 2,
+    "document_type": "Barangay Clearance",
+    "purpose": "Employment",
+    "status": "RELEASED",
+    "or_number": "OR-2026-00412",
+    "fee_amount": "50.00",
+    "admin_notes": "Verified against physical RBI records and treasury booklet.",
+    "created_at": "2026-07-29T16:00:00Z"
   }
   ```
-  *(Automatically triggers a push notification to the resident informing them of the status update).*
+  *(Automatically triggers an audit log entry and a push notification to the resident).*
 
-### 2.3 Generate Queue Ticket
+### 2.3 Generate PDF Clearance
+* **Endpoint:** `GET /api/v1/document-requests/<id>/generate-pdf/`
+* **Headers:** `Authorization: Bearer <access_token>`
+* **Success Response (200 OK):**
+  * Binary stream (`Content-Type: application/pdf`)
+  * Header: `Content-Disposition: attachment; filename="document_request_<id>.pdf"`
+  *(Permitted when document status is `PROCESSING`, `READY_FOR_PICKUP`, or `RELEASED`).*
+
+### 2.4 Generate Queue Ticket
 * **Endpoint:** `POST /api/v1/tickets/`
 * **Headers:** `Authorization: Bearer <access_token>`
 * **Success Response (201 Created):**
@@ -147,7 +176,7 @@ This document provides detailed request/response payloads and routing instructio
   }
   ```
 
-### 2.4 Get Live Queue Positions
+### 2.5 Get Live Queue Positions
 * **Endpoint:** `GET /api/v1/tickets/live-status/`
 * **Headers:** `Authorization: Bearer <access_token>`
 * **Success Response (200 OK):**
@@ -159,7 +188,7 @@ This document provides detailed request/response payloads and routing instructio
   }
   ```
 
-### 2.5 Advance Queue to Next Ticket (Official Only)
+### 2.6 Advance Queue to Next Ticket (Official Only)
 * **Endpoint:** `POST /api/v1/tickets/next/`
 * **Headers:** `Authorization: Bearer <access_token>` (Admin only)
 * **Success Response (200 OK):**
@@ -200,19 +229,19 @@ This document provides detailed request/response payloads and routing instructio
 
 ## 4. Notifications & Communications
 
-### 4.1 Register Device token
+### 4.1 Register Device Token
 * **Endpoint:** `POST /api/v1/devices/`
 * **Headers:** `Authorization: Bearer <access_token>`
 * **Request Payload:**
   ```json
   {
-    "registration_id": "ExponentPushToken[fcm-token-string]"
+    "registration_id": "fcm_registration_token_here"
   }
   ```
 * **Success Response (201 Created):**
   ```json
   {
     "id": 1,
-    "registration_id": "ExponentPushToken[fcm-token-string]"
+    "registration_id": "fcm_registration_token_here"
   }
   ```

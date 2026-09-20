@@ -9,7 +9,7 @@ This guide outlines how to generate service credentials and configure the backen
 
 ---
 
-## 🛠️ Step 1: Generate Firebase Service Account Key
+## Step 1: Generate Firebase Service Account Key
 
 1. Open the [Firebase Console](https://console.firebase.google.com/).
 2. Select your Gridy Firebase project.
@@ -20,14 +20,14 @@ This guide outlines how to generate service credentials and configure the backen
 
 ---
 
-## ⚙️ Step 2: Configure Environment Variables
+## Step 2: Configure Environment Variables
 
 1. Save the downloaded `.json` credentials file inside the `backend/` directory or a safe local storage path.
 2. Open your `backend/.env` file.
-3. Reference the relative path to this key under the `FIREBASE_SERVICE_ACCOUNT_JSON` variable:
+3. Reference the relative path to this key under the `FIREBASE_SERVICE_ACCOUNT_JSON_PATH` variable:
 
 ```env
-FIREBASE_SERVICE_ACCOUNT_JSON=firebase-credentials-key.json
+FIREBASE_SERVICE_ACCOUNT_JSON_PATH=firebase-credentials-key.json
 ```
 
 > [!WARNING]
@@ -35,7 +35,7 @@ FIREBASE_SERVICE_ACCOUNT_JSON=firebase-credentials-key.json
 
 ---
 
-## 🔔 Step 3: Device Registration API Flow
+## Step 3: Device Registration API Flow
 
 For residents to receive push alerts on mobile devices, their clients must fetch the native device token (e.g. via Expo, Flutter FCM package) and register it in the backend:
 
@@ -52,7 +52,7 @@ For residents to receive push alerts on mobile devices, their clients must fetch
 
 ---
 
-## 🛡️ Step 4: Graceful Dev Boot (Bypass Firebase)
+## Step 4: Graceful Dev Boot (Bypass Firebase)
 
 For development environments lacking Firebase key files, the system initiates a **Safe SDK Boot**:
 * The server boots cleanly without crashing, displaying a warning message in the console:

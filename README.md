@@ -106,14 +106,17 @@ flutter run
 
 ## Testing and Quality Assurance
 
-The repository includes automated regression test suites covering authorization boundaries, serializers, transactions, and UI workflows:
+The repository includes automated regression test suites covering authorization boundaries, serializers, transactions, and UI workflows across all three architectural tiers:
 
 ```bash
-# Run Backend Test Suite (40 tests)
+# Run Backend Test Suite (40 unit & integration tests)
 ./venv/bin/pytest backend
 
-# Run Frontend Test Suite (10 tests)
+# Run Frontend Test Suite (11 tests across 5 suites)
 npm --prefix frontend test -- --run
+
+# Run Mobile Test Suite (42 unit & widget tests)
+cd mobile && flutter test
 
 # Run Django System Sanity Check
 python backend/manage.py check

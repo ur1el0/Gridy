@@ -4,7 +4,7 @@ Gridy uses **Cloudinary** to store and serve image attachments uploaded by resid
 
 ---
 
-## 🛠️ Step 1: Obtain Cloudinary Credentials
+## Step 1: Obtain Cloudinary Credentials
 
 1. Go to the [Cloudinary website](https://cloudinary.com/) and register or sign in.
 2. Navigate to your **Console Dashboard**.
@@ -15,7 +15,7 @@ Gridy uses **Cloudinary** to store and serve image attachments uploaded by resid
 
 ---
 
-## ⚙️ Step 2: Configure Environment Variables
+## Step 2: Configure Environment Variables
 
 1. Open your `backend/.env` file.
 2. Paste the retrieved credentials into the following environment fields:
@@ -28,7 +28,7 @@ CLOUDINARY_API_SECRET=your_api_secret
 
 ---
 
-## 📸 Step 3: Media Upload Flow
+## Step 3: Media Upload Flow
 
 When a resident submits an incident report via the mobile or web application:
 
