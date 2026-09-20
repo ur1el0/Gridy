@@ -35,3 +35,43 @@ COPY --from=builder /app/dist /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/conf.d/default.conf
 EXPOSE 80
 CMD ["nginx", "-g", "daemon off;"]
+```
+
+### Benefits:
+* **Attack Surface Reduction**: The final production image contains zero Node.js runtimes, package managers (`npm`), or dev dependencies.
+* **Minimal Footprint**: The image size drops from over 800MB (full Node build environment) to approximately 25MB (Nginx Alpine plus compiled static assets).
+
+---
+
+## 3. SPA Routing & Fallback (`try_files`)
+
+In a Single Page Application (SPA), React Router handles navigation entirely client-side using the HTML5 History API (`pushState`).
+
+If a barangay official navigates to `https://gridy.app/admin/clearances` and refreshes their browser:
+1. The browser requests `/admin/clearances` directly from Nginx.
+2. Because `/admin/clearances` does not exist as a physical file on the server, Nginx would return a `404 Not Found` by default.
+3. To resolve this, Nginx is configured with the `try_files` fallback directive in `frontend/nginx.conf`:
+
+```nginx
+location / {
+    try_files $uri $uri/ /index.html;
+}
+```
+
+This directive instructs Nginx:
+* First, look for a static file matching the URI (`$uri`).
+* Second, look for a directory matching the URI (`$uri/`).
+* Third, if neither exists, return `/index.html` with an HTTP 200 status, allowing React Router to mount and render the intended view.
+
+---
+
+## 4. Asset Compression (Gzip)
+
+To ensure rapid load times even under low-bandwidth rural government connectivity, Nginx is configured with automatic Gzip compression:
+
+```nginx
+gzip on;
+gzip_types text/plain text/css application/json application/javascript text/xml application/xml application/xml+rss text/javascript;
+```
+
+This compresses text, CSS, JavaScript, and JSON payloads on the fly by 60% to 75%, substantially lowering bandwidth consumption.

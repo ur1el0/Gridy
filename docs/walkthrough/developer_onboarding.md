@@ -48,9 +48,12 @@ pip install -r backend/requirements.txt
 
 ## Environment Variables Configuration
 
-Create an environment configuration file `.env` inside the `backend/` directory.
+Create an environment configuration file `.env` inside the `backend/` directory by copying the provided template:
+```bash
+cp backend/.env.example backend/.env
+```
 
-Add the following environment variables to the file:
+Ensure the following core variables are configured:
 ```env
 # General Settings
 SECRET_KEY=your_secret_key_here
@@ -74,18 +77,22 @@ FIREBASE_SERVICE_ACCOUNT_JSON_PATH=firebase-credentials-key.json
 
 ---
 
-## Database Migrations
+## Database Migrations & Initial Seeding
 
-Apply database schema changes and prepare the local SQLite database:
+Apply database schema changes to prepare the local SQLite database:
 ```bash
-cd backend
-python manage.py makemigrations
-python manage.py migrate
+python backend/manage.py makemigrations
+python backend/manage.py migrate
+```
+
+Seed the default barangay administrative entities, fee schedules, and initial fixtures:
+```bash
+python backend/manage.py seed_barangays
 ```
 
 Create a superuser account to access the Django administration console:
 ```bash
-python manage.py createsuperuser
+python backend/manage.py createsuperuser
 ```
 
 ---
@@ -94,7 +101,7 @@ python manage.py createsuperuser
 
 Start the local development server:
 ```bash
-python manage.py runserver
+python backend/manage.py runserver
 ```
 The server will start running at `http://127.0.0.1:8000/`.
 
@@ -102,8 +109,14 @@ The server will start running at `http://127.0.0.1:8000/`.
 
 ## Verification and Testing
 
-Execute the automated test suite to confirm everything compiles and operates correctly:
-```bash
-python manage.py test
-```
-This runs tests across authentication, service requests, reporting, and communication modules.
+1. **System Health Check:**
+   Verify that all installed apps, database drivers, and models compile cleanly:
+   ```bash
+   python backend/manage.py check
+   ```
+
+2. **Automated Test Suite (Pytest):**
+   Run the comprehensive test suite (40 unit and integration tests covering authentication, RBAC, treasury audits, and reporting):
+   ```bash
+   pytest backend
+   ```

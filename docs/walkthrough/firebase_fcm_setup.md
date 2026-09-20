@@ -24,10 +24,10 @@ This guide outlines how to generate service credentials and configure the backen
 
 1. Save the downloaded `.json` credentials file inside the `backend/` directory or a safe local storage path.
 2. Open your `backend/.env` file.
-3. Reference the relative path to this key under the `FIREBASE_SERVICE_ACCOUNT_JSON` variable:
+3. Reference the relative path to this key under the `FIREBASE_SERVICE_ACCOUNT_JSON_PATH` variable:
 
 ```env
-FIREBASE_SERVICE_ACCOUNT_JSON=firebase-credentials-key.json
+FIREBASE_SERVICE_ACCOUNT_JSON_PATH=firebase-credentials-key.json
 ```
 
 > [!WARNING]
