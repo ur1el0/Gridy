@@ -52,7 +52,16 @@ class Resident(models.Model):
     purok = models.CharField(max_length=100, null=True, blank=True)
     is_verified = models.BooleanField(default=False)
     guardian = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='dependents')
-    
+
+
+    # Identification & Proof of Residency
+    philsys_id_number = models.CharField(max_length=50, blank=True, null=True, help_text="PhilSys National ID Card Number")
+    philsys_id_photo = models.ImageField(upload_to='resident_ids/', blank=True, null=True, help_text="Photo of National / PhilSys ID")
+    secondary_id_type = models.CharField(max_length=50, blank=True, null=True, help_text="Optional secondary ID type (e.g. Passport, Driver's License, UMID, Postal ID)")
+    secondary_id_photo = models.ImageField(upload_to='resident_ids/', blank=True, null=True, help_text="Optional secondary ID photo")
+    utility_billing_type = models.CharField(max_length=50, blank=True, null=True, help_text="Optional utility billing proof type (e.g. Electric/Meralco, Water, Internet)")
+    utility_billing_photo = models.ImageField(upload_to='resident_billings/', blank=True, null=True, help_text="Optional proof of billing photo")
+
 
     def __str__(self):
         return f'{self.full_name}'
