@@ -13,8 +13,6 @@ import { DocumentRequests } from "./pages/services/DocumentRequests";
 import { IssueReports } from "./pages/services/IssueReports";
 import { Communications } from "./pages/services/Communications";
 import { LiveQueue } from "./pages/services/LiveQueue";
-import ResidentVerification from "./pages/community/ResidentVerification";
-import { ResidentsManagement } from "./pages/community/ResidentsManagement";
 import { AdminProfile } from "./pages/admin/AdminProfile";
 import { Settings } from "./pages/admin/Settings";
 import { Notifications } from "./pages/community/Notifications";
@@ -64,9 +62,8 @@ export function App() {
                                 <Route path="/notifications" element={<Notifications />} />
                                 <Route path="/faqs" element={<Faqs />} />
                                 <Route path="/communications" element={<Communications />} />
-                                <Route path="/residents" element={<ResidentsManagement />} />
-                                <Route path="/verifications" element={<Navigate to="/residents?tab=verifications" replace />} />
-                                <Route path="/verifications" element={<ResidentVerification />} />
+                                <Route path="/residents" element={<ResidentsHub />} />
+                                <Route path="/verifications" element={<Navigate to="/residents?tab=verifications" replace />} />    
                                 <Route path="/reports" element={<IssueReports />} />
                                 <Route path="/profile" element={<AdminProfile />} />
                             </Route>
