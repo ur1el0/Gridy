@@ -1,8 +1,9 @@
-from django.test import TestCase
+
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
 from gridy_auth.models import User
+from gridy_audit.models import AuditLog
 from .models import IssueReport
 
 # Create your tests here.
@@ -70,4 +71,40 @@ class IssueReportAPITests(APITestCase):
         }
         response = self.client.post(self.url, payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
-    
+
+    def test_official_can_delete_issue_report_with_audit_log(self):
+        official = User.objects.create_user(
+            username="captain_delete_test",
+            password="SecurePassword123!",
+            email="captain_del@example.com",
+            role=User.Role.ADMIN
+        )
+        report = IssueReport.objects.create(
+            reporter=self.user,
+            title="Spam Report",
+            description="Fake text",
+            location="Purok 1"
+        )
+        self.client.force_login(official)
+        detail_url = reverse('issue-report-detail', args=[report.id])
+        response = self.client.delete(detail_url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(IssueReport.objects.filter(id=report.id).exists())
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action_type=AuditLog.ActionType.REPORT_ACTION,
+                action_by=official
+            ).exists()
+        )
+
+    def test_resident_cannot_delete_issue_report(self):
+        report = IssueReport.objects.create(
+            reporter=self.user,
+            title="Pothole",
+            description="Big pothole",
+            location="Purok 2"
+        )
+        detail_url = reverse('issue-report-detail', args=[report.id])
+        response = self.client.delete(detail_url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue(IssueReport.objects.filter(id=report.id).exists())
