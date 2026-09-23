@@ -5,6 +5,7 @@ import { CitizenDocuments } from './CitizenDocuments';
 import { CitizenLayout } from '../../components/layout/CitizenLayout';
 import { AuthProvider } from '../../context/AuthContext';
 import { axiosPrivate } from '../../api/axios';
+import { CitizenQueue } from './CitizenQueue';
 
 // Mock axiosPrivate
 vi.mock('../../api/axios', () => ({
@@ -82,7 +83,7 @@ describe('Resident Portal Components', () => {
             expect(screen.getByRole('button', { name: /download pdf/i })).toBeInTheDocument();
         });
     });
-        it('renders cancel button for pending clearance and cancels upon confirmation', async () => {
+    it('renders cancel button for pending clearance and cancels upon confirmation', async () => {
         const mockRequests = [
             {
                 id: 202,
@@ -116,6 +117,55 @@ describe('Resident Portal Components', () => {
         await waitFor(() => {
             expect(axiosPrivate.delete).toHaveBeenCalledWith('/document-requests/202/');
             expect(screen.queryByText('Certificate of Residency')).not.toBeInTheDocument();
+        });
+    });
+    it('renders active waiting ticket and leaves queue upon cancellation', async () => {
+        vi.mocked(axiosPrivate.get).mockImplementation((url: string) => {
+            if (url === '/tickets/live-status/') {
+                return Promise.resolve({
+                    data: { current_ticket: 'T005', total_waiting: 3, avg_wait_mins: 6 }
+                });
+            }
+            if (url === '/tickets/') {
+                return Promise.resolve({
+                    data: {
+                        results: [
+                            {
+                                id: 77,
+                                ticket_number: 'T008',
+                                service_type: 'Barangay Clearance',
+                                status: 'WAITING',
+                                is_priority: false,
+                                created_at: '2026-09-06T10:30:00Z',
+                            }
+                        ]
+                    }
+                });
+            }
+            return Promise.reject(new Error(`Unhandled GET url: ${url}`));
+        });
+
+        vi.mocked(axiosPrivate.post).mockResolvedValueOnce({ data: { detail: 'Queue ticket cancelled successfully.' } });
+        vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+        render(
+            <BrowserRouter>
+                <AuthProvider>
+                    <CitizenQueue />
+                </AuthProvider>
+            </BrowserRouter>
+        );
+
+        await waitFor(() => {
+            expect(screen.getByText('T008')).toBeInTheDocument();
+            expect(screen.getByText('Waiting for your turn')).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: /leave queue and cancel ticket/i })).toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getByRole('button', { name: /leave queue and cancel ticket/i }));
+
+        await waitFor(() => {
+            expect(axiosPrivate.post).toHaveBeenCalledWith('/tickets/77/cancel/');
         });
     });
 });
