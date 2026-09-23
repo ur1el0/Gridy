@@ -93,10 +93,10 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
 class CustomTokenRefreshView(TokenRefreshView):
     def post(self, request, *args, **kwargs):
-        # Retrieve refresh token from browser cookies
-        refresh_token_str = request.COOKIES.get('refresh_token')
+        # Retrieve refresh token from browser cookies or request payload
+        refresh_token_str = request.COOKIES.get('refresh_token') or request.data.get('refresh')
         if not refresh_token_str:
-            return Response({"detail": "Session cookie missing."}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response({"detail": "Session cookie or refresh token missing."}, status=status.HTTP_401_UNAUTHORIZED)
 
         # Inject it into serializer data so SimpleJWT can validate it
         serializer = self.get_serializer(data={'refresh': refresh_token_str})
