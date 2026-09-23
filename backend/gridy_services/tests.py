@@ -5,7 +5,7 @@ from rest_framework.test import APITestCase
 from gridy_auth.models import User, Resident
 from gridy_services.models import DocumentRequest, QueueTicket
 from gridy_audit.models import AuditLog
-from unittest.mock import patch
+from gridy_auth.models import User, Resident, Barangay
 
 # Create your tests here.
 
@@ -278,7 +278,22 @@ class ServiceAPITests(APITestCase):
         response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
         self.assertTrue(DocumentRequest.objects.filter(id=doc.id).exists())
-        
+    
+    def test_queue_ticket_sequencing_isolated_by_barangay(self):
+        barangay_a = Barangay.objects.create(name="Barangay A")
+        barangay_b = Barangay.objects.create(name="Barangay B")
+
+        # First ticket in Barangay A should start at T001
+        ticket_a1 = QueueTicket.objects.create(barangay=barangay_a, service_type="Clearance")
+        self.assertEqual(ticket_a1.ticket_number, "T001")
+
+        # First ticket in Barangay B should also start at T001 independently
+        ticket_b1 = QueueTicket.objects.create(barangay=barangay_b, service_type="Clearance")
+        self.assertEqual(ticket_b1.ticket_number, "T001")
+
+        # Second ticket in Barangay A increments to T002
+        ticket_a2 = QueueTicket.objects.create(barangay=barangay_a, service_type="Clearance")
+        self.assertEqual(ticket_a2.ticket_number, "T002")
 
 class SystemHealthAPITests(APITestCase):
     def test_health_check_endpoint_success(self):
