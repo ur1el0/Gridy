@@ -107,6 +107,7 @@ class RegisterSerializer(serializers.ModelSerializer):
 
 
 class AdminRegisterSerializer(serializers.Serializer):
+    username = serializers.CharField(max_length=150, write_only=True, required=False, allow_blank=True)
     full_name = serializers.CharField(max_length=255, write_only=True)
     barangay_id = serializers.IntegerField(required=False, allow_null=True, write_only=True)
     email = serializers.EmailField(write_only=True)
@@ -134,8 +135,12 @@ class AdminRegisterSerializer(serializers.Serializer):
         if provided_passkey != settings.ADMIN_REGISTRATION_PASSKEY:
             raise serializers.ValidationError({"passkey": "Invalid administrative registration passkey."})
         
+        username = attrs.get('username')
+        if username and User.objects.filter(username__iexact=username.strip()).exists():
+            raise serializers.ValidationError({"username": "An account with this username already exists."})
+
         email = attrs.get('email')
-        if email and User.objects.filter(email__iexact=email).exists():
+        if email and User.objects.filter(email__iexact=email.strip()).exists():
             raise serializers.ValidationError({"email": "An account with this email already exists."})
 
         barangay_id = attrs.get('barangay_id')
@@ -146,6 +151,7 @@ class AdminRegisterSerializer(serializers.Serializer):
         return attrs
 
     def create(self, validated_data):
+        raw_username = validated_data.get('username')
         full_name = validated_data['full_name'].strip()
         email = validated_data['email'].strip().lower()
         password = validated_data['password']
@@ -156,13 +162,16 @@ class AdminRegisterSerializer(serializers.Serializer):
         first_name = name_parts[0]
         last_name = name_parts[1] if len(name_parts) > 1 else ''
 
-        # Generate unique username derived from email or name
-        base_username = email.split('@')[0]
-        username = base_username
-        counter = 1
-        while User.objects.filter(username=username).exists():
-            username = f"{base_username}{counter}"
-            counter += 1
+        # Determine username: use provided username or auto-generate fallback from email
+        if raw_username and raw_username.strip():
+            username = raw_username.strip()
+        else:
+            base_username = email.split('@')[0]
+            username = base_username
+            counter = 1
+            while User.objects.filter(username=username).exists():
+                username = f"{base_username}{counter}"
+                counter += 1
 
         barangay = None
         if barangay_id:
@@ -178,7 +187,7 @@ class AdminRegisterSerializer(serializers.Serializer):
                 role=User.Role.ADMIN,
                 barangay=barangay,
                 is_staff=True,
-                is_active=False
+                is_active=True
             )
 
         return user
