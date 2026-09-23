@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { axiosPublic } from '../../api/axios';
-import { Shield, FileCheck2, Clock, Users, KeyRound } from 'lucide-react';
-
+// Updated line 4:
+import { Shield, FileCheck2, Clock, Users, KeyRound, Upload, IdCard, X } from 'lucide-react';
 export const Register: React.FC = () => {
     const [isAdminMode, setIsAdminMode] = useState(false);
 
@@ -17,7 +17,14 @@ export const Register: React.FC = () => {
     const [birthDate, setBirthDate] = useState('');
     const [contactNumber, setContactNumber] = useState('');
     const [guardianId, setGuardianId] = useState('');
-    const [voterStatus, setVoterStatus] = useState(false);
+
+    // Verification proofs state
+    const [philsysIdNumber, setPhilsysIdNumber] = useState('');
+    const [philsysPhoto, setPhilsysPhoto] = useState<File | null>(null);
+    const [utilityBillingType, setUtilityBillingType] = useState('Electric Bill');
+    const [utilityBillingPhoto, setUtilityBillingPhoto] = useState<File | null>(null);
+    const [secondaryIdType, setSecondaryIdType] = useState('');
+    const [secondaryIdPhoto, setSecondaryIdPhoto] = useState<File | null>(null);
 
     // Admin-specific fields
     const [barangayId, setBarangayId] = useState('');
@@ -80,30 +87,55 @@ export const Register: React.FC = () => {
                 await axiosPublic.post('/auth/register/admin/', payload);
                 setSuccess('Official account registered successfully! Redirecting to login...');
             } else {
-                // Resident Citizen Registration Pipeline
-                const payload: Record<string, any> = {
-                    full_name: fullName.trim(),
-                    username: username.trim(),
-                    email: email.trim().toLowerCase(),
-                    password,
-                    birth_date: birthDate,
-                    voter_status: voterStatus,
-                };
+                // Resident Citizen Registration Pipeline (Multipart FormData)
+                const formData = new FormData();
+                formData.append('full_name', fullName.trim());
+                formData.append('username', username.trim());
+                formData.append('email', email.trim().toLowerCase());
+                formData.append('password', password);
+                formData.append('birth_date', birthDate);
+                formData.append('voter_status', 'false');
 
                 if (contactNumber.trim()) {
-                    payload.contact_number = contactNumber.trim();
+                    formData.append('contact_number', contactNumber.trim());
                 }
                 if (guardianId.trim()) {
-                    payload.guardian_id = guardianId.trim();
+                    formData.append('guardian_id', guardianId.trim());
                 }
                 if (barangayId.trim()) {
                     const parsedId = parseInt(barangayId.trim(), 10);
                     if (!isNaN(parsedId)) {
-                        payload.barangay_id = parsedId;
+                        formData.append('barangay_id', String(parsedId));
                     }
                 }
 
-                await axiosPublic.post('/auth/register/', payload);
+                // PhilSys Identity
+                if (philsysIdNumber.trim()) {
+                    formData.append('philsys_id_number', philsysIdNumber.trim());
+                }
+                if (philsysPhoto) {
+                    formData.append('philsys_id_photo', philsysPhoto);
+                }
+
+                // Utility Proof of Residency
+                if (utilityBillingType.trim()) {
+                    formData.append('utility_billing_type', utilityBillingType.trim());
+                }
+                if (utilityBillingPhoto) {
+                    formData.append('utility_billing_photo', utilityBillingPhoto);
+                }
+
+                // Secondary Valid ID (Optional)
+                if (secondaryIdType.trim()) {
+                    formData.append('secondary_id_type', secondaryIdType.trim());
+                }
+                if (secondaryIdPhoto) {
+                    formData.append('secondary_id_photo', secondaryIdPhoto);
+                }
+
+                await axiosPublic.post('/auth/register/', formData, {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                });
                 setSuccess('Resident account created successfully! Redirecting to login...');
             }
 
@@ -374,31 +406,180 @@ export const Register: React.FC = () => {
                             </div>
                         )}
 
-                        {/* Resident Mode: Birth Date & Voter Status */}
+                        {/* Resident Mode: Date of Birth */}
                         {!isAdminMode && (
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-[11px] font-bold tracking-wider text-slate-500 uppercase mb-1.5">
-                                        DATE OF BIRTH
-                                    </label>
-                                    <input
-                                        type="date"
-                                        required
-                                        value={birthDate}
-                                        onChange={(e) => setBirthDate(e.target.value)}
-                                        className="w-full px-3 py-3 bg-[#EEF2F6] focus:bg-white border border-transparent focus:border-[#0284C7] rounded-xl text-sm font-medium text-slate-900 outline-none transition-all"
-                                    />
+                            <div>
+                                <label className="block text-[11px] font-bold tracking-wider text-slate-500 uppercase mb-1.5">
+                                    DATE OF BIRTH
+                                </label>
+                                <input
+                                    type="date"
+                                    required
+                                    value={birthDate}
+                                    onChange={(e) => setBirthDate(e.target.value)}
+                                    className="w-full px-4 py-3 bg-[#EEF2F6] focus:bg-white border border-transparent focus:border-[#0284C7] rounded-xl text-sm font-medium text-slate-900 outline-none transition-all"
+                                />
+                            </div>
+                        )}
+
+                        {/* Resident Mode: Identity & Residency Verification Proofs */}
+                        {!isAdminMode && (
+                            <div className="space-y-4 pt-2 border-t border-slate-200">
+                                <div className="flex items-center gap-2">
+                                    <IdCard className="w-4 h-4 text-[#0284C7]" />
+                                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
+                                        Identity & Residency Verification
+                                    </h4>
                                 </div>
-                                <div className="flex flex-col justify-center pt-2 sm:pt-0">
-                                    <label className="flex items-center gap-2.5 cursor-pointer mt-4">
+                                <p className="text-[11px] text-slate-500 leading-relaxed -mt-2">
+                                    Provide your Philippine National ID (PhilSys) and a household utility bill to verify local residency.
+                                </p>
+
+                                {/* 1. PhilSys ID Number & Photo */}
+                                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
+                                    <div>
+                                        <label className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1">
+                                            PHILSYS NATIONAL ID NUMBER
+                                        </label>
                                         <input
-                                            type="checkbox"
-                                            checked={voterStatus}
-                                            onChange={(e) => setVoterStatus(e.target.checked)}
-                                            className="w-4 h-4 text-[#0284C7] rounded focus:ring-0 border-slate-300 cursor-pointer"
+                                            type="text"
+                                            value={philsysIdNumber}
+                                            onChange={(e) => setPhilsysIdNumber(e.target.value)}
+                                            placeholder="e.g. 1234-5678-9012-3456"
+                                            className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-[#0284C7] rounded-lg text-xs font-mono text-slate-900 outline-none transition-all"
                                         />
-                                        <span className="text-xs font-semibold text-slate-700">Registered Voter</span>
-                                    </label>
+                                    </div>
+                                    <div>
+                                        <label className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1">
+                                            UPLOAD PHILSYS ID CARD PHOTO
+                                        </label>
+                                        <div className="flex items-center gap-2">
+                                            <label className="flex-1 cursor-pointer flex items-center justify-center gap-2 px-3 py-2 bg-white border border-dashed border-slate-300 hover:border-[#0284C7] rounded-lg text-xs text-slate-600 hover:text-[#0284C7] transition-all">
+                                                <Upload className="w-3.5 h-3.5" />
+                                                <span className="truncate">{philsysPhoto ? philsysPhoto.name : 'Choose ID photo...'}</span>
+                                                <input 
+                                                    type="file" 
+                                                    accept="image/*" 
+                                                    className="hidden" 
+                                                    onChange={(e) => setPhilsysPhoto(e.target.files?.[0] || null)} 
+                                                />
+                                            </label>
+                                            {philsysPhoto && (
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setPhilsysPhoto(null)}
+                                                    className="p-2 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
+                                                    title="Remove attachment"
+                                                >
+                                                    <X className="w-3.5 h-3.5" />
+                                                </button>
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 2. Utility Billing Residency Proof */}
+                                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <div>
+                                            <label className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1">
+                                                BILLING STATEMENT TYPE
+                                            </label>
+                                            <select
+                                                value={utilityBillingType}
+                                                onChange={(e) => setUtilityBillingType(e.target.value)}
+                                                className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-[#0284C7] rounded-lg text-xs text-slate-800 outline-none transition-all cursor-pointer"
+                                            >
+                                                <option value="Electric Bill">Electric Bill (Meralco/Quezelco)</option>
+                                                <option value="Water Bill">Water Bill (PrimeWater/Maynilad)</option>
+                                                <option value="Internet / Telco Bill">Internet / Telco Bill</option>
+                                                <option value="Lease Agreement">Residential Lease Contract</option>
+                                                <option value="Other Utility">Other Billing Statement</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1">
+                                                UPLOAD BILLING RECEIPT
+                                            </label>
+                                            <div className="flex items-center gap-2">
+                                                <label className="flex-1 cursor-pointer flex items-center justify-center gap-2 px-3 py-2 bg-white border border-dashed border-slate-300 hover:border-[#0284C7] rounded-lg text-xs text-slate-600 hover:text-[#0284C7] transition-all">
+                                                    <Upload className="w-3.5 h-3.5" />
+                                                    <span className="truncate">{utilityBillingPhoto ? utilityBillingPhoto.name : 'Choose bill photo...'}</span>
+                                                    <input 
+                                                        type="file" 
+                                                        accept="image/*" 
+                                                        className="hidden" 
+                                                        onChange={(e) => setUtilityBillingPhoto(e.target.files?.[0] || null)} 
+                                                    />
+                                                </label>
+                                                {utilityBillingPhoto && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setUtilityBillingPhoto(null)}
+                                                        className="p-2 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
+                                                        title="Remove attachment"
+                                                    >
+                                                        <X className="w-3.5 h-3.5" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* 3. Optional Secondary Valid ID */}
+                                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                        <div>
+                                            <label className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1">
+                                                SECONDARY VALID ID (OPTIONAL)
+                                            </label>
+                                            <select
+                                                value={secondaryIdType}
+                                                onChange={(e) => setSecondaryIdType(e.target.value)}
+                                                className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-[#0284C7] rounded-lg text-xs text-slate-800 outline-none transition-all cursor-pointer"
+                                            >
+                                                <option value="">None / Not Applicable</option>
+                                                <option value="Passport">Philippine Passport</option>
+                                                <option value="Driver's License">Driver's License (LTO)</option>
+                                                <option value="UMID">UMID (SSS / GSIS)</option>
+                                                <option value="Postal ID">Postal ID (PHLPost)</option>
+                                                <option value="PRC ID">PRC ID</option>
+                                                <option value="Senior / PWD ID">Senior Citizen / PWD ID</option>
+                                                <option value="Student ID">Student ID</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1">
+                                                UPLOAD SECONDARY ID
+                                            </label>
+                                            <div className="flex items-center gap-2">
+                                                <label className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white border border-dashed rounded-lg text-xs transition-all ${
+                                                    secondaryIdType ? 'cursor-pointer border-slate-300 hover:border-[#0284C7] text-slate-600 hover:text-[#0284C7]' : 'cursor-not-allowed border-slate-200 text-slate-300'
+                                                }`}>
+                                                    <Upload className="w-3.5 h-3.5" />
+                                                    <span className="truncate">{secondaryIdPhoto ? secondaryIdPhoto.name : 'Choose secondary ID...'}</span>
+                                                    <input 
+                                                        type="file" 
+                                                        accept="image/*" 
+                                                        disabled={!secondaryIdType}
+                                                        className="hidden" 
+                                                        onChange={(e) => setSecondaryIdPhoto(e.target.files?.[0] || null)} 
+                                                    />
+                                                </label>
+                                                {secondaryIdPhoto && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setSecondaryIdPhoto(null)}
+                                                        className="p-2 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
+                                                        title="Remove attachment"
+                                                    >
+                                                        <X className="w-3.5 h-3.5" />
+                                                    </button>
+                                                )}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
                         )}
