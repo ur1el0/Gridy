@@ -4,6 +4,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from gridy_auth.models import User, Resident, Barangay
 from datetime import date
+from django.conf import settings
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -13,10 +14,21 @@ class RegisterSerializer(serializers.ModelSerializer):
     contact_number = serializers.CharField(write_only=True, required=False, allow_blank=True)
     barangay_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
     guardian_id = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    philsys_id_number = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    philsys_id_photo = serializers.ImageField(write_only=True, required=False, allow_null=True)
+    secondary_id_type = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    secondary_id_photo = serializers.ImageField(write_only=True, required=False, allow_null=True)
+    utility_billing_type = serializers.CharField(write_only=True, required=False, allow_blank=True)
+    utility_billing_photo = serializers.ImageField(write_only=True, required=False, allow_null=True)
 
     class Meta:
         model = User
-        fields = ['username', 'email', 'password', 'full_name', 'birth_date', 'voter_status', 'contact_number', 'barangay_id', 'guardian_id']
+        fields = [
+            'username', 'email', 'password', 'full_name', 'birth_date', 'voter_status', 
+            'contact_number', 'barangay_id', 'guardian_id',
+            'philsys_id_number', 'philsys_id_photo', 'secondary_id_type', 
+            'secondary_id_photo', 'utility_billing_type', 'utility_billing_photo'
+        ]
 
     # 1. This validates JUST the password
     def validate_password(self, value):
@@ -67,8 +79,14 @@ class RegisterSerializer(serializers.ModelSerializer):
             'voter_status': validated_data.pop('voter_status', False),
             'contact_number': validated_data.pop('contact_number', ''),
             'purok': validated_data.pop('purok', None),
+            'philsys_id_number': validated_data.pop('philsys_id_number', None),
+            'philsys_id_photo': validated_data.pop('philsys_id_photo', None),
+            'secondary_id_type': validated_data.pop('secondary_id_type', None),
+            'secondary_id_photo': validated_data.pop('secondary_id_photo', None),
+            'utility_billing_type': validated_data.pop('utility_billing_type', None),
+            'utility_billing_photo': validated_data.pop('utility_billing_photo', None),
         }
-
+        
         # Extract the resolved guardian Resident objects
         guardian_resident = validated_data.pop('guardian_resident', None)
         validated_data.pop('guardian_id', None)
@@ -95,6 +113,8 @@ class AdminRegisterSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
     confirm_password = serializers.CharField(write_only=True)
     affirmation = serializers.BooleanField(write_only=True, default=False)
+    passkey = serializers.CharField(write_only=True, required=True)
+
 
     def validate_password(self, value):
         try:
@@ -109,7 +129,11 @@ class AdminRegisterSerializer(serializers.Serializer):
 
         if not attrs.get('affirmation'):
             raise serializers.ValidationError({"affirmation": "You must affirm authorized status to register."})
-
+        provided_passkey = attrs.get('passkey')
+            
+        if provided_passkey != settings.ADMIN_REGISTRATION_PASSKEY:
+            raise serializers.ValidationError({"passkey": "Invalid administrative registration passkey."})
+        
         email = attrs.get('email')
         if email and User.objects.filter(email__iexact=email).exists():
             raise serializers.ValidationError({"email": "An account with this email already exists."})

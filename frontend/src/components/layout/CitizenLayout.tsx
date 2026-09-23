@@ -47,7 +47,7 @@ export const CitizenLayout: React.FC = () => {
                                         Gridy
                                     </span>
                                     <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#0284C7] text-white">
-                                        Citizen Portal
+                                        Resident Portal
                                     </span>
                                 </div>
                                 <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium mt-1">

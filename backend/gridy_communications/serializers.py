@@ -13,6 +13,13 @@ class AnnouncementSerializer(serializers.ModelSerializer):
         fields = '__all__'
         read_only_fields = ['created_by']
 
+    def validate_image(self, value):
+        if value:
+            max_size = 5 * 1024 * 1024 # 5 Megabytes
+            if value.size > max_size:
+                raise serializers.ValidationError("Image file size cannot exceed 5MB. Please compress your image.")
+            return value
+
 
 class ActivityScheduleSerializer(serializers.ModelSerializer):
     class Meta:

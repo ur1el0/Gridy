@@ -3,6 +3,7 @@ class AnnouncementModel {
   final int id;
   final String title;
   final String content;
+  final String? image;
   final bool isPinned;
   final int? createdBy;
   final DateTime? createdAt;
@@ -12,6 +13,7 @@ class AnnouncementModel {
     required this.id,
     required this.title,
     required this.content,
+    this.image,
     this.isPinned = false,
     this.createdBy,
     this.createdAt,
@@ -23,6 +25,7 @@ class AnnouncementModel {
       id: json['id'] as int? ?? 0,
       title: json['title'] as String? ?? '',
       content: json['content'] as String? ?? '',
+      image: json['image'] as String?,
       isPinned: json['is_pinned'] as bool? ?? false,
       createdBy: json['created_by'] as int?,
       createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at'].toString()) : null,
@@ -35,6 +38,7 @@ class AnnouncementModel {
       'id': id,
       'title': title,
       'content': content,
+      'image': image,
       'is_pinned': isPinned,
       'created_by': createdBy,
       'created_at': createdAt?.toIso8601String(),

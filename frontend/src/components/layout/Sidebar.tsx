@@ -11,7 +11,6 @@ import {
     FileText, 
     Radio, 
     Users, 
-    UserCheck,
     Building,
 } from 'lucide-react';
 import mainLogoSvg from '../../assets/MainLogo.svg';
@@ -28,7 +27,6 @@ const navItems: NavItem[] = [
     { name: 'Documents', path: '/documents', icon: FileText },
     { name: 'Communications', path: '/communications', icon: Radio },
     { name: 'Residents', path: '/residents', icon: Users },
-    { name: 'Verifications', path: '/verifications', icon: UserCheck},
     { name: 'Barangay Profile', path: '/barangay-settings', icon: Building},
 ];
 

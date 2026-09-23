@@ -11,7 +11,12 @@ class ResidentSerializer(serializers.ModelSerializer):
     email = serializers.CharField(source='user.email', read_only=True, default='')
     class Meta:
         model = Resident
-        fields = ['id', 'username', 'email', 'full_name', 'birth_date', 'voter_status', 'contact_number', 'purok', 'is_verified', 'guardian']
+        fields = [
+            'id', 'username', 'email', 'full_name', 'birth_date', 'voter_status', 
+            'contact_number', 'purok', 'is_verified', 'guardian', 
+            'philsys_id_number', 'philsys_id_photo', 'secondary_id_type',
+            'secondary_id_photo', 'utility_billing_type', 'utility_billing_photo'
+        ]
 
 class UserSerializer(serializers.ModelSerializer):
     profile = ResidentSerializer(required=False)

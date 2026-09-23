@@ -18,7 +18,7 @@ describe('Login Component', () => {
         // 2. Query the virtual screen for our elements
         const usernameInput = screen.getByPlaceholderText('Enter your username')
         const passwordInput = screen.getByPlaceholderText('........')
-        const loginButton = screen.getByRole('button', { name: /login to citizen portal/i })
+        const loginButton = screen.getByRole('button', { name: /login to resident portal/i })
 
         // 3. Assert that they actually exist in the DOM
         expect(usernameInput).toBeInTheDocument()

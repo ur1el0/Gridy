@@ -7,6 +7,7 @@ from django.conf import settings
 class Announcement(models.Model):
     title = models.CharField(max_length=255)
     content = models.TextField()
+    image = models.ImageField(upload_to='announcements/', blank=True, null=True)
     is_pinned = models.BooleanField(default=False)
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='announcements')
     created_at = models.DateTimeField(auto_now_add=True)

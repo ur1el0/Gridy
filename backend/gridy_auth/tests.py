@@ -4,6 +4,7 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 from gridy_auth.models import User, Resident, Barangay
 from django.core.management import call_command
+from django.conf import settings
 
 # Create your tests here.
 
@@ -29,6 +30,7 @@ class AuthAPITests(APITestCase):
             "password": "SecurePassword123!",
             "confirm_password": "SecurePassword123!",
             "affirmation": True,
+            "passkey": settings.ADMIN_REGISTRATION_PASSKEY 
         }
         response = self.client.post(url, payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
@@ -48,6 +50,7 @@ class AuthAPITests(APITestCase):
             "password": "SecurePassword123!",
             "confirm_password": "DifferentPassword123!",
             "affirmation": True,
+            "passkey": settings.ADMIN_REGISTRATION_PASSKEY
         }
         response = self.client.post(url, payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -61,6 +64,7 @@ class AuthAPITests(APITestCase):
             "password": "SecurePassword123!",
             "confirm_password": "SecurePassword123!",
             "affirmation": False,
+            "passkey": settings.ADMIN_REGISTRATION_PASSKEY
         }
         response = self.client.post(url, payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -80,6 +84,7 @@ class AuthAPITests(APITestCase):
             "password": "SecurePassword123!",
             "confirm_password": "SecurePassword123!",
             "affirmation": True,
+            "passkey": settings.ADMIN_REGISTRATION_PASSKEY
         }
         response = self.client.post(url, payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -94,6 +99,7 @@ class AuthAPITests(APITestCase):
             "password": "SecurePassword123!",
             "confirm_password": "SecurePassword123!",
             "affirmation": True,
+            "passkey": settings.ADMIN_REGISTRATION_PASSKEY
         }
         response = self.client.post(url, payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

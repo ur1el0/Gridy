@@ -47,7 +47,122 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
       if (mounted) setState(() => _isLoading = false);
     }
   }
-
+  void _showAnnouncementDetail(BuildContext context, AnnouncementModel ann) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (context) {
+        return DraggableScrollableSheet(
+          initialChildSize: 0.65,
+          minChildSize: 0.4,
+          maxChildSize: 0.9,
+          expand: false,
+          builder: (context, scrollController) {
+            return SingleChildScrollView(
+              controller: scrollController,
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Center(
+                    child: Container(
+                      width: 40,
+                      height: 4,
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade300,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  if (ann.image != null && ann.image!.isNotEmpty) ...[
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(16),
+                      child: Image.network(
+                        ann.image!,
+                        width: double.infinity,
+                        height: 200,
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: ann.isPinned ? const Color(0xFFFEF3C7) : const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          ann.isPinned ? 'PINNED ANNOUNCEMENT' : 'BARANGAY BROADCAST',
+                          style: TextStyle(
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            color: ann.isPinned ? const Color(0xFFD97706) : const Color(0xFF64748B),
+                          ),
+                        ),
+                      ),
+                      Text(
+                        ann.createdAt != null
+                            ? '${ann.createdAt!.month}/${ann.createdAt!.day}/${ann.createdAt!.year}'
+                            : 'Recent',
+                        style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    ann.title,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF0F172A),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Text(
+                    ann.content,
+                    style: const TextStyle(
+                      fontSize: 15,
+                      color: Color(0xFF334155),
+                      height: 1.6,
+                    ),
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    child: ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: const Color(0xFF0047BA),
+                        padding: const EdgeInsets.symmetric(vertical: 14),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: const Text(
+                        'Close Bulletin',
+                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+  
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -101,79 +216,102 @@ class _AnnouncementsScreenState extends State<AnnouncementsScreen> {
                               ),
                             ],
                           ),
-                          child: Padding(
-                            padding: const EdgeInsets.all(16),
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          child: Material(
+                            color: Colors.transparent,
+                            borderRadius: BorderRadius.circular(16),
+                            child: InkWell(
+                              borderRadius: BorderRadius.circular(16),
+                              onTap: () => _showAnnouncementDetail(context, ann),
+                              child: Padding(
+                                padding: const EdgeInsets.all(16),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
                                   children: [
-                                    if (ann.isPinned)
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFFEF3C7),
-                                          borderRadius: BorderRadius.circular(20),
+                                    if (ann.image != null && ann.image!.isNotEmpty) ...[
+                                      ClipRRect(
+                                        borderRadius: BorderRadius.circular(12),
+                                        child: Image.network(
+                                          ann.image!,
+                                          width: double.infinity,
+                                          height: 140,
+                                          fit: BoxFit.cover,
+                                          errorBuilder: (context, error, stackTrace) => const SizedBox.shrink(),
                                         ),
-                                        child: const Row(
-                                          children: [
-                                            Icon(Icons.push_pin, size: 14, color: Color(0xFFD97706)),
-                                            SizedBox(width: 4),
-                                            Text(
-                                              'PINNED ANNOUNCEMENT',
+                                      ),
+                                      const SizedBox(height: 12),
+                                    ],
+                                    Row(
+                                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                      children: [
+                                        if (ann.isPinned)
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFFEF3C7),
+                                              borderRadius: BorderRadius.circular(20),
+                                            ),
+                                            child: const Row(
+                                              children: [
+                                                Icon(Icons.push_pin, size: 14, color: Color(0xFFD97706)),
+                                                SizedBox(width: 4),
+                                                Text(
+                                                  'PINNED ANNOUNCEMENT',
+                                                  style: TextStyle(
+                                                    fontSize: 10,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Color(0xFFD97706),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          )
+                                        else
+                                          Container(
+                                            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFF1F5F9),
+                                              borderRadius: BorderRadius.circular(20),
+                                            ),
+                                            child: const Text(
+                                              'BROADCAST',
                                               style: TextStyle(
                                                 fontSize: 10,
                                                 fontWeight: FontWeight.bold,
-                                                color: Color(0xFFD97706),
+                                                color: Color(0xFF64748B),
                                               ),
                                             ),
-                                          ],
-                                        ),
-                                      )
-                                    else
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFFF1F5F9),
-                                          borderRadius: BorderRadius.circular(20),
-                                        ),
-                                        child: const Text(
-                                          'BROADCAST',
-                                          style: TextStyle(
-                                            fontSize: 10,
-                                            fontWeight: FontWeight.bold,
-                                            color: Color(0xFF64748B),
                                           ),
+                                        Text(
+                                          ann.createdAt != null
+                                              ? '${ann.createdAt!.month}/${ann.createdAt!.day}/${ann.createdAt!.year}'
+                                              : 'Recent',
+                                          style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
                                         ),
-                                      ),
+                                      ],
+                                    ),
+                                    const SizedBox(height: 12),
                                     Text(
-                                      ann.createdAt != null
-                                          ? '${ann.createdAt!.month}/${ann.createdAt!.day}/${ann.createdAt!.year}'
-                                          : 'Recent',
-                                      style: TextStyle(fontSize: 12, color: Colors.grey.shade500),
+                                      ann.title,
+                                      style: const TextStyle(
+                                        fontSize: 16,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF0F172A),
+                                      ),
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      ann.content,
+                                      maxLines: 3,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: const TextStyle(
+                                        fontSize: 14,
+                                        color: Color(0xFF334155),
+                                        height: 1.4,
+                                      ),
                                     ),
                                   ],
                                 ),
-                                const SizedBox(height: 12),
-                                Text(
-                                  ann.title,
-                                  style: const TextStyle(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.bold,
-                                    color: Color(0xFF0F172A),
-                                  ),
-                                ),
-                                const SizedBox(height: 8),
-                                Text(
-                                  ann.content,
-                                  style: const TextStyle(
-                                    fontSize: 14,
-                                    color: Color(0xFF334155),
-                                    height: 1.4,
-                                  ),
-                                ),
-                              ],
+                              ),
                             ),
                           ),
                         );
