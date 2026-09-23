@@ -1,6 +1,4 @@
 from gridy_auth.models import Barangay
-from http.client import PROCESSING
-from django.db.models import indexes
 from django.db import models
 from django.conf import settings
 from django.utils import timezone
@@ -124,9 +122,12 @@ class QueueTicket(models.Model):
             # Sequence ticket numbers liek T001, T002, etc.
             today = timezone.now().date()
 
-            # Filter to find the last ticket created specifically TODAY
-            last_ticket = QueueTicket.objects.filter(created_at__date=today).order_by('id').last()
-            
+            # Filter to find the last ticket created specifically TODAY for this barangay
+            query = QueueTicket.objects.filter(created_at__date=today)
+            if self.barangay:
+                query = query.filter(barangay=self.barangay)
+            last_ticket = query.order_by('id').last()
+
             if last_ticket and last_ticket.ticket_number.startswith('T'):
                 try:
                     last_num = int(last_ticket.ticket_number[1:])

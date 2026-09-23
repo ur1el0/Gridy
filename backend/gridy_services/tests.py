@@ -5,7 +5,7 @@ from rest_framework.test import APITestCase
 from gridy_auth.models import User, Resident
 from gridy_services.models import DocumentRequest, QueueTicket
 from gridy_audit.models import AuditLog
-from unittest.mock import patch
+from gridy_auth.models import User, Resident, Barangay
 
 # Create your tests here.
 
@@ -267,7 +267,25 @@ class ServiceAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertTrue(DocumentRequest.objects.filter(id=doc.id).exists())
 
-    def test_resident_cannot_delete_document_request(self):
+    def test_resident_can_cancel_pending_document_request(self):
+        self.client.force_login(self.resident)
+        doc = DocumentRequest.objects.create(
+            user=self.resident,
+            document_type="Barangay Clearance",
+            status=DocumentRequest.Status.PENDING
+        )
+        url = reverse('document-request-detail', args=[doc.id])
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(DocumentRequest.objects.filter(id=doc.id).exists())
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action_type=AuditLog.ActionType.DOCUMENT_ACTION,
+                action_by=self.resident
+            ).exists()
+        )
+
+    def test_resident_cannot_delete_released_document_request(self):
         self.client.force_login(self.resident)
         doc = DocumentRequest.objects.create(
             user=self.resident,
@@ -276,9 +294,96 @@ class ServiceAPITests(APITestCase):
         )
         url = reverse('document-request-detail', args=[doc.id])
         response = self.client.delete(url)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data.get('detail'), "You can only cancel document requests that are still pending review.")
         self.assertTrue(DocumentRequest.objects.filter(id=doc.id).exists())
-        
+
+    def test_resident_cannot_cancel_other_resident_pending_request(self):
+        other_resident = User.objects.create_user(
+            username="other_resident",
+            password="SecurePassword123!",
+            email="other@example.com",
+            role=User.Role.RESIDENT
+        )
+        doc = DocumentRequest.objects.create(
+            user=other_resident,
+            document_type="Barangay Clearance",
+            status=DocumentRequest.Status.PENDING
+        )
+        self.client.force_login(self.resident)
+        url = reverse('document-request-detail', args=[doc.id])
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(DocumentRequest.objects.filter(id=doc.id).exists())
+    
+    def test_queue_ticket_sequencing_isolated_by_barangay(self):
+        barangay_a = Barangay.objects.create(name="Barangay A")
+        barangay_b = Barangay.objects.create(name="Barangay B")
+
+        # First ticket in Barangay A should start at T001
+        ticket_a1 = QueueTicket.objects.create(barangay=barangay_a, service_type="Clearance")
+        self.assertEqual(ticket_a1.ticket_number, "T001")
+
+        # First ticket in Barangay B should also start at T001 independently
+        ticket_b1 = QueueTicket.objects.create(barangay=barangay_b, service_type="Clearance")
+        self.assertEqual(ticket_b1.ticket_number, "T001")
+
+        # Second ticket in Barangay A increments to T002
+        ticket_a2 = QueueTicket.objects.create(barangay=barangay_a, service_type="Clearance")
+        self.assertEqual(ticket_a2.ticket_number, "T002")
+
+    def test_resident_can_cancel_own_waiting_queue_ticket(self):
+        self.client.force_login(self.resident)
+        ticket = QueueTicket.objects.create(
+            user=self.resident,
+            barangay=self.resident.barangay,
+            service_type="Clearance",
+            status=QueueTicket.Status.WAITING
+        )
+        url = reverse('ticket-cancel-ticket', args=[ticket.id])
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        ticket.refresh_from_db()
+        self.assertEqual(ticket.status, QueueTicket.Status.CANCELLED)
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action_type=AuditLog.ActionType.QUEUE_ACTION,
+                action_by=self.resident
+            ).exists()
+        )
+
+    def test_resident_cannot_cancel_serving_or_completed_queue_ticket(self):
+        self.client.force_login(self.resident)
+        ticket = QueueTicket.objects.create(
+            user=self.resident,
+            barangay=self.resident.barangay,
+            service_type="Clearance",
+            status=QueueTicket.Status.SERVING
+        )
+        url = reverse('ticket-cancel-ticket', args=[ticket.id])
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        ticket.refresh_from_db()
+        self.assertEqual(ticket.status, QueueTicket.Status.SERVING)
+
+    def test_resident_cannot_cancel_other_resident_queue_ticket(self):
+        other_resident = User.objects.create_user(
+            username="other_queue_resident",
+            password="SecurePassword123!",
+            email="other_queue@example.com",
+            role=User.Role.RESIDENT
+        )
+        ticket = QueueTicket.objects.create(
+            user=other_resident,
+            service_type="Clearance",
+            status=QueueTicket.Status.WAITING
+        )
+        self.client.force_login(self.resident)
+        url = reverse('ticket-cancel-ticket', args=[ticket.id])
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        ticket.refresh_from_db()
+        self.assertEqual(ticket.status, QueueTicket.Status.WAITING)
 
 class SystemHealthAPITests(APITestCase):
     def test_health_check_endpoint_success(self):

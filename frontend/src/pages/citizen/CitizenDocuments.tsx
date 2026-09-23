@@ -10,7 +10,8 @@ import {
     AlertCircle, 
     X, 
     Loader2,
-    FileCheck2
+    FileCheck2,
+    Trash2,
 } from 'lucide-react';
 
 interface DocumentRequest {
@@ -35,6 +36,7 @@ export const CitizenDocuments: React.FC = () => {
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [downloadingId, setDownloadingId] = useState<number | null>(null);
+    const [cancellingId, setCancellingId] = useState<number | null>(null);
 
     // Form State
     const [documentType, setDocumentType] = useState(DOCUMENT_TYPES[0]);
@@ -79,6 +81,24 @@ export const CitizenDocuments: React.FC = () => {
             toast.error(msg);
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    const handleCancelRequest = async (id: number) => {
+        if (!window.confirm('Are you sure you want to cancel this pending clearance application?')) {
+            return;
+        }
+
+        try {
+            setCancellingId(id);
+            await axiosPrivate.delete(`/document-requests/${id}/`);
+            setRequests((prev) => prev.filter((r) => r.id !== id));
+            toast.success('Document request cancelled.');
+        } catch (err: any) {
+            const msg = err.response?.data?.detail || err.response?.data?.message || 'Failed to cancel request.';
+            toast.error(msg);
+        } finally {
+            setCancellingId(null);
         }
     };
 
@@ -237,6 +257,20 @@ export const CitizenDocuments: React.FC = () => {
                                                             <Download className="w-3.5 h-3.5" />
                                                         )}
                                                         <span>Download PDF</span>
+                                                    </button>
+                                                ) : req.status.toUpperCase() === 'PENDING' ? (
+                                                    <button
+                                                        onClick={() => handleCancelRequest(req.id)}
+                                                        disabled={cancellingId === req.id}
+                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-bold border border-rose-200 transition-all cursor-pointer"
+                                                        aria-label={`Cancel clearance request #${req.id}`}
+                                                    >
+                                                        {cancellingId === req.id ? (
+                                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                        ) : (
+                                                            <Trash2 className="w-3.5 h-3.5" />
+                                                        )}
+                                                        <span>Cancel</span>
                                                     </button>
                                                 ) : (
                                                     <span className="text-xs text-slate-400">Available after approval</span>
