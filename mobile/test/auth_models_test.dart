@@ -1,4 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:mobile/core/network/api_client.dart';
 import 'package:mobile/core/network/api_exception.dart';
 import 'package:mobile/models/auth_response.dart';
 import 'package:mobile/models/user_model.dart';
@@ -120,10 +122,46 @@ void main() {
       expect(exception.message, contains('pending verification'));
     });
 
-    test('UnauthorizedException preserves 401 status code', () {
-      const exception = UnauthorizedException('Invalid credentials.');
+    test('UnauthorizedException preserves 401 status code and default message', () {
+      const exception = UnauthorizedException();
       expect(exception.statusCode, 401);
-      expect(exception.message, 'Invalid credentials.');
+      expect(exception.message, 'Invalid credentials or session expired. Please log in again.');
+    });
+  });
+
+  group('ApiClient Cookie and Refresh Handling', () {
+    test('extractSetCookie safely parses refresh_token despite date commas in expires header', () {
+      final client = ApiClient();
+      final response = http.Response(
+        '{"detail": "ok"}',
+        200,
+        headers: {
+          'set-cookie':
+              'refresh_token=sample_jwt_refresh_token_xyz; expires=Wed, 23 Sep 2026 09:49:32 GMT; HttpOnly; Max-Age=604800; Path=/; SameSite=Strict',
+        },
+      );
+
+      final extracted = client.extractSetCookie(response);
+      expect(extracted, 'refresh_token=sample_jwt_refresh_token_xyz');
+    });
+
+    test('ApiClient triggers onTokenRefreshed callback when credentials update', () {
+      final client = ApiClient();
+      String? savedAccess;
+      String? savedCookie;
+
+      client.onTokenRefreshed = (newAccess, newCookie) {
+        savedAccess = newAccess;
+        savedCookie = newCookie;
+      };
+
+      client.setAuthCredentials(
+        accessToken: 'initial_access',
+        cookieHeader: 'refresh_token=initial_refresh',
+      );
+
+      expect(client.accessToken, 'initial_access');
+      expect(client.cookieHeader, 'refresh_token=initial_refresh');
     });
   });
 }

@@ -16,6 +16,14 @@ class AuthService {
     required this.apiClient,
     required this.storageService,
   }) {
+    // Synchronize silently rotated tokens into persistent local storage
+    apiClient.onTokenRefreshed = (newAccessToken, newCookieHeader) {
+      storageService.saveTokens(
+        accessToken: newAccessToken,
+        refreshCookie: newCookieHeader,
+      );
+    };
+
     // Restore session credentials into ApiClient on startup
     final token = storageService.getAccessToken();
     final cookie = storageService.getRefreshCookie();
