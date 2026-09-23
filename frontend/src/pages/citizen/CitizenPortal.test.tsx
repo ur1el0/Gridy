@@ -14,7 +14,7 @@ vi.mock('../../api/axios', () => ({
     },
 }));
 
-describe('Citizen Portal Components', () => {
+describe('Resident Portal Components', () => {
     beforeEach(() => {
         vi.clearAllMocks();
     });
@@ -29,7 +29,7 @@ describe('Citizen Portal Components', () => {
         );
 
         // Verify brand and navigation tabs
-        expect(screen.getByText('Citizen Portal')).toBeInTheDocument();
+        expect(screen.getByText('Resident Portal')).toBeInTheDocument();
         expect(screen.getAllByText('Documents & Clearances')[0]).toBeInTheDocument();
         expect(screen.getAllByText('Live Queue Ticker')[0]).toBeInTheDocument();
         expect(screen.getAllByText('Community Bulletin')[0]).toBeInTheDocument();

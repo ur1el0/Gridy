@@ -15,7 +15,7 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
 
     // If specific roles are required, verify user's role
     if (allowedRoles && user?.role && !allowedRoles.includes(user.role)) {
-        // Redirect residents away from admin routes to citizen portal
+        // Redirect residents away from admin routes to resident portal
         if (user.role === 'RESIDENT') {
             return <Navigate to="/portal" replace />;
         }

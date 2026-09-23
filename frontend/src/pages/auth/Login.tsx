@@ -29,12 +29,12 @@ export const Login: React.FC = () => {
 
             // Enforce Portal Boundary
             if (!isAdminMode && userData?.role !== 'RESIDENT') {
-                setError('Official accounts cannot log in through the Citizen Portal. Press Shift + \\ to switch.');
+                setError('Official accounts cannot log in through the Resident Portal. Press Shift + \\ to switch.');
                 return;
             }
 
             if (isAdminMode && userData?.role === 'RESIDENT') {
-                setError('Citizen accounts are not authorized to access the Barangay Authority Command.');
+                setError('Resident accounts are not authorized to access the Barangay Authority Command.');
                 return;
             }
 
@@ -101,7 +101,7 @@ export const Login: React.FC = () => {
                         }`}
                         title="Tap to switch between Citizen and Official mode"
                     >
-                        <span>{isAdminMode ? 'Official Authority' : 'Citizen Portal'}</span>
+                        <span>{isAdminMode ? 'Barangay Official' : 'Resident Portal'}</span>
                         <span className="text-[11px] opacity-75 font-bold">⇄</span>
                     </button>
                 </div>
@@ -117,7 +117,7 @@ export const Login: React.FC = () => {
                             </>
                         ) : (
                             <>
-                                Citizen<br />
+                                Resident<br />
                                 Self-Service<br />
                                 Portal
                             </>
@@ -200,7 +200,7 @@ export const Login: React.FC = () => {
                         <p className="text-slate-500 text-sm mt-2 font-normal">
                             {isAdminMode
                                 ? 'Enter your administrative credentials to access the operations desk.'
-                                : 'Please enter your citizen credentials to access your barangay portal.'}
+                                : 'Please enter your credentials to access your barangay portal.'}
                         </p>
                     </div>
 
@@ -281,7 +281,7 @@ export const Login: React.FC = () => {
                                         ? 'Signing in...'
                                         : isAdminMode
                                         ? 'Login as Barangay Official'
-                                        : 'Login to Citizen Portal'}
+                                        : 'Login to Resident Portal'}
                                 </span>
                                 {!loading && (
                                     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" strokeWidth="2.5">
@@ -302,24 +302,28 @@ export const Login: React.FC = () => {
                                 className="text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
                             >
                                 {isAdminMode ? (
-                                    <span>Resident Citizen? <span className="text-[#0284C7] font-bold underline">Switch to Citizen Portal</span></span>
+                                    <span>Resident? <span className="text-[#0284C7] font-bold underline">Switch to Resident Portal</span></span>
                                 ) : (
                                     <span>Barangay Official? <span className="text-slate-900 font-bold underline">Switch to Staff Sign In</span></span>
                                 )}
                             </button>
                         </div>
-
-                        {/* Register Link (Citizen mode) */}
-                        {!isAdminMode && (
-                            <div className="text-center pt-3">
-                                <p className="text-xs text-slate-500 font-medium">
-                                    Don't have an account?{' '}
+                        
+                        {/* Dynamic Register Link */}
+                        <div className="text-center pt-3">
+                            <p className="text-xs text-slate-500 font-medium">
+                                Don't have an account?{' '}
+                                {isAdminMode ? (
+                                    <Link to="/register" state={{ initialMode: 'admin' }} className="font-bold text-slate-900 hover:text-[#091B35] hover:underline transition-colors">
+                                        Register as Official
+                                    </Link>
+                                ) : (
                                     <Link to="/register" className="font-bold text-slate-900 hover:text-[#0284C7] hover:underline transition-colors">
                                         Register as Resident
                                     </Link>
-                                </p>
-                            </div>
-                        )}
+                                )}
+                            </p>
+                        </div>
                     </form>
                 </div>
             </div>

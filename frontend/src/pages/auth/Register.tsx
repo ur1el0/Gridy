@@ -29,6 +29,8 @@ export const Register: React.FC = () => {
     // Admin-specific fields
     const [barangayId, setBarangayId] = useState('');
     const [affirmation, setAffirmation] = useState(false);
+    const [dataPrivacyConsent, setDataPrivacyConsent] = useState(false);
+
 
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
@@ -87,7 +89,7 @@ export const Register: React.FC = () => {
                 await axiosPublic.post('/auth/register/admin/', payload);
                 setSuccess('Official account registered successfully! Redirecting to login...');
             } else {
-                // Resident Citizen Registration Pipeline (Multipart FormData)
+                // Resident Registration Pipeline (Multipart FormData)
                 const formData = new FormData();
                 formData.append('full_name', fullName.trim());
                 formData.append('username', username.trim());
@@ -212,7 +214,7 @@ export const Register: React.FC = () => {
                         }`}
                         title="Tap to switch registration type"
                     >
-                        <span>{isAdminMode ? 'Staff Registration' : 'Citizen Registration'}</span>
+                        <span>{isAdminMode ? 'Staff Registration' : 'Resident Registration'}</span>
                         <span className="text-[11px] opacity-75 font-bold">⇄</span>
                     </button>
                 </div>
@@ -228,7 +230,7 @@ export const Register: React.FC = () => {
                             </>
                         ) : (
                             <>
-                                Citizen<br />
+                                Resident<br />
                                 Account<br />
                                 Registration
                             </>
@@ -237,7 +239,7 @@ export const Register: React.FC = () => {
                     <p className="text-blue-100/75 text-sm lg:text-base font-normal max-w-sm mb-10 leading-relaxed">
                         {isAdminMode
                             ? 'Create your administrative credentials to manage the Gridy Barangay System. Access is restricted to authorized barangay personnel.'
-                            : 'Register your resident citizen account to request clearances, access community services, and track lobby queues.'}
+                            : 'Register your resident account to request clearances, access community services, and track lobby queues.'}
                     </p>
 
                     <div className="space-y-4">
@@ -309,11 +311,11 @@ export const Register: React.FC = () => {
                             <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
                                 isAdminMode ? 'bg-amber-100 text-amber-900' : 'bg-sky-100 text-sky-900'
                             }`}>
-                                {isAdminMode ? 'Authorized Staff' : 'Resident Citizen'}
+                                {isAdminMode ? 'Authorized Staff' : 'Resident'}
                             </span>
                         </div>
                         <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                            {isAdminMode ? 'Administrative Registration' : 'Citizen Registration'}
+                            {isAdminMode ? 'Administrative Registration' : 'Resident Registration'}
                         </h2>
                         <p className="text-slate-500 text-sm mt-1">
                             {isAdminMode
@@ -672,6 +674,24 @@ export const Register: React.FC = () => {
                             </div>
                         </div>
 
+                        {/* Resident Mode: Data Privacy Consent */}
+                        {!isAdminMode && (
+                            <div className="pt-1">
+                                <label className="flex items-start gap-2.5 cursor-pointer">
+                                    <input
+                                        type="checkbox"
+                                        required
+                                        checked={dataPrivacyConsent}
+                                        onChange={(e) => setDataPrivacyConsent(e.target.checked)}
+                                        className="mt-0.5 w-4 h-4 text-[#0284C7] rounded focus:ring-0 border-slate-300 cursor-pointer shrink-0"
+                                    />
+                                    <span className="text-xs text-slate-600 leading-relaxed">
+                                        I consent to provide my personal data as a resident for barangay verification, in accordance with the <strong>RA 10173 Data Privacy Act</strong>.
+                                    </span>
+                                </label>
+                            </div>
+                        )}
+
                         {/* Admin Affirmation Checkbox */}
                         {isAdminMode && (
                             <div className="pt-1">
@@ -693,8 +713,8 @@ export const Register: React.FC = () => {
                         <div className="pt-2">
                             <button
                                 type="submit"
-                                disabled={loading}
-                                className={`w-full py-3.5 px-6 text-white font-bold text-sm rounded-xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-75 ${
+                                disabled={loading || (!isAdminMode && !dataPrivacyConsent) || (isAdminMode && !affirmation)}
+                                className={`w-full py-3.5 px-6 text-white font-bold text-sm rounded-xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed ${
                                     isAdminMode
                                         ? 'bg-[#091B35] hover:bg-[#0F2D59] shadow-[#091B35]/20'
                                         : 'bg-[#0284C7] hover:bg-[#0369A1] shadow-[#0284C7]/25'
@@ -722,7 +742,7 @@ export const Register: React.FC = () => {
                                 className="text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
                             >
                                 {isAdminMode ? (
-                                    <span>Registering as a Resident? <span className="text-[#0284C7] font-bold underline">Switch to Citizen Sign Up</span></span>
+                                    <span>Registering as a Resident? <span className="text-[#0284C7] font-bold underline">Switch to Resident Sign Up</span></span>
                                 ) : (
                                     <span>Barangay Personnel? <span className="text-slate-900 font-bold underline">Switch to Official Registration</span></span>
                                 )}

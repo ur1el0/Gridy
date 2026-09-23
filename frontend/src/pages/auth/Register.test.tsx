@@ -4,7 +4,7 @@ import { describe, it, expect } from 'vitest';
 import { Register } from './Register';
 
 describe('Register Component (Dual-Mode)', () => {
-    it('renders Citizen Registration by default with resident fields and LGU service highlights', () => {
+    it('renders Resident Registration by default with resident fields and LGU service highlights', () => {
         render(
             <BrowserRouter>
                 <Register />
@@ -13,13 +13,13 @@ describe('Register Component (Dual-Mode)', () => {
 
         // Branding & Citizen Badges
         expect(screen.getByText('GRIDY')).toBeInTheDocument();
-        expect(screen.getByRole('button', { name: /citizen registration/i })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /resident registration/i })).toBeInTheDocument();
         expect(screen.getByText('OFFICIAL CLEARANCES ACCESS')).toBeInTheDocument();
         expect(screen.getByText('REAL-TIME QUEUE TICKETING')).toBeInTheDocument();
         expect(screen.getByText('COMMUNITY PROGRAM UPDATES')).toBeInTheDocument();
 
         // Right form headings
-        expect(screen.getByRole('heading', { level: 2, name: 'Citizen Registration' })).toBeInTheDocument();
+        expect(screen.getByRole('heading', { level: 2, name: 'Resident Registration' })).toBeInTheDocument();
         expect(screen.getByText('Complete your registration details to access barangay services.')).toBeInTheDocument();
 
         // Citizen Inputs
