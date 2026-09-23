@@ -120,5 +120,29 @@ void main() {
       expect(serialized['fee_amount'], 50.0);
       expect(serialized['is_walkin'], isTrue);
     });
+
+    test('safely parses string decimal fee_amount from DRF responses (e.g. "0.00" and "50.00")', () {
+      final jsonZeroFee = {
+        'id': '602',
+        'document_type': 'Certificate of Indigency',
+        'fee_amount': '0.00',
+        'status': 'PENDING',
+      };
+      final modelZero = DocumentRequestModel.fromJson(jsonZeroFee);
+      expect(modelZero.id, 602);
+      expect(modelZero.feeAmount, 0.0);
+      expect(modelZero.formattedFee, '₱0.00');
+
+      final jsonPaidFee = {
+        'id': 603,
+        'document_type': 'Barangay Clearance',
+        'fee_amount': '50.00',
+        'status': 'PROCESSING',
+      };
+      final modelPaid = DocumentRequestModel.fromJson(jsonPaidFee);
+      expect(modelPaid.id, 603);
+      expect(modelPaid.feeAmount, 50.0);
+      expect(modelPaid.formattedFee, '₱50.00');
+    });
   });
 }

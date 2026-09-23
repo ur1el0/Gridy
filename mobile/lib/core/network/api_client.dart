@@ -13,6 +13,9 @@ class ApiClient {
   String? _accessToken;
   String? _cookieHeader;
 
+  /// Optional listener triggered whenever a token refresh succeeds with the new access token and cookie header.
+  void Function(String newAccessToken, String? newCookieHeader)? onTokenRefreshed;
+
   ApiClient({
     http.Client? client,
     String? baseUrl,
@@ -37,10 +40,19 @@ class ApiClient {
     _cookieHeader = null;
   }
 
-  /// Performs a silent token refresh using the stored refresh cookie
+  /// Performs a silent token refresh using the stored refresh cookie or token payload
   Future<bool> refreshAccessToken() async {
     try {
       if (_cookieHeader == null || _cookieHeader!.isEmpty) return false;
+
+      // Extract raw token value if stored in cookie format (e.g., refresh_token=...)
+      String? rawRefreshToken;
+      final match = RegExp(r'refresh_token=([^;]+)').firstMatch(_cookieHeader!);
+      if (match != null) {
+        rawRefreshToken = match.group(1);
+      } else {
+        rawRefreshToken = _cookieHeader;
+      }
 
       final response = await _client.post(
         _buildUri(AppConfig.tokenRefreshEndpoint),
@@ -49,6 +61,9 @@ class ApiClient {
           'Accept': 'application/json',
           'Cookie': _cookieHeader!,
         },
+        body: rawRefreshToken != null
+            ? jsonEncode({'refresh': rawRefreshToken})
+            : null,
       );
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -58,6 +73,7 @@ class ApiClient {
 
         if (newAccess != null) {
           setAuthCredentials(accessToken: newAccess, cookieHeader: newCookie);
+          onTokenRefreshed?.call(newAccess, newCookie);
           return true;
         }
       }
@@ -66,15 +82,24 @@ class ApiClient {
       return false;
     }
   }
+
   /// Extracts the `refresh_token` or cookie string from response headers
   String? extractSetCookie(http.Response response) {
     final rawCookie = response.headers['set-cookie'];
     if (rawCookie == null || rawCookie.isEmpty) {
       return null;
     }
-    // Extract name=value pairs before semicolons
-    final cookies = rawCookie.split(',').map((c) => c.split(';').first.trim()).toList();
-    return cookies.join('; ');
+    // Extract refresh_token=<token_value> cleanly without breaking on date commas in 'expires='
+    final match = RegExp(r'refresh_token=([^;]+)').firstMatch(rawCookie);
+    if (match != null) {
+      return 'refresh_token=${match.group(1)}';
+    }
+    // Fallback to first semicolon-delimited token
+    final firstPart = rawCookie.split(';').first.trim();
+    if (firstPart.isNotEmpty && firstPart.contains('=')) {
+      return firstPart;
+    }
+    return null;
   }
 
   /// Perform a POST request
@@ -296,8 +321,21 @@ class ApiClient {
         );
 
       case 401:
+        String message = 'Invalid credentials or session expired. Please log in again.';
+        if (detailMessage != null && detailMessage.isNotEmpty) {
+          final lower = detailMessage.toLowerCase();
+          if (lower.contains('token not valid') ||
+              lower.contains('token is invalid') ||
+              lower.contains('given token not valid') ||
+              lower.contains('token has expired') ||
+              lower.contains('token_not_valid')) {
+            message = 'Your session has expired. Please log in again.';
+          } else {
+            message = detailMessage;
+          }
+        }
         throw UnauthorizedException(
-          detailMessage ?? 'Invalid credentials or session expired.',
+          message,
           decodedBody,
         );
 

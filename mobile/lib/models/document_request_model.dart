@@ -30,7 +30,9 @@ class DocumentRequestModel {
 
   factory DocumentRequestModel.fromJson(Map<String, dynamic> json) {
     return DocumentRequestModel(
-      id: (json['request_id'] ?? json['id']) as int? ?? 0,
+      id: (json['request_id'] ?? json['id']) is int
+          ? (json['request_id'] ?? json['id']) as int
+          : int.tryParse((json['request_id'] ?? json['id'])?.toString() ?? '') ?? 0,
       documentType: json['document_type'] as String? ?? 'Document Request',
       purpose: json['purpose'] as String?,
       urgencyTag: json['urgency_tag'] as String? ?? 'REGULAR',
@@ -38,7 +40,9 @@ class DocumentRequestModel {
       adminNotes: json['admin_notes'] as String?,
       orNumber: json['or_number'] as String?,
       feeAmount: json['fee_amount'] != null
-          ? (json['fee_amount'] as num).toDouble()
+          ? (json['fee_amount'] is num
+              ? (json['fee_amount'] as num).toDouble()
+              : double.tryParse(json['fee_amount'].toString()))
           : null,
       isWalkin: json['is_walkin'] as bool? ?? false,
       createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at'].toString()) : null,
