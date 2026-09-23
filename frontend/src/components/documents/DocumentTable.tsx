@@ -8,7 +8,6 @@ interface DocumentTableProps {
     onDelete?: (id: number) => void;
 }
 
-export const DocumentTable = ({ requests, openModal, getStatusBadge }: DocumentTableProps) => {
 export const DocumentTable = ({ requests, openModal, getStatusBadge, onDelete }: DocumentTableProps) => {
     return (
         <div className="bg-white shadow-sm border border-slate-200 rounded-xl overflow-hidden">
@@ -67,9 +66,6 @@ export const DocumentTable = ({ requests, openModal, getStatusBadge, onDelete }:
                                         {new Date(req.created_at).toLocaleDateString()}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`px-2.5 py-1 inline-flex text-xs leading-5 font-bold rounded-full border ${getStatusBadge(req.status)}`}>
-                                            {req.status.replace(/_/g, ' ')}
-                                        </span>
                                         <div className="flex items-center gap-2">
                                             <span className={`px-2.5 py-1 inline-flex text-xs leading-5 font-bold rounded-full border ${getStatusBadge(req.status)}`}>
                                                 {req.status.replace(/_/g, ' ')}
