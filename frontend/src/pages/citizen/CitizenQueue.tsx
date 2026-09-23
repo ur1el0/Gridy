@@ -9,7 +9,8 @@ import {
     Plus, 
     Loader2, 
     X,
-    Volume2
+    Volume2,
+    LogOut,
 } from 'lucide-react';
 
 interface LiveStatus {
@@ -44,6 +45,7 @@ export const CitizenQueue: React.FC = () => {
     const [loading, setLoading] = useState(true);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [submitting, setSubmitting] = useState(false);
+    const [cancelling, setCancelling] = useState(false);
 
     // Form State
     const [serviceType, setServiceType] = useState(SERVICE_TYPES[0]);
@@ -90,6 +92,25 @@ export const CitizenQueue: React.FC = () => {
             toast.error(msg);
         } finally {
             setSubmitting(false);
+        }
+    };
+
+    const handleCancelTicket = async (id: number) => {
+        if (!window.confirm('Are you sure you want to cancel your queue ticket and leave the line?')) {
+            return;
+        }
+
+        try {
+            setCancelling(true);
+            await axiosPrivate.post(`/tickets/${id}/cancel/`);
+            setActiveTicket(null);
+            toast.success('You have left the queue.');
+            fetchQueueData();
+        } catch (err: any) {
+            const msg = err.response?.data?.detail || 'Failed to cancel queue ticket.';
+            toast.error(msg);
+        } finally {
+            setCancelling(false);
         }
     };
 
@@ -222,10 +243,25 @@ export const CitizenQueue: React.FC = () => {
                                     <CheckCircle2 className="w-4 h-4" />
                                     <span>Now Being Served! Proceed to Counter</span>
                                 </div>
-                            ) : (
-                                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold">
-                                    <Clock className="w-4 h-4" />
-                                    <span>Waiting for your turn</span>
+                                                        ) : (
+                                <div className="flex items-center gap-2">
+                                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-amber-50 text-amber-700 border border-amber-200 text-xs font-semibold">
+                                        <Clock className="w-4 h-4" />
+                                        <span>Waiting for your turn</span>
+                                    </div>
+                                    <button
+                                        onClick={() => handleCancelTicket(activeTicket.id)}
+                                        disabled={cancelling}
+                                        className="inline-flex items-center gap-1.5 px-3 py-2 rounded-xl bg-rose-50 text-rose-700 hover:bg-rose-100 border border-rose-200 text-xs font-bold transition-all cursor-pointer"
+                                        aria-label="Leave queue and cancel ticket"
+                                    >
+                                        {cancelling ? (
+                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        ) : (
+                                            <LogOut className="w-3.5 h-3.5" />
+                                        )}
+                                        <span>Leave Queue</span>
+                                    </button>
                                 </div>
                             )}
                         </div>
