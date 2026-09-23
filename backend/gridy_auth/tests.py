@@ -24,6 +24,7 @@ class AuthAPITests(APITestCase):
         barangay = Barangay.objects.create(name="Barangay Central")
         url = reverse('auth_register_admin')
         payload = {
+            "username": "admin_central",
             "full_name": "Juan De La Cruz",
             "barangay_id": barangay.id,
             "email": "juandelacruz@example.com",
@@ -36,11 +37,43 @@ class AuthAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertTrue(User.objects.filter(email="juandelacruz@example.com").exists())
         user = User.objects.get(email="juandelacruz@example.com")
+        self.assertEqual(user.username, "admin_central")
         self.assertEqual(user.role, User.Role.ADMIN)
         self.assertEqual(user.first_name, "Juan")
         self.assertEqual(user.last_name, "De La Cruz")
         self.assertEqual(user.barangay, barangay)
         self.assertTrue(user.is_staff)
+        self.assertTrue(user.is_active)
+
+        # Verify admin can log in with username
+        login_url = reverse('auth_login')
+        login_resp = self.client.post(login_url, {"username": "admin_central", "password": "SecurePassword123!"}, format='json')
+        self.assertEqual(login_resp.status_code, status.HTTP_200_OK)
+
+        # Verify admin can also log in with email
+        login_email_resp = self.client.post(login_url, {"username": "juandelacruz@example.com", "password": "SecurePassword123!"}, format='json')
+        self.assertEqual(login_email_resp.status_code, status.HTTP_200_OK)
+
+    def test_admin_registration_duplicate_username(self):
+        User.objects.create_user(
+            username="existing_admin_handle",
+            email="handle@example.com",
+            password="SecurePassword123!",
+            role=User.Role.ADMIN
+        )
+        url = reverse('auth_register_admin')
+        payload = {
+            "username": "existing_admin_handle",
+            "full_name": "Duplicate Admin",
+            "email": "another@example.com",
+            "password": "SecurePassword123!",
+            "confirm_password": "SecurePassword123!",
+            "affirmation": True,
+            "passkey": settings.ADMIN_REGISTRATION_PASSKEY
+        }
+        response = self.client.post(url, payload, format='json')
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("username", response.data)
 
     def test_admin_registration_password_mismatch(self):
         url = reverse('auth_register_admin')

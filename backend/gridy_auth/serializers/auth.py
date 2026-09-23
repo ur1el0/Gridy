@@ -3,6 +3,7 @@ from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_decode
 from django.utils.encoding import force_str
+from django.db.models import Q
 from gridy_auth.models import User, RefreshSession
 
 class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
@@ -19,6 +20,15 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         return token
 
     def validate(self, attrs):
+        # Support dual-identifier authentication: resolve either username or email
+        identifier = attrs.get(self.username_field, '').strip()
+        if identifier:
+            matched_user = User.objects.filter(
+                Q(username__iexact=identifier) | Q(email__iexact=identifier)
+            ).first()
+            if matched_user:
+                attrs[self.username_field] = matched_user.username
+
         data = super().validate(attrs)
         full_name = getattr(self.user.profile, 'full_name', None) if hasattr(self.user, 'profile') else None
         if not full_name:

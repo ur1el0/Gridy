@@ -52,6 +52,7 @@ describe('Register Component (Dual-Mode)', () => {
         expect(screen.getByText('SECURITY AUDIT COMPLIANCE')).toBeInTheDocument();
 
         // Admin-Specific Inputs
+        expect(screen.getByPlaceholderText('admin_captain')).toBeInTheDocument();
         expect(screen.getByPlaceholderText('e.g. 1')).toBeInTheDocument();
         expect(screen.getByLabelText(/I affirm that I am an authorized barangay official or personnel/i)).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /create admin account/i })).toBeInTheDocument();
@@ -94,11 +95,13 @@ describe('Register Component (Dual-Mode)', () => {
         fireEvent.click(toggleButton);
 
         const fullNameInput = screen.getByPlaceholderText('Juan Dela Cruz');
+        const usernameInput = screen.getByPlaceholderText('admin_captain');
         const emailInput = screen.getByPlaceholderText('juan@example.com');
         const [passwordInput, confirmPasswordInput] = screen.getAllByPlaceholderText('••••••••');
         const submitButton = screen.getByRole('button', { name: /create admin account/i });
 
         fireEvent.change(fullNameInput, { target: { value: 'Brgy Kagawad' } });
+        fireEvent.change(usernameInput, { target: { value: 'brgy_kagawad' } });
         fireEvent.change(emailInput, { target: { value: 'kagawad@barangay.gov.ph' } });
         fireEvent.change(passwordInput, { target: { value: 'AdminPass123!' } });
         fireEvent.change(confirmPasswordInput, { target: { value: 'AdminPass123!' } });

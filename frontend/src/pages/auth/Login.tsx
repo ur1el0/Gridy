@@ -219,7 +219,7 @@ export const Login: React.FC = () => {
                         {/* Username Field */}
                         <div>
                             <label className="block text-[11px] font-bold tracking-wider text-slate-500 uppercase mb-2">
-                                USERNAME
+                                USERNAME OR EMAIL
                             </label>
                             <div className="relative flex items-center">
                                 <div className="absolute left-3.5 text-slate-400 pointer-events-none">
@@ -233,7 +233,7 @@ export const Login: React.FC = () => {
                                     value={username}
                                     onChange={(e) => setUsername(e.target.value)}
                                     className="w-full pl-11 pr-4 py-3.5 bg-[#EEF2F6] focus:bg-white border border-transparent focus:border-[#0284C7] focus:ring-1 focus:ring-[#0284C7] rounded-xl text-sm font-medium text-slate-900 placeholder-slate-400 outline-none transition-all"
-                                    placeholder="Enter your username"
+                                    placeholder="Enter your username or email"
                                 />
                             </div>
                         </div>
