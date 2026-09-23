@@ -155,6 +155,11 @@ void main() {
         savedCookie = newCookie;
       };
 
+      client.onTokenRefreshed?.call('token_123', 'cookie_abc');
+
+      expect(savedAccess, 'token_123');
+      expect(savedCookie, 'cookie_abc');
+
       client.setAuthCredentials(
         accessToken: 'initial_access',
         cookieHeader: 'refresh_token=initial_refresh',
