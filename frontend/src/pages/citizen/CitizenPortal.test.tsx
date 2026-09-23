@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { CitizenDocuments } from './CitizenDocuments';
@@ -11,6 +11,7 @@ vi.mock('../../api/axios', () => ({
     axiosPrivate: {
         get: vi.fn(),
         post: vi.fn(),
+        delete: vi.fn(),
     },
 }));
 
@@ -79,6 +80,42 @@ describe('Resident Portal Components', () => {
             expect(screen.getByText('Local Employment Application')).toBeInTheDocument();
             expect(screen.getByText('Ready / Released')).toBeInTheDocument();
             expect(screen.getByRole('button', { name: /download pdf/i })).toBeInTheDocument();
+        });
+    });
+        it('renders cancel button for pending clearance and cancels upon confirmation', async () => {
+        const mockRequests = [
+            {
+                id: 202,
+                document_type: 'Certificate of Residency',
+                purpose: 'Bank Account Opening',
+                status: 'PENDING',
+                created_at: '2026-09-06T10:00:00Z',
+            },
+        ];
+
+        vi.mocked(axiosPrivate.get).mockResolvedValueOnce({ data: { results: mockRequests } });
+        vi.mocked(axiosPrivate.delete).mockResolvedValueOnce({ data: {} });
+        vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+        render(
+            <BrowserRouter>
+                <AuthProvider>
+                    <CitizenDocuments />
+                </AuthProvider>
+            </BrowserRouter>
+        );
+
+        await waitFor(() => {
+            expect(screen.getByText('Certificate of Residency')).toBeInTheDocument();
+            expect(screen.getByText('Pending Review')).toBeInTheDocument();
+            expect(screen.getByRole('button', { name: /cancel clearance request #202/i })).toBeInTheDocument();
+        });
+
+        fireEvent.click(screen.getByRole('button', { name: /cancel clearance request #202/i }));
+
+        await waitFor(() => {
+            expect(axiosPrivate.delete).toHaveBeenCalledWith('/document-requests/202/');
+            expect(screen.queryByText('Certificate of Residency')).not.toBeInTheDocument();
         });
     });
 });
