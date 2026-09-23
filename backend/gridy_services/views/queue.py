@@ -22,7 +22,7 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
     serializer_class = QueueTicketSerializer
     
     def get_permissions(self):
-        if self.action in ['list', 'retrieve', 'create', 'live_status']:
+        if self.action in ['list', 'retrieve', 'create', 'live_status', 'cancel_ticket']:
             return [permissions.IsAuthenticated()]
         return [IsBarangayOfficialOrField()]
     
@@ -56,6 +56,39 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
     def perform_update(self, serializer):
         serializer.save()
 
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated], url_path='cancel')
+    def cancel_ticket(self, request, pk=None):
+        ticket = self.get_object()
+
+        # Enforce that residents can only cancel their own tickets
+        if request.user.role == User.Role.RESIDENT and ticket.user != request.user:
+            raise PermissionDenied("You can only cancel your own queue tickets.")
+        
+        # Invariant: only waiting tickets can be cancelled
+        if ticket.status != QueueTicket.Status.WAITING:
+            return Response(
+                {"detail": "Only tickets currently in queue can be cancelled."},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        ticket.status = QueueTicket.Status.CANCELLED
+        ticket.save()
+
+        actor_desc = f"Resident {request.user.username}" if request.user.role == User.Role.RESIDENT else f"Official {request.user.username}"
+        log_action(
+            user=request.user,
+            action_type=AuditLog.ActionType.QUEUE_ACTION,
+            description=f"{actor_desc} cancelled queue ticket {ticket.ticket_number} (ID: {ticket.id}).",
+            request=request
+        )
+
+        return Response(
+            {
+                "detail": "Queue ticket cancelled successfully.",
+                "ticket_number": ticket.ticket_number
+            },
+            status=status.HTTP_200_OK
+        )
     @action(detail=False, methods=['get'], url_path='live-status')
     def live_status(self, request):
         user = request.user
