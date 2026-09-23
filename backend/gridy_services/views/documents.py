@@ -7,7 +7,7 @@ from django.http import HttpResponse
 from django.utils import timezone
 from xhtml2pdf import pisa
 from gridy_auth.models import User
-from gridy_auth.permissions import IsBarangayOfficial, IsResident
+from gridy_auth.permissions import IsBarangayOfficial
 from gridy_services.models import DocumentRequest
 from gridy_services.serializers import DocumentRequestSerializer
 from gridy_communications.tasks import send_notification_to_user_task
@@ -25,6 +25,10 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
         
         # Both residents and officials can create (residents for themselves, officials for walk-ins/legacy)
         if self.action == 'create':
+            return [permissions.IsAuthenticated()]
+        
+        # Allow authenticated users to access destroy (role and status checks enforced in perform_destroy)
+        if self.action == 'destroy':
             return [permissions.IsAuthenticated()]
         return [IsBarangayOfficial()]
 
@@ -93,20 +97,45 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
         )
 
     def perform_destroy(self, instance):
-        # Enforce that only terminal/resolved requests (released or rejected) can be deleted
-        if instance.status not in [DocumentRequest.Status.RELEASED, DocumentRequest.Status.REJECTED]:
-            raise ValidationError(
-                {"detail": "Only resolved (released or rejected) clearance requests can be deleted."}
+        user = self.request.user
+        
+        # 1. Citizen Resident Self-Service Cancellation
+        if user.role == User.Role.RESIDENT:
+            if instance.user != user:
+                raise PermissionDenied("You can only cancel your own document requests.")
+            
+            if instance.status != DocumentRequest.Status.PENDING:
+                raise ValidationError(
+                    {"detail": "You can only cancel document requests that are still pending review."}
+                )
+            
+            log_action(
+                user=user,
+                action_type=AuditLog.ActionType.DOCUMENT_ACTION,
+                description=f"Resident {user.username} cancelled pending document request #{instance.id} ({instance.document_type}).",
+                request=self.request
             )
+            instance.delete()
+            return
 
-        recipient_desc = instance.user.username if instance.user else (instance.walkin_name or "Resident")
-        log_action(
-            user=self.request.user,
-            action_type=AuditLog.ActionType.DOCUMENT_ACTION,
-            description=f"Deleted {instance.get_status_display().lower()} document request #{instance.id} ({instance.document_type}) for {recipient_desc}.",
-            request=self.request
-        )
-        instance.delete()
+        # 2. Barangay Official Administrative Deletion
+        if user.role in [User.Role.ADMIN, User.Role.FIELD_OFFICIAL]:
+            if instance.status not in [DocumentRequest.Status.RELEASED, DocumentRequest.Status.REJECTED]:
+                raise ValidationError(
+                    {"detail": "Only resolved (released or rejected) clearance requests can be deleted by officials."}
+                )
+
+            recipient_desc = instance.user.username if instance.user else (instance.walkin_name or "Resident")
+            log_action(
+                user=user,
+                action_type=AuditLog.ActionType.DOCUMENT_ACTION,
+                description=f"Deleted {instance.get_status_display().lower()} document request #{instance.id} ({instance.document_type}) for {recipient_desc}.",
+                request=self.request
+            )
+            instance.delete()
+            return
+
+        raise PermissionDenied("You do not have permission to delete this document request.")
 
     @action(detail=True, methods=['patch'], permission_classes=[IsBarangayOfficial])
     def validate(self, request, pk=None):
