@@ -338,23 +338,16 @@ export const LiveQueue: React.FC = () => {
                     <Bell className="w-5 h-5" />
                 </button>
             </div>
-
-            {/* Bottom Section: Waiting List Table + Photo Card */}
+            
+            {/* Bottom Section: Waiting List Table */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-                <div className="lg:col-span-7">
+                <div className="lg:col-span-12">
                     <WaitingListTable 
                         waitingTickets={waitingTickets}
                         isUpdating={isUpdating}
                         fetchTickets={fetchTickets}
                         handleServeSpecific={handleServeSpecific}
                         handleCancelTicket={handleCancelTicket}
-                    />
-                </div>
-                <div className="lg:col-span-5 rounded-2xl overflow-hidden shadow-xs border border-[#E2E8F0]/80 bg-white">
-                    <img
-                        src="/barangay-queue.jpg"
-                        alt="Barangay Community Assistance Queue"
-                        className="w-full h-full min-h-[300px] object-cover"
                     />
                 </div>
             </div>
