@@ -134,7 +134,8 @@ if 'test' in sys.argv or 'pytest' in sys.modules:
 DATABASES = {
     'default': env.db('DATABASE_URL', default='sqlite:///db.sqlite3')
 }
-
+# Keep database connections open for 10 minutes (600s) to avoid TLS renegotiation to Singapore on every request
+DATABASES['default']['CONN_MAX_AGE'] = 600
 
 
 # Password validation
