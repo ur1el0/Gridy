@@ -1,14 +1,26 @@
-from rest_framework import viewsets, permissions
-from gridy_auth.permissions import IsBarangayOfficial
-from gridy_communications.models import Announcement, ActivitySchedule, FCMDevice, EmergencyHotline, FAQ, AdminNotification
-from gridy_communications.serializers import AnnouncementSerializer, ActivityScheduleSerializer, FCMDeviceSerializer, EmergencyHotlineSerializer
-from gridy_communications.tasks import async_send_fcm_topic_notification
-from gridy_communications.models import FCMDevice
-from gridy_communications.serializers import FCMDeviceSerializer, EmergencyHotlineSerializer, FAQSerializer, AdminNotificationSerializer
-from gridy_auth.models import User
 import logging
+from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from gridy_auth.models import User
+from gridy_auth.permissions import IsBarangayOfficial
+from gridy_communications.models import (
+    Announcement,
+    ActivitySchedule,
+    FCMDevice,
+    EmergencyHotline,
+    FAQ,
+    AdminNotification,
+)
+from gridy_communications.serializers import (
+    AnnouncementSerializer,
+    ActivityScheduleSerializer,
+    FCMDeviceSerializer,
+    EmergencyHotlineSerializer,
+    FAQSerializer,
+    AdminNotificationSerializer,
+)
+from gridy_communications.tasks import async_send_fcm_topic_notification
 
 logger = logging.getLogger(__name__)
 
