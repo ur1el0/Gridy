@@ -70,3 +70,12 @@ class IssueReportViewSet(viewsets.ModelViewSet):
                     body=f"Your issue report '{instance.title}' has been marked as {instance.get_status_display()}.",
                     data={"report_id": str(instance.id)}
                 )
+                
+    def perform_destroy(self, instance):
+        log_action(
+            user=self.request.user,
+            action_type=AuditLog.ActionType.REPORT_ACTION,
+            description=f"Deleted issue report #{instance.id} ('{instance.title}') with status {instance.status}.",
+            request=self.request
+        )
+        instance.delete()
