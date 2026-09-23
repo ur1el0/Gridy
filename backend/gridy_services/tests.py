@@ -229,6 +229,55 @@ class ServiceAPITests(APITestCase):
         self.assertEqual(response.data["document_requests"]["pending"], 1)
         self.assertEqual(response.data["issue_reports"]["urgency_breakdown"]["hazard"], 1)
         self.assertEqual(response.data["queue_activity"]["serving_now"], "T001")
+
+    def test_official_can_delete_released_document_request(self):
+        self.client.force_login(self.official)
+        doc = DocumentRequest.objects.create(
+            user=self.resident,
+            document_type="Barangay Clearance",
+            status=DocumentRequest.Status.RELEASED
+        )
+        url = reverse('document-request-detail', args=[doc.id])
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(DocumentRequest.objects.filter(id=doc.id).exists())
+        self.assertTrue(AuditLog.objects.filter(action_type=AuditLog.ActionType.DOCUMENT_ACTION, action_by=self.official).exists())
+
+    def test_official_can_delete_rejected_document_request(self):
+        self.client.force_login(self.official)
+        doc = DocumentRequest.objects.create(
+            user=self.resident,
+            document_type="Barangay Clearance",
+            status=DocumentRequest.Status.REJECTED
+        )
+        url = reverse('document-request-detail', args=[doc.id])
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(DocumentRequest.objects.filter(id=doc.id).exists())
+
+    def test_official_cannot_delete_pending_document_request(self):
+        self.client.force_login(self.official)
+        doc = DocumentRequest.objects.create(
+            user=self.resident,
+            document_type="Barangay Clearance",
+            status=DocumentRequest.Status.PENDING
+        )
+        url = reverse('document-request-detail', args=[doc.id])
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertTrue(DocumentRequest.objects.filter(id=doc.id).exists())
+
+    def test_resident_cannot_delete_document_request(self):
+        self.client.force_login(self.resident)
+        doc = DocumentRequest.objects.create(
+            user=self.resident,
+            document_type="Barangay Clearance",
+            status=DocumentRequest.Status.RELEASED
+        )
+        url = reverse('document-request-detail', args=[doc.id])
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue(DocumentRequest.objects.filter(id=doc.id).exists())
         
 
 class SystemHealthAPITests(APITestCase):

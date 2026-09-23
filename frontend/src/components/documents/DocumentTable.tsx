@@ -1,12 +1,14 @@
+import { Trash2 } from 'lucide-react';
 import type { DocumentRequest } from '../../pages/services/DocumentRequests';
 
 interface DocumentTableProps {
     requests: DocumentRequest[];
     openModal: (request: DocumentRequest) => void;
     getStatusBadge: (status: string) => string;
+    onDelete?: (id: number) => void;
 }
 
-export const DocumentTable = ({ requests, openModal, getStatusBadge }: DocumentTableProps) => {
+export const DocumentTable = ({ requests, openModal, getStatusBadge, onDelete }: DocumentTableProps) => {
     return (
         <div className="bg-white shadow-sm border border-slate-200 rounded-xl overflow-hidden">
             <div className="overflow-x-auto">
@@ -64,9 +66,25 @@ export const DocumentTable = ({ requests, openModal, getStatusBadge }: DocumentT
                                         {new Date(req.created_at).toLocaleDateString()}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`px-2.5 py-1 inline-flex text-xs leading-5 font-bold rounded-full border ${getStatusBadge(req.status)}`}>
-                                            {req.status.replace(/_/g, ' ')}
-                                        </span>
+                                        <div className="flex items-center gap-2">
+                                            <span className={`px-2.5 py-1 inline-flex text-xs leading-5 font-bold rounded-full border ${getStatusBadge(req.status)}`}>
+                                                {req.status.replace(/_/g, ' ')}
+                                            </span>
+                                            {onDelete && ['RELEASED', 'REJECTED'].includes(req.status) && (
+                                                <button
+                                                    type="button"
+                                                    onClick={(e) => {
+                                                        e.stopPropagation();
+                                                        onDelete(req.id);
+                                                    }}
+                                                    className="p-1 text-slate-400 hover:text-rose-600 rounded-md hover:bg-rose-50 transition-colors"
+                                                    title="Delete clearance request"
+                                                    aria-label={`Delete request #${req.id}`}
+                                                >
+                                                    <Trash2 className="w-4 h-4" />
+                                                </button>
+                                            )}
+                                        </div>
                                     </td>
                                 </tr>
                             ))

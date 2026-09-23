@@ -92,6 +92,22 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
             admin_notes=""
         )
 
+    def perform_destroy(self, instance):
+        # Enforce that only terminal/resolved requests (released or rejected) can be deleted
+        if instance.status not in [DocumentRequest.Status.RELEASED, DocumentRequest.Status.REJECTED]:
+            raise ValidationError(
+                {"detail": "Only resolved (released or rejected) clearance requests can be deleted."}
+            )
+
+        recipient_desc = instance.user.username if instance.user else (instance.walkin_name or "Resident")
+        log_action(
+            user=self.request.user,
+            action_type=AuditLog.ActionType.DOCUMENT_ACTION,
+            description=f"Deleted {instance.get_status_display().lower()} document request #{instance.id} ({instance.document_type}) for {recipient_desc}.",
+            request=self.request
+        )
+        instance.delete()
+
     @action(detail=True, methods=['patch'], permission_classes=[IsBarangayOfficial])
     def validate(self, request, pk=None):
         document_request = self.get_object()
