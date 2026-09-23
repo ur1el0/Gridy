@@ -127,6 +127,7 @@ if 'test' in sys.argv or 'pytest' in sys.modules:
     }
 
 
+import socket 
 
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
@@ -134,10 +135,18 @@ if 'test' in sys.argv or 'pytest' in sys.modules:
 DATABASES = {
     'default': env.db('DATABASE_URL', default='sqlite:///db.sqlite3')
 }
-# Keep database connections open for 10 minutes (600s) to avoid TLS renegotiation to Singapore on every request
-DATABASES['default']['CONN_MAX_AGE'] = 600
 
+# 1. Connection pooling for serverless PostgreSQL (drops idle re-negotiation)
+DATABASES['default']['CONN_MAX_AGE'] = 60
+DATABASES['default']['CONN_HEALTH_CHECKS'] = True
 
+# 2. Force IPv4 connection to prevent Linux 'Network is unreachable' on IPv6
+db_host = DATABASES['default'].get('HOST')
+if db_host and not db_host.startswith('/') and db_host != 'localhost':
+    try:
+        DATABASES['default'].setdefault('OPTIONS', {})['hostaddr'] = socket.gethostbyname(db_host)
+    except Exception:
+        pass
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 
