@@ -4,6 +4,7 @@ from django.contrib.auth.password_validation import validate_password
 from django.core.exceptions import ValidationError as DjangoValidationError
 from gridy_auth.models import User, Resident, Barangay
 from datetime import date
+from django.conf import settings
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
@@ -112,6 +113,8 @@ class AdminRegisterSerializer(serializers.Serializer):
     password = serializers.CharField(write_only=True)
     confirm_password = serializers.CharField(write_only=True)
     affirmation = serializers.BooleanField(write_only=True, default=False)
+    passkey = serializers.CharField(write_only=True, required=True)
+
 
     def validate_password(self, value):
         try:
@@ -126,7 +129,11 @@ class AdminRegisterSerializer(serializers.Serializer):
 
         if not attrs.get('affirmation'):
             raise serializers.ValidationError({"affirmation": "You must affirm authorized status to register."})
-
+        provided_passkey = attrs.get('passkey')
+            
+        if provided_passkey != settings.ADMIN_REGISTRATION_PASSKEY:
+            raise serializers.ValidationError({"passkey": "Invalid administrative registration passkey."})
+        
         email = attrs.get('email')
         if email and User.objects.filter(email__iexact=email).exists():
             raise serializers.ValidationError({"email": "An account with this email already exists."})

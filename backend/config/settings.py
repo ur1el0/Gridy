@@ -29,10 +29,12 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
-# SECURITY WARNING: keep the secret key used in production secret!
+# SECURITY WARNING: keep the secret key used in production secret
 SECRET_KEY = env('SECRET_KEY')
 
-# SECURITY WARNING: don't run with debug turned on in production!
+ADMIN_REGISTRATION_PASSKEY = env('ADMIN_REGISTRATION_PASSKEY', default='LGU-DEFAULT-PASSKEY')
+
+# SECURITY WARNING: don't run with debug turned on in production
 DEBUG = env('DEBUG')
 
 ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1', '.onrender.com'])

@@ -30,6 +30,7 @@ export const Register: React.FC = () => {
     const [barangayId, setBarangayId] = useState('');
     const [affirmation, setAffirmation] = useState(false);
     const [dataPrivacyConsent, setDataPrivacyConsent] = useState(false);
+    const [passkey, setPasskey] = useState('');
 
 
     const [error, setError] = useState('');
@@ -77,6 +78,7 @@ export const Register: React.FC = () => {
                     password,
                     confirm_password: confirmPassword,
                     affirmation,
+                    passkey,
                 };
 
                 if (barangayId.trim()) {
@@ -691,6 +693,24 @@ export const Register: React.FC = () => {
                                 </label>
                             </div>
                         )}
+                        
+                        {/* Admin Passkey Requirement */}
+                        {isAdminMode && (
+                            <div>
+                                <label className="block text-[11px] font-bold tracking-wider text-slate-500 uppercase mb-1.5 items-center gap-1.5">
+                                    <svg className="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
+                                    LGU ADMINISTRATIVE PASSKEY
+                                </label>
+                                <input
+                                    type="password"
+                                    required={isAdminMode}
+                                    value={passkey}
+                                    onChange={(e) => setPasskey(e.target.value)}
+                                    className="w-full px-4 py-3 bg-[#EEF2F6] focus:bg-white border border-transparent focus:border-[#091B35] focus:ring-1 focus:ring-[#091B35] rounded-xl text-sm font-medium text-slate-900 placeholder-slate-400 outline-none transition-all"
+                                    placeholder="Enter secure LGU passkey"
+                                />
+                            </div>
+                        )}
 
                         {/* Admin Affirmation Checkbox */}
                         {isAdminMode && (
@@ -713,7 +733,7 @@ export const Register: React.FC = () => {
                         <div className="pt-2">
                             <button
                                 type="submit"
-                                disabled={loading || (!isAdminMode && !dataPrivacyConsent) || (isAdminMode && !affirmation)}
+                                disabled={loading || (!isAdminMode && !dataPrivacyConsent) || (isAdminMode && (!affirmation || !passkey))}
                                 className={`w-full py-3.5 px-6 text-white font-bold text-sm rounded-xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed ${
                                     isAdminMode
                                         ? 'bg-[#091B35] hover:bg-[#0F2D59] shadow-[#091B35]/20'
