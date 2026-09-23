@@ -73,6 +73,7 @@ export const Register: React.FC = () => {
             if (isAdminMode) {
                 // Official Personnel Registration Pipeline
                 const payload: Record<string, any> = {
+                    username: username.trim(),
                     full_name: fullName.trim(),
                     email: email.trim().toLowerCase(),
                     password,
@@ -362,22 +363,22 @@ export const Register: React.FC = () => {
                             />
                         </div>
 
-                        {/* Resident Mode: Username */}
-                        {!isAdminMode && (
-                            <div>
-                                <label className="block text-[11px] font-bold tracking-wider text-slate-500 uppercase mb-1.5">
-                                    USERNAME
-                                </label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={username}
-                                    onChange={(e) => setUsername(e.target.value)}
-                                    className="w-full px-4 py-3 bg-[#EEF2F6] focus:bg-white border border-transparent focus:border-[#0284C7] rounded-xl text-sm font-medium text-slate-900 placeholder-slate-400 outline-none transition-all"
-                                    placeholder="juandelacruz"
-                                />
-                            </div>
-                        )}
+                        {/* Universal Username Field */}
+                        <div>
+                            <label className="block text-[11px] font-bold tracking-wider text-slate-500 uppercase mb-1.5">
+                                USERNAME
+                            </label>
+                            <input
+                                type="text"
+                                required
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                className={`w-full px-4 py-3 bg-[#EEF2F6] focus:bg-white border border-transparent rounded-xl text-sm font-medium text-slate-900 placeholder-slate-400 outline-none transition-all ${
+                                    isAdminMode ? 'focus:border-[#091B35]' : 'focus:border-[#0284C7]'
+                                }`}
+                                placeholder={isAdminMode ? 'admin_captain' : 'juandelacruz'}
+                            />
+                        </div>
 
                         {/* Email */}
                         <div>
