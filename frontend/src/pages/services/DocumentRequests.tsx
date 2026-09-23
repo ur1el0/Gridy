@@ -151,6 +151,20 @@ export const DocumentRequests: React.FC = () => {
         }
     };
 
+    const handleDeleteRequest = async (id: number) => {
+        const confirmed = window.confirm('Are you sure you want to delete this clearance request? This action cannot be undone.');
+        if (!confirmed) return;
+
+        try {
+            await axiosPrivate.delete(`/document-requests/${id}/`);
+            setRequests(prev => prev.filter(req => req.id !== id));
+            toast.success('Clearance request deleted successfully.');
+        } catch (err: any) {
+            console.error('Failed to delete clearance request:', err);
+            toast.error(err.response?.data?.detail || 'Failed to delete clearance request.');
+        }
+    };
+
     const handleCreateWalkinRequest = async (e: React.FormEvent<HTMLFormElement>) => {
         e.preventDefault();
         if (!walkinName.trim()) {
@@ -203,7 +217,7 @@ export const DocumentRequests: React.FC = () => {
                     onClick={() => setIsCreateModalOpen(true)}
                     className="bg-[#0047BA] hover:bg-[#003882] active:bg-[#002D6B] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
-                    <span>+</span> Log Walk-in Request
+                    <span>+</span> Request Walk-in 
                 </button>
             </div>
 
@@ -211,6 +225,7 @@ export const DocumentRequests: React.FC = () => {
                 requests={requests}
                 openModal={openModal}
                 getStatusBadge={getStatusBadge}
+                onDelete={handleDeleteRequest}
             />
 
             {isModalOpen && selectedRequest && (
