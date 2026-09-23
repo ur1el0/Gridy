@@ -267,7 +267,25 @@ class ServiceAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertTrue(DocumentRequest.objects.filter(id=doc.id).exists())
 
-    def test_resident_cannot_delete_document_request(self):
+    def test_resident_can_cancel_pending_document_request(self):
+        self.client.force_login(self.resident)
+        doc = DocumentRequest.objects.create(
+            user=self.resident,
+            document_type="Barangay Clearance",
+            status=DocumentRequest.Status.PENDING
+        )
+        url = reverse('document-request-detail', args=[doc.id])
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(DocumentRequest.objects.filter(id=doc.id).exists())
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action_type=AuditLog.ActionType.DOCUMENT_ACTION,
+                action_by=self.resident
+            ).exists()
+        )
+
+    def test_resident_cannot_delete_released_document_request(self):
         self.client.force_login(self.resident)
         doc = DocumentRequest.objects.create(
             user=self.resident,
@@ -276,7 +294,26 @@ class ServiceAPITests(APITestCase):
         )
         url = reverse('document-request-detail', args=[doc.id])
         response = self.client.delete(url)
-        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(response.data.get('detail'), "You can only cancel document requests that are still pending review.")
+        self.assertTrue(DocumentRequest.objects.filter(id=doc.id).exists())
+
+    def test_resident_cannot_cancel_other_resident_pending_request(self):
+        other_resident = User.objects.create_user(
+            username="other_resident",
+            password="SecurePassword123!",
+            email="other@example.com",
+            role=User.Role.RESIDENT
+        )
+        doc = DocumentRequest.objects.create(
+            user=other_resident,
+            document_type="Barangay Clearance",
+            status=DocumentRequest.Status.PENDING
+        )
+        self.client.force_login(self.resident)
+        url = reverse('document-request-detail', args=[doc.id])
+        response = self.client.delete(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
         self.assertTrue(DocumentRequest.objects.filter(id=doc.id).exists())
     
     def test_queue_ticket_sequencing_isolated_by_barangay(self):
