@@ -16,7 +16,7 @@ describe('Login Component', () => {
         )
 
         // 2. Query the virtual screen for our elements
-        const usernameInput = screen.getByPlaceholderText('Enter your username')
+        const usernameInput = screen.getByPlaceholderText(/Enter your username/i)
         const passwordInput = screen.getByPlaceholderText('........')
         const loginButton = screen.getByRole('button', { name: /login to resident portal/i })
 
