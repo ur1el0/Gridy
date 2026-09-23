@@ -332,6 +332,59 @@ class ServiceAPITests(APITestCase):
         ticket_a2 = QueueTicket.objects.create(barangay=barangay_a, service_type="Clearance")
         self.assertEqual(ticket_a2.ticket_number, "T002")
 
+    def test_resident_can_cancel_own_waiting_queue_ticket(self):
+        self.client.force_login(self.resident)
+        ticket = QueueTicket.objects.create(
+            user=self.resident,
+            barangay=self.resident.barangay,
+            service_type="Clearance",
+            status=QueueTicket.Status.WAITING
+        )
+        url = reverse('ticket-cancel-ticket', args=[ticket.id])
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        ticket.refresh_from_db()
+        self.assertEqual(ticket.status, QueueTicket.Status.CANCELLED)
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action_type=AuditLog.ActionType.QUEUE_ACTION,
+                action_by=self.resident
+            ).exists()
+        )
+
+    def test_resident_cannot_cancel_serving_or_completed_queue_ticket(self):
+        self.client.force_login(self.resident)
+        ticket = QueueTicket.objects.create(
+            user=self.resident,
+            barangay=self.resident.barangay,
+            service_type="Clearance",
+            status=QueueTicket.Status.SERVING
+        )
+        url = reverse('ticket-cancel-ticket', args=[ticket.id])
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        ticket.refresh_from_db()
+        self.assertEqual(ticket.status, QueueTicket.Status.SERVING)
+
+    def test_resident_cannot_cancel_other_resident_queue_ticket(self):
+        other_resident = User.objects.create_user(
+            username="other_queue_resident",
+            password="SecurePassword123!",
+            email="other_queue@example.com",
+            role=User.Role.RESIDENT
+        )
+        ticket = QueueTicket.objects.create(
+            user=other_resident,
+            service_type="Clearance",
+            status=QueueTicket.Status.WAITING
+        )
+        self.client.force_login(self.resident)
+        url = reverse('ticket-cancel-ticket', args=[ticket.id])
+        response = self.client.post(url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        ticket.refresh_from_db()
+        self.assertEqual(ticket.status, QueueTicket.Status.WAITING)
+
 class SystemHealthAPITests(APITestCase):
     def test_health_check_endpoint_success(self):
         url = reverse('health_check')
