@@ -768,16 +768,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 20),
 
-                        // Section Divider & Collapsible Container: Identity & Residency Verification Proofs
-                        Container(
-                          width: double.infinity,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFFF1F5F9),
+                        // Section Divider & Collapsible Container: Identity & Residency Verification Proofs                        // Section Divider & Collapsible Container: Identity & Residency Verification Proofs
                         Material(
                           color: const Color(0xFFF1F5F9),
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
                             side: const BorderSide(color: Color(0xFFE2E8F0)),
                           ),
                           clipBehavior: Clip.antiAlias,
