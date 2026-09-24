@@ -1,7 +1,9 @@
-import '../core/network/api_exception.dart';
 import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import '../core/config/app_config.dart';
 import '../core/network/api_client.dart';
+import '../core/network/api_exception.dart';
 import '../models/auth_response.dart';
 import '../models/user_model.dart';
 import 'storage_service.dart';
@@ -89,21 +91,66 @@ class AuthService {
     int? barangayId,
     String? contactNumber,
     String? guardianId,
+    String? philsysIdNumber,
+    XFile? philsysPhoto,
+    String? utilityBillingType,
+    XFile? utilityBillingPhoto,
+    String? secondaryIdType,
+    XFile? secondaryIdPhoto,
   }) async {
-    final response = await apiClient.post(
+    final Map<String, String> fields = {
+      'full_name': fullName.trim(),
+      'username': username.trim(),
+      'email': email.trim().toLowerCase(),
+      'password': password,
+      'birth_date': birthDate,
+      'voter_status': voterStatus.toString(),
+      if (barangayId != null) 'barangay_id': barangayId.toString(),
+      if (contactNumber != null && contactNumber.isNotEmpty)
+        'contact_number': contactNumber.trim(),
+      if (guardianId != null && guardianId.isNotEmpty)
+        'guardian_id': guardianId.trim(),
+      if (philsysIdNumber != null && philsysIdNumber.trim().isNotEmpty)
+        'philsys_id_number': philsysIdNumber.trim(),
+      if (utilityBillingType != null && utilityBillingType.trim().isNotEmpty)
+        'utility_billing_type': utilityBillingType.trim(),
+      if (secondaryIdType != null && secondaryIdType.trim().isNotEmpty)
+        'secondary_id_type': secondaryIdType.trim(),
+    };
+
+    final List<http.MultipartFile> files = [];
+
+    if (philsysPhoto != null) {
+      final bytes = await philsysPhoto.readAsBytes();
+      files.add(http.MultipartFile.fromBytes(
+        'philsys_id_photo',
+        bytes,
+        filename: philsysPhoto.name.isNotEmpty ? philsysPhoto.name : 'philsys_id.jpg',
+      ));
+    }
+
+    if (utilityBillingPhoto != null) {
+      final bytes = await utilityBillingPhoto.readAsBytes();
+      files.add(http.MultipartFile.fromBytes(
+        'utility_billing_photo',
+        bytes,
+        filename: utilityBillingPhoto.name.isNotEmpty ? utilityBillingPhoto.name : 'utility_bill.jpg',
+      ));
+    }
+
+    if (secondaryIdPhoto != null) {
+      final bytes = await secondaryIdPhoto.readAsBytes();
+      files.add(http.MultipartFile.fromBytes(
+        'secondary_id_photo',
+        bytes,
+        filename: secondaryIdPhoto.name.isNotEmpty ? secondaryIdPhoto.name : 'secondary_id.jpg',
+      ));
+    }
+
+    final response = await apiClient.postMultipart(
       AppConfig.registerEndpoint,
-      body: {
-        'full_name': fullName.trim(),
-        'username': username.trim(),
-        'email': email.trim().toLowerCase(),
-        'password': password,
-        'birth_date': birthDate,
-        'voter_status': voterStatus,
-        'barangay_id': ?barangayId,
-        if (contactNumber != null && contactNumber.isNotEmpty)
-          'contact_number': contactNumber.trim(),
-        if (guardianId != null && guardianId.isNotEmpty) 'guardian_id': guardianId,
-      },
+      fields: fields,
+      files: files.isNotEmpty ? files : null,
       requiresAuth: false,
     );
     
