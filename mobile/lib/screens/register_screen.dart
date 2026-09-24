@@ -775,190 +775,215 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 20),
 
-                        // Section Divider & Container: Identity & Residency Verification Proofs
+                        // Section Divider & Collapsible Container: Identity & Residency Verification Proofs
                         Container(
                           width: double.infinity,
-                          padding: const EdgeInsets.all(16),
                           decoration: BoxDecoration(
                             color: const Color(0xFFF1F5F9),
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(color: const Color(0xFFE2E8F0)),
                           ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: const [
-                                  Icon(Icons.badge_outlined, color: AppColors.primaryNavy, size: 20),
-                                  SizedBox(width: 8),
-                                  Text(
-                                    'IDENTITY & RESIDENCY VERIFICATION',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w800,
-                                      color: AppColors.textPrimary,
-                                      letterSpacing: 0.5,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: 6),
-                              const Text(
-                                'Provide your Philippine National ID (PhilSys) and a household utility bill to verify local residency.',
+                          child: Theme(
+                            data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
+                            child: ExpansionTile(
+                              leading: const Icon(Icons.badge_outlined, color: AppColors.primaryNavy, size: 22),
+                              title: const Text(
+                                'IDENTITY & RESIDENCY VERIFICATION',
                                 style: TextStyle(
                                   fontSize: 12,
-                                  color: AppColors.textSecondary,
-                                  height: 1.35,
-                                ),
-                              ),
-                              const SizedBox(height: 16),
-
-                              // 1. PhilSys ID Number
-                              CustomTextField(
-                                label: 'PHILSYS NATIONAL ID NUMBER',
-                                controller: _philsysIdController,
-                                hintText: 'e.g. 1234-5678-9012-3456',
-                                prefixIcon: Icons.fingerprint_rounded,
-                                enabled: !_isLoading,
-                              ),
-                              const SizedBox(height: 12),
-
-                              // PhilSys ID Photo Upload
-                              const Text(
-                                'PHILSYS ID CARD PHOTO',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textLabel,
+                                  fontWeight: FontWeight.w800,
+                                  color: AppColors.textPrimary,
                                   letterSpacing: 0.5,
                                 ),
                               ),
-                              const SizedBox(height: 6),
-                              _buildPhotoUploadCard(
-                                title: 'Upload PhilSys ID Photo',
-                                selectedFile: _philsysPhoto,
-                                onPick: () => _pickImageSource((file) => _philsysPhoto = file),
-                                onRemove: () => setState(() => _philsysPhoto = null),
-                                enabled: !_isLoading,
-                              ),
-
-                              const SizedBox(height: 18),
-
-                              // 2. Utility Proof of Residency
-                              const Text(
-                                'BILLING STATEMENT TYPE',
+                              subtitle: Text(
+                                (_philsysPhoto != null || _utilityBillingPhoto != null || _secondaryIdPhoto != null || _philsysIdController.text.trim().isNotEmpty)
+                                    ? 'Proofs Attached (Tap to view/edit)'
+                                    : 'Tap to expand and upload ID proofs',
                                 style: TextStyle(
                                   fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textLabel,
-                                  letterSpacing: 0.5,
+                                  color: (_philsysPhoto != null || _utilityBillingPhoto != null || _secondaryIdPhoto != null || _philsysIdController.text.trim().isNotEmpty)
+                                      ? const Color(0xFF10B981)
+                                      : AppColors.textSecondary,
+                                  fontWeight: (_philsysPhoto != null || _utilityBillingPhoto != null || _secondaryIdPhoto != null || _philsysIdController.text.trim().isNotEmpty)
+                                      ? FontWeight.w700
+                                      : FontWeight.w400,
                                 ),
                               ),
-                              const SizedBox(height: 6),
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                                ),
-                                child: DropdownButtonFormField<String>(
-                                  initialValue: _utilityBillingType,
-                                  isExpanded: true,
-                                  decoration: const InputDecoration(
-                                    border: InputBorder.none,
-                                    contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                                    prefixIcon: Icon(Icons.receipt_long_outlined, color: AppColors.textMuted, size: 20),
-                                  ),
-                                  items: _billingTypes.map((type) => DropdownMenuItem(
-                                    value: type,
-                                    child: Text(type, style: const TextStyle(fontSize: 14, color: AppColors.textPrimary)),
-                                  )).toList(),
-                                  onChanged: _isLoading ? null : (val) {
-                                    if (val != null) setState(() => _utilityBillingType = val);
-                                  },
-                                ),
-                              ),
-                              const SizedBox(height: 12),
-
-                              // Utility Billing Photo Upload
-                              const Text(
-                                'UPLOAD BILLING RECEIPT',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textLabel,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              _buildPhotoUploadCard(
-                                title: 'Upload Billing Receipt Photo',
-                                selectedFile: _utilityBillingPhoto,
-                                onPick: () => _pickImageSource((file) => _utilityBillingPhoto = file),
-                                onRemove: () => setState(() => _utilityBillingPhoto = null),
-                                enabled: !_isLoading,
-                              ),
-
-                              const SizedBox(height: 18),
-
-                              // 3. Optional Secondary Valid ID
-                              const Text(
-                                'SECONDARY VALID ID (OPTIONAL)',
-                                style: TextStyle(
-                                  fontSize: 11,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.textLabel,
-                                  letterSpacing: 0.5,
-                                ),
-                              ),
-                              const SizedBox(height: 6),
-                              Container(
-                                decoration: BoxDecoration(
-                                  color: Colors.white,
-                                  borderRadius: BorderRadius.circular(12),
-                                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                                ),
-                                child: DropdownButtonFormField<String>(
-                                  initialValue: _secondaryIdType,
-                                  isExpanded: true,
-                                  decoration: const InputDecoration(
-                                    border: InputBorder.none,
-                                    contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                                    prefixIcon: Icon(Icons.credit_card_outlined, color: AppColors.textMuted, size: 20),
-                                  ),
-                                  items: _secondaryIdTypes.map((type) => DropdownMenuItem(
-                                    value: type,
-                                    child: Text(
-                                      type.isEmpty ? 'None / Not Applicable' : type,
-                                      style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
-                                    ),
-                                  )).toList(),
-                                  onChanged: _isLoading ? null : (val) {
-                                    if (val != null) setState(() => _secondaryIdType = val);
-                                  },
-                                ),
-                              ),
-                              if (_secondaryIdType.isNotEmpty) ...[
-                                const SizedBox(height: 12),
+                              childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
+                              children: [
                                 const Text(
-                                  'UPLOAD SECONDARY ID',
+                                  'Provide your Philippine National ID (PhilSys) and a household utility bill to verify local residency.',
                                   style: TextStyle(
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    color: AppColors.textLabel,
-                                    letterSpacing: 0.5,
+                                    fontSize: 12,
+                                    color: AppColors.textSecondary,
+                                    height: 1.35,
+                                  ),
+                                ),
+                                const SizedBox(height: 16),
+
+                                // 1. PhilSys ID Number
+                                CustomTextField(
+                                  label: 'PHILSYS NATIONAL ID NUMBER',
+                                  controller: _philsysIdController,
+                                  hintText: 'e.g. 1234-5678-9012-3456',
+                                  prefixIcon: Icons.fingerprint_rounded,
+                                  enabled: !_isLoading,
+                                ),
+                                const SizedBox(height: 12),
+
+                                // PhilSys ID Photo Upload
+                                const Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    'PHILSYS ID CARD PHOTO',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textLabel,
+                                      letterSpacing: 0.5,
+                                    ),
                                   ),
                                 ),
                                 const SizedBox(height: 6),
                                 _buildPhotoUploadCard(
-                                  title: 'Upload Secondary ID Photo',
-                                  selectedFile: _secondaryIdPhoto,
-                                  onPick: () => _pickImageSource((file) => _secondaryIdPhoto = file),
-                                  onRemove: () => setState(() => _secondaryIdPhoto = null),
+                                  title: 'Upload PhilSys ID Photo',
+                                  selectedFile: _philsysPhoto,
+                                  onPick: () => _pickImageSource((file) => _philsysPhoto = file),
+                                  onRemove: () => setState(() => _philsysPhoto = null),
                                   enabled: !_isLoading,
                                 ),
+
+                                const SizedBox(height: 18),
+
+                                // 2. Utility Proof of Residency
+                                const Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    'BILLING STATEMENT TYPE',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textLabel,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                                  ),
+                                  child: DropdownButtonFormField<String>(
+                                    initialValue: _utilityBillingType,
+                                    isExpanded: true,
+                                    decoration: const InputDecoration(
+                                      border: InputBorder.none,
+                                      contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                      prefixIcon: Icon(Icons.receipt_long_outlined, color: AppColors.textMuted, size: 20),
+                                    ),
+                                    items: _billingTypes.map((type) => DropdownMenuItem(
+                                      value: type,
+                                      child: Text(type, style: const TextStyle(fontSize: 14, color: AppColors.textPrimary)),
+                                    )).toList(),
+                                    onChanged: _isLoading ? null : (val) {
+                                      if (val != null) setState(() => _utilityBillingType = val);
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(height: 12),
+
+                                // Utility Billing Photo Upload
+                                const Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    'UPLOAD BILLING RECEIPT',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textLabel,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                _buildPhotoUploadCard(
+                                  title: 'Upload Billing Receipt Photo',
+                                  selectedFile: _utilityBillingPhoto,
+                                  onPick: () => _pickImageSource((file) => _utilityBillingPhoto = file),
+                                  onRemove: () => setState(() => _utilityBillingPhoto = null),
+                                  enabled: !_isLoading,
+                                ),
+
+                                const SizedBox(height: 18),
+
+                                // 3. Optional Secondary Valid ID
+                                const Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: Text(
+                                    'SECONDARY VALID ID (OPTIONAL)',
+                                    style: TextStyle(
+                                      fontSize: 11,
+                                      fontWeight: FontWeight.w700,
+                                      color: AppColors.textLabel,
+                                      letterSpacing: 0.5,
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(height: 6),
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: Colors.white,
+                                    borderRadius: BorderRadius.circular(12),
+                                    border: Border.all(color: const Color(0xFFE2E8F0)),
+                                  ),
+                                  child: DropdownButtonFormField<String>(
+                                    initialValue: _secondaryIdType,
+                                    isExpanded: true,
+                                    decoration: const InputDecoration(
+                                      border: InputBorder.none,
+                                      contentPadding: EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                                      prefixIcon: Icon(Icons.credit_card_outlined, color: AppColors.textMuted, size: 20),
+                                    ),
+                                    items: _secondaryIdTypes.map((type) => DropdownMenuItem(
+                                      value: type,
+                                      child: Text(
+                                        type.isEmpty ? 'None / Not Applicable' : type,
+                                        style: const TextStyle(fontSize: 14, color: AppColors.textPrimary),
+                                      ),
+                                    )).toList(),
+                                    onChanged: _isLoading ? null : (val) {
+                                      if (val != null) setState(() => _secondaryIdType = val);
+                                    },
+                                  ),
+                                ),
+                                if (_secondaryIdType.isNotEmpty) ...[
+                                  const SizedBox(height: 12),
+                                  const Align(
+                                    alignment: Alignment.centerLeft,
+                                    child: Text(
+                                      'UPLOAD SECONDARY ID',
+                                      style: TextStyle(
+                                        fontSize: 11,
+                                        fontWeight: FontWeight.w700,
+                                        color: AppColors.textLabel,
+                                        letterSpacing: 0.5,
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  _buildPhotoUploadCard(
+                                    title: 'Upload Secondary ID Photo',
+                                    selectedFile: _secondaryIdPhoto,
+                                    onPick: () => _pickImageSource((file) => _secondaryIdPhoto = file),
+                                    onRemove: () => setState(() => _secondaryIdPhoto = null),
+                                    enabled: !_isLoading,
+                                  ),
+                                ],
                               ],
-                            ],
+                            ),
                           ),
                         ),
 
