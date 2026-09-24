@@ -70,6 +70,6 @@ void main() {
 
     // Verify RegisterScreen is now visible
     expect(find.text('Create an Account'), findsOneWidget);
-    expect(find.text('Register Account'), findsOneWidget);
+    expect(find.text('Register Account', skipOffstage: false), findsOneWidget);
   });
 }

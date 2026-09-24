@@ -49,8 +49,14 @@ void main() {
     expect(find.text('PASSWORD'), findsOneWidget);
     expect(find.text('CONFIRM PASSWORD'), findsOneWidget);
 
-    // Verify verification dossier fields
+    // Verify verification dossier header
     expect(find.text('IDENTITY & RESIDENCY VERIFICATION', skipOffstage: false), findsOneWidget);
+
+    // Expand the verification accordion to reveal inner dossier fields
+    await tester.ensureVisible(find.text('IDENTITY & RESIDENCY VERIFICATION'));
+    await tester.tap(find.text('IDENTITY & RESIDENCY VERIFICATION'));
+    await tester.pumpAndSettle();
+
     expect(find.text('PHILSYS NATIONAL ID NUMBER', skipOffstage: false), findsOneWidget);
     expect(find.text('Upload PhilSys ID Photo', skipOffstage: false), findsOneWidget);
     expect(find.text('BILLING STATEMENT TYPE', skipOffstage: false), findsOneWidget);
@@ -64,7 +70,7 @@ void main() {
     expect(find.text('name@civic.gov', skipOffstage: false), findsOneWidget);
 
     // Verify primary action button
-    expect(find.text('Register Account'), findsOneWidget);
+    expect(find.text('Register Account', skipOffstage: false), findsOneWidget);
 
     // Verify alternative login text
     expect(
@@ -75,7 +81,7 @@ void main() {
     );
 
     // Verify footer disclaimer
-    expect(find.text('BY REGISTERING, YOU AGREE TO OUR\nTERMS OF SERVICE & PRIVACY POLICY.'), findsOneWidget);
+    expect(find.text('BY REGISTERING, YOU AGREE TO OUR\nTERMS OF SERVICE & PRIVACY POLICY.', skipOffstage: false), findsOneWidget);
   });
 
   testWidgets('Submitting empty form triggers validation error messages for all fields', (WidgetTester tester) async {
@@ -92,15 +98,16 @@ void main() {
     // Tap the register button without entering data
     final registerButton = find.text('Register Account');
     expect(registerButton, findsOneWidget);
+    await tester.ensureVisible(registerButton);
     await tester.tap(registerButton);
     await tester.pumpAndSettle();
 
     // Expect field validation error messages
-    expect(find.text('Please enter your full name'), findsOneWidget);
-    expect(find.text('Please enter your barangay ID or username'), findsOneWidget);
-    expect(find.text('Please enter your email address'), findsOneWidget);
-    expect(find.text('Please enter a password'), findsOneWidget);
-    expect(find.text('Please confirm your password'), findsOneWidget);
+    expect(find.text('Please enter your full name', skipOffstage: false), findsOneWidget);
+    expect(find.text('Please enter your barangay ID or username', skipOffstage: false), findsOneWidget);
+    expect(find.text('Please enter your email address', skipOffstage: false), findsOneWidget);
+    expect(find.text('Please enter a password', skipOffstage: false), findsOneWidget);
+    expect(find.text('Please confirm your password', skipOffstage: false), findsOneWidget);
   });
 
   testWidgets('Validates email formatting correctly', (WidgetTester tester) async {
@@ -122,10 +129,12 @@ void main() {
     await tester.enterText(textFields.at(3), 'password123');
     await tester.enterText(textFields.at(4), 'password123');
 
-    await tester.tap(find.text('Register Account'));
+    final registerButton = find.text('Register Account');
+    await tester.ensureVisible(registerButton);
+    await tester.tap(registerButton);
     await tester.pumpAndSettle();
 
-    expect(find.text('Please enter a valid email address'), findsOneWidget);
+    expect(find.text('Please enter a valid email address', skipOffstage: false), findsOneWidget);
   });
 
   testWidgets('Validates password length and password match confirmation', (WidgetTester tester) async {
@@ -147,20 +156,23 @@ void main() {
     // Test short password
     await tester.enterText(textFields.at(3), 'short');
     await tester.enterText(textFields.at(4), 'short');
-    await tester.ensureVisible(find.text('Register Account')); // <-- Add this
-    await tester.tap(find.text('Register Account'));
+    final registerButton = find.text('Register Account');
+    await tester.ensureVisible(registerButton);
+    await tester.tap(registerButton);
     await tester.pumpAndSettle();
 
-    expect(find.text('Password must be at least 8 characters'), findsOneWidget);
+    expect(find.text('Password must be at least 8 characters', skipOffstage: false), findsOneWidget);
 
     // Test password mismatch
+    await tester.ensureVisible(textFields.at(3));
     await tester.enterText(textFields.at(3), 'validpassword123');
+    await tester.ensureVisible(textFields.at(4));
     await tester.enterText(textFields.at(4), 'differentpassword456');
-    await tester.ensureVisible(find.text('Register Account')); // <-- Add this
-    await tester.tap(find.text('Register Account'));
+    await tester.ensureVisible(registerButton);
+    await tester.tap(registerButton);
     await tester.pumpAndSettle();
 
-    expect(find.text('Passwords do not match'), findsOneWidget);
+    expect(find.text('Passwords do not match', skipOffstage: false), findsOneWidget);
   });
 
   testWidgets('Toggling password visibility switches icon', (WidgetTester tester) async {
@@ -175,14 +187,16 @@ void main() {
     await tester.pumpAndSettle();
 
     // Initially visibility icon is visibility_outlined
-    expect(find.byIcon(Icons.visibility_outlined), findsNWidgets(2));
+    expect(find.byIcon(Icons.visibility_outlined, skipOffstage: false), findsNWidgets(2));
 
     // Tap first visibility toggle
-    await tester.tap(find.byIcon(Icons.visibility_outlined).first);
+    final firstToggle = find.byIcon(Icons.visibility_outlined).first;
+    await tester.ensureVisible(firstToggle);
+    await tester.tap(firstToggle);
     await tester.pumpAndSettle();
 
     // Now one is off and one is on
-    expect(find.byIcon(Icons.visibility_off_outlined), findsOneWidget);
-    expect(find.byIcon(Icons.visibility_outlined), findsOneWidget);
+    expect(find.byIcon(Icons.visibility_off_outlined, skipOffstage: false), findsOneWidget);
+    expect(find.byIcon(Icons.visibility_outlined, skipOffstage: false), findsOneWidget);
   });
 }

@@ -988,7 +988,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
 
                         const SizedBox(height: 16),
-
+                        
                         // RA 10173 Data Privacy Act Consent Checkbox
                         CheckboxListTile(
                           value: _dataPrivacyConsent,
