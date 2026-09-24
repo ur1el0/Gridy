@@ -1,8 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { axiosPublic } from '../../api/axios';
-// Updated line 4:
-import { Shield, FileCheck2, Clock, Users, KeyRound, Upload, IdCard, X } from 'lucide-react';
+import { Shield, FileCheck2, Clock, Users, KeyRound, Upload, IdCard, X, ChevronDown } from 'lucide-react';
 export const Register: React.FC = () => {
     const [isAdminMode, setIsAdminMode] = useState(false);
 
@@ -19,6 +18,7 @@ export const Register: React.FC = () => {
     const [guardianId, setGuardianId] = useState('');
 
     // Verification proofs state
+    const [isVerificationExpanded, setIsVerificationExpanded] = useState(false);
     const [philsysIdNumber, setPhilsysIdNumber] = useState('');
     const [philsysPhoto, setPhilsysPhoto] = useState<File | null>(null);
     const [utilityBillingType, setUtilityBillingType] = useState('Electric Bill');
@@ -427,165 +427,189 @@ export const Register: React.FC = () => {
                             </div>
                         )}
 
-                        {/* Resident Mode: Identity & Residency Verification Proofs */}
+                        {/* Resident Mode: Identity & Residency Verification Proofs (Collapsible Dropdown Accordion) */}
                         {!isAdminMode && (
-                            <div className="space-y-4 pt-2 border-t border-slate-200">
-                                <div className="flex items-center gap-2">
-                                    <IdCard className="w-4 h-4 text-[#0284C7]" />
-                                    <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700">
-                                        Identity & Residency Verification
-                                    </h4>
-                                </div>
-                                <p className="text-[11px] text-slate-500 leading-relaxed -mt-2">
-                                    Provide your Philippine National ID (PhilSys) and a household utility bill to verify local residency.
-                                </p>
-
-                                {/* 1. PhilSys ID Number & Photo */}
-                                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
-                                    <div>
-                                        <label className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1">
-                                            PHILSYS NATIONAL ID NUMBER
-                                        </label>
-                                        <input
-                                            type="text"
-                                            value={philsysIdNumber}
-                                            onChange={(e) => setPhilsysIdNumber(e.target.value)}
-                                            placeholder="e.g. 1234-5678-9012-3456"
-                                            className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-[#0284C7] rounded-lg text-xs font-mono text-slate-900 outline-none transition-all"
-                                        />
+                            <div className="border border-slate-200 rounded-xl bg-slate-50/70 overflow-hidden transition-all shadow-sm">
+                                <button
+                                    type="button"
+                                    onClick={() => setIsVerificationExpanded((prev) => !prev)}
+                                    className="w-full flex items-center justify-between p-3.5 cursor-pointer text-left hover:bg-slate-100/70 transition-colors select-none"
+                                >
+                                    <div className="flex items-center gap-2.5">
+                                        <IdCard className="w-4 h-4 text-[#0284C7] shrink-0" />
+                                        <div>
+                                            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
+                                                Identity & Residency Verification
+                                            </h4>
+                                            <p className="text-[11px] text-slate-500">
+                                                {isVerificationExpanded
+                                                    ? 'Tap to collapse verification documents'
+                                                    : 'Tap to expand and upload PhilSys ID & residency proofs'}
+                                            </p>
+                                        </div>
                                     </div>
-                                    <div>
-                                        <label className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1">
-                                            UPLOAD PHILSYS ID CARD PHOTO
-                                        </label>
-                                        <div className="flex items-center gap-2">
-                                            <label className="flex-1 cursor-pointer flex items-center justify-center gap-2 px-3 py-2 bg-white border border-dashed border-slate-300 hover:border-[#0284C7] rounded-lg text-xs text-slate-600 hover:text-[#0284C7] transition-all">
-                                                <Upload className="w-3.5 h-3.5" />
-                                                <span className="truncate">{philsysPhoto ? philsysPhoto.name : 'Choose ID photo...'}</span>
-                                                <input 
-                                                    type="file" 
-                                                    accept="image/*" 
-                                                    className="hidden" 
-                                                    onChange={(e) => setPhilsysPhoto(e.target.files?.[0] || null)} 
+                                    <div className="flex items-center gap-2 shrink-0">
+                                        {(philsysPhoto || utilityBillingPhoto || secondaryIdPhoto || philsysIdNumber.trim()) && (
+                                            <span className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">
+                                                Proofs Attached
+                                            </span>
+                                        )}
+                                        <ChevronDown className={"w-4 h-4 text-slate-400 transition-transform duration-200 " + (isVerificationExpanded ? "rotate-180" : "")} />
+                                    </div>
+                                </button>
+
+                                {isVerificationExpanded && (
+                                    <div className="p-3.5 pt-3 space-y-4 border-t border-slate-200 bg-white">
+                                        <p className="text-[11px] text-slate-500 leading-relaxed">
+                                            Provide your Philippine National ID (PhilSys) and a household utility bill to verify local residency.
+                                        </p>
+
+                                        {/* 1. PhilSys ID Number & Photo */}
+                                        <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
+                                            <div>
+                                                <label className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1">
+                                                    PHILSYS NATIONAL ID NUMBER
+                                                </label>
+                                                <input
+                                                    type="text"
+                                                    value={philsysIdNumber}
+                                                    onChange={(e) => setPhilsysIdNumber(e.target.value)}
+                                                    placeholder="e.g. 1234-5678-9012-3456"
+                                                    className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-[#0284C7] rounded-lg text-xs font-mono text-slate-900 outline-none transition-all"
                                                 />
-                                            </label>
-                                            {philsysPhoto && (
-                                                <button
-                                                    type="button"
-                                                    onClick={() => setPhilsysPhoto(null)}
-                                                    className="p-2 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
-                                                    title="Remove attachment"
-                                                >
-                                                    <X className="w-3.5 h-3.5" />
-                                                </button>
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-
-                                {/* 2. Utility Billing Residency Proof */}
-                                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                        <div>
-                                            <label className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1">
-                                                BILLING STATEMENT TYPE
-                                            </label>
-                                            <select
-                                                value={utilityBillingType}
-                                                onChange={(e) => setUtilityBillingType(e.target.value)}
-                                                className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-[#0284C7] rounded-lg text-xs text-slate-800 outline-none transition-all cursor-pointer"
-                                            >
-                                                <option value="Electric Bill">Electric Bill (Meralco/Quezelco)</option>
-                                                <option value="Water Bill">Water Bill (PrimeWater/Maynilad)</option>
-                                                <option value="Internet / Telco Bill">Internet / Telco Bill</option>
-                                                <option value="Lease Agreement">Residential Lease Contract</option>
-                                                <option value="Other Utility">Other Billing Statement</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1">
-                                                UPLOAD BILLING RECEIPT
-                                            </label>
-                                            <div className="flex items-center gap-2">
-                                                <label className="flex-1 cursor-pointer flex items-center justify-center gap-2 px-3 py-2 bg-white border border-dashed border-slate-300 hover:border-[#0284C7] rounded-lg text-xs text-slate-600 hover:text-[#0284C7] transition-all">
-                                                    <Upload className="w-3.5 h-3.5" />
-                                                    <span className="truncate">{utilityBillingPhoto ? utilityBillingPhoto.name : 'Choose bill photo...'}</span>
-                                                    <input 
-                                                        type="file" 
-                                                        accept="image/*" 
-                                                        className="hidden" 
-                                                        onChange={(e) => setUtilityBillingPhoto(e.target.files?.[0] || null)} 
-                                                    />
+                                            </div>
+                                            <div>
+                                                <label className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1">
+                                                    UPLOAD PHILSYS ID CARD PHOTO
                                                 </label>
-                                                {utilityBillingPhoto && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setUtilityBillingPhoto(null)}
-                                                        className="p-2 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
-                                                        title="Remove attachment"
+                                                <div className="flex items-center gap-2">
+                                                    <label className="flex-1 cursor-pointer flex items-center justify-center gap-2 px-3 py-2 bg-white border border-dashed border-slate-300 hover:border-[#0284C7] rounded-lg text-xs text-slate-600 hover:text-[#0284C7] transition-all">
+                                                        <Upload className="w-3.5 h-3.5" />
+                                                        <span className="truncate">{philsysPhoto ? philsysPhoto.name : 'Choose ID photo...'}</span>
+                                                        <input 
+                                                            type="file" 
+                                                            accept="image/*" 
+                                                            className="hidden" 
+                                                            onChange={(e) => setPhilsysPhoto(e.target.files?.[0] || null)} 
+                                                        />
+                                                    </label>
+                                                    {philsysPhoto && (
+                                                        <button
+                                                            type="button"
+                                                            onClick={() => setPhilsysPhoto(null)}
+                                                            className="p-2 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
+                                                            title="Remove attachment"
+                                                        >
+                                                            <X className="w-3.5 h-3.5" />
+                                                        </button>
+                                                    )}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* 2. Utility Billing Residency Proof */}
+                                        <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                <div>
+                                                    <label className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1">
+                                                        BILLING STATEMENT TYPE
+                                                    </label>
+                                                    <select
+                                                        value={utilityBillingType}
+                                                        onChange={(e) => setUtilityBillingType(e.target.value)}
+                                                        className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-[#0284C7] rounded-lg text-xs text-slate-800 outline-none transition-all cursor-pointer"
                                                     >
-                                                        <X className="w-3.5 h-3.5" />
-                                                    </button>
-                                                )}
+                                                        <option value="Electric Bill">Electric Bill (Meralco/Quezelco)</option>
+                                                        <option value="Water Bill">Water Bill (PrimeWater/Maynilad)</option>
+                                                        <option value="Internet / Telco Bill">Internet / Telco Bill</option>
+                                                        <option value="Lease Agreement">Residential Lease Contract</option>
+                                                        <option value="Other Utility">Other Billing Statement</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1">
+                                                        UPLOAD BILLING RECEIPT
+                                                    </label>
+                                                    <div className="flex items-center gap-2">
+                                                        <label className="flex-1 cursor-pointer flex items-center justify-center gap-2 px-3 py-2 bg-white border border-dashed border-slate-300 hover:border-[#0284C7] rounded-lg text-xs text-slate-600 hover:text-[#0284C7] transition-all">
+                                                            <Upload className="w-3.5 h-3.5" />
+                                                            <span className="truncate">{utilityBillingPhoto ? utilityBillingPhoto.name : 'Choose bill photo...'}</span>
+                                                            <input 
+                                                                type="file" 
+                                                                accept="image/*" 
+                                                                className="hidden" 
+                                                                onChange={(e) => setUtilityBillingPhoto(e.target.files?.[0] || null)} 
+                                                            />
+                                                        </label>
+                                                        {utilityBillingPhoto && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setUtilityBillingPhoto(null)}
+                                                                className="p-2 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
+                                                                title="Remove attachment"
+                                                            >
+                                                                <X className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* 3. Optional Secondary Valid ID */}
+                                        <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
+                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                                <div>
+                                                    <label className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1">
+                                                        SECONDARY VALID ID (OPTIONAL)
+                                                    </label>
+                                                    <select
+                                                        value={secondaryIdType}
+                                                        onChange={(e) => setSecondaryIdType(e.target.value)}
+                                                        className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-[#0284C7] rounded-lg text-xs text-slate-800 outline-none transition-all cursor-pointer"
+                                                    >
+                                                        <option value="">None / Not Applicable</option>
+                                                        <option value="Passport">Philippine Passport</option>
+                                                        <option value="Driver's License">Driver's License (LTO)</option>
+                                                        <option value="UMID">UMID (SSS / GSIS)</option>
+                                                        <option value="Postal ID">Postal ID (PHLPost)</option>
+                                                        <option value="PRC ID">PRC ID</option>
+                                                        <option value="Senior / PWD ID">Senior Citizen / PWD ID</option>
+                                                        <option value="Student ID">Student ID</option>
+                                                    </select>
+                                                </div>
+                                                <div>
+                                                    <label className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1">
+                                                        UPLOAD SECONDARY ID
+                                                    </label>
+                                                    <div className="flex items-center gap-2">
+                                                        <label className={"flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white border border-dashed rounded-lg text-xs transition-all " + (secondaryIdType ? "cursor-pointer border-slate-300 hover:border-[#0284C7] text-slate-600 hover:text-[#0284C7]" : "cursor-not-allowed border-slate-200 text-slate-300")}>
+                                                            <Upload className="w-3.5 h-3.5" />
+                                                            <span className="truncate">{secondaryIdPhoto ? secondaryIdPhoto.name : 'Choose secondary ID...'}</span>
+                                                            <input 
+                                                                type="file" 
+                                                                accept="image/*" 
+                                                                disabled={!secondaryIdType}
+                                                                className="hidden" 
+                                                                onChange={(e) => setSecondaryIdPhoto(e.target.files?.[0] || null)} 
+                                                            />
+                                                        </label>
+                                                        {secondaryIdPhoto && (
+                                                            <button
+                                                                type="button"
+                                                                onClick={() => setSecondaryIdPhoto(null)}
+                                                                className="p-2 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
+                                                                title="Remove attachment"
+                                                            >
+                                                                <X className="w-3.5 h-3.5" />
+                                                            </button>
+                                                        )}
+                                                    </div>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
-
-                                {/* 3. Optional Secondary Valid ID */}
-                                <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
-                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                        <div>
-                                            <label className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1">
-                                                SECONDARY VALID ID (OPTIONAL)
-                                            </label>
-                                            <select
-                                                value={secondaryIdType}
-                                                onChange={(e) => setSecondaryIdType(e.target.value)}
-                                                className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-[#0284C7] rounded-lg text-xs text-slate-800 outline-none transition-all cursor-pointer"
-                                            >
-                                                <option value="">None / Not Applicable</option>
-                                                <option value="Passport">Philippine Passport</option>
-                                                <option value="Driver's License">Driver's License (LTO)</option>
-                                                <option value="UMID">UMID (SSS / GSIS)</option>
-                                                <option value="Postal ID">Postal ID (PHLPost)</option>
-                                                <option value="PRC ID">PRC ID</option>
-                                                <option value="Senior / PWD ID">Senior Citizen / PWD ID</option>
-                                                <option value="Student ID">Student ID</option>
-                                            </select>
-                                        </div>
-                                        <div>
-                                            <label className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1">
-                                                UPLOAD SECONDARY ID
-                                            </label>
-                                            <div className="flex items-center gap-2">
-                                                <label className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white border border-dashed rounded-lg text-xs transition-all ${
-                                                    secondaryIdType ? 'cursor-pointer border-slate-300 hover:border-[#0284C7] text-slate-600 hover:text-[#0284C7]' : 'cursor-not-allowed border-slate-200 text-slate-300'
-                                                }`}>
-                                                    <Upload className="w-3.5 h-3.5" />
-                                                    <span className="truncate">{secondaryIdPhoto ? secondaryIdPhoto.name : 'Choose secondary ID...'}</span>
-                                                    <input 
-                                                        type="file" 
-                                                        accept="image/*" 
-                                                        disabled={!secondaryIdType}
-                                                        className="hidden" 
-                                                        onChange={(e) => setSecondaryIdPhoto(e.target.files?.[0] || null)} 
-                                                    />
-                                                </label>
-                                                {secondaryIdPhoto && (
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setSecondaryIdPhoto(null)}
-                                                        className="p-2 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
-                                                        title="Remove attachment"
-                                                    >
-                                                        <X className="w-3.5 h-3.5" />
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
+                                )}
                             </div>
                         )}
                         {/* Minor Guardian Constraint Box (Appears dynamically if age < 18) */}
