@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { axiosPublic } from '../../api/axios';
-// Updated line 4:
 import { Shield, FileCheck2, Clock, Users, KeyRound, Upload, IdCard, X, ChevronDown } from 'lucide-react';
 export const Register: React.FC = () => {
     const [isAdminMode, setIsAdminMode] = useState(false);
@@ -455,7 +454,7 @@ export const Register: React.FC = () => {
                                                 Proofs Attached
                                             </span>
                                         )}
-                                        <ChevronDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${isVerificationExpanded ? 'rotate-180' : ''}`} />
+                                        <ChevronDown className={"w-4 h-4 text-slate-400 transition-transform duration-200 " + (isVerificationExpanded ? "rotate-180" : "")} />
                                     </div>
                                 </button>
 
@@ -584,9 +583,7 @@ export const Register: React.FC = () => {
                                                         UPLOAD SECONDARY ID
                                                     </label>
                                                     <div className="flex items-center gap-2">
-                                                        <label className={`flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white border border-dashed rounded-lg text-xs transition-all ${
-                                                            secondaryIdType ? 'cursor-pointer border-slate-300 hover:border-[#0284C7] text-slate-600 hover:text-[#0284C7]' : 'cursor-not-allowed border-slate-200 text-slate-300'
-                                                        }`}>
+                                                        <label className={"flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white border border-dashed rounded-lg text-xs transition-all " + (secondaryIdType ? "cursor-pointer border-slate-300 hover:border-[#0284C7] text-slate-600 hover:text-[#0284C7]" : "cursor-not-allowed border-slate-200 text-slate-300")}>
                                                             <Upload className="w-3.5 h-3.5" />
                                                             <span className="truncate">{secondaryIdPhoto ? secondaryIdPhoto.name : 'Choose secondary ID...'}</span>
                                                             <input 
