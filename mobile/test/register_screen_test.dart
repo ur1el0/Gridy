@@ -49,6 +49,15 @@ void main() {
     expect(find.text('PASSWORD'), findsOneWidget);
     expect(find.text('CONFIRM PASSWORD'), findsOneWidget);
 
+    // Verify verification dossier fields
+    expect(find.text('IDENTITY & RESIDENCY VERIFICATION', skipOffstage: false), findsOneWidget);
+    expect(find.text('PHILSYS NATIONAL ID NUMBER', skipOffstage: false), findsOneWidget);
+    expect(find.text('Upload PhilSys ID Photo', skipOffstage: false), findsOneWidget);
+    expect(find.text('BILLING STATEMENT TYPE', skipOffstage: false), findsOneWidget);
+    expect(find.text('Upload Billing Receipt Photo', skipOffstage: false), findsOneWidget);
+    expect(find.text('SECONDARY VALID ID (OPTIONAL)', skipOffstage: false), findsOneWidget);
+    expect(find.text('I consent to provide my personal data as a resident for barangay verification, in accordance with the RA 10173 Data Privacy Act.', skipOffstage: false), findsOneWidget);
+
     // Verify hint placeholders are in the widget tree (even if scrolled off-screen)
     expect(find.text('Johnathan Doe', skipOffstage: false), findsOneWidget);
     expect(find.text('CID-99201', skipOffstage: false), findsOneWidget);
