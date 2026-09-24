@@ -371,21 +371,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) {
-            return SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 28.0),
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
-                ),
-                child: IntrinsicHeight(
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        const SizedBox(height: 32),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 28.0),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                const SizedBox(height: 32),
 
                         // Logo & Brand Name
                         const GridyLogo(
@@ -780,9 +773,14 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           width: double.infinity,
                           decoration: BoxDecoration(
                             color: const Color(0xFFF1F5F9),
+                        Material(
+                          color: const Color(0xFFF1F5F9),
+                          shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(color: const Color(0xFFE2E8F0)),
+                            side: const BorderSide(color: Color(0xFFE2E8F0)),
                           ),
+                          clipBehavior: Clip.antiAlias,
                           child: Theme(
                             data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
                             child: ExpansionTile(
