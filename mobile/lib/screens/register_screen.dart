@@ -768,7 +768,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                         ),
                         const SizedBox(height: 20),
 
-                        // Section Divider & Collapsible Container: Identity & Residency Verification Proofs                        // Section Divider & Collapsible Container: Identity & Residency Verification Proofs
+                        // Section Divider & Collapsible Container: Identity & Residency Verification Proofs
                         Material(
                           color: const Color(0xFFF1F5F9),
                           shape: RoundedRectangleBorder(
@@ -1042,7 +1042,6 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           ),
                         ),
 
-                        const Spacer(),
                         const SizedBox(height: 28),
 
                         // Footer Terms & Privacy Notice
@@ -1065,9 +1064,5 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
               ),
             );
-          },
-        ),
-      ),
-    );
   }
 }
