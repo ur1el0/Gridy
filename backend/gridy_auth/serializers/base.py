@@ -4,7 +4,15 @@ from gridy_auth.models import User, Resident, Barangay
 class BarangaySerializer(serializers.ModelSerializer):
     class Meta:
         model = Barangay
-        fields = ['id', 'name', 'logo', 'city_seal', 'captain_name', 'office_contact']
+        fields = [
+            'id', 
+            'name', 
+            'logo', 
+            'city_seal', 
+            'captain_name', 
+            'office_contact',
+            'primary_color',
+        ]
 
 class ResidentSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True, default='')

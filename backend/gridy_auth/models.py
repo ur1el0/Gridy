@@ -1,10 +1,21 @@
 from django.db import models
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import RegexValidator
 
 # Create your models here.
 
 class Barangay(models.Model):
     name = models.CharField(max_length=255, unique=True)
+    primary_color = models.CharField(
+        max_length=7,
+        default="#082B66",
+        validators=[
+            RegexValidator(
+                regex=r"^#[0-9A-Fa-f]{6}$",
+                message="Enter a valid hex color in #RRGGBB format.",
+            )
+        ],
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     logo = models.ImageField(upload_to='barangay_logos/', blank=True, null=True)
     city_seal = models.ImageField(upload_to='barangay_logos/', blank=True, null=True)
