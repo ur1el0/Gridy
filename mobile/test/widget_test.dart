@@ -8,7 +8,8 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('Login screen renders key elements correctly', (WidgetTester tester) async {
+  testWidgets('Login screen renders key elements correctly',
+      (WidgetTester tester) async {
     tester.view.physicalSize = const Size(1080, 2400);
     tester.view.devicePixelRatio = 2.0;
     addTearDown(() {
@@ -19,13 +20,31 @@ void main() {
     await tester.pumpWidget(const GridyApp());
     await tester.pumpAndSettle();
 
-    // Verify brand and header
     expect(find.text('GRIDY'), findsOneWidget);
     expect(find.text('Welcome Back'), findsOneWidget);
     expect(find.text('CITIZEN ID / USERNAME'), findsOneWidget);
     expect(find.text('PASSWORD'), findsOneWidget);
     expect(find.text('Sign In to Citizen Portal'), findsOneWidget);
-    expect(find.text('Forgot ID?'), findsOneWidget);
+    expect(find.text('Forgot Password?'), findsOneWidget);
+  });
+
+  testWidgets('Forgot password opens the recovery screen',
+      (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    await tester.pumpWidget(const GridyApp());
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Forgot Password?'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Password Recovery'), findsOneWidget);
+    expect(find.text('REGISTERED EMAIL'), findsOneWidget);
   });
 
   testWidgets('Submitting empty form triggers validation error messages', (WidgetTester tester) async {

@@ -12,6 +12,7 @@ import 'dashboard_screen.dart';
 import 'register_screen.dart';
 import 'admin_dashboard_screen.dart';
 import 'field_official_screen.dart';
+import 'forgot_password_screen.dart';
 
 class LoginScreen extends StatefulWidget {
   final AuthService? authService;
@@ -436,18 +437,19 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 16),
 
-                        // Forgot ID / Password Row
+                        // Forgot Password Row
                         Align(
                           alignment: Alignment.centerRight,
                           child: TextButton(
-                            onPressed: () => _showPasswordResetModal(context),
-                            style: TextButton.styleFrom(
-                              padding: EdgeInsets.zero,
-                              minimumSize: Size.zero,
-                              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                            ),
+                            onPressed: () {
+                              Navigator.of(context).push(
+                                MaterialPageRoute<void>(
+                                  builder: (_) => ForgotPasswordScreen(authService: _authService),
+                                ),
+                              );
+                            },
                             child: const Text(
-                              'Forgot ID?',
+                              'Forgot Password?',
                               style: TextStyle(
                                 fontSize: 13.5,
                                 fontWeight: FontWeight.w700,
@@ -705,226 +707,6 @@ class _LoginScreenState extends State<LoginScreen> {
           ],
         ),
       ),
-    );
-  }
-
-  void _showPasswordResetModal(BuildContext context) {
-    final emailController = TextEditingController();
-    final tokenController = TextEditingController();
-    final uidController = TextEditingController();
-    final newPasswordController = TextEditingController();
-    bool isSubmitting = false;
-    bool resetRequested = false;
-    String? modalError;
-
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setModalState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                left: 24.0,
-                right: 24.0,
-                top: 24.0,
-                bottom: MediaQuery.of(context).viewInsets.bottom + 24.0,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Center(
-                    child: Container(
-                      width: 40,
-                      height: 4,
-                      decoration: BoxDecoration(
-                        color: Colors.grey[300],
-                        borderRadius: BorderRadius.circular(2),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Row(
-                    children: [
-                      const Icon(Icons.lock_reset_rounded, color: AppColors.primaryNavy, size: 24),
-                      const SizedBox(width: 10),
-                      Text(
-                        resetRequested ? 'Set New Password' : 'Password Recovery',
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    resetRequested
-                        ? 'Enter the reset token sent to your email, user ID, and your new password.'
-                        : 'Enter your registered email address below to receive a password reset token.',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      color: AppColors.textSecondary,
-                    ),
-                  ),
-                  if (modalError != null) ...[
-                    const SizedBox(height: 12),
-                    Text(
-                      modalError!,
-                      style: const TextStyle(color: Colors.red, fontSize: 12.5),
-                    ),
-                  ],
-                  const SizedBox(height: 16),
-                  if (!resetRequested) ...[
-                    CustomTextField(
-                      label: 'REGISTERED EMAIL',
-                      controller: emailController,
-                      hintText: 'resident@example.com',
-                      prefixIcon: Icons.email_outlined,
-                      keyboardType: TextInputType.emailAddress,
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: isSubmitting
-                            ? null
-                            : () async {
-                                final email = emailController.text.trim();
-                                if (email.isEmpty) {
-                                  setModalState(() => modalError = 'Please enter your email.');
-                                  return;
-                                }
-                                setModalState(() {
-                                  isSubmitting = true;
-                                  modalError = null;
-                                });
-                                try {
-
-                                  if (_authService == null) {
-                                    final storage = await StorageService.init();
-                                    final apiClient = ApiClient();
-                                    _authService = AuthService(apiClient: apiClient, storageService: storage);
-                                  }
-                                  await _authService!.requestPasswordReset(email);
-                                  setModalState(() {
-                                    isSubmitting = false;
-                                    resetRequested = true;
-                                  });
-                                } catch (e) {
-                                  setModalState(() {
-                                    isSubmitting = false;
-                                    modalError = 'Error: ${e.toString().replaceAll('Exception:', '').trim()}';
-                                  });
-                                }
-                              },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryNavy,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: isSubmitting
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                              )
-                            : const Text('Send Reset Link', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                  ] else ...[
-                    CustomTextField(
-                      label: 'USER ID (UID)',
-                      controller: uidController,
-                      hintText: 'e.g. MQ',
-                      prefixIcon: Icons.badge_outlined,
-                    ),
-                    const SizedBox(height: 12),
-                    CustomTextField(
-                      label: 'RESET TOKEN',
-                      controller: tokenController,
-                      hintText: 'Enter email token',
-                      prefixIcon: Icons.key_outlined,
-                    ),
-                    const SizedBox(height: 12),
-                    CustomTextField(
-                      label: 'NEW PASSWORD',
-                      controller: newPasswordController,
-                      hintText: 'Minimum 8 characters',
-                      prefixIcon: Icons.lock_outline_rounded,
-                      obscureText: true,
-                    ),
-                    const SizedBox(height: 20),
-                    SizedBox(
-                      width: double.infinity,
-                      child: ElevatedButton(
-                        onPressed: isSubmitting
-                            ? null
-                            : () async {
-                                final uid = uidController.text.trim();
-                                final token = tokenController.text.trim();
-                                final newPass = newPasswordController.text;
-                                if (uid.isEmpty || token.isEmpty || newPass.length < 8) {
-                                  setModalState(() => modalError = 'Please complete all fields (password min 8 chars).');
-                                  return;
-                                }
-                                setModalState(() {
-                                  isSubmitting = true;
-                                  modalError = null;
-                                });
-                                try {
-                                  await _authService!.confirmPasswordReset(
-                                    newPassword: newPass,
-                                    uidb64: uid,
-                                    token: token,
-                                  );
-                                  if (context.mounted) {
-                                    Navigator.pop(context);
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(
-                                        content: Text('Password updated successfully! You can now log in.'),
-                                        backgroundColor: Color(0xFF10B981),
-                                        behavior: SnackBarBehavior.floating,
-                                      ),
-                                    );
-                                  }
-                                } catch (e) {
-                                  setModalState(() {
-                                    isSubmitting = false;
-                                    modalError = 'Failed: ${e.toString().replaceAll('Exception:', '').trim()}';
-                                  });
-                                }
-                              },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primaryNavy,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: isSubmitting
-                            ? const SizedBox(
-                                height: 20,
-                                width: 20,
-                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                              )
-                            : const Text('Update Password', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            );
-          },
-        );
-      },
     );
   }
 }
