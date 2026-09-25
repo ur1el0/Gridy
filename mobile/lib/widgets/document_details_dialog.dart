@@ -1,4 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:open_filex/open_filex.dart';
+import 'package:path_provider/path_provider.dart';
+
 import '../core/theme/app_colors.dart';
 import '../models/document_request_model.dart';
 import '../services/document_service.dart';
@@ -22,33 +27,63 @@ class _DocumentDetailsDialogState extends State<DocumentDetailsDialog> {
   bool _isDownloading = false;
 
   Future<void> _handleDownloadPdf() async {
-    if (widget.documentService == null) return;
+    final documentService = widget.documentService;
+    if (documentService == null || _isDownloading) return;
+
     setState(() => _isDownloading = true);
 
     try {
-      final pdfBytes = await widget.documentService!.downloadDocumentPdf(widget.request.id);
-      if (mounted) {
-        setState(() => _isDownloading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              'PDF certificate ready (${pdfBytes.lengthInBytes} bytes downloaded)',
-            ),
-            backgroundColor: const Color(0xFF10B981),
-            behavior: SnackBarBehavior.floating,
-          ),
+      final pdfBytes =
+          await documentService.downloadDocumentPdf(widget.request.id);
+
+      if (pdfBytes.isEmpty) {
+        throw Exception('The server returned an empty PDF.');
+      }
+
+      final directory = await getApplicationDocumentsDirectory();
+      final fileName = 'gridy_clearance_${widget.request.id}.pdf';
+      final file = File('${directory.path}/$fileName');
+
+      await file.writeAsBytes(pdfBytes, flush: true);
+
+      final openResult = await OpenFilex.open(
+        file.path,
+        type: 'application/pdf',
+      );
+
+      if (openResult.type != ResultType.done) {
+        throw Exception(
+          'Saved as $fileName, but could not open it: ${openResult.message}',
         );
       }
+
+      if (!mounted) return;
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('PDF saved and opened: $fileName'),
+          backgroundColor: const Color(0xFF10B981),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
     } catch (e) {
+      if (!mounted) return;
+
+      final message = e.toString().replaceFirst(
+            RegExp(r'^Exception:\s*'),
+            '',
+          );
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not download or open the PDF: $message'),
+          backgroundColor: const Color(0xFFEF4444),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } finally {
       if (mounted) {
         setState(() => _isDownloading = false);
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text('Failed to generate PDF: ${e.toString().replaceAll('Exception:', '').trim()}'),
-            backgroundColor: const Color(0xFFEF4444),
-            behavior: SnackBarBehavior.floating,
-          ),
-        );
       }
     }
   }
