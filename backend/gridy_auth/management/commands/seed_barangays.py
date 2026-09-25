@@ -32,6 +32,14 @@ class Command(BaseCommand):
             }
         )
         self.stdout.write(self.style.SUCCESS(f"Provisioned: {daungan.name}"))
+        cotta, _ = Barangay.objects.get_or_create(
+            name="Barangay Cotta",
+            defaults={
+                "captain_name": "Seed fixture — verify official before production use",
+                "office_contact": "Seed fixture — verify contact before production use",
+            }
+        )
+        self.stdout.write(self.style.SUCCESS(f"Provisioned: {cotta.name}"))
 
         # ---------------------------------------------------------------------
         # 2. Users & Resident Profiles
@@ -132,6 +140,83 @@ class Command(BaseCommand):
                 }
             )
 
+        # C. Barangay Cotta seed users
+        # These fixture accounts have no usable password. Provision real credentials
+        # through the normal account-management flow.
+        def get_cotta_user(username, defaults):
+            user, created = User.objects.get_or_create(
+                username=username,
+                defaults=defaults,
+            )
+            if created:
+                user.set_unusable_password()
+                user.save(update_fields=["password"])
+            return user
+
+        admin_cotta = get_cotta_user(
+            "admin_cotta",
+            {
+                "email": "captain.cotta@gridy.local",
+                "first_name": "Cotta",
+                "last_name": "Seed Admin",
+                "role": User.Role.ADMIN,
+                "barangay": cotta,
+                "is_staff": True,
+            },
+        )
+
+        get_cotta_user(
+            "tanod_cotta",
+            {
+                "email": "official.cotta@gridy.local",
+                "first_name": "Cotta",
+                "last_name": "Seed Official",
+                "role": User.Role.FIELD_OFFICIAL,
+                "barangay": cotta,
+            },
+        )
+
+        resident_cotta_one = get_cotta_user(
+            "resident_cotta_one",
+            {
+                "email": "resident1.cotta@gridy.local",
+                "first_name": "Sample",
+                "last_name": "Resident One",
+                "role": User.Role.RESIDENT,
+                "barangay": cotta,
+            },
+        )
+        Resident.objects.get_or_create(
+            user=resident_cotta_one,
+            defaults={
+                "full_name": "Sample Resident One",
+                "birth_date": date(1995, 3, 14),
+                "voter_status": True,
+                "purok": "Purok 1",
+                "is_verified": True,
+            },
+        )
+
+        resident_cotta_two = get_cotta_user(
+            "resident_cotta_two",
+            {
+                "email": "resident2.cotta@gridy.local",
+                "first_name": "Sample",
+                "last_name": "Resident Two",
+                "role": User.Role.RESIDENT,
+                "barangay": cotta,
+            },
+        )
+        Resident.objects.get_or_create(
+            user=resident_cotta_two,
+            defaults={
+                "full_name": "Sample Resident Two",
+                "birth_date": date(1998, 7, 22),
+                "voter_status": False,
+                "purok": "Purok 2",
+                "is_verified": True,
+            },
+        )
         self.stdout.write(self.style.SUCCESS("Provisioned administrative and resident users."))
 
         # ---------------------------------------------------------------------
@@ -209,6 +294,32 @@ class Command(BaseCommand):
             }
         )
 
+        DocumentRequest.objects.get_or_create(
+            user=resident_cotta_one,
+            document_type="Certificate of Indigency",
+            defaults={
+                "barangay": cotta,
+                "purpose": "Phase 48 seed fixture",
+                "urgency_tag": DocumentRequest.UrgencyTag.REGULAR,
+                "status": DocumentRequest.Status.PENDING,
+                "fee_amount": 0.00,
+                "admin_notes": "Synthetic fixture; verify statutory fee rules.",
+            }
+        )
+
+        DocumentRequest.objects.get_or_create(
+            user=resident_cotta_two,
+            document_type="Barangay Clearance",
+            defaults={
+                "barangay": cotta,
+                "purpose": "Phase 48 seed fixture; local fee not verified",
+                "urgency_tag": DocumentRequest.UrgencyTag.REGULAR,
+                "status": DocumentRequest.Status.PENDING,
+                "fee_amount": 0.00,
+                "admin_notes": "Synthetic fixture; configure fees from the local ordinance.",
+            }
+        )
+
         # ---------------------------------------------------------------------
         # 6. Live Queue Tickets
         # ---------------------------------------------------------------------
@@ -234,4 +345,27 @@ class Command(BaseCommand):
             }
         )
 
+
+        QueueTicket.objects.get_or_create(
+            ticket_number="COTTA-T001",
+            defaults={
+                "user": resident_cotta_one,
+                "barangay": cotta,
+                "service_type": "Document Application",
+                "status": QueueTicket.Status.WAITING,
+                "priority_status": QueueTicket.Priority.REGULAR,
+            }
+        )
+
+        QueueTicket.objects.get_or_create(
+            ticket_number="COTTA-T002",
+            defaults={
+                "user": resident_cotta_two,
+                "barangay": cotta,
+                "service_type": "Document Pickup",
+                "status": QueueTicket.Status.WAITING,
+                "priority_status": QueueTicket.Priority.REGULAR,
+            }
+        )
+        
         self.stdout.write(self.style.SUCCESS("Successfully seeded all partner barangays and services."))
