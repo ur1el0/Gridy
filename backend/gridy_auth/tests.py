@@ -5,7 +5,7 @@ from rest_framework.test import APITestCase
 from gridy_auth.models import User, Resident, Barangay
 from django.core.management import call_command
 from django.conf import settings
-
+from gridy_services.models import DocumentRequest, QueueTicket
 # Create your tests here.
 
 class AuthAPITests(APITestCase):
@@ -375,9 +375,43 @@ class AuthAPITests(APITestCase):
         self.assertEqual(User.objects.filter(username="dummy_pending").count(), 0)
 
 class SeedBarangaysCommandTests(TestCase):
-    def test_seed_barangays_executes_successfully(self):
-        call_command('seed_barangays')
-        self.assertTrue(Barangay.objects.filter(name="Barangay Ibabang Dupay").exists())
-        self.assertTrue(Barangay.objects.filter(name="Barangay Daungan").exists())
-        self.assertTrue(User.objects.filter(username="admin_dupay").exists())
-        self.assertTrue(User.objects.filter(username="admin_daungan").exists())
+    def test_seed_barangays_is_idempotent_and_provisions_three_tenants(self):
+        call_command("seed_barangays")
+        call_command("seed_barangays")
+
+        expected_names = [
+            "Barangay Ibabang Dupay",
+            "Barangay Daungan",
+            "Barangay Cotta",
+        ]
+        self.assertEqual(
+            Barangay.objects.filter(name__in=expected_names).count(),
+            3,
+        )
+
+        cotta = Barangay.objects.get(name="Barangay Cotta")
+        admin_cotta = User.objects.get(username="admin_cotta")
+
+        self.assertEqual(admin_cotta.barangay, cotta)
+        self.assertEqual(admin_cotta.role, User.Role.ADMIN)
+        self.assertFalse(admin_cotta.has_usable_password())
+
+        self.assertEqual(
+            User.objects.filter(
+                barangay=cotta,
+                role=User.Role.FIELD_OFFICIAL,
+            ).count(),
+            1,
+        )
+        self.assertEqual(
+            Resident.objects.filter(user__barangay=cotta).count(),
+            2,
+        )
+        self.assertEqual(
+            DocumentRequest.objects.filter(barangay=cotta).count(),
+            2,
+        )
+        self.assertEqual(
+            QueueTicket.objects.filter(barangay=cotta).count(),
+            2,
+        )
