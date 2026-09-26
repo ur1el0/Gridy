@@ -62,13 +62,13 @@ export const WaitingListTable: React.FC<WaitingListTableProps> = ({
                                         <tr key={ticket.ticket_id} className="hover:bg-slate-50/60 transition-colors">
                                             <td className="py-3.5 px-4 whitespace-nowrap">
                                                 <div className="flex items-center gap-2.5">
-                                                    <div className="w-7 h-7 rounded-full bg-[#DDE9FD] text-[#0047BA] font-bold text-xs flex items-center justify-center shrink-0">
+                                                    <div className="w-7 h-7 rounded-full bg-primary/15 text-primary-text font-bold text-xs flex items-center justify-center shrink-0">
                                                         {initial}
                                                     </div>
                                                     <span className="font-bold text-[#0f172a]">{name}</span>
                                                 </div>
                                             </td>
-                                            <td className="py-3.5 px-4 font-bold text-[#0047BA] whitespace-nowrap">
+                                            <td className="py-3.5 px-4 font-bold text-primary-text whitespace-nowrap">
                                                 <div className="flex items-center gap-2">
                                                     <span>{ticket.ticket_number}</span>
                                                     {ticket.is_priority && (
@@ -91,7 +91,7 @@ export const WaitingListTable: React.FC<WaitingListTableProps> = ({
                                                     <button
                                                         onClick={() => handleServeSpecific(ticket.ticket_id)}
                                                         disabled={isUpdating}
-                                                        className="text-xs font-bold text-[#0047BA] bg-[#E3EDFD] hover:bg-[#D4E4FD] px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50"
+                                                        className="text-xs font-bold text-primary-text bg-primary/10 hover:bg-primary/20 px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50"
                                                     >
                                                         Call
                                                     </button>
@@ -115,7 +115,7 @@ export const WaitingListTable: React.FC<WaitingListTableProps> = ({
 
             {waitingTickets.length > 0 && (
                 <div className="pt-4 border-t border-slate-100 text-center">
-                    <span className="text-xs font-bold text-[#0047BA]">
+                    <span className="text-xs font-bold text-primary-text">
                         Total Waiting Residents: {waitingTickets.length}
                     </span>
                 </div>

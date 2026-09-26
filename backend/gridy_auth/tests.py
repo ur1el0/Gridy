@@ -374,6 +374,68 @@ class AuthAPITests(APITestCase):
         # 5. Verify the user is actually deleted from the database
         self.assertEqual(User.objects.filter(username="dummy_pending").count(), 0)
 
+class BarangayBrandingAPITests(APITestCase):
+    def setUp(self):
+        self.barangay = Barangay.objects.create(name="Barangay Branding Test")
+        self.admin = User.objects.create_user(
+            username="branding_admin",
+            email="branding-admin@example.com",
+            password="StrongTestPassword123!",
+            role=User.Role.ADMIN,
+            barangay=self.barangay,
+        )
+        self.client.force_authenticate(user=self.admin)
+        self.detail_url = reverse(
+            "barangay-detail",
+            args=[self.barangay.pk],
+        )
+
+    def test_detail_returns_default_primary_color(self):
+        response = self.client.get(self.detail_url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["primary_color"], "#082B66")
+
+    def test_official_can_update_primary_color(self):
+        response = self.client.patch(
+            self.detail_url,
+            {"primary_color": "#C70039"},
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.barangay.refresh_from_db()
+        self.assertEqual(self.barangay.primary_color, "#C70039")
+
+    def test_invalid_primary_color_is_rejected(self):
+        response = self.client.patch(
+            self.detail_url,
+            {"primary_color": "not-a-color"},
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("primary_color", response.data)
+
+    def test_official_cannot_update_another_barangay_color(self):
+        other_barangay = Barangay.objects.create(
+            name="Another Branding Test Barangay"
+        )
+        other_url = reverse(
+            "barangay-detail",
+            args=[other_barangay.pk],
+        )
+
+        response = self.client.patch(
+            other_url,
+            {"primary_color": "#C70039"},
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        other_barangay.refresh_from_db()
+        self.assertEqual(other_barangay.primary_color, "#082B66")
+        
 class SeedBarangaysCommandTests(TestCase):
     def test_seed_barangays_is_idempotent_and_provisions_three_tenants(self):
         call_command("seed_barangays")

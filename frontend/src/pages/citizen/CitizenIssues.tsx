@@ -164,7 +164,7 @@ export const CitizenIssues: React.FC = () => {
                 </div>
                 <button
                     onClick={() => setIsModalOpen(true)}
-                    className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-bold text-white bg-[#0284C7] hover:bg-[#0369A1] transition-all shadow-md shadow-sky-500/20 cursor-pointer shrink-0"
+                    className="inline-flex items-center justify-center gap-2 px-5 py-3 rounded-xl text-sm font-bold text-primary-foreground bg-primary hover:bg-primary-hover transition-all shadow-md shadow-primary/20 cursor-pointer shrink-0"
                 >
                     <Plus className="w-4 h-4" />
                     <span>Report an Incident</span>
@@ -184,7 +184,7 @@ export const CitizenIssues: React.FC = () => {
                 </div>
             ) : issues.length === 0 ? (
                 <div className="bg-white rounded-2xl border border-slate-200/80 p-12 text-center max-w-lg mx-auto shadow-xs">
-                    <div className="w-12 h-12 bg-sky-50 text-[#0284C7] rounded-full flex items-center justify-center mx-auto mb-4">
+                    <div className="w-12 h-12 bg-sky-50 text-primary-text rounded-full flex items-center justify-center mx-auto mb-4">
                         <CheckCircle2 className="w-6 h-6" />
                     </div>
                     <h3 className="text-lg font-bold text-slate-900">No Incidents Reported</h3>
@@ -266,7 +266,7 @@ export const CitizenIssues: React.FC = () => {
                                     placeholder="e.g. Uncollected garbage pile, broken streetlight"
                                     value={title}
                                     onChange={(e) => setTitle(e.target.value)}
-                                    className="w-full px-4 py-2.5 bg-slate-50 focus:bg-white border border-slate-300 focus:border-[#0284C7] focus:ring-1 focus:ring-[#0284C7] rounded-xl text-sm font-medium outline-none transition-all"
+                                    className="w-full px-4 py-2.5 bg-slate-50 focus:bg-white border border-slate-300 focus:border-primary focus:ring-1 focus:ring-primary rounded-xl text-sm font-medium outline-none transition-all"
                                 />
                             </div>
 
@@ -278,7 +278,7 @@ export const CitizenIssues: React.FC = () => {
                                     <select
                                         value={category}
                                         onChange={(e) => setCategory(e.target.value)}
-                                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium outline-none focus:border-[#0284C7]"
+                                        className="w-full px-3 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-sm font-medium outline-none focus:border-primary"
                                     >
                                         {CATEGORIES.map((cat) => (
                                             <option key={cat.value} value={cat.value}>
@@ -298,7 +298,7 @@ export const CitizenIssues: React.FC = () => {
                                         placeholder="e.g. Corner Purok 3 near chapel"
                                         value={location}
                                         onChange={(e) => setLocation(e.target.value)}
-                                        className="w-full px-4 py-2.5 bg-slate-50 focus:bg-white border border-slate-300 focus:border-[#0284C7] rounded-xl text-sm font-medium outline-none"
+                                        className="w-full px-4 py-2.5 bg-slate-50 focus:bg-white border border-slate-300 focus:border-primary rounded-xl text-sm font-medium outline-none"
                                     />
                                 </div>
                             </div>
@@ -313,7 +313,7 @@ export const CitizenIssues: React.FC = () => {
                                     placeholder="Describe what happened, any immediate hazard, and how long the issue has persisted..."
                                     value={description}
                                     onChange={(e) => setDescription(e.target.value)}
-                                    className="w-full px-4 py-2.5 bg-slate-50 focus:bg-white border border-slate-300 focus:border-[#0284C7] rounded-xl text-sm font-medium outline-none resize-none"
+                                    className="w-full px-4 py-2.5 bg-slate-50 focus:bg-white border border-slate-300 focus:border-primary rounded-xl text-sm font-medium outline-none resize-none"
                                 />
                             </div>
 
@@ -338,7 +338,7 @@ export const CitizenIssues: React.FC = () => {
                                         </button>
                                     </div>
                                 ) : (
-                                    <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 hover:border-[#0284C7] rounded-xl p-4 cursor-pointer transition-colors bg-slate-50/50 hover:bg-sky-50/30">
+                                    <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-300 hover:border-primary rounded-xl p-4 cursor-pointer transition-colors bg-slate-50/50 hover:bg-sky-50/30">
                                         <Camera className="w-6 h-6 text-slate-400 mb-1" />
                                         <span className="text-xs font-semibold text-slate-600">Click to upload photo</span>
                                         <span className="text-[10px] text-slate-400 mt-0.5">PNG, JPG up to 5MB</span>
@@ -363,7 +363,7 @@ export const CitizenIssues: React.FC = () => {
                                 <button
                                     type="submit"
                                     disabled={submitting}
-                                    className="px-5 py-2.5 text-sm font-bold text-white bg-[#0284C7] hover:bg-[#0369A1] rounded-xl transition-all shadow-md shadow-sky-500/20 disabled:opacity-50 cursor-pointer"
+                                    className="px-5 py-2.5 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary-hover rounded-xl transition-all shadow-md shadow-primary/20 disabled:opacity-50 cursor-pointer"
                                 >
                                     {submitting ? 'Submitting Report...' : 'Submit Incident Report'}
                                 </button>

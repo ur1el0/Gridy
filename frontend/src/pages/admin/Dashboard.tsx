@@ -63,7 +63,7 @@ interface ActivityItem {
 }
 
 
-const COLORS = ['#0047BA', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
+const COLORS = ['var(--brand-primary)', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
 const MetricCardSkeleton = () => (
     <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#E2E8F0]/80 flex flex-col justify-between animate-pulse">
@@ -190,7 +190,7 @@ export const Dashboard: React.FC = () => {
                 </div>
                 <button 
                     onClick={() => navigate('/reports')}
-                    className="bg-[#0047BA] hover:bg-[#003882] active:bg-[#002D6B] text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm flex items-center gap-2 transition-all cursor-pointer w-fit shrink-0"
+                    className="bg-primary hover:bg-primary-hover active:bg-primary-hover text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm flex items-center gap-2 transition-all cursor-pointer w-fit shrink-0"
                 >
                     <span>View Report Issue</span>
                 </button>
@@ -210,7 +210,7 @@ export const Dashboard: React.FC = () => {
                         {/* Card 1: Total Registered Residents */}
                         <div className="bg-white rounded-2xl p-6 shadow-xs border border-[#E2E8F0]/80 flex flex-col justify-between hover:-translate-y-1 hover:shadow-md transition-all duration-300">
                             <div>
-                                <div className="w-10 h-10 rounded-xl bg-[#E3EDFD] text-[#0047BA] flex items-center justify-center">
+                                <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary-text flex items-center justify-center">
                                     <Users className="w-5 h-5" />
                                 </div>
                                 <h3 className="text-[#64748b] text-xs font-semibold uppercase tracking-wider mt-4">
@@ -328,7 +328,7 @@ export const Dashboard: React.FC = () => {
                                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
                                 <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
                                 <Tooltip cursor={{fill: 'rgba(0,71,186,0.05)'}} />
-                                <Bar dataKey="count" fill="#0047BA" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                                <Bar dataKey="count" fill="var(--brand-primary)" radius={[4, 4, 0, 0]} maxBarSize={40} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
@@ -346,7 +346,7 @@ export const Dashboard: React.FC = () => {
                             </h2>
                             <NavLink 
                                 to="/communications" 
-                                className="text-xs lg:text-sm font-semibold text-[#0047BA] hover:underline"
+                                className="text-xs lg:text-sm font-semibold text-primary-text hover:underline"
                             >
                                 View All Schedule
                             </NavLink>
@@ -392,7 +392,7 @@ export const Dashboard: React.FC = () => {
                                                     </td>
                                                     <td className="py-3.5 px-4 whitespace-nowrap">
                                                         <div className="flex items-center gap-2.5">
-                                                            <div className="w-7 h-7 rounded-full bg-[#DDE9FD] text-[#0047BA] font-bold text-xs flex items-center justify-center shrink-0">
+                                                            <div className="w-7 h-7 rounded-full bg-primary/15 text-primary-text font-bold text-xs flex items-center justify-center shrink-0">
                                                                 {initial}
                                                             </div>
                                                             <span className="font-bold text-[#0f172a]">{act.title}</span>
@@ -405,7 +405,7 @@ export const Dashboard: React.FC = () => {
                                                         <span
                                                             className={`px-3 py-1 rounded-full text-xs font-semibold inline-block ${
                                                                 isUpcoming
-                                                                    ? 'bg-[#E3EDFD] text-[#0047BA]'
+                                                                    ? 'bg-primary/10 text-primary-text'
                                                                     : 'bg-[#EDF2F7] text-[#64748b]'
                                                             }`}
                                                         >

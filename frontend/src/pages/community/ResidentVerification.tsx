@@ -237,7 +237,7 @@ export default function ResidentVerification() {
                                             </button>
                                             <button 
                                                 onClick={() => handleApprove(resident.id)}
-                                                className="inline-flex items-center gap-1.5 bg-[#0047BA] hover:bg-[#00368D] text-white px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shadow-sm hover:shadow active:scale-95"
+                                                className="inline-flex items-center gap-1.5 bg-primary hover:bg-primary-hover text-primary-foreground px-3 py-1.5 rounded-lg text-xs font-semibold transition-all shadow-sm hover:shadow active:scale-95"
                                             >
                                                 <CheckCircle className="w-3.5 h-3.5" />
                                                 Approve
@@ -430,7 +430,7 @@ export default function ResidentVerification() {
                                 </button>
                                 <button
                                     onClick={() => handleApprove(residentToInspect.id)}
-                                    className="px-5 py-2 bg-[#0047BA] hover:bg-[#00368D] text-white rounded-lg text-xs font-bold transition-colors shadow-sm"
+                                    className="px-5 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-lg text-xs font-bold transition-colors shadow-sm"
                                 >
                                     Approve Registration
                                 </button>

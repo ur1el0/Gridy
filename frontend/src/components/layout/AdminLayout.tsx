@@ -33,17 +33,17 @@ export const AdminLayout: React.FC = () => {
                         <input
                             type="text"
                             placeholder="Search for documents or residents..."
-                            className="w-full bg-white/80 focus:bg-white text-slate-800 placeholder-slate-400 text-sm font-medium pl-11 pr-4 py-2.5 rounded-full border border-slate-200/80 shadow-xs focus:outline-none focus:ring-2 focus:ring-[#0047BA]/20 transition-all"
+                            className="w-full bg-white/80 focus:bg-white text-slate-800 placeholder-slate-400 text-sm font-medium pl-11 pr-4 py-2.5 rounded-full border border-slate-200/80 shadow-xs focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
                         />
                     </div>
 
                     {/* Right Header Controls */}
                     <div className="flex items-center gap-4">
-                        <button onClick={() => navigate('/notifications')} className="p-2 text-blue-600 hover:bg-blue-50/80 rounded-full transition-colors relative" title="Notifications">
+                        <button onClick={() => navigate('/notifications')} className="p-2 text-primary-text hover:bg-primary/10 rounded-full transition-colors relative" title="Notifications">
                             <Bell className="w-5 h-5" />
                         </button>
                         
-                        <button onClick={() => navigate('/faqs')} className="p-2 text-blue-600 hover:bg-blue-50/80 rounded-full transition-colors" title="Help & Info">
+                        <button onClick={() => navigate('/faqs')} className="p-2 text-primary-text hover:bg-primary/10 rounded-full transition-colors" title="Help & Info">
                             <HelpCircle className="w-5 h-5" />
                         </button>
 

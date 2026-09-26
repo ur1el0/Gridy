@@ -69,7 +69,7 @@ export const Faqs: React.FC = () => {
                     <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
                         <div className="p-6 border-b border-slate-100 bg-slate-50/50">
                             <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                                <Book className="w-5 h-5 text-blue-600" />
+                                <Book className="w-5 h-5 text-primary-text" />
                                 Quick Start Guide
                             </h2>
                         </div>

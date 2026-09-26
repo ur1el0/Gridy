@@ -113,12 +113,12 @@ export const Activities: React.FC = () => {
             {/* Header / Action Row */}
             <div className="flex justify-between items-center bg-white p-4 rounded-xl shadow-sm border border-slate-100">
                 <div className="flex items-center gap-2 text-slate-700">
-                    <Calendar className="w-5 h-5 text-[#0047BA]" />
+                    <Calendar className="w-5 h-5 text-primary-text" />
                     <span className="font-semibold text-sm">Upcoming Schedules</span>
                 </div>
                 <button 
                     onClick={() => setIsModalOpen(true)}
-                    className="flex items-center gap-2 bg-[#0047BA] hover:bg-[#003894] text-white px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm hover:shadow active:scale-95"
+                    className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-primary-foreground px-4 py-2 rounded-lg text-sm font-semibold transition-all shadow-sm hover:shadow active:scale-95"
                 >
                     <Plus className="w-4 h-4" />
                     Schedule Activity
@@ -138,8 +138,8 @@ export const Activities: React.FC = () => {
                             <div key={act.id} className="group bg-white rounded-xl shadow-sm border border-slate-100 overflow-hidden hover:shadow-md transition-all flex flex-col sm:flex-row">
                                 
                                 {/* Date Highlight Box */}
-                                <div className="bg-[#E3EDFD] border-r border-slate-100 p-5 flex flex-col items-center justify-center min-w-[100px] shrink-0 text-center">
-                                    <span className="text-xs font-bold text-[#0047BA] uppercase tracking-widest mb-1">
+                                <div className="bg-primary/10 border-r border-slate-100 p-5 flex flex-col items-center justify-center min-w-[100px] shrink-0 text-center">
+                                    <span className="text-xs font-bold text-primary-text uppercase tracking-widest mb-1">
                                         {eventDateObj.toLocaleDateString(undefined, { month: 'short' })}
                                     </span>
                                     <span className="text-3xl font-black text-[#0f172a] leading-none mb-1">
@@ -154,7 +154,7 @@ export const Activities: React.FC = () => {
                                 <div className="p-5 flex-1 flex flex-col justify-between">
                                     <div>
                                         <div className="flex items-start justify-between gap-2 mb-2">
-                                            <h3 className="text-lg font-bold text-slate-900 leading-tight group-hover:text-[#0047BA] transition-colors">
+                                            <h3 className="text-lg font-bold text-slate-900 leading-tight group-hover:text-primary-text transition-colors">
                                                 {act.title}
                                             </h3>
                                             <button
@@ -196,7 +196,7 @@ export const Activities: React.FC = () => {
                     <div className="relative bg-white rounded-2xl shadow-xl max-w-lg w-full overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
                         <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                                 <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                                        <Calendar className="w-5 h-5 text-[#0047BA]" />
+                                        <Calendar className="w-5 h-5 text-primary-text" />
                                         Schedule Activity
                                 </h3>
                                 <button onClick={closeModal} className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-md hover:bg-slate-200">
@@ -213,7 +213,7 @@ export const Activities: React.FC = () => {
                                     value={title} 
                                     onChange={e => setTitle(e.target.value)} 
                                     placeholder="e.g., Barangay Assembly"
-                                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-[#0047BA] focus:ring-2 focus:ring-[#0047BA]/20 rounded-xl text-sm outline-none transition-all" 
+                                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl text-sm outline-none transition-all"
                                 />
                             </div>
                             
@@ -230,7 +230,7 @@ export const Activities: React.FC = () => {
                                             value={location} 
                                             onChange={e => setLocation(e.target.value)} 
                                             placeholder="Covered Court"
-                                            className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-[#0047BA] focus:ring-2 focus:ring-[#0047BA]/20 rounded-xl text-sm outline-none transition-all" 
+                                            className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl text-sm outline-none transition-all"
                                         />
                                     </div>
                                 </div>
@@ -241,7 +241,7 @@ export const Activities: React.FC = () => {
                                         required 
                                         value={eventDate} 
                                         onChange={e => setEventDate(e.target.value)} 
-                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-[#0047BA] focus:ring-2 focus:ring-[#0047BA]/20 rounded-xl text-sm outline-none transition-all cursor-pointer" 
+                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl text-sm outline-none transition-all cursor-pointer"
                                     />
                                 </div>
                             </div>
@@ -254,7 +254,7 @@ export const Activities: React.FC = () => {
                                     value={description} 
                                     onChange={e => setDescription(e.target.value)} 
                                     placeholder="Details about the event..."
-                                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:border-[#0047BA] focus:ring-2 focus:ring-[#0047BA]/20 rounded-xl text-sm outline-none transition-all resize-none" 
+                                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl text-sm outline-none transition-all resize-none"
                                 />
                             </div>
                             
@@ -265,7 +265,7 @@ export const Activities: React.FC = () => {
                                 <button 
                                     type="submit" 
                                     disabled={isSubmitting} 
-                                    className="px-5 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#0047BA] hover:bg-[#003894] transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm"
+                                    className="px-5 py-2.5 rounded-xl text-sm font-semibold text-primary-foreground bg-primary hover:bg-primary-hover transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm"
                                 >
                                     {isSubmitting ? (
                                         <><div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Scheduling...</>

@@ -14,7 +14,7 @@ interface AdminNotification {
 
 const TYPE_CONFIG = {
     queue: { icon: Users, color: 'text-orange-600', bg: 'bg-orange-50' },
-    document: { icon: FileText, color: 'text-blue-600', bg: 'bg-blue-50' },
+    document: { icon: FileText, color: 'text-primary-text', bg: 'bg-primary/10' },
     system: { icon: CheckCircle, color: 'text-emerald-600', bg: 'bg-emerald-50' },
     alert: { icon: AlertTriangle, color: 'text-red-600', bg: 'bg-red-50' },
 };
@@ -116,7 +116,7 @@ export const Notifications: React.FC = () => {
                     <button 
                         onClick={handleMarkAsRead}
                         disabled={notifications.length === 0}
-                        className="flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700 bg-blue-50 hover:bg-blue-100 px-4 py-2 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="flex items-center gap-2 text-sm font-semibold text-primary-text hover:text-primary-text bg-primary/10 hover:bg-primary/15 px-4 py-2 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Check className="w-4 h-4" />
                         {selectedIds.length > 0 ? `Mark (${selectedIds.length}) as read` : 'Mark all as read'}
@@ -137,9 +137,9 @@ export const Notifications: React.FC = () => {
                 {/* Bulk Selection Header */}
                 {notifications.length > 0 && (
                     <div className="flex items-center gap-3 p-4 border-b border-slate-100 bg-slate-50/50">
-                        <button onClick={handleSelectAll} className="text-slate-400 hover:text-blue-600 transition-colors">
+                        <button onClick={handleSelectAll} className="text-slate-400 hover:text-primary-text transition-colors">
                             {selectedIds.length === notifications.length ? (
-                                <CheckSquare className="w-5 h-5 text-blue-600" />
+                                <CheckSquare className="w-5 h-5 text-primary-text" />
                             ) : (
                                 <Square className="w-5 h-5" />
                             )}
@@ -163,13 +163,13 @@ export const Notifications: React.FC = () => {
                             return (
                                 <div 
                                     key={notif.id} 
-                                    className={`p-4 flex items-start gap-4 transition-colors hover:bg-slate-50 cursor-pointer ${!notif.is_read ? 'bg-blue-50/30' : ''} ${isSelected ? 'bg-blue-50/50' : ''}`}
+                                    className={`p-4 flex items-start gap-4 transition-colors hover:bg-slate-50 cursor-pointer ${!notif.is_read ? 'bg-primary/5' : ''} ${isSelected ? 'bg-primary/10' : ''}`}
                                     onClick={() => toggleSelection(notif.id)}
                                 >
                                     {/* Checkbox */}
                                     <div className="mt-2.5">
                                         {isSelected ? (
-                                            <CheckSquare className="w-5 h-5 text-blue-600" />
+                                            <CheckSquare className="w-5 h-5 text-primary-text" />
                                         ) : (
                                             <Square className="w-5 h-5 text-slate-300" />
                                         )}
@@ -198,7 +198,7 @@ export const Notifications: React.FC = () => {
                                     
                                     {/* Unread Indicator Dot */}
                                     {!notif.is_read && (
-                                        <div className="w-2.5 h-2.5 bg-blue-600 rounded-full shrink-0 mt-1.5"></div>
+                                        <div className="w-2.5 h-2.5 bg-primary rounded-full shrink-0 mt-1.5"></div>
                                     )}
                                 </div>
                             );

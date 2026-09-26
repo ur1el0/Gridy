@@ -215,7 +215,7 @@ export const DocumentRequests: React.FC = () => {
                 </div>
                 <button 
                     onClick={() => setIsCreateModalOpen(true)}
-                    className="bg-[#0047BA] hover:bg-[#003882] active:bg-[#002D6B] text-white px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
+                    className="bg-primary hover:bg-primary-hover active:bg-primary-hover text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-bold shadow-sm transition-all flex items-center justify-center gap-2 cursor-pointer"
                 >
                     <span>+</span> Request Walk-in 
                 </button>
@@ -362,7 +362,7 @@ export const DocumentRequests: React.FC = () => {
                                 <button 
                                     type="submit" 
                                     disabled={isSubmitting}
-                                    className="px-5 py-2 text-sm font-bold text-white bg-[#0047BA] hover:bg-[#003882] rounded-xl transition-all shadow-sm disabled:opacity-70 cursor-pointer"
+                                    className="px-5 py-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary-hover rounded-xl transition-all shadow-sm disabled:opacity-70 cursor-pointer"
                                 >
                                     {isSubmitting ? 'Recording...' : 'Record & Print Clearance'}
                                 </button>

@@ -58,7 +58,7 @@ export const ResidentsHub: React.FC = () => {
                         onClick={() => handleTabChange('directory')}
                         className={`flex items-center gap-2 whitespace-nowrap py-4 px-2 border-b-2 font-medium text-sm transition-colors cursor-pointer ${
                             activeTab === 'directory'
-                                ? 'border-[#0047BA] text-[#0047BA] font-bold'
+                                ? 'border-primary text-primary-text font-bold'
                                 : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
                         }`}
                     >
@@ -71,7 +71,7 @@ export const ResidentsHub: React.FC = () => {
                         onClick={() => handleTabChange('verifications')}
                         className={`flex items-center gap-2 whitespace-nowrap py-4 px-2 border-b-2 font-medium text-sm transition-colors cursor-pointer ${
                             activeTab === 'verifications'
-                                ? 'border-[#0047BA] text-[#0047BA] font-bold'
+                                ? 'border-primary text-primary-text font-bold'
                                 : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
                         }`}
                     >

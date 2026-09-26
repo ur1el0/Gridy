@@ -57,7 +57,7 @@ export function DILGDashboard() {
         <div className="p-8 bg-slate-50 min-h-screen">
             <div className="mb-8">
                 <h1 className="text-3xl font-extrabold text-slate-800 flex items-center gap-3 tracking-tight">
-                    <Globe className="w-8 h-8 text-blue-600" />
+                    <Globe className="w-8 h-8 text-primary-text" />
                     DILG Global Analytics
                 </h1>
                 <p className="text-slate-500 mt-2 font-medium">Cross-barangay metrics and system overview.</p>

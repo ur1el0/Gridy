@@ -8,8 +8,10 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#3b82f6',
-          hover: '#2453eb',
+          DEFAULT: 'rgb(var(--brand-primary-rgb) / <alpha-value>)',
+          hover: 'var(--brand-primary-hover)',
+          foreground: 'var(--brand-primary-foreground)',
+          text: 'var(--brand-primary-text)',
         },
         background: '#f8fafc',
         surface: '#ffffff',
