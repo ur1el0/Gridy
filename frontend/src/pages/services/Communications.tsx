@@ -27,7 +27,7 @@ export const Communications: React.FC = () => {
                             onClick={() => setActiveTab(tab.key)}
                             className={`whitespace-nowrap py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
                                 activeTab === tab.key
-                                    ? 'border-[#0047BA] text-[#0047BA]'
+                                    ? 'border-primary text-primary-text'
                                     : 'border-transparent text-slate-500 hover:text-slate-700 hover:border-slate-300'
                             }`}
                         >

@@ -83,7 +83,7 @@ export const HotlineManagement: React.FC = () => {
                 </div>
                 <button
                     onClick={() => setIsModalOpen(true)}
-                    className="flex items-center gap-2 bg-[#0047BA] hover:bg-blue-800 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors"
+                    className="flex items-center gap-2 bg-primary hover:bg-primary-hover text-primary-foreground px-4 py-2 rounded-md text-sm font-medium transition-colors"
                 >
                     <Plus size={16} /> Add Hotline
                 </button>
@@ -149,7 +149,7 @@ export const HotlineManagement: React.FC = () => {
                                     value={form.name}
                                     onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
                                     placeholder="e.g. Philippine National Police"
-                                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                                 />
                             </div>
                             <div>
@@ -159,7 +159,7 @@ export const HotlineManagement: React.FC = () => {
                                     value={form.number}
                                     onChange={e => setForm(p => ({ ...p, number: e.target.value }))}
                                     placeholder="e.g. 117 or 0912-345-6789"
-                                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                                 />
                             </div>
                             <div>
@@ -167,7 +167,7 @@ export const HotlineManagement: React.FC = () => {
                                 <select
                                     value={form.category}
                                     onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
-                                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
                                 >
                                     {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
                                 </select>
@@ -179,7 +179,7 @@ export const HotlineManagement: React.FC = () => {
                                 <button
                                     type="submit"
                                     disabled={isSubmitting}
-                                    className="px-4 py-2 bg-[#0047BA] hover:bg-blue-800 text-white text-sm font-medium rounded-md transition-colors disabled:opacity-60"
+                                    className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-medium rounded-md transition-colors disabled:opacity-60"
                                 >
                                     {isSubmitting ? 'Adding...' : 'Add Hotline'}
                                 </button>

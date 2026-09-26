@@ -131,7 +131,7 @@ export const AdminIssueManagement: React.FC = () => {
                                         </td>
                                         <td className="px-6 py-4 whitespace-nowrap">
                                             {report.image ? (
-                                                <a href={report.image} target="_blank" rel="noreferrer" className="text-primary hover:text-primary-hover text-sm font-medium">
+                                                <a href={report.image} target="_blank" rel="noreferrer" className="text-primary-text hover:text-primary-text text-sm font-medium">
                                                     View Image
                                                 </a>
                                             ) : (

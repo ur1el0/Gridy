@@ -160,7 +160,7 @@ export const ReviewDocumentModal = ({
                                         <button 
                                             onClick={() => onUpdate('PROCESSING')}
                                             disabled={isUpdating}
-                                            className="px-4 py-2 text-sm font-bold text-white bg-[#0047BA] hover:bg-[#003882] disabled:opacity-50 rounded-xl transition-all shadow-sm"
+                                            className="px-4 py-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary-hover disabled:opacity-50 rounded-xl transition-all shadow-sm"
                                         >
                                             Approve & Process
                                         </button>

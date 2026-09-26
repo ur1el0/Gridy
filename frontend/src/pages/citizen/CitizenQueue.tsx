@@ -129,7 +129,7 @@ export const CitizenQueue: React.FC = () => {
                 {!activeTicket && (
                     <button
                         onClick={() => setIsModalOpen(true)}
-                        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] text-white text-sm font-semibold shadow-xs transition-all cursor-pointer shrink-0"
+                        className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-semibold shadow-xs transition-all cursor-pointer shrink-0"
                     >
                         <Plus className="w-4 h-4" />
                         <span>Get Queue Ticket</span>
@@ -140,21 +140,21 @@ export const CitizenQueue: React.FC = () => {
             {/* Live Counter Dashboard Cards */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
                 {/* Now Serving */}
-                <div className="bg-gradient-to-br from-[#091B35] to-[#0F2D59] rounded-2xl p-6 text-white shadow-md relative overflow-hidden">
+                <div className="bg-gradient-to-br from-primary to-primary-hover rounded-2xl p-6 text-primary-foreground shadow-md relative overflow-hidden">
                     <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-sky-300 uppercase tracking-wider">
+                        <span className="text-xs font-bold text-primary-foreground uppercase tracking-wider">
                             Now Serving
                         </span>
-                        <span className="flex items-center gap-1 text-[11px] text-emerald-400 font-bold bg-emerald-400/10 px-2 py-0.5 rounded-full border border-emerald-400/20">
+                        <span className="flex items-center gap-1 text-[11px] text-primary-foreground font-bold bg-emerald-400/10 px-2 py-0.5 rounded-full border border-emerald-400/20">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse"></span>
                             Live Counter
                         </span>
                     </div>
-                    <div className="mt-4 text-4xl sm:text-5xl font-black tracking-tight text-white font-mono">
+                    <div className="mt-4 text-4xl sm:text-5xl font-black tracking-tight text-primary-foreground font-mono">
                         {liveStatus.current_ticket || '—'}
                     </div>
-                    <p className="text-xs text-slate-300 mt-2 flex items-center gap-1.5">
-                        <Volume2 className="w-3.5 h-3.5 text-sky-300" />
+                    <p className="text-xs text-primary-foreground opacity-80 mt-2 flex items-center gap-1.5">
+                        <Volume2 className="w-3.5 h-3.5 text-primary-foreground" />
                         Counter 1 - Public Assistance Desk
                     </p>
                 </div>
@@ -165,7 +165,7 @@ export const CitizenQueue: React.FC = () => {
                         <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
                             Residents Waiting
                         </span>
-                        <div className="w-8 h-8 rounded-xl bg-sky-50 text-[#0284C7] flex items-center justify-center">
+                        <div className="w-8 h-8 rounded-xl bg-sky-50 text-primary-text flex items-center justify-center">
                             <Users className="w-4 h-4" />
                         </div>
                     </div>
@@ -199,7 +199,7 @@ export const CitizenQueue: React.FC = () => {
             {/* Resident Active Ticket Card */}
             {loading ? (
                 <div className="bg-white rounded-2xl p-8 border border-slate-200 text-center flex items-center justify-center text-slate-400">
-                    <Loader2 className="w-6 h-6 animate-spin text-[#0284C7] mr-2" />
+                    <Loader2 className="w-6 h-6 animate-spin text-primary-text mr-2" />
                     <span>Synchronizing your queue ticket...</span>
                 </div>
             ) : activeTicket ? (
@@ -210,10 +210,10 @@ export const CitizenQueue: React.FC = () => {
                 }`}>
                     <div className="flex flex-col md:flex-row items-start md:items-center justify-between gap-6">
                         <div className="flex items-center gap-5">
-                            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center text-white font-black text-2xl shadow-sm ${
+                            <div className={`w-16 h-16 rounded-2xl flex items-center justify-center font-black text-2xl shadow-sm ${
                                 activeTicket.status.toUpperCase() === 'SERVING'
-                                    ? 'bg-emerald-600 animate-bounce'
-                                    : 'bg-[#0284C7]'
+                                    ? 'bg-emerald-600 animate-bounce text-white'
+                                    : 'bg-primary text-primary-foreground'
                             }`}>
                                 {activeTicket.ticket_number}
                             </div>
@@ -278,7 +278,7 @@ export const CitizenQueue: React.FC = () => {
                     </p>
                     <button
                         onClick={() => setIsModalOpen(true)}
-                        className="mt-4 px-4 py-2 rounded-xl bg-[#0284C7] text-white text-xs font-semibold hover:bg-[#0369A1] transition-all cursor-pointer"
+                        className="mt-4 px-4 py-2 rounded-xl bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary-hover transition-all cursor-pointer"
                     >
                         Get a Ticket Now
                     </button>
@@ -309,7 +309,7 @@ export const CitizenQueue: React.FC = () => {
                                 <select
                                     value={serviceType}
                                     onChange={(e) => setServiceType(e.target.value)}
-                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#F8FAFD] text-sm text-slate-800 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-[#0284C7]/20"
+                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#F8FAFD] text-sm text-slate-800 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
                                 >
                                     {SERVICE_TYPES.map((type) => (
                                         <option key={type} value={type}>
@@ -325,7 +325,7 @@ export const CitizenQueue: React.FC = () => {
                                         type="checkbox"
                                         checked={isPriority}
                                         onChange={(e) => setIsPriority(e.target.checked)}
-                                        className="mt-0.5 w-4 h-4 rounded text-[#0284C7] focus:ring-[#0284C7]"
+                                        className="mt-0.5 w-4 h-4 rounded text-primary-text focus:ring-primary"
                                     />
                                     <div className="text-xs">
                                         <span className="font-bold text-slate-800 block">
@@ -349,7 +349,7 @@ export const CitizenQueue: React.FC = () => {
                                 <button
                                     type="submit"
                                     disabled={submitting}
-                                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-[#0284C7] hover:bg-[#0369A1] text-white text-xs font-bold shadow-xs transition-all cursor-pointer disabled:opacity-50"
+                                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-bold shadow-xs transition-all cursor-pointer disabled:opacity-50"
                                 >
                                     {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                                     <span>{submitting ? 'Generating...' : 'Confirm Ticket'}</span>

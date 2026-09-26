@@ -65,7 +65,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
                                 value={searchResident}
                                 onChange={(e) => setSearchResident(e.target.value)}
                                 placeholder="Search by name or Resident ID..."
-                                className="w-full pl-11 pr-4 py-3 bg-[#EEF2FF]/60 hover:bg-[#EEF2FF] focus:bg-[#EEF2FF] border border-transparent focus:border-[#0047BA]/20 rounded-xl text-sm text-[#0f172a] placeholder-[#94a3b8] outline-none transition-all"
+                                className="w-full pl-11 pr-4 py-3 bg-[#EEF2FF]/60 hover:bg-[#EEF2FF] focus:bg-[#EEF2FF] border border-transparent focus:border-primary/20 rounded-xl text-sm text-[#0f172a] placeholder-[#94a3b8] outline-none transition-all"
                             />
                         </div>
                     </div>
@@ -80,7 +80,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
                                 value={serviceRequired}
                                 onChange={(e) => setServiceRequired(e.target.value)}
                                 required
-                                className={`w-full appearance-none pl-4 pr-10 py-3 bg-[#EEF2FF]/60 hover:bg-[#EEF2FF] focus:bg-[#EEF2FF] border border-transparent focus:border-[#0047BA]/20 rounded-xl text-sm font-medium outline-none transition-all cursor-pointer ${
+                                className={`w-full appearance-none pl-4 pr-10 py-3 bg-[#EEF2FF]/60 hover:bg-[#EEF2FF] focus:bg-[#EEF2FF] border border-transparent focus:border-primary/20 rounded-xl text-sm font-medium outline-none transition-all cursor-pointer ${
                                     serviceRequired ? 'text-[#0f172a]' : 'text-[#94a3b8]'
                                 }`}
                             >
@@ -112,7 +112,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
                                 onClick={() => setPriorityStatus('regular')}
                                 className={`py-3 px-4 rounded-xl text-sm font-bold transition-all cursor-pointer text-center ${
                                     priorityStatus === 'regular'
-                                        ? 'bg-[#DCE7FF] text-[#0047BA]'
+                                        ? 'bg-primary/15 text-primary-text'
                                         : 'bg-[#EEF2FF]/60 text-[#334155] hover:bg-[#EEF2FF]'
                                 }`}
                             >
@@ -124,7 +124,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
                                 onClick={() => setPriorityStatus('priority')}
                                 className={`py-3 px-4 rounded-xl text-sm font-bold transition-all cursor-pointer text-center flex items-center justify-center gap-1.5 ${
                                     priorityStatus === 'priority'
-                                        ? 'bg-[#DCE7FF] text-[#0047BA]'
+                                        ? 'bg-primary/15 text-primary-text'
                                         : 'bg-[#EEF2FF]/60 text-[#334155] hover:bg-[#EEF2FF]'
                                 }`}
                             >
@@ -144,7 +144,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
                             onChange={(e) => setNotes(e.target.value)}
                             rows={3}
                             placeholder="Additional details or special requests..."
-                            className="w-full py-3 px-4 bg-[#EEF2FF]/60 hover:bg-[#EEF2FF] focus:bg-[#EEF2FF] border border-transparent focus:border-[#0047BA]/20 rounded-xl text-sm text-[#0f172a] placeholder-[#94a3b8] outline-none transition-all resize-none"
+                            className="w-full py-3 px-4 bg-[#EEF2FF]/60 hover:bg-[#EEF2FF] focus:bg-[#EEF2FF] border border-transparent focus:border-primary/20 rounded-xl text-sm text-[#0f172a] placeholder-[#94a3b8] outline-none transition-all resize-none"
                         />
                     </div>
 
@@ -160,7 +160,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
                         <button
                             type="submit"
                             disabled={isSubmittingNew || !serviceRequired}
-                            className="bg-[#0052CC] hover:bg-[#0047BA] active:bg-[#003882] text-white px-6 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-blue-700/20 hover:shadow-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                            className="bg-primary hover:bg-primary-hover active:bg-primary-hover text-primary-foreground px-6 py-2.5 rounded-xl text-sm font-bold shadow-md shadow-primary/20 hover:shadow-lg transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                         >
                             {isSubmittingNew ? 'Adding...' : 'Add to Queue'}
                         </button>

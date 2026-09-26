@@ -19,7 +19,7 @@ export const ActiveTicketView: React.FC<ActiveTicketViewProps> = ({ servingTicke
                 </div>
 
                 <div className="my-5">
-                    <h2 className="text-5xl lg:text-6xl font-black text-[#0047BA] tracking-tight">
+                    <h2 className="text-5xl lg:text-6xl font-black text-primary-text tracking-tight">
                         {servingTicket ? servingTicket.ticket_number : '--'}
                     </h2>
                 </div>

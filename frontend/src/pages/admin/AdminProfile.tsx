@@ -13,12 +13,12 @@ export const AdminProfile: React.FC = () => {
             
             <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden">
                 {/* Banner */}
-                <div className="h-32 bg-gradient-to-r from-blue-600 to-[#0f172a]"></div>
+                <div className="h-32 bg-gradient-to-r from-primary to-primary-hover"></div>
                 
                 <div className="px-8 pb-8 relative">
                     {/* Avatar Profile Picture */}
                     <div className="absolute -top-12 left-8 w-24 h-24 bg-white rounded-full p-1 shadow-md">
-                        <div className="w-full h-full rounded-full bg-blue-100 flex items-center justify-center text-blue-700 text-4xl font-black">
+                        <div className="w-full h-full rounded-full bg-primary/10 flex items-center justify-center text-primary-text text-4xl font-black">
                             {(user.username ?? '').charAt(0).toUpperCase()}
                         </div>
                     </div>
@@ -28,7 +28,7 @@ export const AdminProfile: React.FC = () => {
                             <h2 className="text-2xl font-bold text-slate-900">@{user.username}</h2>
                             <p className="text-slate-500 font-medium">Barangay Official</p>
                         </div>
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-blue-50 text-blue-700 border border-blue-200">
+                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-primary/10 text-primary-text border border-primary/20">
                             <Shield className="w-3.5 h-3.5" /> Administrator Access
                         </span>
                     </div>

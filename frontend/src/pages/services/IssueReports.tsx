@@ -241,7 +241,7 @@ export const IssueReports: React.FC = () => {
                                         <button 
                                             onClick={() => handleStatusUpdate('IN_PROGRESS')}
                                             disabled={isUpdating}
-                                            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:opacity-50"
+                                            className="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-primary-foreground bg-primary hover:bg-primary-hover disabled:opacity-50"
                                         >
                                             {isUpdating ? 'Updating...' : 'Mark In Progress'}
                                         </button>

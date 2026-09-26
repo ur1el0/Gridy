@@ -26,14 +26,14 @@ export const CitizenLayout: React.FC = () => {
     const navLinkClass = ({ isActive }: { isActive: boolean }) =>
         `flex items-center gap-2 px-3.5 py-2 rounded-xl text-sm font-semibold transition-all ${
             isActive
-                ? 'bg-[#0284C7] text-white shadow-sm'
-                : 'text-slate-300 hover:text-white hover:bg-white/10'
+                ? 'bg-primary text-primary-foreground shadow-sm'
+                : 'text-primary-foreground opacity-75 hover:opacity-100 hover:bg-white/10'
         }`;
 
     return (
         <div className="min-h-screen flex flex-col bg-[#F8FAFD] text-slate-900 font-sans antialiased">
             {/* Top Citizen Navigation Bar */}
-            <header className="bg-[#091B35] text-white sticky top-0 z-50 shadow-md">
+            <header className="bg-primary text-primary-foreground sticky top-0 z-50 shadow-md">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-20">
                         {/* Left: Brand & Barangay Badge */}
@@ -43,15 +43,15 @@ export const CitizenLayout: React.FC = () => {
                             </div>
                             <div>
                                 <div className="flex items-center gap-2">
-                                    <span className="text-xl font-bold tracking-tight text-white leading-none">
+                                    <span className="text-xl font-bold tracking-tight text-primary-foreground leading-none">
                                         Gridy
                                     </span>
-                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-[#0284C7] text-white">
+                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-primary-foreground text-primary">
                                         Resident Portal
                                     </span>
                                 </div>
-                                <div className="flex items-center gap-1.5 text-xs text-slate-300 font-medium mt-1">
-                                    <Building2 className="w-3.5 h-3.5 text-[#38BDF8]" />
+                                <div className="flex items-center gap-1.5 text-xs text-primary-foreground opacity-80 font-medium mt-1">
+                                    <Building2 className="w-3.5 h-3.5 text-primary-foreground" />
                                     <span>{barangayName}</span>
                                 </div>
                             </div>
@@ -78,11 +78,11 @@ export const CitizenLayout: React.FC = () => {
                         {/* Right: Resident Profile Pill & Logout */}
                         <div className="flex items-center gap-3">
                             <div className="hidden sm:flex items-center gap-2.5 bg-white/5 border border-white/10 px-3.5 py-1.5 rounded-full">
-                                <div className="w-7 h-7 rounded-full bg-[#0284C7] flex items-center justify-center text-white text-xs font-bold">
+                                <div className="w-7 h-7 rounded-full bg-primary flex items-center justify-center text-primary-foreground text-xs font-bold">
                                     {displayName.charAt(0).toUpperCase()}
                                 </div>
                                 <div className="flex flex-col text-left">
-                                    <span className="text-xs font-bold text-white leading-tight">
+                                    <span className="text-xs font-bold text-primary-foreground leading-tight">
                                         {displayName}
                                     </span>
                                     <span className="flex items-center gap-1 text-[10px] text-emerald-400 font-semibold">
@@ -95,7 +95,7 @@ export const CitizenLayout: React.FC = () => {
                             <button
                                 onClick={handleLogout}
                                 title="Log Out"
-                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-rose-300 hover:text-white hover:bg-rose-500/20 border border-rose-500/30 transition-all cursor-pointer"
+                                className="flex items-center gap-1.5 px-3 py-2 rounded-xl text-xs font-semibold text-primary-foreground hover:bg-rose-500/20 border border-rose-500/30 transition-all cursor-pointer"
                             >
                                 <LogOut className="w-4 h-4" />
                                 <span className="hidden sm:inline">Log Out</span>
