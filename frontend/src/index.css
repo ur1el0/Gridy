@@ -4,6 +4,14 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+    --brand-primary: #082B66;
+    --brand-primary-rgb: 8 43 102;
+    --brand-primary-hover: #061E48;
+    --brand-primary-foreground: #FFFFFF;
+    --brand-primary-text: #082B66;
+}
+
 @layer base {
     body {
         @apply bg-background text-slate-900 antialiased;

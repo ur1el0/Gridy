@@ -1,11 +1,14 @@
 import React, { useEffect, useState } from 'react';
 import { axiosPrivate } from '../../api/axios';
+import { useAuth } from '../../context/AuthContext';
 
 export const BarangaySettings: React.FC = () => {
     const [barangayId, setBarangayId] = useState<number | null>(null);
     const [name, setName] = useState('');
     const [captainName, setCaptainName] = useState('');
     const [officeContact, setOfficeContact] = useState('');
+    const [primaryColor, setPrimaryColor] = useState('#082B66');
+    const { updateBarangayPrimaryColor } = useAuth();
     
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
     const [sealPreview, setSealPreview] = useState<string | null>(null);
@@ -29,6 +32,7 @@ export const BarangaySettings: React.FC = () => {
                     setName(data.name || '');
                     setCaptainName(data.captain_name || '');
                     setOfficeContact(data.office_contact || '');
+                    setPrimaryColor(data.primary_color || '#082B66');
                     setLogoPreview(data.logo);
                     setSealPreview(data.city_seal);
                 }
@@ -64,6 +68,7 @@ export const BarangaySettings: React.FC = () => {
         const formData = new FormData();
         formData.append('captain_name', captainName);
         formData.append('office_contact', officeContact);
+        formData.append('primary_color', primaryColor);
         
         if (logoFile) formData.append('logo', logoFile);
         if (sealFile) formData.append('city_seal', sealFile);
@@ -74,6 +79,7 @@ export const BarangaySettings: React.FC = () => {
                     'Content-Type': 'multipart/form-data'
                 }
             });
+            updateBarangayPrimaryColor(primaryColor);
             setMessage({ text: 'Settings updated successfully!', type: 'success' });
         } catch (err) {
             setMessage({ text: 'Failed to update settings. Please try again.', type: 'error' });
@@ -118,7 +124,7 @@ export const BarangaySettings: React.FC = () => {
                                     value={captainName} 
                                     onChange={(e) => setCaptainName(e.target.value)}
                                     placeholder="e.g. Juan Dela Cruz"
-                                    className="mt-1 block w-full border border-slate-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm" 
+                                    className="mt-1 block w-full border border-slate-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
                                 />
                             </div>
                             <div className="sm:col-span-2">
@@ -128,8 +134,23 @@ export const BarangaySettings: React.FC = () => {
                                     value={officeContact} 
                                     onChange={(e) => setOfficeContact(e.target.value)}
                                     placeholder="e.g. Office of the Punong Barangay | Tel: 123-4567"
-                                    className="mt-1 block w-full border border-slate-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm" 
+                                    className="mt-1 block w-full border border-slate-300 rounded-md shadow-sm py-2 px-3 focus:outline-none focus:ring-primary focus:border-primary sm:text-sm"
                                 />
+                            </div>
+                            <div>
+                                <label htmlFor="primary-color" className="block text-sm font-medium text-slate-700">
+                                    Primary brand color
+                                </label>
+                                <div className="mt-1 flex items-center gap-3">
+                                    <input
+                                        id="primary-color"
+                                        type="color"
+                                        value={primaryColor}
+                                        onChange={(event) => setPrimaryColor(event.target.value.toUpperCase())}
+                                        className="h-10 w-16 cursor-pointer rounded-md border border-slate-300 bg-white p-1"
+                                    />
+                                    <span className="font-mono text-sm text-slate-600">{primaryColor}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -176,7 +197,7 @@ export const BarangaySettings: React.FC = () => {
                     <button
                         type="submit"
                         disabled={saving}
-                        className="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-primary hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-70 transition-colors"
+                        className="inline-flex justify-center py-2 px-6 border border-transparent shadow-sm text-sm font-medium rounded-md text-primary-foreground bg-primary hover:bg-primary-hover focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary disabled:opacity-70 transition-colors"
                     >
                         {saving ? 'Saving...' : 'Save Settings'}
                     </button>
