@@ -131,13 +131,13 @@ export const ResidentIssueReports: React.FC = () => {
                         <input 
                             type="file" accept="image/*"
                             onChange={(e) => setImageFile(e.target.files ? e.target.files[0] : null)}
-                            className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-white hover:file:bg-primary-hover transition-colors"
+                            className="block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-md file:border-0 file:text-sm file:font-semibold file:bg-primary file:text-primary-foreground hover:file:bg-primary-hover transition-colors"
                         />
                     </div>
                     <div className="flex justify-end pt-2">
                         <button 
                             type="submit" disabled={isSubmitting}
-                            className="bg-primary hover:bg-primary-hover text-white px-6 py-2 rounded-md text-sm font-medium transition-all shadow-sm disabled:opacity-50"
+                            className="bg-primary hover:bg-primary-hover text-primary-foreground px-6 py-2 rounded-md text-sm font-medium transition-all shadow-sm disabled:opacity-50"
                         >
                             {isSubmitting ? 'Submitting...' : 'Submit Report'}
                         </button>

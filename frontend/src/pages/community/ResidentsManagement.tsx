@@ -169,7 +169,7 @@ export const ResidentsManagement: React.FC = () => {
                             placeholder="Search name, PhilSys ID, purok..."
                             value={search}
                             onChange={(e) => setSearch(e.target.value)}
-                            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all shadow-2xs"
+                            className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all shadow-2xs"
                         />
                     </div>
 
@@ -179,7 +179,7 @@ export const ResidentsManagement: React.FC = () => {
                             setImportSummary(null);
                             setCsvFile(null);
                         }}
-                        className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-[#0047BA] hover:bg-[#003882] text-white rounded-xl text-sm font-bold shadow-xs transition-all cursor-pointer shrink-0 active:scale-95"
+                        className="inline-flex items-center justify-center gap-2 px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground rounded-xl text-sm font-bold shadow-xs transition-all cursor-pointer shrink-0 active:scale-95"
                     >
                         <Upload className="w-4 h-4" />
                         <span>Import CSV</span>
@@ -211,15 +211,15 @@ export const ResidentsManagement: React.FC = () => {
                                     <tr 
                                         key={resident.id} 
                                         onClick={() => setSelectedResident(resident)}
-                                        className="hover:bg-blue-50/50 transition-colors cursor-pointer group"
+                                        className="hover:bg-primary/5 transition-colors cursor-pointer group"
                                     >
                                         <td className="py-3.5 px-6">
                                             <div className="flex items-center gap-3">
-                                                <div className="w-9 h-9 rounded-full bg-blue-100 text-[#0047BA] flex items-center justify-center font-bold text-sm shadow-2xs">
+                                                <div className="w-9 h-9 rounded-full bg-primary/10 text-primary-text flex items-center justify-center font-bold text-sm shadow-2xs">
                                                     {resident.full_name.charAt(0).toUpperCase()}
                                                 </div>
                                                 <div>
-                                                    <div className="font-bold text-slate-900 group-hover:text-[#0047BA] transition-colors">{resident.full_name}</div>
+                                                    <div className="font-bold text-slate-900 group-hover:text-primary-text transition-colors">{resident.full_name}</div>
                                                     <div className="text-xs text-slate-500">Born: {resident.birth_date} ({getAge(resident.birth_date)})</div>
                                                 </div>
                                             </div>
@@ -243,8 +243,8 @@ export const ResidentsManagement: React.FC = () => {
                                         </td>
                                         <td className="py-3.5 px-6 text-center">
                                             {resident.philsys_id_number ? (
-                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-[#0047BA] border border-blue-200">
-                                                    <ShieldCheck className="w-3.5 h-3.5 text-[#0047BA]" />
+                                                <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-primary/10 text-primary-text border border-primary/20">
+                                                    <ShieldCheck className="w-3.5 h-3.5 text-primary-text" />
                                                     PhilSys: {resident.philsys_id_number.slice(0, 4)}••••
                                                 </span>
                                             ) : resident.is_verified ? (
@@ -285,7 +285,7 @@ export const ResidentsManagement: React.FC = () => {
                         {/* Modal Header */}
                         <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50/80">
                             <div className="flex items-center gap-3.5">
-                                <div className="w-12 h-12 rounded-2xl bg-[#0047BA] text-white flex items-center justify-center font-bold text-lg shadow-sm">
+                                <div className="w-12 h-12 rounded-2xl bg-primary text-primary-foreground flex items-center justify-center font-bold text-lg shadow-sm">
                                     {selectedResident.full_name.charAt(0).toUpperCase()}
                                 </div>
                                 <div>
@@ -313,7 +313,7 @@ export const ResidentsManagement: React.FC = () => {
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-3">
                                     <div className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                                        <User className="w-3.5 h-3.5 text-[#0047BA]" /> Personal Demographics
+                                        <User className="w-3.5 h-3.5 text-primary-text" /> Personal Demographics
                                     </div>
                                     <div className="space-y-1.5 text-sm">
                                         <div className="flex justify-between">
@@ -339,7 +339,7 @@ export const ResidentsManagement: React.FC = () => {
 
                                 <div className="p-4 rounded-2xl bg-slate-50 border border-slate-100 space-y-3">
                                     <div className="text-xs font-bold text-slate-500 uppercase tracking-wider flex items-center gap-1.5">
-                                        <Phone className="w-3.5 h-3.5 text-[#0047BA]" /> Contact Information
+                                        <Phone className="w-3.5 h-3.5 text-primary-text" /> Contact Information
                                     </div>
                                     <div className="space-y-1.5 text-sm">
                                         <div className="flex justify-between">
@@ -352,20 +352,20 @@ export const ResidentsManagement: React.FC = () => {
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-slate-500">System Role:</span>
-                                            <span className="font-semibold text-blue-700">Resident</span>
+                                            <span className="font-semibold text-primary-text">Resident</span>
                                         </div>
                                     </div>
                                 </div>
                             </div>
 
                             {/* Official Identification & PhilSys Proof */}
-                            <div className="p-5 rounded-2xl border border-blue-100 bg-blue-50/40 space-y-4">
+                            <div className="p-5 rounded-2xl border border-primary/20 bg-primary/5 space-y-4">
                                 <div className="flex items-center justify-between">
-                                    <div className="text-xs font-bold text-[#0047BA] uppercase tracking-wider flex items-center gap-1.5">
-                                        <ShieldCheck className="w-4 h-4 text-[#0047BA]" /> Philippine National ID (PhilSys)
+                                    <div className="text-xs font-bold text-primary-text uppercase tracking-wider flex items-center gap-1.5">
+                                        <ShieldCheck className="w-4 h-4 text-primary-text" /> Philippine National ID (PhilSys)
                                     </div>
                                     {selectedResident.philsys_id_number ? (
-                                        <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-800">
+                                        <span className="px-2.5 py-0.5 rounded-full text-xs font-bold bg-primary/10 text-primary-text">
                                             Verified Card
                                         </span>
                                     ) : (
@@ -387,7 +387,7 @@ export const ResidentsManagement: React.FC = () => {
                                             href={selectedResident.philsys_id_photo} 
                                             target="_blank" 
                                             rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1 text-xs font-bold text-[#0047BA] hover:underline"
+                                            className="inline-flex items-center gap-1 text-xs font-bold text-primary-text hover:underline"
                                         >
                                             <span>View ID Photo</span>
                                             <ExternalLink className="w-3.5 h-3.5" />
@@ -411,7 +411,7 @@ export const ResidentsManagement: React.FC = () => {
                                             href={selectedResident.secondary_id_photo} 
                                             target="_blank" 
                                             rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1 text-xs font-bold text-[#0047BA] hover:underline mt-1"
+                                            className="inline-flex items-center gap-1 text-xs font-bold text-primary-text hover:underline mt-1"
                                         >
                                             <span>View Attached ID Photo</span>
                                             <ExternalLink className="w-3 h-3" />
@@ -434,7 +434,7 @@ export const ResidentsManagement: React.FC = () => {
                                             href={selectedResident.utility_billing_photo} 
                                             target="_blank" 
                                             rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1 text-xs font-bold text-[#0047BA] hover:underline mt-1"
+                                            className="inline-flex items-center gap-1 text-xs font-bold text-primary-text hover:underline mt-1"
                                         >
                                             <span>View Billing Receipt</span>
                                             <ExternalLink className="w-3 h-3" />
@@ -465,7 +465,7 @@ export const ResidentsManagement: React.FC = () => {
                     <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95">
                         <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                             <div className="flex items-center gap-2.5">
-                                <FileSpreadsheet className="w-5 h-5 text-[#0047BA]" />
+                                <FileSpreadsheet className="w-5 h-5 text-primary-text" />
                                 <h3 className="text-base font-bold text-slate-900">Import Census / RBI Records</h3>
                             </div>
                             <button
@@ -477,7 +477,7 @@ export const ResidentsManagement: React.FC = () => {
                         </div>
 
                         <form onSubmit={handleImportSubmit} className="p-6 space-y-5">
-                            <div className="flex items-center justify-between p-3.5 bg-blue-50/70 border border-blue-100 rounded-xl">
+                            <div className="flex items-center justify-between p-3.5 bg-primary/5 border border-primary/20 rounded-xl">
                                 <div className="text-xs text-slate-700">
                                     <span className="font-bold block">Need the standard format?</span>
                                     Download the pre-structured RBI template.
@@ -485,7 +485,7 @@ export const ResidentsManagement: React.FC = () => {
                                 <button
                                     type="button"
                                     onClick={handleDownloadTemplate}
-                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-blue-50 border border-blue-200 text-blue-700 text-xs font-bold rounded-lg shadow-2xs transition-colors shrink-0 cursor-pointer"
+                                    className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-primary/10 border border-primary/20 text-primary-text text-xs font-bold rounded-lg shadow-2xs transition-colors shrink-0 cursor-pointer"
                                 >
                                     <Download className="w-3.5 h-3.5" />
                                     <span>Download Template</span>
@@ -535,7 +535,7 @@ export const ResidentsManagement: React.FC = () => {
                                 <button
                                     type="submit"
                                     disabled={importing || !csvFile}
-                                    className="px-5 py-2 rounded-xl text-sm font-semibold text-white bg-[#0047BA] hover:bg-[#003882] transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-xs"
+                                    className="px-5 py-2 rounded-xl text-sm font-semibold text-primary-foreground bg-primary hover:bg-primary-hover transition-colors disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer shadow-xs"
                                 >
                                     {importing ? 'Processing Import...' : 'Import Records'}
                                 </button>

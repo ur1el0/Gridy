@@ -262,7 +262,7 @@ export const LiveQueue: React.FC = () => {
 
                     <button
                         onClick={() => setIsManualModalOpen(true)}
-                        className="bg-[#0047BA] hover:bg-[#003882] active:bg-[#002D6B] text-white px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm flex items-center gap-2 transition-all cursor-pointer"
+                        className="bg-primary hover:bg-primary-hover active:bg-primary-hover text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm flex items-center gap-2 transition-all cursor-pointer"
                     >
                         <Plus className="w-4 h-4 stroke-[3]" />
                         <span>Manual Entry</span>
@@ -272,9 +272,9 @@ export const LiveQueue: React.FC = () => {
 
             {/* Notification Toast */}
             {notificationBanner && (
-                <div className="bg-[#E3EDFD] border border-[#0047BA]/30 text-[#0047BA] px-4 py-3 rounded-xl text-sm font-semibold flex items-center justify-between shadow-sm animate-fade-in">
+                <div className="bg-primary/10 border border-primary/30 text-primary-text px-4 py-3 rounded-xl text-sm font-semibold flex items-center justify-between shadow-sm animate-fade-in">
                     <span>{notificationBanner}</span>
-                    <button onClick={() => setNotificationBanner(null)} className="text-blue-800 hover:text-blue-950">
+                    <button onClick={() => setNotificationBanner(null)} className="text-primary-text hover:opacity-80">
                         <X className="w-4 h-4" />
                     </button>
                 </div>
@@ -308,7 +308,7 @@ export const LiveQueue: React.FC = () => {
                 <button
                     onClick={handleNextQueue}
                     disabled={isUpdating || waitingTickets.length === 0}
-                    className="flex-1 bg-[#0047BA] hover:bg-[#003882] active:bg-[#002D6B] text-white py-3.5 px-6 rounded-2xl text-base font-bold shadow-sm flex items-center justify-center gap-2.5 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 bg-primary hover:bg-primary-hover active:bg-primary-hover text-primary-foreground py-3.5 px-6 rounded-2xl text-base font-bold shadow-sm flex items-center justify-center gap-2.5 transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     <SkipForward className="w-5 h-5 fill-current" />
                     <span>{isUpdating ? 'Updating...' : 'Next Queue'}</span>
@@ -403,7 +403,7 @@ export const LiveQueue: React.FC = () => {
                                     ) : (
                                         tickets.map((t) => (
                                             <tr key={t.ticket_id} className="hover:bg-slate-50">
-                                                <td className="py-2.5 px-3 font-bold text-[#0047BA]">{t.ticket_number}</td>
+                                                <td className="py-2.5 px-3 font-bold text-primary-text">{t.ticket_number}</td>
                                                 <td className="py-2.5 px-3">
                                                     <div className="font-semibold text-slate-900">{t.resident_name || 'Walk-in'}</div>
                                                     <div className="text-xs text-slate-500">{t.service_type}</div>

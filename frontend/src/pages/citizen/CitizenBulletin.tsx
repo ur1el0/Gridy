@@ -81,7 +81,7 @@ return (
                         onClick={() => setActiveTab('announcements')}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                             activeTab === 'announcements'
-                                ? 'bg-white text-[#0284C7] shadow-xs'
+                                ? 'bg-white text-primary-text shadow-xs'
                                 : 'text-slate-600 hover:text-slate-900'
                         }`}
                     >
@@ -92,7 +92,7 @@ return (
                         onClick={() => setActiveTab('activities')}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                             activeTab === 'activities'
-                                ? 'bg-white text-[#0284C7] shadow-xs'
+                                ? 'bg-white text-primary-text shadow-xs'
                                 : 'text-slate-600 hover:text-slate-900'
                         }`}
                     >
@@ -103,7 +103,7 @@ return (
             </div>
             {loading ? (
                 <div className="bg-white rounded-2xl p-12 border border-slate-200 text-center flex flex-col items-center justify-center text-slate-400">
-                    <Loader2 className="w-8 h-8 animate-spin text-[#0284C7] mb-2" />
+                    <Loader2 className="w-8 h-8 animate-spin text-primary-text mb-2" />
                     <p className="text-sm">Retrieving bulletin notices...</p>
                 </div>
             ) : activeTab === 'announcements' ? (
@@ -121,7 +121,7 @@ return (
                                 key={item.id}
                                 className={`bg-white rounded-2xl p-6 border shadow-xs transition-all flex flex-col justify-between ${
                                     item.is_pinned
-                                        ? 'border-sky-300 ring-2 ring-sky-500/10'
+                                        ? 'border-primary ring-2 ring-primary/10'
                                         : 'border-slate-200'
                                 }`}
                             >
@@ -135,7 +135,7 @@ return (
                                             })}
                                         </span>
                                         {item.is_pinned && (
-                                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-sky-50 text-[#0284C7] border border-sky-200">
+                                            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-sky-50 text-primary-text border border-sky-200">
                                                 <Pin className="w-3 h-3" /> Pinned Notice
                                             </span>
                                         )}
@@ -167,7 +167,7 @@ return (
                                 className="bg-white rounded-2xl p-6 border border-slate-200 shadow-xs flex flex-col justify-between"
                             >
                                 <div>
-                                    <div className="w-10 h-10 rounded-xl bg-sky-50 text-[#0284C7] flex items-center justify-center mb-4">
+                                    <div className="w-10 h-10 rounded-xl bg-sky-50 text-primary-text flex items-center justify-center mb-4">
                                         <Calendar className="w-5 h-5" />
                                     </div>
                                     <h3 className="text-base font-bold text-slate-900 mb-2">
@@ -179,7 +179,7 @@ return (
                                 </div>
                                 <div className="pt-4 border-t border-slate-100 space-y-2 text-xs text-slate-500">
                                     <div className="flex items-center gap-2">
-                                        <Clock className="w-3.5 h-3.5 text-[#0284C7] shrink-0" />
+                                        <Clock className="w-3.5 h-3.5 text-primary-text shrink-0" />
                                         <span>
                                             {new Date(act.event_datetime).toLocaleString(undefined, {
                                                 dateStyle: 'medium',

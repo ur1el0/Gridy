@@ -21,7 +21,7 @@ export const QueueMetrics: React.FC<QueueMetricsProps> = ({
             {/* Stat Card 1: TOTAL WAITING */}
             <div className="bg-white rounded-2xl p-5 shadow-xs border border-[#E2E8F0]/80 flex flex-col justify-between min-h-[120px]">
                 <div className="flex items-center">
-                    <div className="w-8 h-8 rounded-xl bg-[#E3EDFD] text-[#0047BA] flex items-center justify-center shrink-0">
+                    <div className="w-8 h-8 rounded-xl bg-primary/10 text-primary-text flex items-center justify-center shrink-0">
                         <Users className="w-4 h-4" />
                     </div>
                     <span className="text-[#64748b] text-[11px] font-bold uppercase tracking-wider ml-2.5">
