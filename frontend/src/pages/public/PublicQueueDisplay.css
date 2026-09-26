@@ -1,0 +1,136 @@
+.public-queue {
+    --queue-brand-color: #123456;
+    --queue-brand-text-color: #ffffff;
+
+    min-height: 100vh;
+    color: #0f172a;
+    background:
+        radial-gradient(circle at 90% 8%, rgba(29, 78, 216, 0.08), transparent 28rem),
+        #f1f5f9;
+    font-family: Inter, ui-sans-serif, system-ui, sans-serif;
+}
+
+.public-queue__header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 2rem;
+    padding: clamp(1.5rem, 4vw, 3.5rem) clamp(1.25rem, 6vw, 6rem);
+    color: var(--queue-brand-text-color);
+    background: var(--queue-brand-color);
+}
+
+.public-queue__header h1 {
+    margin: 0.35rem 0 0;
+    font-size: clamp(1.8rem, 4vw, 3rem);
+    line-height: 1.1;
+}
+
+.public-queue__eyebrow {
+    margin: 0;
+    font-size: 0.8rem;
+    font-weight: 800;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+}
+
+.public-queue__audio-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.65rem;
+    min-height: 3rem;
+    padding: 0.7rem 1rem;
+    border: 2px solid currentColor;
+    border-radius: 0.75rem;
+    color: inherit;
+    background: transparent;
+    font: inherit;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.public-queue__audio-button:focus-visible {
+    outline: 3px solid #facc15;
+    outline-offset: 3px;
+}
+
+.public-queue__audio-notice {
+    margin: 1rem auto 0;
+    width: min(70rem, calc(100% - 2rem));
+    color: #334155;
+}
+
+.public-queue__content {
+    display: grid;
+    grid-template-columns: minmax(0, 2fr) minmax(15rem, 1fr);
+    gap: 1.5rem;
+    width: min(78rem, calc(100% - 2.5rem));
+    margin: clamp(2rem, 7vh, 5rem) auto;
+}
+
+.public-queue__ticket-card,
+.public-queue__waiting-card {
+    padding: clamp(1.5rem, 4vw, 3rem);
+    border: 1px solid #dbe3ed;
+    border-radius: 1.5rem;
+    background: #ffffff;
+    box-shadow: 0 1.25rem 3rem rgba(15, 23, 42, 0.08);
+}
+
+.public-queue__ticket-card {
+    border-top: 0.5rem solid var(--queue-brand-color);
+}
+
+.public-queue__ticket {
+    margin: 1.5rem 0 0;
+    color: #0f172a;
+    font-size: clamp(2.5rem, 8vw, 6rem);
+    font-weight: 850;
+    line-height: 1;
+    overflow-wrap: anywhere;
+}
+
+.public-queue__waiting-card strong {
+    display: block;
+    margin-top: 1rem;
+    color: #0f172a;
+    font-size: clamp(3rem, 7vw, 5rem);
+    line-height: 1;
+}
+
+.public-queue__message {
+    grid-column: 1 / -1;
+    margin: 0;
+    padding: 1rem 1.25rem;
+    border-radius: 0.75rem;
+    background: #e2e8f0;
+    font-weight: 650;
+}
+
+.public-queue__message--error {
+    color: #991b1b;
+    background: #fee2e2;
+}
+
+.public-queue__refresh-note {
+    grid-column: 1 / -1;
+    margin: 0;
+    color: #475569;
+    text-align: center;
+}
+
+@media (max-width: 700px) {
+    .public-queue__header {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .public-queue__content {
+        grid-template-columns: 1fr;
+    }
+
+    .public-queue__audio-button {
+        width: 100%;
+    }
+}

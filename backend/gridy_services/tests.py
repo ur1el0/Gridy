@@ -385,6 +385,80 @@ class ServiceAPITests(APITestCase):
         ticket.refresh_from_db()
         self.assertEqual(ticket.status, QueueTicket.Status.WAITING)
 
+
+class PublicQueueStatusAPITests(APITestCase):
+    def setUp(self):
+        self.barangay_a = Barangay.objects.create(
+            name="Public Queue Barangay A",
+            primary_color="#123456",
+        )
+        self.barangay_b = Barangay.objects.create(
+            name="Public Queue Barangay B",
+            primary_color="#654321",
+        )
+
+        QueueTicket.objects.create(
+            barangay=self.barangay_a,
+            ticket_number="A-101",
+            service_type="DOCUMENT",
+            status=QueueTicket.Status.SERVING,
+        )
+        QueueTicket.objects.create(
+            barangay=self.barangay_a,
+            ticket_number="A-102",
+            service_type="DOCUMENT",
+            status=QueueTicket.Status.WAITING,
+        )
+        QueueTicket.objects.create(
+            barangay=self.barangay_b,
+            ticket_number="B-201",
+            service_type="DOCUMENT",
+            status=QueueTicket.Status.SERVING,
+        )
+        QueueTicket.objects.create(
+            barangay=self.barangay_b,
+            ticket_number="B-202",
+            service_type="DOCUMENT",
+            status=QueueTicket.Status.WAITING,
+        )
+
+    def test_anonymous_status_is_scoped_to_requested_barangay(self):
+        url = reverse(
+            "public-queue-status",
+            kwargs={"barangay_id": self.barangay_a.pk},
+        )
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.data,
+            {
+                "barangay_name": "Public Queue Barangay A",
+                "primary_color": "#123456",
+                "current_ticket": "A-101",
+                "total_waiting": 1,
+            },
+        )
+
+    def test_unknown_barangay_returns_not_found(self):
+        url = reverse(
+            "public-queue-status",
+            kwargs={"barangay_id": 999999},
+        )
+
+        response = self.client.get(url)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_existing_live_status_endpoint_still_requires_authentication(self):
+        response = self.client.get(reverse("ticket-live-status"))
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_401_UNAUTHORIZED,
+        )
+        
 class SystemHealthAPITests(APITestCase):
     def test_health_check_endpoint_success(self):
         url = reverse('health_check')

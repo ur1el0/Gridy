@@ -23,6 +23,7 @@ import { ErrorBoundary } from "./components/core/ErrorBoundary";
 import { ForgotPassword } from "./pages/auth/ForgotPassword";
 import { ResetPassword } from "./pages/auth/ResetPassword";
 import { ResidentsHub } from "./pages/community/ResidentsHub";
+import { PublicQueueDisplay } from "./pages/public/PublicQueueDisplay";
 
 function RootRedirect() {
     const { isAuthenticated, user } = useAuth();
@@ -49,6 +50,7 @@ export function App() {
                         <Route path="/register" element={<Register />} />
                         <Route path="/forgot-password" element={<ForgotPassword />} />
                         <Route path="/reset-password" element={<ResetPassword />} />
+                        <Route path="/public/queue/:barangayId" element={<PublicQueueDisplay />} />
 
                         {/* Admin & Official Workstation (Tier 1 & Tier 2) */}
                         <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'DILG_ADMIN']} />}>
