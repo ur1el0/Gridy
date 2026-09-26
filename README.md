@@ -67,7 +67,7 @@ docker compose up -d --build
 docker compose exec backend python manage.py seed_barangays
 ```
 
-- **Web Portal:** [http://localhost/](http://localhost/)
+- **Web Portal:** [http://localhost:8080/](http://localhost:8080/)
 - **REST API Root:** [http://localhost:8000/api/v1/](http://localhost:8000/api/v1/)
 - **OpenAPI Documentation:** [http://localhost:8000/api/schema/swagger-ui/](http://localhost:8000/api/schema/swagger-ui/)
 - **Telemetry Health Check:** [http://localhost:8000/api/v1/health/](http://localhost:8000/api/v1/health/)
