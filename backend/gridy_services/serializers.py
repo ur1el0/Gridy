@@ -66,6 +66,21 @@ class QueueTicketSerializer(serializers.ModelSerializer):
         # Return the actual typed name, or fallback if none was provided
         return obj.walkin_name if obj.walkin_name else "Walk-in Resident"
 
+class PublicQueueStatusSerializer(serializers.Serializer):
+    barangay_name = serializers.CharField(read_only=True)
+    primary_color = serializers.RegexField(
+        regex=r"^#[0-9A-Fa-f]{6}$",
+        read_only=True,
+    )
+    current_ticket = serializers.CharField(
+        allow_null=True,
+        read_only=True,
+    )
+    total_waiting = serializers.IntegerField(
+        min_value=0,
+        read_only=True,
+    )
+        
 
 class DocumentStatsSerializer(serializers.Serializer):
     total = serializers.IntegerField()
