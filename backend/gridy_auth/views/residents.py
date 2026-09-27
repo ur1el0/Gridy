@@ -18,6 +18,8 @@ from gridy_audit.models import AuditLog
 
 from rest_framework import serializers
 
+from rest_framework.exceptions import PermissionDenied
+
 
 class FileUploadSerializer(serializers.Serializer):
     file = serializers.FileField(help_text="CSV file containing resident accounts to import.")
@@ -27,6 +29,12 @@ class ResidentImportResponseSerializer(serializers.Serializer):
     skipped_due_to_duplicate = serializers.IntegerField(help_text="Number of records skipped due to pre-existing username.")
     errors = serializers.ListField(child=serializers.CharField(), help_text="List of validation error messages.")
 
+class ResidentRejectionSerializer(serializers.Serializer):
+    rejection_reason = serializers.CharField(
+        max_length=1000,
+        allow_blank=False,
+        trim_whitespace=True,
+    )
 
 @extend_schema(
     summary="Bulk Import Residents from CSV",
@@ -124,6 +132,16 @@ class ResidentImportView(APIView):
             return Response(response_data, status=status.HTTP_207_MULTI_STATUS)
         return Response(response_data, status=status.HTTP_200_OK)
 
+def _get_barangay_scoped_resident_or_404(user, pk, *, pending_only=False):
+    if user.barangay_id is None:
+        raise PermissionDenied("Your account is not assigned to a barangay.")
+    residents = Resident.objects.select_related("user").filter(
+        user__barangay_id=user.barangay_id
+    )
+    if pending_only:
+        residents = residents.filter(is_verified=False).select_for_update()
+
+    return get_object_or_404(residents, pk=pk)
 
 class PendingResidentsView(ListAPIView):
     permission_classes = [permissions.IsAuthenticated, IsBarangayOfficial]
@@ -141,34 +159,66 @@ class VerifyResidentView(APIView):
 
     @extend_schema(summary="Verify a resident account", responses={200: ResidentSerializer, 404: OpenApiTypes.OBJECT})
     def patch(self, request, pk):
-        resident = get_object_or_404(Resident, pk=pk)
-        resident.is_verified = True
-        resident.save()
+        with transaction.atomic():
+            resident = _get_barangay_scoped_resident_or_404(
+                request.user,
+                pk,
+                pending_only=True,
+            )
+            resident.is_verified = True
+            resident.save(update_fields=["is_verified"])
 
-        log_action(
-            user=request.user, action_type=AuditLog.ActionType.USER_ACTION,
-            description=f"Verified resident account for {resident.full_name} (ID: {resident.id}).", request=request
-        )
+            log_action(
+                user=request.user,
+                action_type=AuditLog.ActionType.USER_ACTION,
+                description=(
+                    f"Verified resident account for {resident.full_name} "
+                    f"(ID: {resident.id})."
+                ),
+                request=request,
+            )
+
         return Response(ResidentSerializer(resident).data, status=status.HTTP_200_OK)
-
 
 class RejectResidentView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsBarangayOfficial]
 
-    @extend_schema(summary="Reject and delete a pending resident account", responses={204: None, 404: OpenApiTypes.OBJECT})
+    @extend_schema(
+        summary="Reject and delete a pending resident account",
+        request=ResidentRejectionSerializer,
+        responses={
+            204: None,
+            400: OpenApiTypes.OBJECT,
+            404: OpenApiTypes.OBJECT,
+        },
+    )
     def delete(self, request, pk):
-        resident = get_object_or_404(Resident, pk=pk)
-        resident_name = resident.full_name
-        resident_id = resident.id
-        user = resident.user
-        user.delete() # Cascades and deletes the Resident profile
+        reason_serializer = ResidentRejectionSerializer(data=request.data)
+        reason_serializer.is_valid(raise_exception=True)
+        rejection_reason = reason_serializer.validated_data["rejection_reason"]
 
-        log_action(
-            user=request.user, action_type=AuditLog.ActionType.USER_ACTION,
-            description=f"Rejected and deleted pending resident account for {resident_name} (ID: {resident_id}).", request=request
-        )
+        with transaction.atomic():
+            resident = _get_barangay_scoped_resident_or_404(
+                request.user,
+                pk,
+                pending_only=True,
+            )
+            resident_name = resident.full_name
+            resident_id = resident.id
+            resident_user = resident.user
+
+            log_action(
+                user=request.user,
+                action_type=AuditLog.ActionType.USER_ACTION,
+                description=(
+                    f"Rejected pending resident account for {resident_name} "
+                    f"(ID: {resident_id}). Reason: {rejection_reason}"
+                ),
+                request=request,
+            )
+            resident_user.delete()
+
         return Response(status=status.HTTP_204_NO_CONTENT)
-
 
 class ResidentViewSet(viewsets.ModelViewSet):
     """CRUD endpoint for verified residents. Only Barangay Officials can access this full directory."""
