@@ -385,6 +385,70 @@ class ServiceAPITests(APITestCase):
         ticket.refresh_from_db()
         self.assertEqual(ticket.status, QueueTicket.Status.WAITING)
 
+    def test_exempt_resident_document_types_are_zero_fee(self):
+        self.client.force_login(self.resident)
+        url = reverse("document-request-list")
+
+        for document_type in (
+            "Certificate of Indigency",
+            "First Time Job Seeker Certificate",
+        ):
+            with self.subTest(document_type=document_type):
+                response = self.client.post(
+                    url,
+                    {
+                        "document_type": document_type,
+                        "fee_amount": "99.00",
+                    },
+                    format="json",
+                )
+
+                self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+                created_request = DocumentRequest.objects.get(pk=response.data["id"])
+                self.assertEqual(str(created_request.fee_amount), "0.00")
+
+    def test_exempt_walkin_document_type_is_zero_fee(self):
+        self.client.force_login(self.official)
+        url = reverse("document-request-list")
+
+        response = self.client.post(
+            url,
+            {
+                "document_type": "First Time Job Seeker Certificate",
+                "walkin_name": "Juan Dela Cruz",
+                "fee_amount": "75.00",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        created_request = DocumentRequest.objects.get(pk=response.data["id"])
+        self.assertEqual(str(created_request.fee_amount), "0.00")
+        self.assertEqual(created_request.status, DocumentRequest.Status.PENDING)
+
+    def test_staff_validation_cannot_add_fee_to_exempt_document(self):
+        document_request = DocumentRequest.objects.create(
+            user=self.resident,
+            barangay=self.official.barangay,
+            document_type="Certificate of Indigency",
+            fee_amount="25.00",
+        )
+        self.client.force_login(self.official)
+        url = reverse("document-request-validate", args=[document_request.pk])
+
+        response = self.client.patch(
+            url,
+            {
+                "status": DocumentRequest.Status.PROCESSING,
+                "fee_amount": "100.00",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        document_request.refresh_from_db()
+        self.assertEqual(str(document_request.fee_amount), "0.00")
+
 
 class PublicQueueStatusAPITests(APITestCase):
     def setUp(self):
