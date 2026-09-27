@@ -9,7 +9,7 @@ from xhtml2pdf import pisa
 from gridy_auth.models import User
 from gridy_auth.permissions import IsBarangayOfficial
 from gridy_services.models import DocumentRequest
-from gridy_services.serializers import DocumentRequestSerializer
+from gridy_services.serializers import DocumentRequestSerializer, DocumentRequestReviewSerializer
 from gridy_communications.tasks import send_notification_to_user_task
 from gridy_audit.services import log_action
 from gridy_audit.models import AuditLog
@@ -51,49 +51,49 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         user = self.request.user
+        data = serializer.validated_data
 
-        # 1. Official creating a Walk-in or Legacy Clearance Record
         if user.role in [User.Role.ADMIN, User.Role.FIELD_OFFICIAL]:
-            walkin_name = self.request.data.get('walkin_name')
-            if not walkin_name or not walkin_name.strip():
-                raise ValidationError({"walkin_name": "Walk-in resident's full name is required."})
-            
-            or_number = self.request.data.get('or_number', '')
-            fee_amount = self.request.data.get('fee_amount', 0.00)
-            initial_status = self.request.data.get('status', DocumentRequest.Status.RELEASED)
+            walkin_name = data.get("walkin_name")
 
+            if not walkin_name or not walkin_name.strip():
+                raise ValidationError({
+                    "walkin_name": "Walk-in resident's full name is required."
+                })
+            
             serializer.save(
                 user=None,
                 barangay=user.barangay,
                 is_walkin=True,
                 walkin_name=walkin_name.strip(),
-                walkin_purok=self.request.data.get('walkin_purok', ''),
-                or_number=or_number,
-                fee_amount=fee_amount,
-                status=initial_status,
-                admin_notes=self.request.data.get('admin_notes', 'Walk-in service recorded by desk official.')
+                walkin_purok=data.get("walkin_purok") or "",
+                or_number=data.get("or_number") or "",
+                status=DocumentRequest.Status.PENDING,
+                admin_notes="",
             )
 
             log_action(
                 user=user,
                 action_type=AuditLog.ActionType.DOCUMENT_ACTION,
-                description=f"Recorded walk-in clearance for {walkin_name.strip()} ({serializer.validated_data.get('document_type', 'Clearance')}).",
-                request=self.request
+                description=(
+                    f"Recorded walk-in clearance for {walkin_name.strip()} "
+                    f"({data.get('document_type', 'Clearance')})."
+                ),
+                request=self.request,
             )
             return
 
-        # 2. Citizen Resident submitting a Clearance Application 
-        if hasattr(user, 'profile') and not user.profile.is_verified:
+        if hasattr(user, "profile") and not user.profile.is_verified:
             raise PermissionDenied(
-                "Your account is currently pending verification. Please verify your residency with Barangay Hall before requesting clearances."
+                "Your account is currently pending verification. Please verify "
+                "your residency with Barangay Hall before requesting clearances."
             )
-        
         serializer.save(
-            user=self.request.user,
+            user=user,
             barangay=user.barangay,
             is_walkin=False,
             status=DocumentRequest.Status.PENDING,
-            admin_notes=""
+            admin_notes="",
         )
 
     def perform_destroy(self, instance):
@@ -140,53 +140,46 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['patch'], permission_classes=[IsBarangayOfficial])
     def validate(self, request, pk=None):
         document_request = self.get_object()
-        new_status = request.data.get('status')
-        admin_notes = request.data.get('admin_notes', '')
-        or_number = request.data.get('or_number')
-        fee_amount = request.data.get('fee_amount')
+        serializer = DocumentRequestReviewSerializer(
+            document_request,
+            data=request.data,
+            partial=True,
+        )
+        serializer.is_valid(raise_exception=True)
+        document_request = serializer.save()
 
-        # Enforce valid transition states
-        if new_status and new_status not in [
-            DocumentRequest.Status.PROCESSING,
-            DocumentRequest.Status.READY_FOR_PICKUP,
-            DocumentRequest.Status.RELEASED,
-            DocumentRequest.Status.REJECTED
-        ]:
-            return Response(
-                {"detail": "Invalid status transition."},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        recipient_desc = (
+            document_request.user.username
+            if document_request.user
+            else document_request.walkin_name
+        )
 
-        if new_status:
-            document_request.status = new_status
-        if admin_notes:
-            document_request.admin_notes = admin_notes
-        if or_number is not None:
-            document_request.or_nummber = or_number
-        if fee_amount is not None:
-            document_request.fee_amount = fee_amount
-            
-        document_request.save()
-
-        # Log the administrative validation action
-        recipient_desc = document_request.user.username if document_request.user else document_request.walkin_name
         log_action(
             user=request.user,
             action_type=AuditLog.ActionType.DOCUMENT_ACTION,
-            description=f"Validated document request #{document_request.id} ({document_request.document_type}) for {recipient_desc} as {document_request.get_status_display()}.",
+            description=(
+                f"Validated document request #{document_request.id} "
+                f"({document_request.document_type}) for {recipient_desc} "
+                f"as {document_request.get_status_display()}."
+            ),
             request=request
         )
 
-        # Trigger push notification to the resident
         if document_request.user:
             send_notification_to_user_task.delay(
                 user_id=document_request.user.id,
                 title="Document Request Update",
-                body=f"Your request for {document_request.document_type} is now {document_request.get_status_display()}.",
-                data={"request_id": str(document_request.id)}
+                body=(
+                    f"Your request for {document_request.document_type} is now "
+                    f"{document_request.get_status_display()}."
+                ),
+                data={"request_id": str(document_request.id)},
             )
-            
-        return Response(DocumentRequestSerializer(document_request).data, status=status.HTTP_200_OK)
+
+        return Response(
+            DocumentRequestSerializer(document_request).data,
+            status=status.HTTP_200_OK,
+        )
 
     @action(detail=True, methods=['get'], url_path='generate-pdf')
     def generate_pdf(self, request, pk=None):
