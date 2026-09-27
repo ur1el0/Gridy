@@ -6,6 +6,8 @@ from gridy_auth.models import User, Resident, Barangay
 from django.core.management import call_command
 from django.conf import settings
 from gridy_services.models import DocumentRequest, QueueTicket
+from gridy_audit.models import AuditLog
+
 # Create your tests here.
 
 class AuthAPITests(APITestCase):
@@ -344,35 +346,142 @@ class AuthAPITests(APITestCase):
         self.assertEqual(RefreshSession.objects.filter(user=self.user, is_revoked=False).count(), 0)
 
     def test_reject_resident_deletes_account(self):
-        # 1. Create a dummy pending resident
+        barangay = Barangay.objects.create(name="Resident Rejection Test")
+
         dummy_user = User.objects.create_user(
             username="dummy_pending",
             password="password123",
             email="dummy@example.com",
-            role=User.Role.RESIDENT
+            role=User.Role.RESIDENT,
+            barangay=barangay,
         )
-        
         dummy_resident = Resident.objects.create(
             user=dummy_user,
             full_name="Dummy Pending",
-            birth_date="2000-01-01"
+            birth_date="2000-01-01",
         )
-        
-        # 2. Make our test user an Admin so they have permission
+
         self.user.role = User.Role.ADMIN
+        self.user.barangay = barangay
         self.user.save()
         self.client.force_authenticate(user=self.user)
 
-        url = reverse('reject_resident', args=[dummy_resident.pk])
-        
-        # 3. Hit the endpoint
-        response = self.client.delete(url)
-        
-        # 4. Verify the response is 204 No Content
+        url = reverse("reject_resident", args=[dummy_resident.pk])
+        response = self.client.delete(
+            url,
+            {"rejection_reason": "The submitted details could not be verified."},
+            format="json",
+        )
+
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        
-        # 5. Verify the user is actually deleted from the database
-        self.assertEqual(User.objects.filter(username="dummy_pending").count(), 0)
+        self.assertFalse(User.objects.filter(pk=dummy_user.pk).exists())
+
+        audit_log = AuditLog.objects.get(
+            action_by=self.user,
+            action_type=AuditLog.ActionType.USER_ACTION,
+        )
+        self.assertIn(
+            "Reason: The submitted details could not be verified.",
+            audit_log.description,
+        )
+
+    def test_reject_resident_requires_nonblank_reason(self):
+        barangay = Barangay.objects.create(name="Rejection Reason Test")
+        target_user = User.objects.create_user(
+            username="pending_without_reason",
+            password="password123",
+            email="pending-without-reason@example.com",
+            role=User.Role.RESIDENT,
+            barangay=barangay,
+        )
+        resident = Resident.objects.create(
+            user=target_user,
+            full_name="Pending Resident",
+            birth_date="2000-01-01",
+        )
+
+        self.user.role = User.Role.ADMIN
+        self.user.barangay = barangay
+        self.user.save()
+        self.client.force_authenticate(user=self.user)
+
+        url = reverse("reject_resident", args=[resident.pk])
+
+        for reason in ("", "   "):
+            with self.subTest(reason=reason):
+                response = self.client.delete(
+                    url,
+                    {"rejection_reason": reason},
+                    format="json",
+                )
+                self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+        self.assertTrue(User.objects.filter(pk=target_user.pk).exists())
+        self.assertFalse(
+            AuditLog.objects.filter(
+                action_by=self.user,
+                action_type=AuditLog.ActionType.USER_ACTION,
+            ).exists()
+        )
+
+    def test_official_cannot_reject_resident_from_another_barangay(self):
+        official_barangay = Barangay.objects.create(name="Official Barangay")
+        other_barangay = Barangay.objects.create(name="Other Barangay")
+        target_user = User.objects.create_user(
+            username="other_barangay_pending",
+            password="password123",
+            email="other-pending@example.com",
+            role=User.Role.RESIDENT,
+            barangay=other_barangay,
+        )
+        resident = Resident.objects.create(
+            user=target_user,
+            full_name="Resident From Other Barangay",
+            birth_date="2000-01-01",
+        )
+
+        self.user.role = User.Role.ADMIN
+        self.user.barangay = official_barangay
+        self.user.save()
+        self.client.force_authenticate(user=self.user)
+
+        url = reverse("reject_resident", args=[resident.pk])
+        response = self.client.delete(
+            url,
+            {"rejection_reason": "Test rejection reason."},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertTrue(User.objects.filter(pk=target_user.pk).exists())
+
+    def test_official_cannot_verify_resident_from_another_barangay(self):
+        official_barangay = Barangay.objects.create(name="Verification Official Barangay")
+        other_barangay = Barangay.objects.create(name="Verification Other Barangay")
+        target_user = User.objects.create_user(
+            username="other_barangay_unverified",
+            password="password123",
+            email="other-unverified@example.com",
+            role=User.Role.RESIDENT,
+            barangay=other_barangay,
+        )
+        resident = Resident.objects.create(
+            user=target_user,
+            full_name="Unverified Resident From Other Barangay",
+            birth_date="2000-01-01",
+        )
+
+        self.user.role = User.Role.ADMIN
+        self.user.barangay = official_barangay
+        self.user.save()
+        self.client.force_authenticate(user=self.user)
+
+        url = reverse("verify_resident", args=[resident.pk])
+        response = self.client.patch(url)
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        resident.refresh_from_db()
+        self.assertFalse(resident.is_verified)
 
 class BarangayBrandingAPITests(APITestCase):
     def setUp(self):
