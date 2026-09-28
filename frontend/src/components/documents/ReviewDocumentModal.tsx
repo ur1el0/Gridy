@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import type { DocumentRequest } from '../../pages/services/DocumentRequests';
+import { isFeeExemptDocumentType } from '../../utils/documentFees';
 
 interface ReviewDocumentModalProps {
     selectedRequest: DocumentRequest | null;
@@ -20,18 +21,27 @@ export const ReviewDocumentModal = ({
 }: ReviewDocumentModalProps) => {
     const [orNumber, setOrNumber] = useState('');
     const [feeAmount, setFeeAmount] = useState('50.00');
+    const isFeeExempt = isFeeExemptDocumentType(selectedRequest?.document_type);
 
     useEffect(() => {
         if (selectedRequest) {
             setOrNumber(selectedRequest.or_number || '');
-            setFeeAmount(selectedRequest.fee_amount ? String(selectedRequest.fee_amount) : '50.00');
+            setFeeAmount(
+                isFeeExemptDocumentType(selectedRequest.document_type)
+                    ? '0.00'
+                    : String(selectedRequest.fee_amount ?? '50.00'),
+            );
         }
     }, [selectedRequest]);
 
     if (!selectedRequest) return null;
 
     const onUpdate = (status: string) => {
-        handleStatusUpdate(status, orNumber.trim(), feeAmount.trim());
+        handleStatusUpdate(
+            status,
+            orNumber.trim(),
+            isFeeExempt ? '0.00' : feeAmount.trim(),
+        );
     };
 
     return (
@@ -110,11 +120,17 @@ export const ReviewDocumentModal = ({
                                         <input 
                                             type="number"
                                             step="0.01"
-                                            value={feeAmount}
+                                            value={isFeeExempt ? '0.00' : feeAmount}
+                                            disabled={isFeeExempt}
                                             onChange={(e) => setFeeAmount(e.target.value)}
                                             placeholder="50.00"
-                                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
                                         />
+                                        {isFeeExempt && (
+                                            <p role="status" className="mt-1 text-xs text-emerald-700">
+                                                This document is fee-exempt. The amount is locked at ₱0.00.
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                             </div>

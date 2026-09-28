@@ -1,7 +1,18 @@
 from rest_framework import serializers
 from .models import DocumentRequest, QueueTicket
+from .fee_policy import enforce_fee_policy
 
-class DocumentRequestSerializer(serializers.ModelSerializer):
+class FeePolicyValidationMixin:
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        document_type = attrs.get("document_type")
+
+        if document_type is None and self.instance is not None:
+            document_type = self.instance.document_type
+
+        return enforce_fee_policy(document_type, attrs)
+
+class DocumentRequestSerializer(FeePolicyValidationMixin, serializers.ModelSerializer):
     request_id = serializers.IntegerField(source='id', read_only=True)
     requester_name = serializers.SerializerMethodField()
     purok = serializers.SerializerMethodField()
@@ -38,6 +49,22 @@ class DocumentRequestSerializer(serializers.ModelSerializer):
             return str(obj.user.profile.purok)
         return str(obj.walkin_purok) if obj.walkin_purok else "N/A"
             
+class DocumentRequestReviewSerializer(FeePolicyValidationMixin, serializers.ModelSerializer):
+    class Meta:
+        model = DocumentRequest
+        fields = ["status", "admin_notes", "or_number", "fee_amount"]
+
+    def validate_status(self, value):
+        allowed_statuses = {
+            DocumentRequest.Status.PROCESSING,
+            DocumentRequest.Status.READY_FOR_PICKUP,
+            DocumentRequest.Status.RELEASED,
+            DocumentRequest.Status.REJECTED,
+        }
+        if value not in allowed_statuses:
+            raise serializers.ValidationError("Invalid status transition")
+
+        return value
 
 class QueueTicketSerializer(serializers.ModelSerializer):
     ticket_id = serializers.IntegerField(source='id', read_only=True)
@@ -59,7 +86,6 @@ class QueueTicketSerializer(serializers.ModelSerializer):
             'updated_at'
         ]
         read_only_fields = ['status', 'ticket_number', 'created_at', 'updated_at']
-
     def get_resident_name(self, obj) -> str:
         if obj.user:
             return getattr(obj.user.profile, 'full_name', obj.user.username) if hasattr(obj.user, 'profile') else obj.user.username
