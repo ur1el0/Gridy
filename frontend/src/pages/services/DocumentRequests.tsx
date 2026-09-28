@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { axiosPrivate } from '../../api/axios';
 import { DocumentTable } from '../../components/documents/DocumentTable';
 import { ReviewDocumentModal } from '../../components/documents/ReviewDocumentModal';
+import { isFeeExemptDocumentType } from '../../utils/documentFees';
 
 export interface DocumentRequest {
     id: number;
@@ -61,6 +62,7 @@ export const DocumentRequests: React.FC = () => {
     const [newPurpose, setNewPurpose] = useState('');
     const [orNumber, setOrNumber] = useState('');
     const [feeAmount, setFeeAmount] = useState('50.00');
+    const isNewDocFeeExempt = isFeeExemptDocumentType(newDocType);
     const [initialStatus, setInitialStatus] = useState('RELEASED');
 
     const fetchRequests = async () => {
@@ -114,7 +116,7 @@ export const DocumentRequests: React.FC = () => {
             const response = await axiosPrivate.patch(`/document-requests/${selectedRequest.id}/validate/`, {
                 status: newStatus,
                 or_number: updatedOr,
-                fee_amount: updatedFee
+                fee_amount: isFeeExemptDocumentType(selectedRequest.document_type) ? '0.00' : updatedFee
             });
 
             setRequests(prev => prev.map(req =>
@@ -180,7 +182,7 @@ export const DocumentRequests: React.FC = () => {
                 document_type: newDocType,
                 purpose: newPurpose.trim(),
                 or_number: orNumber.trim(),
-                fee_amount: feeAmount || '0.00',
+                fee_amount: isNewDocFeeExempt ? '0.00' : (feeAmount || '0.00'),
                 status: initialStatus
             });
 
@@ -286,16 +288,24 @@ export const DocumentRequests: React.FC = () => {
                                 <select 
                                     value={newDocType}
                                     onChange={(e) => {
-                                        const doc = e.target.value;
-                                        setNewDocType(doc);
-                                        if (doc === 'Certificate of Indigency') setFeeAmount('0.00');
-                                        else if (doc === 'Business Permit') setFeeAmount('200.00');
-                                        else setFeeAmount('50.00');
+                                        const selectedType = e.target.value;
+                                        setNewDocType(selectedType);
+
+                                        if (isFeeExemptDocumentType(selectedType)) {
+                                            setFeeAmount('0.00');
+                                        } else if (selectedType === 'Business Permit') {
+                                            setFeeAmount('200.00');
+                                        } else {
+                                            setFeeAmount('50.00');
+                                        }
                                     }}
                                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-medium"
                                 >
                                     <option value="Barangay Clearance">Barangay Clearance</option>
                                     <option value="Certificate of Indigency">Certificate of Indigency</option>
+                                    <option value="First Time Job Seeker Certificate">
+                                        First Time Job Seeker Certificate
+                                    </option>
                                     <option value="Business Permit">Business Permit</option>
                                     <option value="Proof of Residency">Proof of Residency</option>
                                 </select>
@@ -330,11 +340,17 @@ export const DocumentRequests: React.FC = () => {
                                     <input 
                                         type="number"
                                         step="0.01"
-                                        value={feeAmount}
+                                        value={isNewDocFeeExempt ? '0.00' : feeAmount}
+                                        disabled={isNewDocFeeExempt}
                                         onChange={(e) => setFeeAmount(e.target.value)}
                                         placeholder="50.00"
-                                        className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold focus:outline-none focus:border-primary"
+                                        className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold focus:outline-none focus:border-primary disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
                                     />
+                                    {isNewDocFeeExempt && (
+                                        <p role="status" className="mt-1 text-xs text-emerald-700">
+                                            This document is fee-exempt. The amount is locked at ₱0.00.
+                                        </p>
+                                    )}
                                 </div>
                             </div>
 
