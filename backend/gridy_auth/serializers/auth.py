@@ -1,3 +1,9 @@
+from django.db import transaction
+from django.utils import timezone
+from rest_framework_simplejwt.token_blacklist.models import (
+    BlacklistedToken,
+    OutstandingToken,
+)
 from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 from django.contrib.auth.tokens import default_token_generator
@@ -67,8 +73,25 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
     
     def save(self):
         user = self.context['user']
-        user.set_password(self.validated_data['new_password'])
-        user.save()
+        new_password = self.validated_data['new_password']
+
+        with transaction.atomic():
+            user.set_password(new_password)
+            user.save(update_fields=['password'])
+
+            RefreshSession.objects.filter(
+                user=user,
+                is_revoked=False,
+            ).update(is_revoked=True)
+
+            active_outstanding_tokens = OutstandingToken.objects.filter(
+                user=user,
+                expires_at__gt=timezone.now(),
+            )
+            for outstanding_token in active_outstanding_tokens:
+                BlacklistedToken.objects.get_or_create(
+                    token=outstanding_token,
+                )
         return user
 
 
