@@ -60,10 +60,6 @@ export const DocumentRequests: React.FC = () => {
     const [walkinPurok, setWalkinPurok] = useState('');
     const [newDocType, setNewDocType] = useState('Barangay Clearance');
     const [newPurpose, setNewPurpose] = useState('');
-    const [orNumber, setOrNumber] = useState('');
-    const [feeAmount, setFeeAmount] = useState('50.00');
-    const isNewDocFeeExempt = isFeeExemptDocumentType(newDocType);
-    const [initialStatus, setInitialStatus] = useState('RELEASED');
 
     const fetchRequests = async () => {
         try {
@@ -181,24 +177,18 @@ export const DocumentRequests: React.FC = () => {
                 walkin_purok: walkinPurok.trim(),
                 document_type: newDocType,
                 purpose: newPurpose.trim(),
-                or_number: orNumber.trim(),
-                fee_amount: isNewDocFeeExempt ? '0.00' : (feeAmount || '0.00'),
-                status: initialStatus
             });
 
-            toast.success('Walk-in clearance recorded successfully!');
+            toast.success('Walk-in request submitted for review.');
             await fetchRequests();
 
             setIsCreateModalOpen(false);
             setWalkinName('');
             setWalkinPurok('');
             setNewPurpose('');
-            setOrNumber('');
-            setFeeAmount('50.00');
-            setInitialStatus('RELEASED');
         } catch (err: any) {
             console.error("Failed to create walk-in clearance.", err);
-            toast.error(err.response?.data?.walkin_name || 'Failed to record walk-in clearance.');
+            toast.error(err.response?.data?.walkin_name || 'Failed to submit walk-in request.');
         } finally {
             setIsSubmitting(false);
         }
@@ -247,8 +237,8 @@ export const DocumentRequests: React.FC = () => {
                     <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95">
                         <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                             <div>
-                                <h3 className="text-base font-bold text-slate-900">Issue Walk-in Clearance</h3>
-                                <p className="text-xs text-slate-500">Record in-person resident certification and fee receipt.</p>
+                                <h3 className="text-base font-bold text-slate-900">Create Walk-in Request</h3>
+                                <p className="text-xs text-slate-500">Record an in-person resident's document request for staff review.</p>
                             </div>
                             <button 
                                 onClick={() => setIsCreateModalOpen(false)} 
@@ -287,18 +277,7 @@ export const DocumentRequests: React.FC = () => {
                                 <label className="block text-xs font-bold text-slate-700 mb-1">Document Type</label>
                                 <select 
                                     value={newDocType}
-                                    onChange={(e) => {
-                                        const selectedType = e.target.value;
-                                        setNewDocType(selectedType);
-
-                                        if (isFeeExemptDocumentType(selectedType)) {
-                                            setFeeAmount('0.00');
-                                        } else if (selectedType === 'Business Permit') {
-                                            setFeeAmount('200.00');
-                                        } else {
-                                            setFeeAmount('50.00');
-                                        }
-                                    }}
+                                    onChange={(e) => setNewDocType(e.target.value)}
                                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-medium"
                                 >
                                     <option value="Barangay Clearance">Barangay Clearance</option>
@@ -323,50 +302,6 @@ export const DocumentRequests: React.FC = () => {
                                 />
                             </div>
 
-                            {/* Assessment / Treasury Section */}
-                            <div className="p-3.5 bg-slate-50 rounded-xl border border-slate-200 grid grid-cols-2 gap-3">
-                                <div>
-                                    <label className="block text-[11px] font-bold text-slate-600 mb-1">O.R. Number</label>
-                                    <input 
-                                        type="text"
-                                        value={orNumber}
-                                        onChange={(e) => setOrNumber(e.target.value)}
-                                        placeholder="e.g. OR-5491"
-                                        className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-mono focus:outline-none focus:border-primary"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-[11px] font-bold text-slate-600 mb-1">Amount Paid (PHP)</label>
-                                    <input 
-                                        type="number"
-                                        step="0.01"
-                                        value={isNewDocFeeExempt ? '0.00' : feeAmount}
-                                        disabled={isNewDocFeeExempt}
-                                        onChange={(e) => setFeeAmount(e.target.value)}
-                                        placeholder="50.00"
-                                        className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-lg text-xs font-bold focus:outline-none focus:border-primary disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
-                                    />
-                                    {isNewDocFeeExempt && (
-                                        <p role="status" className="mt-1 text-xs text-emerald-700">
-                                            This document is fee-exempt. The amount is locked at ₱0.00.
-                                        </p>
-                                    )}
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-slate-700 mb-1">Initial Status</label>
-                                <select 
-                                    value={initialStatus}
-                                    onChange={(e) => setInitialStatus(e.target.value)}
-                                    className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-medium"
-                                >
-                                    <option value="RELEASED">Released (Issued Immediately)</option>
-                                    <option value="PROCESSING">Processing (Pending Signatures)</option>
-                                    <option value="PENDING">Pending</option>
-                                </select>
-                            </div>
-                            
                             <div className="pt-3 flex justify-end gap-2.5">
                                 <button 
                                     type="button" 
@@ -380,7 +315,7 @@ export const DocumentRequests: React.FC = () => {
                                     disabled={isSubmitting}
                                     className="px-5 py-2 text-sm font-bold text-primary-foreground bg-primary hover:bg-primary-hover rounded-xl transition-all shadow-sm disabled:opacity-70 cursor-pointer"
                                 >
-                                    {isSubmitting ? 'Recording...' : 'Record & Print Clearance'}
+                                    {isSubmitting ? 'Submitting...' : 'Record Walk-in Request'}
                                 </button>
                             </div>
                         </form>

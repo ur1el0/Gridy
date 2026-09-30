@@ -7,7 +7,10 @@ from django.http import HttpResponse
 from django.utils import timezone
 from xhtml2pdf import pisa
 from gridy_auth.models import User
-from gridy_auth.permissions import IsBarangayOfficial
+from gridy_auth.permissions import (
+    IsBarangayOfficial,
+    IsResidentOrBarangayOfficial,
+)
 from gridy_services.models import DocumentRequest
 from gridy_services.serializers import DocumentRequestSerializer, DocumentRequestReviewSerializer
 from gridy_communications.tasks import send_notification_to_user_task
@@ -23,9 +26,11 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
         if self.action in ['list', 'retrieve', 'generate_pdf']:
             return [permissions.IsAuthenticated()]
         
-        # Both residents and officials can create (residents for themselves, officials for walk-ins/legacy)
         if self.action == 'create':
-            return [permissions.IsAuthenticated()]
+            return [
+                permissions.IsAuthenticated(),
+                IsResidentOrBarangayOfficial(),
+            ]
         
         # Allow authenticated users to access destroy (role and status checks enforced in perform_destroy)
         if self.action == 'destroy':
@@ -53,21 +58,27 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
         user = self.request.user
         data = serializer.validated_data
 
-        if user.role in [User.Role.ADMIN, User.Role.FIELD_OFFICIAL]:
+        if user.role == User.Role.ADMIN:
+            if not user.barangay_id:
+                raise PermissionDenied(
+                    "Your account must be assigned to a barangay to record walk-ins."
+                )
+
             walkin_name = data.get("walkin_name")
 
             if not walkin_name or not walkin_name.strip():
                 raise ValidationError({
                     "walkin_name": "Walk-in resident's full name is required."
                 })
-            
+
             serializer.save(
                 user=None,
                 barangay=user.barangay,
                 is_walkin=True,
                 walkin_name=walkin_name.strip(),
                 walkin_purok=data.get("walkin_purok") or "",
-                or_number=data.get("or_number") or "",
+                or_number="",
+                fee_amount=0,
                 status=DocumentRequest.Status.PENDING,
                 admin_notes="",
             )
@@ -83,15 +94,25 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
             )
             return
 
+        if user.role != User.Role.RESIDENT:
+            raise PermissionDenied(
+                "Only residents can create personal document requests."
+            )
+
         if hasattr(user, "profile") and not user.profile.is_verified:
             raise PermissionDenied(
                 "Your account is currently pending verification. Please verify "
                 "your residency with Barangay Hall before requesting clearances."
             )
+
         serializer.save(
             user=user,
             barangay=user.barangay,
             is_walkin=False,
+            walkin_name=None,
+            walkin_purok="",
+            or_number="",
+            fee_amount=0,
             status=DocumentRequest.Status.PENDING,
             admin_notes="",
         )

@@ -1,14 +1,23 @@
 from rest_framework.permissions import BasePermission
 from .models import User
 
-
 class IsBarangayOfficial(BasePermission):
     """Barangay Executive Admin (Captain, Secretary, Desk Supervisor)."""
     def has_permission(self, request, view):
         return bool(
-            request.user and 
+            request.user and
             request.user.is_authenticated and
             request.user.role == User.Role.ADMIN
+        )
+
+class IsResidentOrBarangayOfficial(BasePermission):
+    """Residents create personal requests; barangay admins create walk-ins."""
+
+    def has_permission(self, request, view):
+        return bool(
+            request.user
+            and request.user.is_authenticated
+            and request.user.role in (User.Role.RESIDENT, User.Role.ADMIN)
         )
 
 class IsBarangayExecutive(BasePermission):
