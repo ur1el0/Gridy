@@ -1,3 +1,8 @@
+import os
+import subprocess
+import sys
+from pathlib import Path
+
 from django.test import TestCase
 from django.urls import reverse
 from rest_framework import status
@@ -20,6 +25,57 @@ class AuthAPITests(APITestCase):
             password=self.password,
             email="resident@example.com",
             role=User.Role.RESIDENT
+        )
+
+    def test_admin_passkey_settings_fail_closed_when_missing_or_blank(self):
+        script = (
+            "import environ; "
+            "environ.Env.read_env = lambda *args, **kwargs: None; "
+            "import config.settings"
+        )
+        backend_dir = Path(__file__).resolve().parents[1]
+        base_environment = os.environ.copy()
+        base_environment.pop("ADMIN_REGISTRATION_PASSKEY", None)
+        base_environment["SECRET_KEY"] = "test-only-settings-bootstrap-key"
+
+        for label, value in (("missing", None), ("blank", "")):
+            with self.subTest(value=label):
+                environment = base_environment.copy()
+                if value is not None:
+                    environment["ADMIN_REGISTRATION_PASSKEY"] = value
+
+                result = subprocess.run(
+                    [sys.executable, "-c", script],
+                    cwd=backend_dir,
+                    env=environment,
+                    capture_output=True,
+                    text=True,
+                    check=False,
+                )
+
+                self.assertNotEqual(result.returncode, 0)
+                self.assertIn("ADMIN_REGISTRATION_PASSKEY", result.stderr)
+
+    def test_admin_registration_rejects_known_default_passkey(self):
+        barangay = Barangay.objects.create(name="Barangay Passkey Test")
+        url = reverse('auth_register_admin')
+        payload = {
+            "username": "known_default_attempt",
+            "full_name": "Unauthorized Admin",
+            "barangay_id": barangay.id,
+            "email": "known-default-attempt@example.com",
+            "password": "SecurePassword123!",
+            "confirm_password": "SecurePassword123!",
+            "affirmation": True,
+            "passkey": "LGU-DEFAULT-PASSKEY",
+        }
+
+        response = self.client.post(url, payload, format='json')
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("passkey", response.data)
+        self.assertFalse(
+            User.objects.filter(email="known-default-attempt@example.com").exists()
         )
 
     def test_admin_registration_success(self):

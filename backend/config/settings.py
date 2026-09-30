@@ -13,6 +13,7 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 import os
 import environ
 from pathlib import Path
+from django.core.exceptions import ImproperlyConfigured
 
 env = environ.Env(
     DEBUG=(bool, False)
@@ -32,7 +33,11 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # SECURITY WARNING: keep the secret key used in production secret
 SECRET_KEY = env('SECRET_KEY')
 
-ADMIN_REGISTRATION_PASSKEY = env('ADMIN_REGISTRATION_PASSKEY', default='LGU-DEFAULT-PASSKEY')
+ADMIN_REGISTRATION_PASSKEY = env('ADMIN_REGISTRATION_PASSKEY', default='').strip()
+if not ADMIN_REGISTRATION_PASSKEY:
+    raise ImproperlyConfigured(
+        'ADMIN_REGISTRATION_PASSKEY must be configured with a non-empty secret.'
+    )
 
 # SECURITY WARNING: don't run with debug turned on in production
 DEBUG = env('DEBUG')
