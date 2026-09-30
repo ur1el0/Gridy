@@ -340,6 +340,110 @@ class AuthAPITests(APITestCase):
         self.assertEqual(len(response.data['errors']), 2)
         self.assertTrue(User.objects.filter(username="imported3").exists())
 
+    def test_password_reset_revokes_all_existing_refresh_sessions(self):
+        from django.contrib.auth.tokens import default_token_generator
+        from django.utils import timezone
+        from django.utils.encoding import force_bytes
+        from django.utils.http import urlsafe_base64_encode
+        from gridy_auth.models import RefreshSession
+        from rest_framework_simplejwt.token_blacklist.models import (
+            BlacklistedToken,
+            OutstandingToken,
+        )
+
+        login_url = reverse("auth_login")
+        login_payload = {
+            "username": self.username,
+            "password": self.password,
+        }
+
+        first_login = self.client.post(
+            login_url,
+            login_payload,
+            format="json",
+        )
+        self.assertEqual(first_login.status_code, status.HTTP_200_OK)
+        first_refresh_token = first_login.cookies["refresh_token"].value
+
+        second_login = self.client.post(
+            login_url,
+            login_payload,
+            format="json",
+        )
+        self.assertEqual(second_login.status_code, status.HTTP_200_OK)
+        second_refresh_token = second_login.cookies["refresh_token"].value
+
+        self.assertEqual(
+            RefreshSession.objects.filter(
+                user=self.user,
+                is_revoked=False,
+            ).count(),
+            2,
+        )
+
+        reset_response = self.client.post(
+            reverse("password_reset_confirm"),
+            {
+                "uidb64": urlsafe_base64_encode(force_bytes(self.user.pk)),
+                "token": default_token_generator.make_token(self.user),
+                "new_password": "NewSecurePassword123!",
+            },
+            format="json",
+        )
+        self.assertEqual(reset_response.status_code, status.HTTP_200_OK)
+
+        self.assertEqual(
+            RefreshSession.objects.filter(
+                user=self.user,
+                is_revoked=False,
+            ).count(),
+            0,
+        )
+
+        active_outstanding_tokens = OutstandingToken.objects.filter(
+            user=self.user,
+            expires_at__gt=timezone.now(),
+        )
+        self.assertTrue(active_outstanding_tokens.exists())
+
+        for outstanding_token in active_outstanding_tokens:
+            self.assertTrue(
+                BlacklistedToken.objects.filter(
+                    token=outstanding_token,
+                ).exists()
+            )
+
+        self.client.cookies.pop("refresh_token", None)
+        for old_refresh_token in (
+            first_refresh_token,
+            second_refresh_token,
+        ):
+            refresh_response = self.client.post(
+                reverse("auth_token_refresh"),
+                {"refresh": old_refresh_token},
+                format="json",
+            )
+            self.assertEqual(
+                refresh_response.status_code,
+                status.HTTP_401_UNAUTHORIZED,
+            )
+
+        new_login = self.client.post(
+            login_url,
+            {
+                "username": self.username,
+                "password": "NewSecurePassword123!",
+            },
+            format="json",
+        )
+        self.assertEqual(new_login.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            RefreshSession.objects.filter(
+                user=self.user,
+                is_revoked=False,
+            ).count(),
+            1,
+        )
 
     def test_token_refresh_via_cookie_success(self):
         from gridy_auth.models import RefreshSession
