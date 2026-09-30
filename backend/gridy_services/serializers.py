@@ -37,7 +37,15 @@ class DocumentRequestSerializer(FeePolicyValidationMixin, serializers.ModelSeria
             'created_at',
             'updated_at',
         ]
-        read_only_fields = ['created_at', 'updated_at']
+        read_only_fields = [
+            'is_walkin',
+            'status',
+            'admin_notes',
+            'or_number',
+            'fee_amount',
+            'created_at',
+            'updated_at',
+        ]
 
     def get_requester_name(self, obj) -> str:
         if obj.user:
