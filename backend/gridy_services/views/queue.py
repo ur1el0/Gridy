@@ -58,12 +58,27 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['post'], permission_classes=[permissions.IsAuthenticated], url_path='cancel')
     def cancel_ticket(self, request, pk=None):
+        user = request.user
+
+        if user.role not in (
+            User.Role.RESIDENT,
+            User.Role.ADMIN,
+            User.Role.FIELD_OFFICIAL,
+        ):
+            raise PermissionDenied("You are not allowed to cancel queue tickets.")
+
+        if (
+            user.role in (User.Role.ADMIN, User.Role.FIELD_OFFICIAL)
+            and user.barangay_id is None
+        ):
+            raise PermissionDenied(
+                "A barangay assignment is required to cancel queue tickets."
+            )
+
         ticket = self.get_object()
 
-        # Enforce that residents can only cancel their own tickets
-        if request.user.role == User.Role.RESIDENT and ticket.user != request.user:
+        if user.role == User.Role.RESIDENT and ticket.user_id != user.id:
             raise PermissionDenied("You can only cancel your own queue tickets.")
-        
         # Invariant: only waiting tickets can be cancelled
         if ticket.status != QueueTicket.Status.WAITING:
             return Response(
