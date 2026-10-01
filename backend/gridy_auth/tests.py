@@ -244,6 +244,25 @@ class AuthAPITests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+    def test_profile_update_cannot_restore_revoked_verification(self):
+        resident_profile = Resident.objects.create(
+            user=self.user,
+            full_name="Verification Test Resident",
+            birth_date="1995-05-15",
+            is_verified=False,
+        )
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.patch(
+            "/api/v1/auth/me/",
+            {"profile": {"is_verified": True}},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        resident_profile.refresh_from_db()
+        self.assertFalse(resident_profile.is_verified)
+
     def test_profile_endpoint_success(self):
         #  1. Login the user to obtain a token
         login_url = reverse('auth_login')
@@ -445,6 +464,34 @@ class AuthAPITests(APITestCase):
             1,
         )
 
+    def test_token_refresh_denied_after_resident_verification_revoked(self):
+        resident_profile = Resident.objects.create(
+            user=self.user,
+            full_name="Verification Test Resident",
+            birth_date="1995-05-15",
+            is_verified=True,
+        )
+
+        login_response = self.client.post(
+            reverse("auth_login"),
+            {
+                "username": self.username,
+                "password": self.password,
+            },
+            format="json",
+        )
+        self.assertEqual(login_response.status_code, status.HTTP_200_OK)
+
+        resident_profile.is_verified = False
+        resident_profile.save(update_fields=["is_verified"])
+
+        refresh_response = self.client.post(reverse("auth_token_refresh"))
+
+        self.assertEqual(
+            refresh_response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+
     def test_token_refresh_via_cookie_success(self):
         from gridy_auth.models import RefreshSession
         # 1. Login to establish cookie
@@ -453,21 +500,32 @@ class AuthAPITests(APITestCase):
             "username": self.username,
             "password": self.password
         }
+
+        Resident.objects.create(
+            user=self.user,
+            full_name="Verified Test Resident",
+            birth_date="1995-05-15",
+            is_verified=True,
+        )
+
         login_response = self.client.post(login_url, login_payload, format='json')
         self.assertEqual(login_response.status_code, status.HTTP_200_OK)
     
         # Get initial session count
         self.assertEqual(RefreshSession.objects.filter(user=self.user, is_revoked=False).count(), 1)
         old_session = RefreshSession.objects.filter(user=self.user,  is_revoked=False).first()
-            # 2. Call refresh endpoint (attaches cookies automatically)
+
+        # 2. Call refresh endpoint (attaches cookies automatically)
         refresh_url = reverse('auth_token_refresh')
         refresh_response = self.client.post(refresh_url)
         self.assertEqual(refresh_response.status_code, status.HTTP_200_OK)
         self.assertIn('access', refresh_response.data)
+
         # Verify old JTI session is revoked and a new active one is created
         old_session.refresh_from_db()
         self.assertTrue(old_session.is_revoked)
         self.assertEqual(RefreshSession.objects.filter(user=self.user, is_revoked=False).count(), 1)
+
     def test_token_refresh_fails_with_revoked_session(self):
         from gridy_auth.models import RefreshSession
         # 1. Login to establish cookie

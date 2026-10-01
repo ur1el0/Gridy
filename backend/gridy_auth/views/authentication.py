@@ -98,25 +98,57 @@ class CustomTokenRefreshView(TokenRefreshView):
         if not refresh_token_str:
             return Response({"detail": "Session cookie or refresh token missing."}, status=status.HTTP_401_UNAUTHORIZED)
 
-        # Inject it into serializer data so SimpleJWT can validate it
+        # Validate the token and find its active session before rotating it.
+        try:
+            old_token = RefreshToken(refresh_token_str)
+            old_jti = old_token['jti']
+            session = RefreshSession.objects.filter(
+                refresh_token_jti=old_jti,
+                is_revoked=False,
+            ).first()
+            if not session:
+                return Response(
+                    {"detail": "Session is revoked or invalid."},
+                    status=status.HTTP_401_UNAUTHORIZED,
+                )
+        except (TokenError, InvalidToken):
+            return Response(
+                {"detail": "Session token invalid or expired."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+        except Exception:
+            return Response(
+                {"detail": "Invalid token details."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        if session.user.role == User.Role.RESIDENT:
+            resident_profile = getattr(session.user, "profile", None)
+            if resident_profile is None or not resident_profile.is_verified:
+                session.is_revoked = True
+                session.save(update_fields=["is_revoked"])
+                return Response(
+                    {
+                        "detail": (
+                            "Your resident account is not verified. "
+                            "Please contact your barangay administrator."
+                        )
+                    },
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
+        # Let SimpleJWT validate and rotate only after the session passes the guard.
         serializer = self.get_serializer(data={'refresh': refresh_token_str})
         try:
             serializer.is_valid(raise_exception=True)
         except (TokenError, InvalidToken):
-            return Response({"detail": "Session token invalid or expired."}, status=status.HTTP_401_UNAUTHORIZED)
+            return Response(
+                {"detail": "Session token invalid or expired."},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
 
         access_token_str = serializer.validated_data.get('access')
         new_refresh_token_str = serializer.validated_data.get('refresh')
-
-        # Check session mapping status in the database
-        try:
-            old_token = RefreshToken(refresh_token_str, verify=False)
-            old_jti = old_token['jti']
-            session = RefreshSession.objects.filter(refresh_token_jti=old_jti, is_revoked=False).first()
-            if not session:
-                return Response({"detail": "Session is revoked or invalid."}, status=status.HTTP_401_UNAUTHORIZED)
-        except Exception:
-            return Response({"detail": "Invalid token details."}, status=status.HTTP_401_UNAUTHORIZED)
 
         # Handle token rotation boundary checks
         if new_refresh_token_str:

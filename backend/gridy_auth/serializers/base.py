@@ -25,6 +25,7 @@ class ResidentSerializer(serializers.ModelSerializer):
             'philsys_id_number', 'philsys_id_photo', 'secondary_id_type',
             'secondary_id_photo', 'utility_billing_type', 'utility_billing_photo'
         ]
+        read_only_fields = ['is_verified']
 
 class UserSerializer(serializers.ModelSerializer):
     profile = ResidentSerializer(required=False)
