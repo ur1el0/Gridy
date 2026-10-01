@@ -481,6 +481,34 @@ class ServiceAPITests(APITestCase):
         ticket.refresh_from_db()
         self.assertEqual(ticket.status, QueueTicket.Status.WAITING)
 
+    def test_dilg_admin_cannot_cancel_queue_ticket(self):
+        barangay = Barangay.objects.create(
+            name="DILG Queue Isolation Test Barangay"
+        )
+        ticket = QueueTicket.objects.create(
+            barangay=barangay,
+            service_type="Clearance",
+            status=QueueTicket.Status.WAITING,
+        )
+        dilg_admin = User.objects.create_user(
+            username="dilg_queue_test",
+            password="SecurePassword123!",
+            email="dilg-queue-test@example.com",
+            role=User.Role.DILG_ADMIN,
+        )
+
+        self.client.force_login(dilg_admin)
+        response = self.client.post(
+            reverse("ticket-cancel-ticket", args=[ticket.id])
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_403_FORBIDDEN,
+        )
+        ticket.refresh_from_db()
+        self.assertEqual(ticket.status, QueueTicket.Status.WAITING)
+
     def test_exempt_resident_document_types_are_zero_fee(self):
         self.client.force_login(self.resident)
         url = reverse("document-request-list")
