@@ -39,6 +39,8 @@ export const ResidentsManagement: React.FC = () => {
 
     // Detail Modal State
     const [selectedResident, setSelectedResident] = useState<Resident | null>(null);
+    const [emailDraft, setEmailDraft] = useState("");
+    const [savingEmail, setSavingEmail] = useState(false);
 
     // Import Modal State
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -73,6 +75,51 @@ export const ResidentsManagement: React.FC = () => {
         } catch (err) {
             console.error("Failed to delete resident", err);
             toast.error('Failed to delete resident.');
+        }
+    };
+
+    const handleEmailSave = async () => {
+        if (!selectedResident) return;
+
+        const email = emailDraft.trim();
+        if (!email) {
+            toast.error("Enter the resident's email address.");
+            return;
+        }
+
+        setSavingEmail(true);
+        try {
+            const response = await axiosPrivate.patch(
+                `/auth/resident/${selectedResident.id}/`,
+                { email },
+            );
+
+            const updatedResident = {
+                ...selectedResident,
+                email: response.data.email ?? email.toLowerCase(),
+            };
+
+            setSelectedResident((current) =>
+                current?.id === updatedResident.id ? updatedResident : current,
+            );
+            setResidents((current) =>
+                current.map((resident) =>
+                    resident.id === updatedResident.id ? updatedResident : resident,
+                ),
+            );
+            setEmailDraft(updatedResident.email ?? "");
+            toast.success(
+                "Email updated. The resident can use Forgot Password to set a password.",
+            );
+        } catch (error: any) {
+            const errorData = error.response?.data;
+            toast.error(
+                errorData?.email?.[0] ??
+                    errorData?.detail ??
+                    "Failed to update resident email.",
+            );
+        } finally {
+            setSavingEmail(false);
         }
     };
 
@@ -210,7 +257,10 @@ export const ResidentsManagement: React.FC = () => {
                                 filteredResidents.map(resident => (
                                     <tr 
                                         key={resident.id} 
-                                        onClick={() => setSelectedResident(resident)}
+                                        onClick={() => {
+                                            setSelectedResident(resident);
+                                            setEmailDraft(resident.email ?? "");
+                                        }}
                                         className="hover:bg-primary/5 transition-colors cursor-pointer group"
                                     >
                                         <td className="py-3.5 px-6">
@@ -346,9 +396,33 @@ export const ResidentsManagement: React.FC = () => {
                                             <span className="text-slate-500">Contact Number:</span>
                                             <span className="font-semibold text-slate-800">{selectedResident.contact_number || 'N/A'}</span>
                                         </div>
-                                        <div className="flex justify-between">
-                                            <span className="text-slate-500">Email Address:</span>
-                                            <span className="font-semibold text-slate-800 truncate max-w-[160px]">{selectedResident.email || 'N/A'}</span>
+                                        <div className="space-y-1.5">
+                                            <label
+                                                htmlFor="resident-login-email"
+                                                className="block text-slate-500"
+                                            >
+                                                Login Email
+                                            </label>
+                                            <input
+                                                id="resident-login-email"
+                                                type="email"
+                                                autoComplete="email"
+                                                required
+                                                value={emailDraft}
+                                                onChange={(event) =>
+                                                    setEmailDraft(event.target.value)
+                                                }
+                                                disabled={savingEmail}
+                                                aria-describedby="resident-login-email-help"
+                                                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-800 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20 disabled:opacity-60"
+                                            />
+                                            <p
+                                                id="resident-login-email-help"
+                                                className="text-xs text-slate-500"
+                                            >
+                                                Enter an address the resident confirms in person.
+                                                They must control this inbox to complete password reset.
+                                            </p>
                                         </div>
                                         <div className="flex justify-between">
                                             <span className="text-slate-500">System Role:</span>
@@ -446,13 +520,26 @@ export const ResidentsManagement: React.FC = () => {
                             </div>
                         </div>
 
-                        {/* Modal Footer */}
-                        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex justify-end">
+                        <div className="px-6 py-4 border-t border-slate-100 bg-slate-50/50 flex flex-col sm:flex-row sm:justify-between gap-3">
                             <button
+                                type="button"
                                 onClick={() => setSelectedResident(null)}
-                                className="px-5 py-2 rounded-xl text-sm font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer shadow-2xs"
+                                className="w-full sm:w-auto px-5 py-2 rounded-xl text-sm font-semibold bg-white border border-slate-200 text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer shadow-2xs"
                             >
                                 Close Dossier
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleEmailSave}
+                                disabled={
+                                    savingEmail ||
+                                    !emailDraft.trim() ||
+                                    emailDraft.trim().toLowerCase() ===
+                                        (selectedResident.email ?? "").trim().toLowerCase()
+                                }
+                                className="w-full sm:w-auto px-5 py-2 rounded-xl text-sm font-semibold bg-primary text-primary-foreground hover:opacity-90 transition-opacity disabled:cursor-not-allowed disabled:opacity-50"
+                            >
+                                {savingEmail ? "Saving..." : "Save Login Email"}
                             </button>
                         </div>
                     </div>
