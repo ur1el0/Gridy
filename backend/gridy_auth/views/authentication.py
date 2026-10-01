@@ -230,9 +230,14 @@ class PasswordResetRequestView(APIView):
         serializer = PasswordResetRequestSerializer(data=request.data)
         if serializer.is_valid():
             email = serializer.validated_data['email']
-            user = User.objects.filter(email=email).first()
-            if user:
+            matching_users = list(
+                User.objects.filter(email__iexact=email)[:2]
+            )
+
+            if len(matching_users) == 1:
+                user = matching_users[0]
                 uid = urlsafe_base64_encode(force_bytes(user.pk))
+
                 token = default_token_generator.make_token(user)
                 reset_link = f"{settings.FRONTEND_URL.rstrip('/')}/reset-password?uidb64={uid}&token={token}"
                 

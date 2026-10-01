@@ -27,6 +27,39 @@ class ResidentSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = ['is_verified']
 
+class ResidentAdminUpdateSerializer(ResidentSerializer):
+    email = serializers.EmailField(
+        source='user.email',
+        required=False,
+        allow_blank=False,
+    )
+
+    def validate_email(self, value):
+        normalized_email = value.strip().lower()
+        existing_users = User.objects.filter(email__iexact=normalized_email)
+
+        if self.instance is not None:
+            existing_users = existing_users.exclude(
+                pk=self.instance.user_id,
+            )
+
+        if existing_users.exists():
+            raise serializers.ValidationError(
+                "An account with this email already exists."
+            )
+
+        return normalized_email
+
+    def update(self, instance, validated_data):
+        user_data = validated_data.pop('user', {})
+        email = user_data.get('email')
+
+        if email is not None:
+            instance.user.email = email
+            instance.user.save(update_fields=['email'])
+
+        return super().update(instance, validated_data)
+
 class UserSerializer(serializers.ModelSerializer):
     profile = ResidentSerializer(required=False)
     barangay = BarangaySerializer(read_only=True)

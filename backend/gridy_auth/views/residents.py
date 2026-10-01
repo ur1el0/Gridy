@@ -11,7 +11,10 @@ from rest_framework.parsers import MultiPartParser, FormParser
 from drf_spectacular.utils import extend_schema, OpenApiTypes
 
 from gridy_auth.models import User, Resident
-from gridy_auth.serializers import ResidentSerializer
+from gridy_auth.serializers import (
+    ResidentAdminUpdateSerializer,
+    ResidentSerializer,
+)
 from gridy_auth.permissions import IsBarangayOfficial
 from gridy_audit.services import log_action
 from gridy_audit.models import AuditLog
@@ -96,14 +99,13 @@ class ResidentImportView(APIView):
                         continue
 
                     voter_status = voter_status_str.strip().lower() in ['true', '1', 'yes']
-                    initial_password = birth_date.strftime('%Y%m%d')
                     
                     # 1. Create User bound strictly to the importing official's Barangay
                     
                     user = User.objects.create_user(
                         username=username, 
                         email=email, 
-                        password=initial_password, 
+                        password=None,
                         role=User.Role.RESIDENT,
                         barangay=request.user.barangay
                     )
@@ -224,6 +226,28 @@ class ResidentViewSet(viewsets.ModelViewSet):
     """CRUD endpoint for verified residents. Only Barangay Officials can access this full directory."""
     permission_classes = [permissions.IsAuthenticated, IsBarangayOfficial]
     serializer_class = ResidentSerializer
+
+    def get_serializer_class(self):
+        if self.action in ("update", "partial_update"):
+            return ResidentAdminUpdateSerializer
+        return ResidentSerializer
+
+    def perform_update(self, serializer):
+        email_update = "email" in serializer.validated_data.get("user", {})
+
+        with transaction.atomic():
+            resident = serializer.save()
+
+            if email_update:
+                log_action(
+                    user=self.request.user,
+                    action_type=AuditLog.ActionType.USER_ACTION,
+                    description=(
+                        "Updated the login email for resident account "
+                        f"(ID: {resident.id})."
+                    ),
+                    request=self.request,
+                )
 
     def get_queryset(self):
         user = self.request.user
