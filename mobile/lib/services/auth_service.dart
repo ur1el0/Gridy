@@ -14,13 +14,10 @@ class AuthService {
   final ApiClient apiClient;
   final StorageService storageService;
 
-  AuthService({
-    required this.apiClient,
-    required this.storageService,
-  }) {
+  AuthService({required this.apiClient, required this.storageService}) {
     // Synchronize silently rotated tokens into persistent local storage
-    apiClient.onTokenRefreshed = (newAccessToken, newCookieHeader) {
-      storageService.saveTokens(
+    apiClient.onTokenRefreshed = (newAccessToken, newCookieHeader) async {
+      await storageService.saveTokens(
         accessToken: newAccessToken,
         refreshCookie: newCookieHeader,
       );
@@ -30,10 +27,7 @@ class AuthService {
     final token = storageService.getAccessToken();
     final cookie = storageService.getRefreshCookie();
     if (token != null || cookie != null) {
-      apiClient.setAuthCredentials(
-        accessToken: token,
-        cookieHeader: cookie,
-      );
+      apiClient.setAuthCredentials(accessToken: token, cookieHeader: cookie);
     }
   }
 
@@ -44,10 +38,7 @@ class AuthService {
   }) async {
     final response = await apiClient.post(
       AppConfig.loginEndpoint,
-      body: {
-        'username': username.trim(),
-        'password': password,
-      },
+      body: {'username': username.trim(), 'password': password},
       requiresAuth: false,
     );
 
@@ -122,29 +113,41 @@ class AuthService {
 
     if (philsysPhoto != null) {
       final bytes = await philsysPhoto.readAsBytes();
-      files.add(http.MultipartFile.fromBytes(
-        'philsys_id_photo',
-        bytes,
-        filename: philsysPhoto.name.isNotEmpty ? philsysPhoto.name : 'philsys_id.jpg',
-      ));
+      files.add(
+        http.MultipartFile.fromBytes(
+          'philsys_id_photo',
+          bytes,
+          filename: philsysPhoto.name.isNotEmpty
+              ? philsysPhoto.name
+              : 'philsys_id.jpg',
+        ),
+      );
     }
 
     if (utilityBillingPhoto != null) {
       final bytes = await utilityBillingPhoto.readAsBytes();
-      files.add(http.MultipartFile.fromBytes(
-        'utility_billing_photo',
-        bytes,
-        filename: utilityBillingPhoto.name.isNotEmpty ? utilityBillingPhoto.name : 'utility_bill.jpg',
-      ));
+      files.add(
+        http.MultipartFile.fromBytes(
+          'utility_billing_photo',
+          bytes,
+          filename: utilityBillingPhoto.name.isNotEmpty
+              ? utilityBillingPhoto.name
+              : 'utility_bill.jpg',
+        ),
+      );
     }
 
     if (secondaryIdPhoto != null) {
       final bytes = await secondaryIdPhoto.readAsBytes();
-      files.add(http.MultipartFile.fromBytes(
-        'secondary_id_photo',
-        bytes,
-        filename: secondaryIdPhoto.name.isNotEmpty ? secondaryIdPhoto.name : 'secondary_id.jpg',
-      ));
+      files.add(
+        http.MultipartFile.fromBytes(
+          'secondary_id_photo',
+          bytes,
+          filename: secondaryIdPhoto.name.isNotEmpty
+              ? secondaryIdPhoto.name
+              : 'secondary_id.jpg',
+        ),
+      );
     }
 
     final response = await apiClient.postMultipart(
@@ -153,7 +156,7 @@ class AuthService {
       files: files.isNotEmpty ? files : null,
       requiresAuth: false,
     );
-    
+
     final Map<String, dynamic> responseData = jsonDecode(
       utf8.decode(response.bodyBytes),
     );
@@ -168,6 +171,7 @@ class AuthService {
       );
     }
   }
+
   /// Fetch currently authenticated resident profile `/api/v1/auth/me/`
   Future<UserModel> updateProfile({
     String? fullName,
@@ -220,7 +224,8 @@ class AuthService {
       );
 
       final newAccessToken = responseData['access'] as String?;
-      final newCookieHeader = apiClient.extractSetCookie(response) ?? refreshCookie;
+      final newCookieHeader =
+          apiClient.extractSetCookie(response) ?? refreshCookie;
 
       if (newAccessToken != null) {
         await storageService.saveTokens(
@@ -254,8 +259,8 @@ class AuthService {
     } catch (_) {
       // Silently proceed with local cleanup even if network fails
     } finally {
-      await storageService.clearSession();
       apiClient.clearAuthCredentials();
+      await storageService.clearSession();
     }
   }
 
@@ -287,11 +292,7 @@ class AuthService {
   }) async {
     await apiClient.post(
       '/auth/password-reset/confirm/',
-      body: {
-        'new_password': newPassword,
-        'uidb64': uidb64,
-        'token': token,
-      },
+      body: {'new_password': newPassword, 'uidb64': uidb64, 'token': token},
       requiresAuth: false,
     );
   }
