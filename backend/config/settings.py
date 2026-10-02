@@ -141,6 +141,8 @@ DATABASES = {
     'default': env.db('DATABASE_URL', default='sqlite:///db.sqlite3')
 }
 
+
+
 # 1. Connection pooling for serverless PostgreSQL (drops idle re-negotiation)
 DATABASES['default']['CONN_MAX_AGE'] = 60
 DATABASES['default']['CONN_HEALTH_CHECKS'] = True
@@ -345,12 +347,14 @@ EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
 
 import sys
 
-# Testing Overrides (Bypass NeonDB and real SMTP locally)
-if 'test' in sys.argv or 'pytest' in sys.modules:
-    DATABASES = {
-        'default': {
-            'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': ':memory:',
+# Local tests default to SQLite; CI can select PostgreSQL for row-level tests.
+if "test" in sys.argv or "pytest" in sys.modules:
+    EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
+
+    if env.bool("GRIDY_TEST_USE_SQLITE", default=True):
+        DATABASES = {
+            'default': {
+                'ENGINE': 'django.db.backends.sqlite3',
+                'NAME': ':memory:',
+            }
         }
-    }
-    EMAIL_BACKEND = 'django.core.mail.backends.locmem.EmailBackend'

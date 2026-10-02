@@ -51,8 +51,10 @@ jobs:
           DEBUG: "True"
           ADMIN_REGISTRATION_PASSKEY: "ci-only-test-value-not-for-deployment"
           DATABASE_URL: "postgres://gridy_user:gridy_password@localhost:5432/gridy_db"
+          GRIDY_TEST_USE_SQLITE: "False"
         run: |
           cd backend
+          DJANGO_SETTINGS_MODULE=config.settings python -c "import django; django.setup(); from django.db import connection; assert connection.vendor == 'postgresql', connection.vendor"
           python -m pytest --cov=. --cov-fail-under=75
 
   frontend-tests:
