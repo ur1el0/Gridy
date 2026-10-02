@@ -145,17 +145,17 @@ void main() {
       expect(extracted, 'refresh_token=sample_jwt_refresh_token_xyz');
     });
 
-    test('ApiClient triggers onTokenRefreshed callback when credentials update', () {
+    test('ApiClient triggers onTokenRefreshed callback when credentials update', () async {
       final client = ApiClient();
       String? savedAccess;
       String? savedCookie;
 
-      client.onTokenRefreshed = (newAccess, newCookie) {
+      client.onTokenRefreshed = (newAccess, newCookie) async {
         savedAccess = newAccess;
         savedCookie = newCookie;
       };
 
-      client.onTokenRefreshed?.call('token_123', 'cookie_abc');
+      await client.onTokenRefreshed?.call('token_123', 'cookie_abc');
 
       expect(savedAccess, 'token_123');
       expect(savedCookie, 'cookie_abc');
