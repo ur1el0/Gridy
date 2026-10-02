@@ -105,6 +105,74 @@ class ServiceAPITests(APITestCase):
         self.assertFalse(created_request.or_number)
         self.assertEqual(str(created_request.fee_amount), "0.00")
 
+    @patch("gridy_services.views.documents.pisa.CreatePDF")
+    def test_official_can_generate_walkin_pdf(self, create_pdf):
+        barangay = Barangay.objects.create(name="Walk-in PDF Test Barangay")
+        self.official.barangay = barangay
+        self.official.save(update_fields=["barangay"])
+        self.client.force_login(self.official)
+
+        document_request = DocumentRequest.objects.create(
+            barangay=barangay,
+            is_walkin=True,
+            walkin_name="Juan Dela Cruz",
+            walkin_purok="Purok Maligaya",
+            document_type="Barangay Clearance",
+            status=DocumentRequest.Status.RELEASED,
+        )
+        create_pdf.return_value.err = False
+
+        response = self.client.get(
+            reverse(
+                "document-request-generate-pdf",
+                args=[document_request.pk],
+            )
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+
+        rendered_html = create_pdf.call_args.args[0]
+        self.assertIn("JUAN DELA CRUZ", rendered_html)
+        self.assertIn(barangay.name, rendered_html)
+        self.assertIn("<strong>Purok Maligaya</strong>", rendered_html)
+        self.assertNotIn(
+            "Purok <strong>Purok Maligaya</strong>",
+            rendered_html,
+        )
+
+    @patch("gridy_services.views.documents.pisa.CreatePDF")
+    def test_resident_pdf_preserves_purok_number(self, create_pdf):
+        barangay = Barangay.objects.create(name="Resident PDF Test Barangay")
+        self.resident.barangay = barangay
+        self.resident.save(update_fields=["barangay"])
+
+        resident_profile = self.resident.profile
+        resident_profile.purok = "3"
+        resident_profile.save(update_fields=["purok"])
+
+        document_request = DocumentRequest.objects.create(
+            user=self.resident,
+            barangay=barangay,
+            document_type="Barangay Clearance",
+            status=DocumentRequest.Status.RELEASED,
+        )
+        self.client.force_login(self.resident)
+        create_pdf.return_value.err = False
+
+        response = self.client.get(
+            reverse(
+                "document-request-generate-pdf",
+                args=[document_request.pk],
+            )
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response["Content-Type"], "application/pdf")
+
+        rendered_html = create_pdf.call_args.args[0]
+        self.assertIn("<strong>Purok 3</strong>", rendered_html)
+
     def test_official_creating_walkin_requires_name(self):
         # Walk-in submissions without a resident name are rejected with 400
         self.official.barangay = Barangay.objects.create(
