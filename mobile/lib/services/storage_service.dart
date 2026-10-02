@@ -1,9 +1,11 @@
 import 'dart:convert';
+
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+
 import '../models/user_model.dart';
 
-/// Service managing persistent storage for tokens, user profiles,
-/// and login preferences.
+/// Manages secure session tokens and ordinary cached app preferences.
 class StorageService {
   static const String _keyAccessToken = 'gridy_access_token';
   static const String _keyRefreshCookie = 'gridy_refresh_cookie';
@@ -12,48 +14,93 @@ class StorageService {
   static const String _keySavedUsername = 'gridy_saved_username';
 
   final SharedPreferences _prefs;
+  final FlutterSecureStorage _secureStorage;
 
-  StorageService(this._prefs);
+  // Keep tokens in memory after loading them from secure storage.
+  String? _accessToken;
+  String? _refreshCookie;
 
-  /// Factory constructor to initialize with async shared preferences instance
-  static Future<StorageService> init() async {
+  StorageService(this._prefs, {FlutterSecureStorage? secureStorage})
+    : _secureStorage = secureStorage ?? FlutterSecureStorage();
+
+  /// Initializes preferences and loads tokens before the app uses this service.
+  static Future<StorageService> init({
+    FlutterSecureStorage? secureStorage,
+  }) async {
     final prefs = await SharedPreferences.getInstance();
-    return StorageService(prefs);
+    final secureStore = secureStorage ?? FlutterSecureStorage();
+    final storage = StorageService(prefs, secureStorage: secureStore);
+
+    storage._accessToken = await storage._readAndMigrateToken(_keyAccessToken);
+    storage._refreshCookie = await storage._readAndMigrateToken(
+      _keyRefreshCookie,
+    );
+
+    return storage;
   }
 
-  /// Save authentication tokens & session cookies
+  /// Reads a secure token, migrating its old SharedPreferences value if needed.
+  Future<String?> _readAndMigrateToken(String key) async {
+    final secureValue = await _secureStorage.read(key: key);
+    final legacyValue = _prefs.getString(key);
+
+    if (secureValue != null && secureValue.isNotEmpty) {
+      if (legacyValue != null) {
+        await _prefs.remove(key);
+      }
+      return secureValue;
+    }
+
+    if (legacyValue == null || legacyValue.isEmpty) {
+      if (legacyValue != null) {
+        await _prefs.remove(key);
+      }
+      return null;
+    }
+
+    // Remove the plaintext copy only after the secure write succeeds.
+    await _secureStorage.write(key: key, value: legacyValue);
+    await _prefs.remove(key);
+    return legacyValue;
+  }
+
+  /// Saves authentication tokens to secure storage.
   Future<void> saveTokens({
     required String accessToken,
     String? refreshCookie,
   }) async {
-    await _prefs.setString(_keyAccessToken, accessToken);
+    await _secureStorage.write(key: _keyAccessToken, value: accessToken);
+    _accessToken = accessToken;
+
     if (refreshCookie != null && refreshCookie.isNotEmpty) {
-      await _prefs.setString(_keyRefreshCookie, refreshCookie);
+      await _secureStorage.write(key: _keyRefreshCookie, value: refreshCookie);
+      _refreshCookie = refreshCookie;
     }
   }
 
-  /// Retrieve stored JWT access token
+  /// Returns the access token loaded into memory at initialization.
   String? getAccessToken() {
-    return _prefs.getString(_keyAccessToken);
+    return _accessToken;
   }
 
-  /// Retrieve stored session refresh cookie
+  /// Returns the refresh cookie loaded into memory at initialization.
   String? getRefreshCookie() {
-    return _prefs.getString(_keyRefreshCookie);
+    return _refreshCookie;
   }
 
-  /// Cache authenticated user details
+  /// Caches non-secret authenticated user details in app preferences.
   Future<void> saveUser(UserModel user) async {
     final userJsonStr = jsonEncode(user.toJson());
     await _prefs.setString(_keyUser, userJsonStr);
   }
 
-  /// Retrieve cached user details
+  /// Retrieves cached user details.
   UserModel? getUser() {
     final userJsonStr = _prefs.getString(_keyUser);
     if (userJsonStr == null || userJsonStr.isEmpty) {
       return null;
     }
+
     try {
       final Map<String, dynamic> userMap = jsonDecode(userJsonStr);
       return UserModel.fromJson(userMap);
@@ -62,12 +109,13 @@ class StorageService {
     }
   }
 
-  /// Save "Remember Me" preference and username
+  /// Saves the "Remember Me" preference and username.
   Future<void> saveRememberMe({
     required bool rememberMe,
     String? username,
   }) async {
     await _prefs.setBool(_keyRememberMe, rememberMe);
+
     if (rememberMe && username != null && username.isNotEmpty) {
       await _prefs.setString(_keySavedUsername, username);
     } else if (!rememberMe) {
@@ -75,25 +123,46 @@ class StorageService {
     }
   }
 
-  /// Check if "Remember Me" is enabled
+  /// Checks whether "Remember Me" is enabled.
   bool isRememberMeEnabled() {
     return _prefs.getBool(_keyRememberMe) ?? false;
   }
 
-  /// Retrieve saved username for auto-fill
+  /// Retrieves the saved username for login autofill.
   String? getSavedUsername() {
     return _prefs.getString(_keySavedUsername);
   }
 
-  /// Clear active session tokens and cached user data while respecting "Remember Me"
+  /// Clears session tokens and cached user details while keeping login preferences.
   Future<void> clearSession() async {
-    await _prefs.remove(_keyAccessToken);
-    await _prefs.remove(_keyRefreshCookie);
-    await _prefs.remove(_keyUser);
+    _accessToken = null;
+    _refreshCookie = null;
+
+    try {
+      await Future.wait<void>([
+        _secureStorage.delete(key: _keyAccessToken),
+        _secureStorage.delete(key: _keyRefreshCookie),
+      ]);
+    } finally {
+      // Also remove any legacy plaintext copies and the cached user.
+      await _prefs.remove(_keyAccessToken);
+      await _prefs.remove(_keyRefreshCookie);
+      await _prefs.remove(_keyUser);
+    }
   }
 
-  /// Clear all stored application keys
+  /// Clears all preferences and this service's secure session tokens.
   Future<void> clearAll() async {
-    await _prefs.clear();
+    _accessToken = null;
+    _refreshCookie = null;
+
+    try {
+      await Future.wait<void>([
+        _secureStorage.delete(key: _keyAccessToken),
+        _secureStorage.delete(key: _keyRefreshCookie),
+      ]);
+    } finally {
+      await _prefs.clear();
+    }
   }
 }

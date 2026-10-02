@@ -14,13 +14,12 @@ class ApiClient {
   String? _cookieHeader;
 
   /// Optional listener triggered whenever a token refresh succeeds with the new access token and cookie header.
-  void Function(String newAccessToken, String? newCookieHeader)? onTokenRefreshed;
+  Future<void> Function(String newAccessToken, String? newCookieHeader)?
+  onTokenRefreshed;
 
-  ApiClient({
-    http.Client? client,
-    String? baseUrl,
-  })  : _client = client ?? http.Client(),
-        _baseUrl = baseUrl ?? AppConfig.baseUrl;
+  ApiClient({http.Client? client, String? baseUrl})
+    : _client = client ?? http.Client(),
+      _baseUrl = baseUrl ?? AppConfig.baseUrl;
 
   String get baseUrl => _baseUrl;
   String? get accessToken => _accessToken;
@@ -67,13 +66,19 @@ class ApiClient {
       );
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
-        final Map<String, dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+        final Map<String, dynamic> data = jsonDecode(
+          utf8.decode(response.bodyBytes),
+        );
         final newAccess = data['access'] as String?;
         final newCookie = extractSetCookie(response) ?? _cookieHeader;
 
         if (newAccess != null) {
+          final tokenRefreshHandler = onTokenRefreshed;
+          if (tokenRefreshHandler != null) {
+            await tokenRefreshHandler(newAccess, newCookie);
+          }
+
           setAuthCredentials(accessToken: newAccess, cookieHeader: newCookie);
-          onTokenRefreshed?.call(newAccess, newCookie);
           return true;
         }
       }
@@ -118,7 +123,7 @@ class ApiClient {
     );
   }
 
-    /// Perform a POST request with multipart/form-data (for file uploads)
+  /// Perform a POST request with multipart/form-data (for file uploads)
   Future<http.Response> postMultipart(
     String endpoint, {
     Map<String, String>? fields,
@@ -126,8 +131,8 @@ class ApiClient {
     bool requiresAuth = true,
   }) async {
     final request = http.MultipartRequest('POST', _buildUri(endpoint));
-    
-    // Add standard headers, but remove Content-Type so the http package 
+
+    // Add standard headers, but remove Content-Type so the http package
     // can generate the correct multipart boundary header automatically
     final headers = _buildHeaders(null, requiresAuth: requiresAuth);
     headers.remove('Content-Type');
@@ -136,7 +141,7 @@ class ApiClient {
     if (fields != null) {
       request.fields.addAll(fields);
     }
-    
+
     if (files != null) {
       request.files.addAll(files);
     }
@@ -261,11 +266,16 @@ class ApiClient {
       }
 
       // Automatic silent retry on 401 Unauthorized if refresh cookie is present
-      if (response.statusCode == 401 && _cookieHeader != null && _cookieHeader!.isNotEmpty) {
+      if (response.statusCode == 401 &&
+          _cookieHeader != null &&
+          _cookieHeader!.isNotEmpty) {
         final refreshed = await refreshAccessToken();
         if (refreshed) {
-          final retriedResponse = await requestFn().timeout(AppConfig.requestTimeout);
-          if (retriedResponse.statusCode >= 200 && retriedResponse.statusCode < 300) {
+          final retriedResponse = await requestFn().timeout(
+            AppConfig.requestTimeout,
+          );
+          if (retriedResponse.statusCode >= 200 &&
+              retriedResponse.statusCode < 300) {
             return retriedResponse;
           }
         }
@@ -321,7 +331,8 @@ class ApiClient {
         );
 
       case 401:
-        String message = 'Invalid credentials or session expired. Please log in again.';
+        String message =
+            'Invalid credentials or session expired. Please log in again.';
         if (detailMessage != null && detailMessage.isNotEmpty) {
           final lower = detailMessage.toLowerCase();
           if (lower.contains('token not valid') ||
@@ -334,10 +345,7 @@ class ApiClient {
             message = detailMessage;
           }
         }
-        throw UnauthorizedException(
-          message,
-          decodedBody,
-        );
+        throw UnauthorizedException(message, decodedBody);
 
       case 403:
         throw ForbiddenException(
@@ -356,14 +364,16 @@ class ApiClient {
       case 503:
       case 504:
         throw ApiException(
-          detailMessage ?? 'Server error occurred (${response.statusCode}). Please try again later.',
+          detailMessage ??
+              'Server error occurred (${response.statusCode}). Please try again later.',
           statusCode: response.statusCode,
           details: decodedBody,
         );
 
       default:
         throw ApiException(
-          detailMessage ?? 'Request failed with status code ${response.statusCode}.',
+          detailMessage ??
+              'Request failed with status code ${response.statusCode}.',
           statusCode: response.statusCode,
           details: decodedBody,
         );

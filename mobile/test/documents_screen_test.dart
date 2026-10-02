@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:mobile/core/network/api_client.dart';
 import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/models/document_request_model.dart';
@@ -61,6 +62,7 @@ class MockDocumentService extends DocumentService {
 
 void main() {
   setUp(() {
+    FlutterSecureStorage.setMockInitialValues({});
     SharedPreferences.setMockInitialValues({});
   });
 
