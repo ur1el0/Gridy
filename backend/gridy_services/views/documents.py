@@ -213,9 +213,21 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
             )
             
         template_path = 'gridy_services/pdf_clearance.html'
-        resident = document.user.profile if hasattr(document.user, 'profile') else None
-        barangay = document.user.barangay
-        
+        resident = (
+            document.user.profile
+            if document.user_id and hasattr(document.user, 'profile')
+            else None
+        )
+        barangay = document.barangay
+
+        if barangay is None and document.user_id:
+            barangay = document.user.barangay
+
+        if barangay is None:
+            raise ValidationError({
+                "detail": "A barangay must be assigned before generating this PDF."
+            })
+
         # Calculate age if birth_date is present
         age = None
         if resident and resident.birth_date:
@@ -223,7 +235,10 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
             age = today.year - resident.birth_date.year - ((today.month, today.day) < (resident.birth_date.month, resident.birth_date.day))
         
         recipient_name = resident.full_name if resident else (document.walkin_name or "RESIDENT")
-        purok_name = {resident.purok if resident else document.walkin_purok} or "N/A"
+        if resident:
+            purok_name = f"Purok {resident.purok}" if resident.purok else "N/A"
+        else:
+            purok_name = document.walkin_purok or "N/A"
 
         context = {
             'document': document,
