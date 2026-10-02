@@ -1,4 +1,4 @@
-from gridy_auth.models import User, Resident
+from gridy_auth.models import Barangay, Resident, User
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.views import APIView
@@ -8,14 +8,13 @@ from django.db.models import Count, Q, Sum
 from django.utils import timezone
 from drf_spectacular.utils import extend_schema
 
-from gridy_auth.models import User
+from gridy_audit.models import AuditLog
 from gridy_auth.permissions import IsBarangayOfficial, IsBarangayOfficialOrField
 from gridy_services.models import QueueTicket, DocumentRequest
 from gridy_reports.models import IssueReport
 from gridy_services.serializers import QueueTicketSerializer, DashboardSummarySerializer
 from gridy_communications.tasks import send_notification_to_user_task
 from gridy_audit.services import log_action
-from gridy_audit.models import AuditLog
 from rest_framework.exceptions import PermissionDenied
 
 class QueueTicketViewSet(viewsets.ModelViewSet):
@@ -38,19 +37,25 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
             return QueueTicket.objects.all().order_by('-created_at')
 
         return QueueTicket.objects.filter(user=user).order_by('-created_at')
+
     def perform_create(self, serializer):
         user = self.request.user
         if not user or not user.is_authenticated:
             raise PermissionDenied("Authentication required to generate queue tickets.")
 
+        if (
+            user.role in (User.Role.ADMIN, User.Role.RESIDENT)
+            and user.barangay_id is None
+        ):
+            raise PermissionDenied(
+                "A barangay assignment is required to generate queue tickets."
+            )
+
         if user.role == User.Role.ADMIN:
-            # Executive Desk Admin generates walk-in ticket for physical visitor
             serializer.save(user=None, barangay=user.barangay)
         elif user.role == User.Role.RESIDENT:
-            # Citizen generates remote queue ticket for themselves
             serializer.save(user=user, barangay=user.barangay)
         else:
-            # Field officials (Tanods) cannot generate tickets for themselves
             raise PermissionDenied("Field officials cannot generate queue tickets.")
 
     def perform_update(self, serializer):
@@ -67,43 +72,52 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
         ):
             raise PermissionDenied("You are not allowed to cancel queue tickets.")
 
-        if (
-            user.role in (User.Role.ADMIN, User.Role.FIELD_OFFICIAL)
-            and user.barangay_id is None
-        ):
+        if user.barangay_id is None:
             raise PermissionDenied(
                 "A barangay assignment is required to cancel queue tickets."
             )
 
-        ticket = self.get_object()
+        with transaction.atomic():
+            Barangay.objects.select_for_update().get(pk=user.barangay_id)
+            ticket = self.get_object()
 
-        if user.role == User.Role.RESIDENT and ticket.user_id != user.id:
-            raise PermissionDenied("You can only cancel your own queue tickets.")
-        # Invariant: only waiting tickets can be cancelled
-        if ticket.status != QueueTicket.Status.WAITING:
-            return Response(
-                {"detail": "Only tickets currently in queue can be cancelled."},
-                status=status.HTTP_400_BAD_REQUEST
+            if user.role == User.Role.RESIDENT and ticket.user_id != user.id:
+                raise PermissionDenied(
+                    "You can only cancel your own queue tickets."
+                )
+
+            if ticket.status != QueueTicket.Status.WAITING:
+                return Response(
+                    {"detail": "Only tickets currently in queue can be cancelled."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            ticket.status = QueueTicket.Status.CANCELLED
+            ticket.save()
+
+            actor_desc = (
+                f"Resident {user.username}"
+                if user.role == User.Role.RESIDENT
+                else f"Official {user.username}"
             )
-        
-        ticket.status = QueueTicket.Status.CANCELLED
-        ticket.save()
-
-        actor_desc = f"Resident {request.user.username}" if request.user.role == User.Role.RESIDENT else f"Official {request.user.username}"
-        log_action(
-            user=request.user,
-            action_type=AuditLog.ActionType.QUEUE_ACTION,
-            description=f"{actor_desc} cancelled queue ticket {ticket.ticket_number} (ID: {ticket.id}).",
-            request=request
-        )
+            log_action(
+                user=user,
+                action_type=AuditLog.ActionType.QUEUE_ACTION,
+                description=(
+                    f"{actor_desc} cancelled queue ticket "
+                    f"{ticket.ticket_number} (ID: {ticket.id})."
+                ),
+                request=request,
+            )
 
         return Response(
             {
                 "detail": "Queue ticket cancelled successfully.",
-                "ticket_number": ticket.ticket_number
+                "ticket_number": ticket.ticket_number,
             },
-            status=status.HTTP_200_OK
+            status=status.HTTP_200_OK,
         )
+
     @action(detail=False, methods=['get'], url_path='live-status')
     def live_status(self, request):
         user = request.user
@@ -119,48 +133,76 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'], permission_classes=[IsBarangayOfficialOrField], url_path='next')    
     def next_ticket(self, request):
+        user = request.user
+
+        if user.barangay_id is None:
+            raise PermissionDenied(
+                "A barangay assignment is required to advance the queue."
+            )
+
         with transaction.atomic():
+            Barangay.objects.select_for_update().get(pk=user.barangay_id)
+
             QueueTicket.objects.filter(
-                barangay=request.user.barangay, 
-                status=QueueTicket.Status.SERVING
+                barangay_id=user.barangay_id,
+                status=QueueTicket.Status.SERVING,
             ).update(status=QueueTicket.Status.COMPLETED)
-            
-            next_ticket = QueueTicket.objects.filter(
-                barangay=request.user.barangay, 
-                status=QueueTicket.Status.WAITING
-            ).order_by('-is_priority', 'created_at').first()
-            
+
+            next_ticket = (
+                QueueTicket.objects.filter(
+                    barangay_id=user.barangay_id,
+                    status=QueueTicket.Status.WAITING,
+                )
+                .order_by("-is_priority", "created_at", "id")
+                .first()
+            )
+
             if not next_ticket:
-                return Response({"detail": "No tickets waiting in queue."}, status=status.HTTP_404_NOT_FOUND)
-                
+                return Response(
+                    {"detail": "No tickets waiting in queue."},
+                    status=status.HTTP_404_NOT_FOUND,
+                )
+
             next_ticket.status = QueueTicket.Status.SERVING
             next_ticket.save()
 
             log_action(
-                user=request.user,
+                user=user,
                 action_type=AuditLog.ActionType.QUEUE_ACTION,
-                description=f"Advanced queue to ticket {next_ticket.ticket_number} (ID: {next_ticket.id}).",
-                request=request
+                description=(
+                    f"Advanced queue to ticket {next_ticket.ticket_number} "
+                    f"(ID: {next_ticket.id})."
+                ),
+                request=request,
             )
 
-            if next_ticket.user:
-                send_notification_to_user_task.delay(
-                    user_id=next_ticket.user.id,
-                    title="Queue Update",
-                    body=f"Your ticket {next_ticket.ticket_number} is now being served!",
-                    data={"ticket_id": str(next_ticket.id)}
+            if next_ticket.user_id is not None:
+                user_id = next_ticket.user_id
+                ticket_id = next_ticket.id
+                ticket_number = next_ticket.ticket_number
+
+                transaction.on_commit(
+                    lambda: send_notification_to_user_task.delay(
+                        user_id=user_id,
+                        title="Queue Update",
+                        body=(
+                            f"Your ticket {ticket_number} is now being served!"
+                        ),
+                        data={"ticket_id": str(ticket_id)},
+                    )
                 )
-            
+
             remaining_waiting = QueueTicket.objects.filter(
-                barangay=request.user.barangay, 
-                status=QueueTicket.Status.WAITING
+                barangay_id=user.barangay_id,
+                status=QueueTicket.Status.WAITING,
             ).count()
 
-            return Response({
+            response_data = {
                 "current_ticket": next_ticket.ticket_number,
-                "remaining_waiting": remaining_waiting
-            }, status=status.HTTP_200_OK)
+                "remaining_waiting": remaining_waiting,
+            }
 
+        return Response(response_data, status=status.HTTP_200_OK)
 
 @extend_schema(
     summary="Get Dashboard Statistics",
