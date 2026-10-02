@@ -1,10 +1,16 @@
 from gridy_auth.models import Barangay
-from django.db import models
 from django.conf import settings
 from django.utils import timezone
 
-# Create your models here.
+from datetime import datetime, time, timedelta
+from zoneinfo import ZoneInfo
 
+from django.core.exceptions import ValidationError
+from django.db import models, transaction
+
+MANILA_TIME_ZONE = ZoneInfo("Asia/Manila")
+
+# Create your models here.
 
 class DocumentRequest(models.Model):
     class Status(models.TextChoices):
@@ -118,28 +124,45 @@ class QueueTicket(models.Model):
 
 
     def save(self, *args, **kwargs):
-        if not self.ticket_number:
-            # Sequence ticket numbers liek T001, T002, etc.
-            today = timezone.now().date()
+        if self.ticket_number:
+            return super().save(*args, **kwargs)
 
-            # Filter to find the last ticket created specifically TODAY for this barangay
-            query = QueueTicket.objects.filter(created_at__date=today)
-            if self.barangay:
-                query = query.filter(barangay=self.barangay)
-            last_ticket = query.order_by('id').last()
+        if self.barangay_id is None:
+            raise ValidationError(
+                "A barangay is required to assign a queue ticket number."
+            )
 
-            if last_ticket and last_ticket.ticket_number.startswith('T'):
-                try:
-                    last_num = int(last_ticket.ticket_number[1:])
-                    new_num = last_num + 1
-                except ValueError:
-                    new_num = 1
-            else:
-                # Reset to T001 for a new day
-                new_num = 1
-                
-            self.ticket_number = f"T{new_num:03d}"
-        super().save(*args, **kwargs)
+        with transaction.atomic():
+            Barangay.objects.select_for_update().get(pk=self.barangay_id)
+
+            manila_now = timezone.localtime(
+                timezone.now(),
+                MANILA_TIME_ZONE,
+            )
+            manila_day_start = datetime.combine(
+                manila_now.date(),
+                time.min,
+                tzinfo=MANILA_TIME_ZONE,
+            )
+            next_manila_day_start = manila_day_start + timedelta(days=1)
+
+            existing_numbers = QueueTicket.objects.filter(
+                barangay_id=self.barangay_id,
+                created_at__gte=manila_day_start,
+                created_at__lt=next_manila_day_start,
+            ).values_list("ticket_number", flat=True)
+
+            highest_number = max(
+                (
+                    int(number[1:])
+                    for number in existing_numbers
+                    if number.startswith("T") and number[1:].isdigit()
+                ),
+                default=0,
+            )
+
+            self.ticket_number = f"T{highest_number + 1:03d}"
+            super().save(*args, **kwargs)
 
     class Meta:
         indexes = [
