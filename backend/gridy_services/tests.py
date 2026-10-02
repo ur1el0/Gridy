@@ -1,13 +1,23 @@
-from gridy_reports.models import IssueReport
-from django.urls import reverse
-from django.test import override_settings
-from rest_framework import status
-from rest_framework.test import APITestCase
-from gridy_auth.models import User, Resident
-from gridy_services.models import DocumentRequest, QueueTicket
-from gridy_audit.models import AuditLog
-from gridy_auth.models import User, Resident, Barangay
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime, timezone as datetime_timezone
+from threading import Barrier
+from unittest.mock import patch
 
+from django.db import close_old_connections, connections
+from django.test import (
+    TransactionTestCase,
+    override_settings,
+    skipUnlessDBFeature,
+)
+from django.urls import reverse
+from rest_framework import status
+from rest_framework.test import APIRequestFactory, APITestCase, force_authenticate
+
+from gridy_audit.models import AuditLog
+from gridy_auth.models import Barangay, Resident, User
+from gridy_reports.models import IssueReport
+from gridy_services.models import DocumentRequest, QueueTicket
+from gridy_services.views.queue import QueueTicketViewSet
 # Create your tests here.
 
 class ServiceAPITests(APITestCase):
@@ -246,6 +256,9 @@ class ServiceAPITests(APITestCase):
       
 
     def test_resident_can_create_queue_ticket(self):
+        barangay = Barangay.objects.create(name="Resident Queue Creation Barangay")
+        self.resident.barangay = barangay
+        self.resident.save(update_fields=["barangay"])
         self.client.force_login(self.resident)
         url = reverse('ticket-list')
         payload = {
@@ -254,7 +267,18 @@ class ServiceAPITests(APITestCase):
         response = self.client.post(url, payload, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(QueueTicket.objects.count(), 1)
-        self.assertEqual(QueueTicket.objects.first().ticket_number, 'T001')    
+        self.assertEqual(QueueTicket.objects.first().ticket_number, 'T001')
+
+    def test_resident_without_barangay_cannot_create_queue_ticket(self):
+        self.client.force_login(self.resident)
+        response = self.client.post(
+            reverse("ticket-list"),
+            {"service_type": "DOCUMENT"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(QueueTicket.objects.count(), 0)
         
     def test_resident_cannot_advance_queue(self):
         self.client.force_login(self.resident)
@@ -262,22 +286,51 @@ class ServiceAPITests(APITestCase):
         response = self.client.post(url)
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_official_can_advance(self):
-        self.client.force_login(self.official)
-        url = reverse('ticket-next-ticket')
+    def test_official_without_barangay_cannot_advance_queue(self):
         ticket = QueueTicket.objects.create(
+            ticket_number="T099",
+            service_type="DOCUMENT",
+            status=QueueTicket.Status.WAITING,
+        )
+        self.client.force_login(self.official)
+
+        response = self.client.post(reverse("ticket-next-ticket"))
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        ticket.refresh_from_db()
+        self.assertEqual(ticket.status, QueueTicket.Status.WAITING)
+
+    def test_official_can_advance(self):
+        barangay = Barangay.objects.create(name="Official Queue Test Barangay")
+        self.official.barangay = barangay
+        self.official.save(update_fields=["barangay"])
+        self.client.force_login(self.official)
+
+        previous_ticket = QueueTicket.objects.create(
+            barangay=barangay,
+            status=QueueTicket.Status.SERVING,
+            ticket_number="T000",
+            service_type="DOCUMENT",
+        )
+        ticket = QueueTicket.objects.create(
+            barangay=barangay,
             status="WAITING",
             ticket_number="T001",
-            service_type="DOCUMENT"
+            service_type="DOCUMENT",
         )
-        response = self.client.post(url)
+        response = self.client.post(reverse("ticket-next-ticket"))
+
         self.assertEqual(response.status_code, status.HTTP_200_OK)
+        previous_ticket.refresh_from_db()
+        self.assertEqual(previous_ticket.status, QueueTicket.Status.COMPLETED)
         ticket.refresh_from_db()
         self.assertEqual(ticket.status, "SERVING")
-
-        # Verify that an audit log entry was generated
-        self.assertEqual(AuditLog.objects.filter(action_type=AuditLog.ActionType.QUEUE_ACTION).count(),  1)
-
+        self.assertEqual(
+            AuditLog.objects.filter(
+                action_type=AuditLog.ActionType.QUEUE_ACTION
+            ).count(),
+            1,
+        )
 
     def test_dashboard_summary_required_auth(self):
         url = "/api/v1/dashboard/summary/"
@@ -429,7 +482,33 @@ class ServiceAPITests(APITestCase):
         ticket_a2 = QueueTicket.objects.create(barangay=barangay_a, service_type="Clearance")
         self.assertEqual(ticket_a2.ticket_number, "T002")
 
+    def test_queue_ticket_sequence_resets_at_manila_midnight(self):
+        barangay = Barangay.objects.create(name="Manila Midnight Test Barangay")
+
+        with patch("gridy_services.models.timezone.now") as mocked_now:
+            mocked_now.return_value = datetime(
+                2026, 1, 1, 15, 59, tzinfo=datetime_timezone.utc
+            )
+            before_midnight = QueueTicket.objects.create(
+                barangay=barangay,
+                service_type="Clearance",
+            )
+
+            mocked_now.return_value = datetime(
+                2026, 1, 1, 16, 0, tzinfo=datetime_timezone.utc
+            )
+            after_midnight = QueueTicket.objects.create(
+                barangay=barangay,
+                service_type="Clearance",
+            )
+
+        self.assertEqual(before_midnight.ticket_number, "T001")
+        self.assertEqual(after_midnight.ticket_number, "T001")
+
     def test_resident_can_cancel_own_waiting_queue_ticket(self):
+        barangay = Barangay.objects.create(name="Resident Queue Cancel Test Barangay")
+        self.resident.barangay = barangay
+        self.resident.save(update_fields=["barangay"])
         self.client.force_login(self.resident)
         ticket = QueueTicket.objects.create(
             user=self.resident,
@@ -449,7 +528,27 @@ class ServiceAPITests(APITestCase):
             ).exists()
         )
 
+    def test_resident_without_barangay_cannot_cancel_queue_ticket(self):
+        ticket = QueueTicket.objects.create(
+            user=self.resident,
+            ticket_number="T098",
+            service_type="DOCUMENT",
+            status=QueueTicket.Status.WAITING,
+        )
+        self.client.force_login(self.resident)
+
+        response = self.client.post(
+            reverse("ticket-cancel-ticket", args=[ticket.id])
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        ticket.refresh_from_db()
+        self.assertEqual(ticket.status, QueueTicket.Status.WAITING)
+
     def test_resident_cannot_cancel_serving_or_completed_queue_ticket(self):
+        barangay = Barangay.objects.create(name="Resident Serving Queue Test Barangay")
+        self.resident.barangay = barangay
+        self.resident.save(update_fields=["barangay"])
         self.client.force_login(self.resident)
         ticket = QueueTicket.objects.create(
             user=self.resident,
@@ -464,14 +563,19 @@ class ServiceAPITests(APITestCase):
         self.assertEqual(ticket.status, QueueTicket.Status.SERVING)
 
     def test_resident_cannot_cancel_other_resident_queue_ticket(self):
+        barangay = Barangay.objects.create(name="Other Resident Queue Test Barangay")
+        self.resident.barangay = barangay
+        self.resident.save(update_fields=["barangay"])
         other_resident = User.objects.create_user(
             username="other_queue_resident",
             password="SecurePassword123!",
             email="other_queue@example.com",
-            role=User.Role.RESIDENT
+            role=User.Role.RESIDENT,
+            barangay=barangay,
         )
         ticket = QueueTicket.objects.create(
             user=other_resident,
+            barangay=barangay,
             service_type="Clearance",
             status=QueueTicket.Status.WAITING
         )
@@ -577,6 +681,88 @@ class ServiceAPITests(APITestCase):
         document_request.refresh_from_db()
         self.assertEqual(str(document_request.fee_amount), "0.00")
 
+class QueueConcurrencyTests(TransactionTestCase):
+    def setUp(self):
+        self.barangay = Barangay.objects.create(
+            name="Queue Concurrency Test Barangay"
+        )
+        self.official = User.objects.create_user(
+            username="queue_concurrency_official",
+            password="SecurePassword123!",
+            email="queue-concurrency@example.com",
+            role=User.Role.ADMIN,
+            barangay=self.barangay,
+        )
+
+    @skipUnlessDBFeature("has_select_for_update")
+    def test_concurrent_ticket_creation_assigns_distinct_numbers(self):
+        barrier = Barrier(2)
+        barangay_id = self.barangay.pk
+
+        def create_ticket(_):
+            close_old_connections()
+            try:
+                barrier.wait(timeout=10)
+                ticket = QueueTicket.objects.create(
+                    barangay_id=barangay_id,
+                    service_type="DOCUMENT",
+                )
+                return ticket.ticket_number
+            finally:
+                connections.close_all()
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            ticket_numbers = list(executor.map(create_ticket, range(2)))
+
+        self.assertCountEqual(ticket_numbers, ["T001", "T002"])
+
+    @skipUnlessDBFeature("has_select_for_update")
+    def test_concurrent_advances_serve_different_waiting_tickets(self):
+        first_ticket = QueueTicket.objects.create(
+            barangay=self.barangay,
+            ticket_number="T001",
+            service_type="DOCUMENT",
+            status=QueueTicket.Status.WAITING,
+        )
+        second_ticket = QueueTicket.objects.create(
+            barangay=self.barangay,
+            ticket_number="T002",
+            service_type="DOCUMENT",
+            status=QueueTicket.Status.WAITING,
+        )
+
+        barrier = Barrier(2)
+        official_id = self.official.pk
+        view = QueueTicketViewSet.as_view({"post": "next_ticket"})
+
+        def advance_queue(_):
+            close_old_connections()
+            try:
+                barrier.wait(timeout=10)
+                official = User.objects.get(pk=official_id)
+                request = APIRequestFactory().post("/api/v1/tickets/next/")
+                force_authenticate(request, user=official)
+                response = view(request)
+                return response.status_code, response.data.get("current_ticket")
+            finally:
+                connections.close_all()
+
+        with ThreadPoolExecutor(max_workers=2) as executor:
+            results = list(executor.map(advance_queue, range(2)))
+
+        self.assertEqual(
+            [response_status for response_status, _ in results],
+            [status.HTTP_200_OK, status.HTTP_200_OK],
+        )
+        self.assertCountEqual(
+            [ticket_number for _, ticket_number in results],
+            ["T001", "T002"],
+        )
+
+        first_ticket.refresh_from_db()
+        second_ticket.refresh_from_db()
+        self.assertEqual(first_ticket.status, QueueTicket.Status.COMPLETED)
+        self.assertEqual(second_ticket.status, QueueTicket.Status.SERVING)
 
 class PublicQueueStatusAPITests(APITestCase):
     def setUp(self):
