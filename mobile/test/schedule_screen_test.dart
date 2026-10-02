@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:mobile/core/network/api_client.dart';
 import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/models/activity_schedule_model.dart';
@@ -58,6 +59,7 @@ class MockScheduleService extends ScheduleService {
 
 void main() {
   setUp(() {
+    FlutterSecureStorage.setMockInitialValues({});
     SharedPreferences.setMockInitialValues({
       'access_token': 'dummy_jwt_token',
       'user_data': '{"id": 1, "username": "juan_delacruz", "email": "juan@example.com", "full_name": "Juan Dela Cruz", "role": "RESIDENT"}',
