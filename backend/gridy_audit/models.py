@@ -12,7 +12,7 @@ class AuditLog(models.Model):
 
     action_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name='audit_logs'
@@ -26,4 +26,9 @@ class AuditLog(models.Model):
     timestamp = models.DateTimeField(auto_now_add=True)
     
     def __str__(self):
-        return f"{self.action_by.username} - {self.action_type} at {self.timestamp}"
+        actor_name = (
+            self.action_by.username
+            if self.action_by_id
+            else "Deleted user"
+        )
+        return f"{actor_name} - {self.action_type} at {self.timestamp}"
