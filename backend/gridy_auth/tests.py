@@ -281,7 +281,27 @@ class AuthAPITests(APITestCase):
         response = self.client.get(url)
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data['username'], self.username)
-           
+
+    def test_self_deletion_preserves_audit_event_without_actor(self):
+        user_id = self.user.pk
+        self.client.force_authenticate(user=self.user)
+
+        response = self.client.delete(reverse("auth_me"))
+
+        self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+        self.assertFalse(User.objects.filter(pk=user_id).exists())
+
+        audit_log = AuditLog.objects.get(
+            action_type=AuditLog.ActionType.USER_ACTION,
+            description__startswith=(
+                f"User {self.username} (ID: {user_id}) voluntarily exercised"
+            ),
+        )
+        self.assertIsNone(audit_log.action_by_id)
+        self.assertTrue(
+            str(audit_log).startswith("Deleted user - USER_ACTION at ")
+        )
+
     def test_import_residents_requires_auth(self):
         url = reverse('import_residents')
         response = self.client.post(url, format='multipart')
