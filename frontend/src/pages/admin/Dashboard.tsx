@@ -90,7 +90,7 @@ const ChartSkeleton = ({ title }: { title?: string }) => (
     </div>
 );
 
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/auth-context';
 
 export const Dashboard: React.FC = () => {
     const { user } = useAuth();
