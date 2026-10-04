@@ -73,10 +73,20 @@ jobs:
           cd frontend
           npm ci
 
+      - name: Run Oxlint
+        run: |
+          cd frontend
+          npm run lint
+
       - name: Run Vitest
         run: |
           cd frontend
           npx vitest run
+
+      - name: Build Production Frontend
+        run: |
+          cd frontend
+          npm run build
 
   mobile-tests:
     runs-on: ubuntu-latest
