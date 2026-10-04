@@ -28,7 +28,7 @@ describe('Register Component (Dual-Mode)', () => {
         expect(screen.getByText('Complete your registration details to access barangay services.')).toBeInTheDocument();
 
         // Citizen Inputs
-        expect(screen.getByPlaceholderText('Juan Dela Cruz')).toBeInTheDocument();
+        expect(screen.getByPlaceholderText('e.g. Juan Dela Cruz')).toBeInTheDocument();
         expect(screen.getByPlaceholderText('juandelacruz')).toBeInTheDocument();
         expect(screen.getByPlaceholderText('juan@example.com')).toBeInTheDocument();
         expect(screen.getByPlaceholderText('0917 123 4567')).toBeInTheDocument();
@@ -58,7 +58,7 @@ describe('Register Component (Dual-Mode)', () => {
 
         // Admin-Specific Inputs
         expect(screen.getByPlaceholderText('admin_captain')).toBeInTheDocument();
-        expect(screen.getByPlaceholderText('e.g. 1')).toBeInTheDocument();
+        expect(screen.getByRole('combobox')).toBeInTheDocument();
         expect(screen.getByLabelText(/I affirm that I am an authorized barangay official or personnel/i)).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /create admin account/i })).toBeInTheDocument();
     });
@@ -70,7 +70,7 @@ describe('Register Component (Dual-Mode)', () => {
             </BrowserRouter>
         );
 
-        const fullNameInput = screen.getByPlaceholderText('Juan Dela Cruz');
+        const fullNameInput = screen.getByPlaceholderText('e.g. Juan Dela Cruz');
         const usernameInput = screen.getByPlaceholderText('juandelacruz');
         const emailInput = screen.getByPlaceholderText('juan@example.com');
         const [passwordInput, confirmPasswordInput] = screen.getAllByPlaceholderText('••••••••');
@@ -99,7 +99,7 @@ describe('Register Component (Dual-Mode)', () => {
         const toggleButton = screen.getByTitle('Tap to switch registration type');
         fireEvent.click(toggleButton);
 
-        const fullNameInput = screen.getByPlaceholderText('Juan Dela Cruz');
+        const fullNameInput = screen.getByPlaceholderText('e.g. Juan Dela Cruz');
         const usernameInput = screen.getByPlaceholderText('admin_captain');
         const emailInput = screen.getByPlaceholderText('juan@example.com');
         const [passwordInput, confirmPasswordInput] = screen.getAllByPlaceholderText('••••••••');
@@ -130,7 +130,7 @@ describe('Register Component (Dual-Mode)', () => {
             </BrowserRouter>
         );
 
-        fireEvent.change(screen.getByPlaceholderText('Juan Dela Cruz'), {
+        fireEvent.change(screen.getByPlaceholderText('e.g. Juan Dela Cruz'), {
             target: { value: 'Juan Dela Cruz' },
         });
         fireEvent.change(screen.getByPlaceholderText('juandelacruz'), {
