@@ -1,7 +1,12 @@
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
-import { describe, it, expect } from 'vitest';
+import { afterEach, describe, it, expect, vi } from 'vitest';
+import { axiosPublic } from '../../api/axios';
 import { Register } from './Register';
+
+afterEach(() => {
+    vi.restoreAllMocks();
+});
 
 describe('Register Component (Dual-Mode)', () => {
     it('renders Resident Registration by default with resident fields and LGU service highlights', () => {
@@ -112,5 +117,62 @@ describe('Register Component (Dual-Mode)', () => {
         expect(
             await screen.findByText('You must affirm that you are an authorized barangay official or personnel.')
         ).toBeInTheDocument();
+    });
+
+    it('sends accepted privacy consent with resident registration', async () => {
+        const postSpy = vi
+            .spyOn(axiosPublic, 'post')
+            .mockResolvedValue({ data: {} } as never);
+
+        render(
+            <BrowserRouter>
+                <Register />
+            </BrowserRouter>
+        );
+
+        fireEvent.change(screen.getByPlaceholderText('Juan Dela Cruz'), {
+            target: { value: 'Juan Dela Cruz' },
+        });
+        fireEvent.change(screen.getByPlaceholderText('juandelacruz'), {
+            target: { value: 'juandc' },
+        });
+        fireEvent.change(screen.getByPlaceholderText('juan@example.com'), {
+            target: { value: 'juan@example.com' },
+        });
+
+        const [passwordInput, confirmPasswordInput] =
+            screen.getAllByPlaceholderText('••••••••');
+        fireEvent.change(passwordInput, {
+            target: { value: 'Password123!' },
+        });
+        fireEvent.change(confirmPasswordInput, {
+            target: { value: 'Password123!' },
+        });
+
+        const birthDateInput =
+            document.querySelector<HTMLInputElement>('input[type="date"]');
+        expect(birthDateInput).not.toBeNull();
+        fireEvent.change(birthDateInput!, {
+            target: { value: '1990-01-01' },
+        });
+
+        fireEvent.click(screen.getByRole('checkbox'));
+        fireEvent.submit(
+            screen
+                .getByRole('button', { name: /create resident account/i })
+                .closest('form')!
+        );
+
+        await waitFor(() => {
+            expect(postSpy).toHaveBeenCalled();
+        });
+
+        const [url, payload] = postSpy.mock.calls[0];
+        expect(url).toBe('/auth/register/');
+        expect(payload).toBeInstanceOf(FormData);
+
+        const formData = payload as FormData;
+        expect(formData.get('privacy_consent')).toBe('true');
+        expect(formData.get('privacy_consent_version')).toBe('resident-v1');
     });
 });
