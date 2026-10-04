@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { axiosPrivate } from '../../api/axios';
 import toast from 'react-hot-toast';
-import { History, Plus, X, SkipForward, CheckCircle, Bell } from 'lucide-react';
+import { History, Plus, X, SkipForward, CheckCircle, Bell, Volume2, VolumeX } from 'lucide-react';
 
 import { QueueMetrics } from '../../components/queue/QueueMetrics';
 import { ActiveTicketView } from '../../components/queue/ActiveTicketView';
@@ -34,13 +34,69 @@ export const LiveQueue: React.FC = () => {
     const [priorityStatus, setPriorityStatus] = useState<'regular' | 'priority'>('regular');
     const [notes, setNotes] = useState<string>('');
     const [isSubmittingNew, setIsSubmittingNew] = useState<boolean>(false);
+    
+    // Phase 51: Auditory Live Queue
+    const [audioEnabled, setAudioEnabled] = useState(false);
+    const audioEnabledRef = React.useRef(false);
+    const audioContextRef = React.useRef<AudioContext | null>(null);
+    const previousTicketRef = React.useRef<string | null>(null);
+
+    const playChime = React.useCallback(async () => {
+        if (!audioEnabledRef.current || typeof window.AudioContext === 'undefined') return;
+        try {
+            const context = audioContextRef.current ?? new window.AudioContext();
+            audioContextRef.current = context;
+            if (context.state === 'suspended') await context.resume();
+            if (!audioEnabledRef.current) return;
+
+            const oscillator = context.createOscillator();
+            const gain = context.createGain();
+            const now = context.currentTime;
+
+            oscillator.type = 'sine';
+            oscillator.frequency.setValueAtTime(880, now);
+            oscillator.frequency.setValueAtTime(1174.66, now + 0.12);
+
+            gain.gain.setValueAtTime(0.0001, now);
+            gain.gain.exponentialRampToValueAtTime(0.18, now + 0.02);
+            gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.35);
+
+            oscillator.connect(gain);
+            gain.connect(context.destination);
+            oscillator.start();
+            oscillator.stop(now + 0.36);
+        } catch {}
+    }, []);
+
+    const announceTicket = React.useCallback((ticketNumber: string) => {
+        if (!audioEnabledRef.current) return;
+        void playChime();
+        if ('speechSynthesis' in window) {
+            window.speechSynthesis.cancel();
+            const announcement = new SpeechSynthesisUtterance(`Now serving ticket ${ticketNumber}. Please proceed to the service counter.`);
+            announcement.lang = 'en-PH';
+            announcement.rate = 0.95;
+            window.speechSynthesis.speak(announcement);
+        }
+    }, [playChime]);
     const [notificationBanner, setNotificationBanner] = useState<string | null>(null);
 
     // Fetch tickets from backend
     const fetchTickets = async () => {
         try {
             const response = await axiosPrivate.get('/tickets/');
-            setTickets(response.data.results || response.data || []);
+            const newTickets = response.data.results || response.data || [];
+            
+            // Phase 51: Detect Serving Ticket change
+            const newServing = newTickets.find((t: any) => t.status.toUpperCase() === 'SERVING');
+            const newServingId = newServing ? newServing.ticket_number : null;
+            
+            if (previousTicketRef.current !== null && newServingId && newServingId !== previousTicketRef.current) {
+                announceTicket(newServingId);
+            }
+            previousTicketRef.current = newServingId;
+            
+            setTickets(newTickets);
             setError('');
         } catch (err) {
             console.error('Failed to load queue tickets:', err);
