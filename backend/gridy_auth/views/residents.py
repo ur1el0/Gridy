@@ -74,7 +74,7 @@ class ResidentImportView(APIView):
                 {"detail": "The uploaded resident file could not be read."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-    
+
         imported_count = 0
         skipped_count = 0
         errors = []
@@ -103,7 +103,7 @@ class ResidentImportView(APIView):
                             break
                         except ValueError:
                             pass
-                    
+
                     if not birth_date:
                         errors.append(f"Row {row_idx}: Invalid date format for '{birth_date_str}'. Expected YYYY-MM-DD or MM/DD/YYYY.")
                         continue
