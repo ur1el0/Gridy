@@ -2,6 +2,7 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+from unittest.mock import patch
 
 from django.test import TestCase
 from django.urls import reverse
@@ -10,6 +11,7 @@ from rest_framework.test import APITestCase
 from gridy_auth.models import User, Resident, Barangay
 from django.core.management import call_command
 from django.conf import settings
+from django.core.files.uploadedfile import SimpleUploadedFile
 from gridy_services.models import DocumentRequest, QueueTicket
 from gridy_audit.models import AuditLog
 
@@ -364,6 +366,78 @@ class AuthAPITests(APITestCase):
             str(audit_log).startswith("Deleted user - USER_ACTION at ")
         )
 
+    def _authenticate_as_importing_official(self):
+        barangay = Barangay.objects.create(name="Import Error Barangay")
+        official = User.objects.create_user(
+            username="import_error_official",
+            email="import-error-official@example.com",
+            password="ImportErrorTestPassword123!",
+            role=User.Role.ADMIN,
+            barangay=barangay,
+        )
+        self.client.force_authenticate(user=official)
+
+    def test_import_file_read_error_is_sanitized(self):
+        self._authenticate_as_importing_official()
+        uploaded_file = SimpleUploadedFile(
+            "residents.csv",
+            b"\xff",
+            content_type="text/csv",
+        )
+
+        with self.assertLogs(
+            "gridy_auth.views.residents",
+            level="ERROR",
+        ) as captured_logs:
+            response = self.client.post(
+                reverse("import_residents"),
+                {"file": uploaded_file},
+                format="multipart",
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(
+            response.data["detail"],
+            "The uploaded resident file could not be read.",
+        )
+        self.assertTrue(any(record.exc_info for record in captured_logs.records))
+
+    @patch(
+        "gridy_auth.views.residents.transaction.atomic",
+        side_effect=RuntimeError("PRIVATE_DATABASE_DIAGNOSTIC"),
+    )
+    def test_import_database_error_is_sanitized(self, _atomic):
+        self._authenticate_as_importing_official()
+        uploaded_file = SimpleUploadedFile(
+            "residents.csv",
+            b"username,email\n",
+            content_type="text/csv",
+        )
+
+        with self.assertLogs(
+            "gridy_auth.views.residents",
+            level="ERROR",
+        ) as captured_logs:
+            response = self.client.post(
+                reverse("import_residents"),
+                {"file": uploaded_file},
+                format="multipart",
+            )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_500_INTERNAL_SERVER_ERROR,
+        )
+        self.assertEqual(
+            response.data["detail"],
+            "Resident import could not be completed.",
+        )
+        self.assertNotIn(
+            "PRIVATE_DATABASE_DIAGNOSTIC",
+            response.data["detail"],
+        )
+        self.assertTrue(any(record.exc_info for record in captured_logs.records))
+
     def test_import_residents_requires_auth(self):
         url = reverse('import_residents')
         response = self.client.post(url, format='multipart')
@@ -435,6 +509,35 @@ class AuthAPITests(APITestCase):
         self.assertFalse(user2.has_usable_password())
         self.assertTrue(user2.profile.is_verified)
 
+    def test_import_residents_rejects_case_insensitive_duplicate_email(self):
+        User.objects.create_user(
+            username="existing_mixed_case_email",
+            email="Legacy.Resident@Example.org",
+            password="SecurePassword123!",
+            role=User.Role.RESIDENT,
+        )
+        self._authenticate_as_importing_official()
+        uploaded_file = SimpleUploadedFile(
+            "residents.csv",
+            (
+                b"username,email,full_name,birth_date,contact_number,voter_status\n"
+                b"duplicate_email,legacy.resident@example.org,Duplicate Email,1995-10-14,,False\n"
+            ),
+            content_type="text/csv",
+        )
+
+        response = self.client.post(
+            reverse("import_residents"),
+            {"file": uploaded_file},
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_207_MULTI_STATUS)
+        self.assertEqual(response.data["imported"], 0)
+        self.assertEqual(len(response.data["errors"]), 1)
+        self.assertIn("already in use", response.data["errors"][0])
+        self.assertFalse(User.objects.filter(username="duplicate_email").exists())
+
     def test_import_residents_validation_error(self):
         official = User.objects.create_user(
             username="official_test_import_err",
@@ -448,18 +551,19 @@ class AuthAPITests(APITestCase):
         csv_data = (
             "username,email,full_name,birth_date,contact_number,voter_status\n"  # <-- Comma after email
             "badrow1,bad1@example.com,,1995-10-14,,True\n" # missing full_name
-            "badrow2,,Bad Date,10-15-1995,,False\n" # bad date format (MM-DD-YYYY)
-            "imported3,,Imported Three,2001-09-09,,False\n" # valid
+            "badrow2,,Bad Date,invalid_date,,False\n" # truly bad date
+            "imported3,,Imported Three,2001-09-09,,False\n" # valid (YYYY-MM-DD)
+            "imported4,,Imported Four,09-09-2001,,False\n" # valid fallback (MM-DD-YYYY)
+            "imported5,,Imported Five,09/09/2001,,False\n" # valid fallback (MM/DD/YYYY)
         )
         csv_file = io.BytesIO(csv_data.encode('utf-8'))
-        csv_file.name = 'residents_err.csv'  # <-- Assign directly to the attribute
+        csv_file.name = 'residents_err.csv'
 
         url = reverse('import_residents')
         response = self.client.post(url, {'file': csv_file}, format='multipart')
 
-        # 207 Multi-Status expected due to validation errors in rows 1 and 2
         self.assertEqual(response.status_code, status.HTTP_207_MULTI_STATUS)
-        self.assertEqual(response.data['imported'], 1)
+        self.assertEqual(response.data['imported'], 3)
         self.assertEqual(len(response.data['errors']), 2)
         self.assertTrue(User.objects.filter(username="imported3").exists())
 
