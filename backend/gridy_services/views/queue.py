@@ -131,6 +131,52 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
             "avg_wait_mins": total_waiting * 2 
         }, status=status.HTTP_200_OK)
 
+    @action(
+        detail=True,
+        methods=['post'],
+        permission_classes=[IsBarangayOfficialOrField],
+        url_path='complete',
+    )
+    def complete_ticket(self, request, pk=None):
+        user = request.user
+
+        if user.barangay_id is None:
+            raise PermissionDenied(
+                "A barangay assignment is required to complete queue tickets."
+            )
+
+        with transaction.atomic():
+            Barangay.objects.select_for_update().get(pk=user.barangay_id)
+            ticket = self.get_object()
+
+            if ticket.status != QueueTicket.Status.SERVING:
+                return Response(
+                    {"detail": "Only the serving ticket can be completed."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            ticket.status = QueueTicket.Status.COMPLETED
+            ticket.save(update_fields=["status", "updated_at"])
+
+            log_action(
+                user=user,
+                action_type=AuditLog.ActionType.QUEUE_ACTION,
+                description=(
+                    f"Official {user.username} completed queue ticket "
+                    f"{ticket.ticket_number} (ID: {ticket.id})."
+                ),
+                request=request,
+            )
+
+        return Response(
+            {
+                "detail": "Queue ticket completed successfully.",
+                "ticket_number": ticket.ticket_number,
+                "status": ticket.status,
+            },
+            status=status.HTTP_200_OK,
+        )
+
     @action(detail=False, methods=['post'], permission_classes=[IsBarangayOfficialOrField], url_path='next')    
     def next_ticket(self, request):
         user = request.user

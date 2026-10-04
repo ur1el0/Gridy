@@ -63,11 +63,18 @@ class ResidentAdminUpdateSerializer(ResidentSerializer):
 class UserSerializer(serializers.ModelSerializer):
     profile = ResidentSerializer(required=False)
     barangay = BarangaySerializer(read_only=True)
+    full_name = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ['id', 'username', 'email', 'role', 'barangay','profile']
-        read_only_fields = ['role', 'barangay']
+        fields = ['id', 'username', 'email', 'role', 'barangay', 'profile', 'full_name']
+        read_only_fields = ['role', 'barangay', 'full_name']
+        
+    def get_full_name(self, obj):
+        full_name = getattr(obj.profile, 'full_name', None) if hasattr(obj, 'profile') else None
+        if not full_name:
+            full_name = f"{obj.first_name} {obj.last_name}".strip() or obj.username
+        return full_name
 
     def update(self, instance, validated_data):
         # Extract the profile dictionary from the request
