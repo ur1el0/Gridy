@@ -309,6 +309,24 @@ export const LiveQueue: React.FC = () => {
 
                 <div className="flex items-center gap-3">
                     <button
+                        onClick={() => {
+                            const nextState = !audioEnabled;
+                            setAudioEnabled(nextState);
+                            audioEnabledRef.current = nextState;
+                            if (nextState && 'speechSynthesis' in window) {
+                                window.speechSynthesis.cancel();
+                            }
+                        }}
+                        className={`bg-white hover:bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl text-sm font-semibold shadow-xs flex items-center gap-2 transition-all cursor-pointer ${
+                            audioEnabled ? 'text-primary' : 'text-slate-700'
+                        }`}
+                        title={audioEnabled ? 'Mute Announcer' : 'Enable Announcer'}
+                    >
+                        {audioEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4 text-slate-500" />}
+                        <span className="hidden sm:inline">{audioEnabled ? 'Audio On' : 'Audio Off'}</span>
+                    </button>
+
+                    <button
                         onClick={() => setIsHistoryModalOpen(true)}
                         className="bg-white hover:bg-slate-50 border border-slate-200 text-slate-700 px-4 py-2.5 rounded-xl text-sm font-semibold shadow-xs flex items-center gap-2 transition-all cursor-pointer"
                     >
