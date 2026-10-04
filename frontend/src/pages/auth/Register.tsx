@@ -1,7 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { axiosPublic } from '../../api/axios';
-import { Shield, FileCheck2, Clock, Users, KeyRound, Upload, IdCard, X, ChevronDown } from 'lucide-react';
+import { Shield, FileCheck2, Clock, Users, KeyRound, IdCard, ChevronDown } from 'lucide-react';
+import { TextField } from '../../components/ui/TextField';
+import { FileUploadZone } from '../../components/ui/FileUploadZone';
+import { Button } from '../../components/ui/Button';
+
 export const Register: React.FC = () => {
     const [isAdminMode, setIsAdminMode] = useState(false);
 
@@ -353,86 +357,57 @@ export const Register: React.FC = () => {
 
                     {/* Registration Form */}
                     <form className="space-y-4" onSubmit={handleRegister}>
-                        {/* Full Name */}
-                        <div>
-                            <label className="block text-[11px] font-bold tracking-wider text-slate-500 uppercase mb-1.5">
-                                FULL NAME
-                            </label>
-                            <input
-                                type="text"
-                                required
-                                value={fullName}
-                                onChange={(e) => setFullName(e.target.value)}
-                                className="w-full px-4 py-3 bg-[#EEF2F6] focus:bg-white border border-transparent focus:border-[#0284C7] rounded-xl text-sm font-medium text-slate-900 placeholder-slate-400 outline-none transition-all"
-                                placeholder="Juan Dela Cruz"
-                            />
-                        </div>
+                        <TextField 
+                            label="FULL NAME (AS IN ID)"
+                            type="text"
+                            required
+                            value={fullName}
+                            onChange={(e) => setFullName(e.target.value)}
+                            placeholder="e.g. Juan Dela Cruz"
+                            isAdminMode={isAdminMode}
+                        />
 
-                        {/* Universal Username Field */}
-                        <div>
-                            <label className="block text-[11px] font-bold tracking-wider text-slate-500 uppercase mb-1.5">
-                                USERNAME
-                            </label>
-                            <input
-                                type="text"
-                                required
-                                value={username}
-                                onChange={(e) => setUsername(e.target.value)}
-                                className={`w-full px-4 py-3 bg-[#EEF2F6] focus:bg-white border border-transparent rounded-xl text-sm font-medium text-slate-900 placeholder-slate-400 outline-none transition-all ${
-                                    isAdminMode ? 'focus:border-[#091B35]' : 'focus:border-[#0284C7]'
-                                }`}
-                                placeholder={isAdminMode ? 'admin_captain' : 'juandelacruz'}
-                            />
-                        </div>
+                        <TextField
+                            label="USERNAME"
+                            type="text"
+                            required
+                            value={username}
+                            onChange={(e) => setUsername(e.target.value)}
+                            placeholder={isAdminMode ? 'admin_captain' : 'juandelacruz'}
+                            isAdminMode={isAdminMode}
+                        />
 
-                        {/* Email */}
-                        <div>
-                            <label className="block text-[11px] font-bold tracking-wider text-slate-500 uppercase mb-1.5">
-                                EMAIL ADDRESS
-                            </label>
-                            <input
-                                type="email"
-                                required
-                                value={email}
-                                onChange={(e) => setEmail(e.target.value)}
-                                className="w-full px-4 py-3 bg-[#EEF2F6] focus:bg-white border border-transparent focus:border-[#0284C7] rounded-xl text-sm font-medium text-slate-900 placeholder-slate-400 outline-none transition-all"
-                                placeholder="juan@example.com"
-                            />
-                        </div>
+                        <TextField
+                            label="EMAIL ADDRESS"
+                            type="email"
+                            required
+                            value={email}
+                            onChange={(e) => setEmail(e.target.value)}
+                            placeholder="juan@example.com"
+                            isAdminMode={isAdminMode}
+                        />
 
-                        {/* Resident Mode: Contact Number */}
+                        {/* Resident Mode: Contact Number & Date of Birth */}
                         {!isAdminMode && (
-                            <div>
-                                <label className="block text-[11px] font-bold tracking-wider text-slate-500 uppercase mb-1.5">
-                                    CONTACT NUMBER
-                                </label>
-                                <input
+                            <>
+                                <TextField
+                                    label="CONTACT NUMBER"
                                     type="tel"
                                     value={contactNumber}
                                     onChange={(e) => setContactNumber(e.target.value)}
-                                    className="w-full px-4 py-3 bg-[#EEF2F6] focus:bg-white border border-transparent focus:border-[#0284C7] rounded-xl text-sm font-medium text-slate-900 placeholder-slate-400 outline-none transition-all"
                                     placeholder="0917 123 4567"
                                 />
-                            </div>
-                        )}
-
-                        {/* Resident Mode: Date of Birth */}
-                        {!isAdminMode && (
-                            <div>
-                                <label className="block text-[11px] font-bold tracking-wider text-slate-500 uppercase mb-1.5">
-                                    DATE OF BIRTH
-                                </label>
-                                <input
+                                <TextField
+                                    label="DATE OF BIRTH"
                                     type="date"
                                     required
                                     value={birthDate}
                                     onChange={(e) => setBirthDate(e.target.value)}
-                                    className="w-full px-4 py-3 bg-[#EEF2F6] focus:bg-white border border-transparent focus:border-[#0284C7] rounded-xl text-sm font-medium text-slate-900 outline-none transition-all"
                                 />
-                            </div>
+                            </>
                         )}
 
-                        {/* Resident Mode: Identity & Residency Verification Proofs (Collapsible Dropdown Accordion) */}
+                        {/* Resident Mode: Identity & Residency Verification Proofs */}
                         {!isAdminMode && (
                             <div className="border border-slate-200 rounded-xl bg-slate-50/70 overflow-hidden transition-all shadow-sm">
                                 <button
@@ -471,153 +446,80 @@ export const Register: React.FC = () => {
 
                                         {/* 1. PhilSys ID Number & Photo */}
                                         <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
-                                            <div>
-                                                <label className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1">
-                                                    PHILSYS NATIONAL ID NUMBER
-                                                </label>
-                                                <input
-                                                    type="text"
-                                                    value={philsysIdNumber}
-                                                    onChange={(e) => setPhilsysIdNumber(e.target.value)}
-                                                    placeholder="e.g. 1234-5678-9012-3456"
-                                                    className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-[#0284C7] rounded-lg text-xs font-mono text-slate-900 outline-none transition-all"
-                                                />
-                                            </div>
-                                            <div>
-                                                <label className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1">
-                                                    UPLOAD PHILSYS ID CARD PHOTO
-                                                </label>
-                                                <div className="flex items-center gap-2">
-                                                    <label className="flex-1 cursor-pointer flex items-center justify-center gap-2 px-3 py-2 bg-white border border-dashed border-slate-300 hover:border-[#0284C7] rounded-lg text-xs text-slate-600 hover:text-[#0284C7] transition-all">
-                                                        <Upload className="w-3.5 h-3.5" />
-                                                        <span className="truncate">{philsysPhoto ? philsysPhoto.name : 'Choose ID photo...'}</span>
-                                                        <input 
-                                                            type="file" 
-                                                            accept="image/*" 
-                                                            className="hidden" 
-                                                            onChange={(e) => setPhilsysPhoto(e.target.files?.[0] || null)} 
-                                                        />
-                                                    </label>
-                                                    {philsysPhoto && (
-                                                        <button
-                                                            type="button"
-                                                            onClick={() => setPhilsysPhoto(null)}
-                                                            className="p-2 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
-                                                            title="Remove attachment"
-                                                        >
-                                                            <X className="w-3.5 h-3.5" />
-                                                        </button>
-                                                    )}
-                                                </div>
-                                            </div>
+                                            <TextField
+                                                label="PHILSYS NATIONAL ID NUMBER"
+                                                type="text"
+                                                value={philsysIdNumber}
+                                                onChange={(e) => setPhilsysIdNumber(e.target.value)}
+                                                placeholder="e.g. 1234-5678-9012-3456"
+                                                className="font-mono"
+                                            />
+                                            <FileUploadZone
+                                                label="UPLOAD PHILSYS ID CARD PHOTO"
+                                                file={philsysPhoto}
+                                                onFileChange={setPhilsysPhoto}
+                                            />
                                         </div>
 
                                         {/* 2. Utility Billing Residency Proof */}
                                         <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                <div>
-                                                    <label className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1">
-                                                        BILLING STATEMENT TYPE
-                                                    </label>
-                                                    <select
-                                                        value={utilityBillingType}
-                                                        onChange={(e) => setUtilityBillingType(e.target.value)}
-                                                        className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-[#0284C7] rounded-lg text-xs text-slate-800 outline-none transition-all cursor-pointer"
-                                                    >
-                                                        <option value="Electric Bill">Electric Bill (Meralco/Quezelco)</option>
-                                                        <option value="Water Bill">Water Bill (PrimeWater/Maynilad)</option>
-                                                        <option value="Internet / Telco Bill">Internet / Telco Bill</option>
-                                                        <option value="Lease Agreement">Residential Lease Contract</option>
-                                                        <option value="Other Utility">Other Billing Statement</option>
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1">
-                                                        UPLOAD BILLING RECEIPT
-                                                    </label>
-                                                    <div className="flex items-center gap-2">
-                                                        <label className="flex-1 cursor-pointer flex items-center justify-center gap-2 px-3 py-2 bg-white border border-dashed border-slate-300 hover:border-[#0284C7] rounded-lg text-xs text-slate-600 hover:text-[#0284C7] transition-all">
-                                                            <Upload className="w-3.5 h-3.5" />
-                                                            <span className="truncate">{utilityBillingPhoto ? utilityBillingPhoto.name : 'Choose bill photo...'}</span>
-                                                            <input 
-                                                                type="file" 
-                                                                accept="image/*" 
-                                                                className="hidden" 
-                                                                onChange={(e) => setUtilityBillingPhoto(e.target.files?.[0] || null)} 
-                                                            />
-                                                        </label>
-                                                        {utilityBillingPhoto && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setUtilityBillingPhoto(null)}
-                                                                className="p-2 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
-                                                                title="Remove attachment"
-                                                            >
-                                                                <X className="w-3.5 h-3.5" />
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </div>
+                                            <div>
+                                                <label className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1">
+                                                    SELECT PRIMARY RESIDENCY PROOF
+                                                </label>
+                                                <select
+                                                    value={utilityBillingType}
+                                                    onChange={(e) => setUtilityBillingType(e.target.value)}
+                                                    className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-[#0284C7] rounded-lg text-xs font-semibold text-slate-700 outline-none transition-all cursor-pointer"
+                                                >
+                                                    <option value="Electric Bill">Electric Bill (Meralco/Quezelco)</option>
+                                                    <option value="Water Bill">Water Bill (PrimeWater/Maynilad)</option>
+                                                    <option value="Internet / Telco Bill">Internet / Telco Bill</option>
+                                                    <option value="Lease Agreement">Residential Lease Contract</option>
+                                                </select>
                                             </div>
+                                            <FileUploadZone
+                                                label="UPLOAD RECENT UTILITY BILL (LAST 3 MONTHS)"
+                                                file={utilityBillingPhoto}
+                                                onFileChange={setUtilityBillingPhoto}
+                                            />
                                         </div>
 
-                                        {/* 3. Optional Secondary Valid ID */}
+                                        {/* 3. Secondary ID Proof */}
                                         <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
-                                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                                                <div>
-                                                    <label className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1">
-                                                        SECONDARY VALID ID (OPTIONAL)
-                                                    </label>
-                                                    <select
-                                                        value={secondaryIdType}
-                                                        onChange={(e) => setSecondaryIdType(e.target.value)}
-                                                        className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-[#0284C7] rounded-lg text-xs text-slate-800 outline-none transition-all cursor-pointer"
-                                                    >
-                                                        <option value="">None / Not Applicable</option>
-                                                        <option value="Passport">Philippine Passport</option>
-                                                        <option value="Driver's License">Driver's License (LTO)</option>
-                                                        <option value="UMID">UMID (SSS / GSIS)</option>
-                                                        <option value="Postal ID">Postal ID (PHLPost)</option>
-                                                        <option value="PRC ID">PRC ID</option>
-                                                        <option value="Senior / PWD ID">Senior Citizen / PWD ID</option>
-                                                        <option value="Student ID">Student ID</option>
-                                                    </select>
-                                                </div>
-                                                <div>
-                                                    <label className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1">
-                                                        UPLOAD SECONDARY ID
-                                                    </label>
-                                                    <div className="flex items-center gap-2">
-                                                        <label className={"flex-1 flex items-center justify-center gap-2 px-3 py-2 bg-white border border-dashed rounded-lg text-xs transition-all " + (secondaryIdType ? "cursor-pointer border-slate-300 hover:border-[#0284C7] text-slate-600 hover:text-[#0284C7]" : "cursor-not-allowed border-slate-200 text-slate-300")}>
-                                                            <Upload className="w-3.5 h-3.5" />
-                                                            <span className="truncate">{secondaryIdPhoto ? secondaryIdPhoto.name : 'Choose secondary ID...'}</span>
-                                                            <input 
-                                                                type="file" 
-                                                                accept="image/*" 
-                                                                disabled={!secondaryIdType}
-                                                                className="hidden" 
-                                                                onChange={(e) => setSecondaryIdPhoto(e.target.files?.[0] || null)} 
-                                                            />
-                                                        </label>
-                                                        {secondaryIdPhoto && (
-                                                            <button
-                                                                type="button"
-                                                                onClick={() => setSecondaryIdPhoto(null)}
-                                                                className="p-2 text-slate-400 hover:text-red-500 rounded-lg hover:bg-red-50 transition-colors"
-                                                                title="Remove attachment"
-                                                            >
-                                                                <X className="w-3.5 h-3.5" />
-                                                            </button>
-                                                        )}
-                                                    </div>
-                                                </div>
+                                            <div>
+                                                <label className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1 flex items-center gap-2">
+                                                    SECONDARY ID <span className="text-[9px] font-bold text-slate-400 bg-slate-200 px-1.5 py-0.5 rounded uppercase">Optional</span>
+                                                </label>
+                                                <select
+                                                    value={secondaryIdType}
+                                                    onChange={(e) => {
+                                                        setSecondaryIdType(e.target.value);
+                                                        if (!e.target.value) setSecondaryIdPhoto(null);
+                                                    }}
+                                                    className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-[#0284C7] rounded-lg text-xs font-semibold text-slate-700 outline-none transition-all cursor-pointer"
+                                                >
+                                                    <option value="">None (I only have PhilSys ID)</option>
+                                                    <option value="Voter ID">Voter's ID / Certification</option>
+                                                    <option value="Driver License">Driver's License</option>
+                                                    <option value="Passport">Passport</option>
+                                                    <option value="Senior Citizen ID">Senior Citizen ID</option>
+                                                    <option value="Student ID">Student ID (If Minor)</option>
+                                                </select>
                                             </div>
+                                            <FileUploadZone
+                                                label="UPLOAD SECONDARY ID PHOTO"
+                                                file={secondaryIdPhoto}
+                                                onFileChange={setSecondaryIdPhoto}
+                                                disabled={!secondaryIdType}
+                                            />
                                         </div>
                                     </div>
                                 )}
                             </div>
                         )}
-                        {/* Minor Guardian Constraint Box (Appears dynamically if age < 18) */}
+
+                        {/* Minor Guardian Constraint Box */}
                         {!isAdminMode && isMinor && (
                             <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2 animate-fadeIn">
                                 <div className="flex items-center gap-2 text-amber-900 text-xs font-bold uppercase tracking-wider">
@@ -627,19 +529,14 @@ export const Register: React.FC = () => {
                                 <p className="text-[11px] text-amber-800 leading-relaxed">
                                     Applicants under 18 must link their registration to an already registered parent or legal guardian's account.
                                 </p>
-                                <div>
-                                    <label className="block text-[10px] font-extrabold tracking-wider text-amber-900 uppercase mb-1">
-                                        GUARDIAN'S REGISTERED USERNAME *
-                                    </label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={guardianId}
-                                        onChange={(e) => setGuardianId(e.target.value)}
-                                        className="w-full px-3.5 py-2.5 bg-white border border-amber-300 focus:border-amber-500 rounded-lg text-sm font-medium text-slate-900 placeholder-slate-400 outline-none transition-all"
-                                        placeholder="e.g. resident_dupay"
-                                    />
-                                </div>
+                                <TextField
+                                    label="GUARDIAN'S REGISTERED USERNAME *"
+                                    type="text"
+                                    required
+                                    value={guardianId}
+                                    onChange={(e) => setGuardianId(e.target.value)}
+                                    placeholder="e.g. resident_dupay"
+                                />
                             </div>
                         )}
 
@@ -652,7 +549,7 @@ export const Register: React.FC = () => {
                                 required
                                 value={barangayId}
                                 onChange={(e) => setBarangayId(e.target.value)}
-                                className="w-full px-4 py-3 bg-[#EEF2F6] focus:bg-white border border-transparent focus:border-[#0284C7] rounded-xl text-sm font-medium text-slate-900 outline-none transition-all cursor-pointer"
+                                className={`w-full px-4 py-3 bg-[#EEF2F6] focus:bg-white border border-transparent rounded-xl text-sm font-medium text-slate-900 outline-none transition-all cursor-pointer ${isAdminMode ? 'focus:border-[#091B35] focus:ring-1 focus:ring-[#091B35]' : 'focus:border-[#0284C7]'}`}
                             >
                                 <option value="">Select your Barangay</option>
                                 <option value="2">Barangay Ibabang Dupay (Lucena City)</option>
@@ -660,50 +557,26 @@ export const Register: React.FC = () => {
                             </select>
                         </div>
 
-                        {/* Admin Mode: Barangay ID */}
-                        {isAdminMode && (
-                            <div>
-                                <label className="block text-[11px] font-bold tracking-wider text-slate-500 uppercase mb-1.5">
-                                    BARANGAY ID (OPTIONAL)
-                                </label>
-                                <input
-                                    type="text"
-                                    value={barangayId}
-                                    onChange={(e) => setBarangayId(e.target.value)}
-                                    className="w-full px-4 py-3 bg-[#EEF2F6] focus:bg-white border border-transparent focus:border-[#0284C7] rounded-xl text-sm font-medium text-slate-900 placeholder-slate-400 outline-none transition-all"
-                                    placeholder="e.g. 1"
-                                />
-                            </div>
-                        )}
-
                         {/* Passwords */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <div>
-                                <label className="block text-[11px] font-bold tracking-wider text-slate-500 uppercase mb-1.5">
-                                    PASSWORD
-                                </label>
-                                <input
-                                    type="password"
-                                    required
-                                    value={password}
-                                    onChange={(e) => setPassword(e.target.value)}
-                                    className="w-full px-4 py-3 bg-[#EEF2F6] focus:bg-white border border-transparent focus:border-[#0284C7] rounded-xl text-sm font-medium text-slate-900 placeholder-slate-400 outline-none transition-all"
-                                    placeholder="••••••••"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-[11px] font-bold tracking-wider text-slate-500 uppercase mb-1.5">
-                                    CONFIRM PASSWORD
-                                </label>
-                                <input
-                                    type="password"
-                                    required
-                                    value={confirmPassword}
-                                    onChange={(e) => setConfirmPassword(e.target.value)}
-                                    className="w-full px-4 py-3 bg-[#EEF2F6] focus:bg-white border border-transparent focus:border-[#0284C7] rounded-xl text-sm font-medium text-slate-900 placeholder-slate-400 outline-none transition-all"
-                                    placeholder="••••••••"
-                                />
-                            </div>
+                            <TextField
+                                label="PASSWORD"
+                                type="password"
+                                required
+                                value={password}
+                                onChange={(e) => setPassword(e.target.value)}
+                                placeholder="••••••••"
+                                isAdminMode={isAdminMode}
+                            />
+                            <TextField
+                                label="CONFIRM PASSWORD"
+                                type="password"
+                                required
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                placeholder="••••••••"
+                                isAdminMode={isAdminMode}
+                            />
                         </div>
 
                         {/* Resident Mode: Data Privacy Consent */}
@@ -726,20 +599,16 @@ export const Register: React.FC = () => {
                         
                         {/* Admin Passkey Requirement */}
                         {isAdminMode && (
-                            <div>
-                                <label className="block text-[11px] font-bold tracking-wider text-slate-500 uppercase mb-1.5 items-center gap-1.5">
-                                    <svg className="w-3.5 h-3.5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2.5" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" /></svg>
-                                    LGU ADMINISTRATIVE PASSKEY
-                                </label>
-                                <input
-                                    type="password"
-                                    required={isAdminMode}
-                                    value={passkey}
-                                    onChange={(e) => setPasskey(e.target.value)}
-                                    className="w-full px-4 py-3 bg-[#EEF2F6] focus:bg-white border border-transparent focus:border-[#091B35] focus:ring-1 focus:ring-[#091B35] rounded-xl text-sm font-medium text-slate-900 placeholder-slate-400 outline-none transition-all"
-                                    placeholder="Enter secure LGU passkey"
-                                />
-                            </div>
+                            <TextField
+                                label="LGU ADMINISTRATIVE PASSKEY"
+                                type="password"
+                                required={isAdminMode}
+                                value={passkey}
+                                onChange={(e) => setPasskey(e.target.value)}
+                                placeholder="Enter secure LGU passkey"
+                                isAdminMode={isAdminMode}
+                                icon={<KeyRound className="w-3.5 h-3.5 text-red-500" />}
+                            />
                         )}
 
                         {/* Admin Affirmation Checkbox */}
@@ -761,23 +630,15 @@ export const Register: React.FC = () => {
 
                         {/* Submit Button */}
                         <div className="pt-2">
-                            <button
+                            <Button
                                 type="submit"
-                                disabled={loading || (!isAdminMode && !dataPrivacyConsent) || (isAdminMode && (!affirmation || !passkey))}
-                                className={`w-full py-3.5 px-6 text-white font-bold text-sm rounded-xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed ${
-                                    isAdminMode
-                                        ? 'bg-[#091B35] hover:bg-[#0F2D59] shadow-[#091B35]/20'
-                                        : 'bg-[#0284C7] hover:bg-[#0369A1] shadow-[#0284C7]/25'
-                                }`}
+                                isAdminMode={isAdminMode}
+                                loading={loading}
+                                loadingText={isAdminMode ? 'Creating Admin Account...' : 'Creating Resident Account...'}
+                                disabled={(!isAdminMode && !dataPrivacyConsent) || (isAdminMode && (!affirmation || !passkey))}
                             >
-                                <span>
-                                    {loading
-                                        ? 'Creating Account...'
-                                        : isAdminMode
-                                        ? 'Create Admin Account'
-                                        : 'Create Resident Account'}
-                                </span>
-                            </button>
+                                {isAdminMode ? 'Create Admin Account' : 'Create Resident Account'}
+                            </Button>
                         </div>
 
                         {/* Mode Switch Link */}
