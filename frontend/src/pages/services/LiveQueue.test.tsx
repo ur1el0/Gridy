@@ -1,5 +1,5 @@
-import { render, screen, waitFor } from "@testing-library/react";
-import { describe, it, expect, vi } from "vitest";
+import { act, cleanup, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
 import { LiveQueue } from "./LiveQueue";
 import { axiosPrivate } from "../../api/axios";
 import { AuthProvider } from "../../context/AuthContext";
@@ -14,6 +14,14 @@ vi.mock('../../api/axios', () => ({
 }))
 
 describe('LiveQueue Component', () => {
+    beforeEach(() => {
+        vi.mocked(axiosPrivate.get).mockReset()
+    })
+
+    afterEach(() => {
+        cleanup()
+        vi.useRealTimers()
+    })
         it('renders loading state initially and then shows queue data', async () => {
                 // Mock the GET request to return some tickets
                 const mockTickets = [
@@ -39,5 +47,37 @@ describe('LiveQueue Component', () => {
         // Check if the waiting list renders
         expect(screen.getByText('Waiting List')).toBeInTheDocument()
         expect(screen.getByText('Q-001')).toBeInTheDocument()
+    })
+
+    it('polls tickets every three seconds and clears the interval on unmount', async () => {
+        vi.useFakeTimers()
+        vi.mocked(axiosPrivate.get).mockResolvedValue({
+            data: { results: [] },
+        } as never)
+
+        const { unmount } = render(
+            <BrowserRouter>
+                <AuthProvider>
+                    <LiveQueue />
+                </AuthProvider>
+            </BrowserRouter>,
+        )
+
+        await act(async () => {
+            await Promise.resolve()
+            await Promise.resolve()
+        })
+        expect(axiosPrivate.get).toHaveBeenCalledTimes(1)
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(3000)
+        })
+        expect(axiosPrivate.get).toHaveBeenCalledTimes(2)
+
+        unmount()
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(3000)
+        })
+        expect(axiosPrivate.get).toHaveBeenCalledTimes(2)
     })
 })
