@@ -112,7 +112,7 @@ class ResidentImportView(APIView):
                         skipped_count += 1
                         continue
 
-                    if email and User.objects.filter(email=email).exists():
+                    if email and User.objects.filter(email__iexact=email).exists():
                         errors.append(f"Row {row_idx}: Email '{email}' is already in use by another resident.")
                         continue
 

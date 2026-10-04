@@ -509,6 +509,35 @@ class AuthAPITests(APITestCase):
         self.assertFalse(user2.has_usable_password())
         self.assertTrue(user2.profile.is_verified)
 
+    def test_import_residents_rejects_case_insensitive_duplicate_email(self):
+        User.objects.create_user(
+            username="existing_mixed_case_email",
+            email="Legacy.Resident@Example.org",
+            password="SecurePassword123!",
+            role=User.Role.RESIDENT,
+        )
+        self._authenticate_as_importing_official()
+        uploaded_file = SimpleUploadedFile(
+            "residents.csv",
+            (
+                b"username,email,full_name,birth_date,contact_number,voter_status\n"
+                b"duplicate_email,legacy.resident@example.org,Duplicate Email,1995-10-14,,False\n"
+            ),
+            content_type="text/csv",
+        )
+
+        response = self.client.post(
+            reverse("import_residents"),
+            {"file": uploaded_file},
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_207_MULTI_STATUS)
+        self.assertEqual(response.data["imported"], 0)
+        self.assertEqual(len(response.data["errors"]), 1)
+        self.assertIn("already in use", response.data["errors"][0])
+        self.assertFalse(User.objects.filter(username="duplicate_email").exists())
+
     def test_import_residents_validation_error(self):
         official = User.objects.create_user(
             username="official_test_import_err",
