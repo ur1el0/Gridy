@@ -13,6 +13,7 @@ from gridy_auth.tasks import send_welcome_email
 @extend_schema(tags=['Authentication'])
 class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
+    throttle_scope = 'auth_register'
 
     @extend_schema(request=RegisterSerializer, responses={201: UserSerializer})
     def post(self, request):
@@ -33,6 +34,7 @@ class RegisterView(APIView):
 @extend_schema(tags=['Authentication'])
 class AdminRegisterView(APIView):
     permission_classes = [permissions.AllowAny]
+    throttle_scope = 'auth_admin_register'
 
     @extend_schema(request=AdminRegisterSerializer, responses={201: UserSerializer})
     def post(self, request):

@@ -24,6 +24,7 @@ from gridy_audit.services import get_client_ip
 
 class CustomTokenObtainPairView(TokenObtainPairView):
     serializer_class = CustomTokenObtainPairSerializer
+    throttle_scope = 'auth_login'
 
     def post(self, request, *args, **kwargs):
         response = super().post(request, *args, **kwargs)
@@ -220,6 +221,7 @@ class LogoutView(APIView):
     
 class PasswordResetRequestView(APIView):
     permission_classes = [permissions.AllowAny]
+    throttle_scope = 'password_reset_request'
 
     @extend_schema(
         summary="Request Password Reset Email",
@@ -257,6 +259,7 @@ class PasswordResetRequestView(APIView):
 
 class PasswordResetConfirmView(APIView):
     permission_classes = [permissions.AllowAny]
+    throttle_scope = 'password_reset_confirm'
 
     @extend_schema(
         summary="Confirm New Password via Token",
