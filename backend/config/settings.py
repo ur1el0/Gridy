@@ -39,6 +39,8 @@ if not ADMIN_REGISTRATION_PASSKEY:
         'ADMIN_REGISTRATION_PASSKEY must be configured with a non-empty secret.'
     )
 
+PRIVACY_CONSENT_VERSION = "resident-v1"
+
 # SECURITY WARNING: don't run with debug turned on in production
 DEBUG = env('DEBUG')
 

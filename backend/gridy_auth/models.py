@@ -63,7 +63,15 @@ class Resident(models.Model):
     purok = models.CharField(max_length=100, null=True, blank=True)
     is_verified = models.BooleanField(default=False)
     guardian = models.ForeignKey('self', on_delete=models.SET_NULL, null=True, blank=True, related_name='dependents')
-
+    privacy_consent_version = models.CharField(
+        max_length=64,
+        null=True,
+        blank=True,
+    )
+    privacy_consent_at = models.DateTimeField(
+        null=True,
+        blank=True,
+    )
 
     # Identification & Proof of Residency
     philsys_id_number = models.CharField(max_length=50, blank=True, null=True, help_text="PhilSys National ID Card Number")
