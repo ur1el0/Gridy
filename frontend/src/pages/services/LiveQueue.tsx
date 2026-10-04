@@ -127,7 +127,8 @@ export const LiveQueue: React.FC = () => {
         return tickets.filter((t) => {
             const statusUpper = t.status.toUpperCase();
             const isCompleted = statusUpper === 'COMPLETED' || statusUpper === 'RESOLVED';
-            const isToday = new Date(t.created_at).toDateString() === todayStr;
+            const completionTime = t.updated_at || t.created_at;
+            const isToday = new Date(completionTime).toDateString() === todayStr;
             return isCompleted && isToday;
         });
     }, [tickets]);
@@ -189,7 +190,7 @@ export const LiveQueue: React.FC = () => {
         if (!servingTicket) return;
         setIsUpdating(true);
         try {
-            await axiosPrivate.patch(`/tickets/${servingTicket.ticket_id}/`, { status: 'COMPLETED' });
+            await axiosPrivate.post(`/tickets/${servingTicket.ticket_id}/complete/`);
             await fetchTickets();
             showNotification(`Ticket ${servingTicket.ticket_number} marked as completed.`);
         } catch (err) {
