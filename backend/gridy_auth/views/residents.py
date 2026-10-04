@@ -1,5 +1,6 @@
 import csv
 import io
+import logging
 from datetime import datetime
 from django.db import transaction
 from django.shortcuts import get_object_or_404
@@ -23,6 +24,7 @@ from rest_framework import serializers
 
 from rest_framework.exceptions import PermissionDenied
 
+logger = logging.getLogger(__name__)
 
 class FileUploadSerializer(serializers.Serializer):
     file = serializers.FileField(help_text="CSV file containing resident accounts to import.")
@@ -66,9 +68,13 @@ class ResidentImportView(APIView):
             decoded_file = file_obj.read().decode('utf-8')
             io_string = io.StringIO(decoded_file)
             reader = csv.DictReader(io_string)
-        except Exception as e:
-            return Response({"detail": f"Error reading file: {str(e)}"}, status=status.HTTP_400_BAD_REQUEST)
-        
+        except Exception:
+            logger.exception("Failed to read uploaded resident import file.")
+            return Response(
+                {"detail": "The uploaded resident file could not be read."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    
         imported_count = 0
         skipped_count = 0
         errors = []
@@ -76,32 +82,43 @@ class ResidentImportView(APIView):
         try:
             with transaction.atomic():
                 for row_idx, row in enumerate(reader, start=1):
-                    username = row.get('username')
-                    email = row.get('email', '')
-                    full_name = row.get('full_name')
-                    birth_date_str = row.get('birth_date')
-                    contact_number = row.get('contact_number', '')
-                    purok = row.get('purok', '')
-                    voter_status_str = row.get('voter_status', 'False')
+                    # Sanitize inputs by stripping whitespace
+                    username = (row.get('username') or '').strip()
+                    email = (row.get('email') or '').strip().lower()
+                    full_name = (row.get('full_name') or '').strip()
+                    birth_date_str = (row.get('birth_date') or '').strip()
+                    contact_number = (row.get('contact_number') or '').strip()
+                    purok = (row.get('purok') or '').strip()
+                    voter_status_str = (row.get('voter_status') or 'False').strip().lower()
                     
                     if not username or not full_name or not birth_date_str:
-                        errors.append(f"Row {row_idx}: Missing required files ('username', 'full_name', 'birth_date').")
+                        errors.append(f"Row {row_idx}: Missing required fields ('username', 'full_name', 'birth_date').")
                         continue
 
-                    try:
-                        birth_date = datetime.strptime(birth_date_str, '%Y-%m-%d').date()
-                    except ValueError:
-                        errors.append(f"Row {row_idx}: Invalid date format for '{birth_date_str}'. Expected YYYY-MM-DD.")
+                    # Fallback date parsing for robust sanitization
+                    birth_date = None
+                    for fmt in ('%Y-%m-%d', '%m/%d/%Y', '%m-%d-%Y'):
+                        try:
+                            birth_date = datetime.strptime(birth_date_str, fmt).date()
+                            break
+                        except ValueError:
+                            pass
+                    
+                    if not birth_date:
+                        errors.append(f"Row {row_idx}: Invalid date format for '{birth_date_str}'. Expected YYYY-MM-DD or MM/DD/YYYY.")
                         continue
 
                     if User.objects.filter(username=username).exists():
                         skipped_count += 1
                         continue
 
-                    voter_status = voter_status_str.strip().lower() in ['true', '1', 'yes']
+                    if email and User.objects.filter(email=email).exists():
+                        errors.append(f"Row {row_idx}: Email '{email}' is already in use by another resident.")
+                        continue
+
+                    voter_status = voter_status_str in ['true', '1', 'yes']
                     
                     # 1. Create User bound strictly to the importing official's Barangay
-                    
                     user = User.objects.create_user(
                         username=username, 
                         email=email, 
@@ -117,12 +134,16 @@ class ResidentImportView(APIView):
                         birth_date=birth_date,
                         voter_status=voter_status, 
                         contact_number=contact_number,
-                        purok=purok.strip() if purok else None,
+                        purok=purok if purok else None,
                         is_verified=True
                     )
                     imported_count += 1
-        except Exception as e:
-            return Response({"detail": f"Database transaction error: {str(e)}"}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        except Exception:
+            logger.exception("Resident CSV import transaction failed.")
+            return Response(
+                {"detail": "Resident import could not be completed."},
+                status=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            )
 
         response_data = {
             "imported": imported_count,
