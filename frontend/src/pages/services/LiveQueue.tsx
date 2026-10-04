@@ -82,7 +82,7 @@ export const LiveQueue: React.FC = () => {
     const [notificationBanner, setNotificationBanner] = useState<string | null>(null);
 
     // Fetch tickets from backend
-    const fetchTickets = async () => {
+    const fetchTickets = React.useCallback(async () => {
         try {
             const response = await axiosPrivate.get('/tickets/');
             const newTickets = response.data.results || response.data || [];
@@ -104,14 +104,14 @@ export const LiveQueue: React.FC = () => {
         } finally {
             setLoading(false);
         }
-    };
+    }, [announceTicket]);
 
     useEffect(() => {
         fetchTickets();
         // Auto-poll live queue updates every 3 seconds
         const interval = setInterval(fetchTickets, 3000);
         return () => clearInterval(interval);
-    }, []);
+    }, [fetchTickets]);
     
     // Filtered lists
     const servingTicket = useMemo(() => {
