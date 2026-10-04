@@ -203,12 +203,71 @@ class AuthAPITests(APITestCase):
             "email": "new@example.com",
             "password": "ValidPassword123!",
             "full_name": "Test Resident",
-            "birth_date": "2000-01-01"
+            "birth_date": "2000-01-01",
+            "privacy_consent": True,
+            "privacy_consent_version": settings.PRIVACY_CONSENT_VERSION,
         }
 
         response = self.client.post(url, payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(User.objects.filter(username="new_resident").count(), 1)
+
+        resident = User.objects.get(username="new_resident").profile
+        self.assertEqual(
+            resident.privacy_consent_version,
+            settings.PRIVACY_CONSENT_VERSION,
+        )
+        self.assertIsNotNone(resident.privacy_consent_at)
+
+    def test_user_registration_rejects_missing_false_or_stale_consent(self):
+        cases = (
+            (
+                "missing",
+                {"privacy_consent_version": settings.PRIVACY_CONSENT_VERSION},
+                "privacy_consent",
+            ),
+            (
+                "false",
+                {
+                    "privacy_consent": False,
+                    "privacy_consent_version": settings.PRIVACY_CONSENT_VERSION,
+                },
+                "privacy_consent",
+            ),
+            (
+                "stale_version",
+                {
+                    "privacy_consent": True,
+                    "privacy_consent_version": "resident-v0",
+                },
+                "privacy_consent_version",
+            ),
+        )
+
+        for label, consent_fields, expected_error in cases:
+            with self.subTest(consent_case=label):
+                payload = {
+                    "username": f"consent_{label}",
+                    "email": f"consent_{label}@example.com",
+                    "password": "ValidPassword123!",
+                    "full_name": "Consent Test Resident",
+                    "birth_date": "2000-01-01",
+                    **consent_fields,
+                }
+                response = self.client.post(
+                    reverse("auth_register"),
+                    payload,
+                    format="json",
+                )
+
+                self.assertEqual(
+                    response.status_code,
+                    status.HTTP_400_BAD_REQUEST,
+                )
+                self.assertIn(expected_error, response.data)
+                self.assertFalse(
+                    User.objects.filter(username=payload["username"]).exists()
+                )
 
     def test_user_registration_weak_password(self):
         url = reverse('auth_register')
@@ -217,10 +276,13 @@ class AuthAPITests(APITestCase):
             "email": "weak@example.com",
             "password": "123",
             "full_name": "Weak Password Test Resident",
-            "birth_date": "2000-01-01"
+            "birth_date": "2000-01-01",
+            "privacy_consent": True,
+            "privacy_consent_version": settings.PRIVACY_CONSENT_VERSION,
         }
         response = self.client.post(url, payload, format='json')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("password", response.data)
 
 
     def test_user_login_success(self):
@@ -352,6 +414,8 @@ class AuthAPITests(APITestCase):
         self.assertFalse(user1.has_usable_password())
         self.assertFalse(user1.check_password("19951015"))
         self.assertTrue(user1.profile.is_verified)
+        self.assertIsNone(user1.profile.privacy_consent_version)
+        self.assertIsNone(user1.profile.privacy_consent_at)
 
         login_response = self.client.post(
             reverse("auth_login"),
