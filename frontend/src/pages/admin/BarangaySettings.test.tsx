@@ -1,7 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axiosPrivate } from '../../api/axios';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/auth-context';
 import { BarangaySettings } from './BarangaySettings';
 
 vi.mock('../../api/axios', () => ({
@@ -11,7 +11,7 @@ vi.mock('../../api/axios', () => ({
     },
 }));
 
-vi.mock('../../context/AuthContext', () => ({
+vi.mock('../../context/auth-context', () => ({
     useAuth: vi.fn(),
 }));
 

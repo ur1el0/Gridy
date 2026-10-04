@@ -1,25 +1,6 @@
-import React, { createContext, useContext, useEffect, useState, type ReactNode } from "react";
+import React, { useEffect, useState, type ReactNode } from "react";
+import { AuthContext, type User } from "./auth-context";
 import { axiosPrivate } from "../api/axios";
-
-export interface User {
-    id?: number | string
-    email?: string
-    username?: string
-    full_name?: string
-    role?: string
-    barangay?: {
-        name?: string
-        primary_color?: string
-    } | null
-}
-
-interface AuthContextType {
-    user: User | null
-    login: (token: string, userData?: User) => void
-    logout: () => Promise<void>
-    isAuthenticated: boolean
-    updateBarangayPrimaryColor: (primaryColor: string) => void
-}
 
 const DEFAULT_PRIMARY_COLOR = '#082B66';
 
@@ -93,8 +74,6 @@ const applyBarangayTheme = (primaryColor?: string) => {
     rootStyle.setProperty('--brand-primary-foreground', foreground);
     rootStyle.setProperty('--brand-primary-text', primaryTextColor);
 };
-
-const AuthContext = createContext<AuthContextType | null>(null);
 
 export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
     const [user, setUser] = useState<User | null>(() => {
@@ -202,12 +181,4 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
             {children}
         </AuthContext.Provider>
     );
-};
-
-export const useAuth = () => {
-    const context = useContext(AuthContext);
-    if (!context) {
-        throw new Error('useAuth must be used within an AuthProvider');
-    }
-    return context;
 };

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../../context/auth-context';
 import { axiosPublic } from '../../api/axios';
 import { Shield, FileCheck2, Clock, Users, KeyRound } from 'lucide-react';
 

@@ -1,7 +1,8 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axiosPrivate } from '../api/axios';
-import { AuthProvider, useAuth } from './AuthContext';
+import { AuthProvider } from './AuthContext';
+import { useAuth } from './auth-context';
 
 vi.mock('../api/axios', () => ({
     axiosPrivate: {
