@@ -264,6 +264,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
           ? "${_birthDate!.year}-${_birthDate!.month.toString().padLeft(2, '0')}-${_birthDate!.day.toString().padLeft(2, '0')}" 
           : "2000-01-01", 
         voterStatus: _voterStatus,
+        privacyConsent: _dataPrivacyConsent,
         barangayId: _selectedBarangayId,
         contactNumber: _contactNumberController.text,
         guardianId: _requiresGuardian ? _guardianController.text.trim() : null,

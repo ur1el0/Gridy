@@ -5,12 +5,22 @@ from django.core.exceptions import ValidationError as DjangoValidationError
 from gridy_auth.models import User, Resident, Barangay
 from datetime import date
 from django.conf import settings
+from django.utils import timezone
 
 class RegisterSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True)
     full_name = serializers.CharField(write_only=True)
     birth_date = serializers.DateField(write_only=True)
     voter_status = serializers.BooleanField(write_only=True, default=False)
+    privacy_consent = serializers.BooleanField(
+        write_only=True,
+        required=True,
+    )
+    privacy_consent_version = serializers.CharField(
+        max_length=64,
+        write_only=True,
+        required=True,
+    )
     contact_number = serializers.CharField(write_only=True, required=False, allow_blank=True)
     barangay_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
     guardian_id = serializers.CharField(write_only=True, required=False, allow_blank=True)
@@ -27,7 +37,8 @@ class RegisterSerializer(serializers.ModelSerializer):
             'username', 'email', 'password', 'full_name', 'birth_date', 'voter_status', 
             'contact_number', 'barangay_id', 'guardian_id',
             'philsys_id_number', 'philsys_id_photo', 'secondary_id_type', 
-            'secondary_id_photo', 'utility_billing_type', 'utility_billing_photo'
+            'secondary_id_photo', 'utility_billing_type', 'utility_billing_photo',
+            'privacy_consent', 'privacy_consent_version',
         ]
 
     # 1. This validates JUST the password
@@ -40,6 +51,18 @@ class RegisterSerializer(serializers.ModelSerializer):
 
     # 2. This validates the ENTIRE payload (attrs)
     def validate(self, attrs):
+        if attrs.get('privacy_consent') is not True:
+            raise serializers.ValidationError({
+                'privacy_consent': 'Consent is required to register a resident account.'
+            })
+
+        if attrs.get('privacy_consent_version') != settings.PRIVACY_CONSENT_VERSION:
+            raise serializers.ValidationError({
+                'privacy_consent_version': (
+                    'The privacy notice changed. Review the current notice and submit again.'
+                )
+            })
+
         birth_date = attrs.get('birth_date')
         guardian_id = attrs.get('guardian_id')
 
@@ -73,6 +96,11 @@ class RegisterSerializer(serializers.ModelSerializer):
         return attrs
 
     def create(self, validated_data):
+        validated_data.pop('privacy_consent')
+        privacy_consent_version = validated_data.pop(
+            'privacy_consent_version'
+        )
+
         profile_data = {
             'full_name': validated_data.pop('full_name'),
             'birth_date': validated_data.pop('birth_date'),
@@ -101,7 +129,13 @@ class RegisterSerializer(serializers.ModelSerializer):
                 role=User.Role.RESIDENT,
                 barangay=barangay_obj
             )
-            Resident.objects.create(user=user, guardian=guardian_resident, **profile_data)
+            Resident.objects.create(
+                user=user,
+                guardian=guardian_resident,
+                privacy_consent_version=privacy_consent_version,
+                privacy_consent_at=timezone.now(),
+                **profile_data,
+            )
 
         return user
 

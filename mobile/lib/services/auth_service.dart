@@ -79,6 +79,7 @@ class AuthService {
     required String password,
     required String birthDate,
     required bool voterStatus,
+    required bool privacyConsent,
     int? barangayId,
     String? contactNumber,
     String? guardianId,
@@ -96,6 +97,8 @@ class AuthService {
       'password': password,
       'birth_date': birthDate,
       'voter_status': voterStatus.toString(),
+      'privacy_consent': privacyConsent.toString(),
+      'privacy_consent_version': 'resident-v1',
       if (barangayId != null) 'barangay_id': barangayId.toString(),
       if (contactNumber != null && contactNumber.isNotEmpty)
         'contact_number': contactNumber.trim(),

@@ -100,6 +100,11 @@ export const Register: React.FC = () => {
                 formData.append('password', password);
                 formData.append('birth_date', birthDate);
                 formData.append('voter_status', 'false');
+                formData.append(
+                    'privacy_consent',
+                    dataPrivacyConsent ? 'true' : 'false',
+                );
+                formData.append('privacy_consent_version', 'resident-v1');
 
                 if (contactNumber.trim()) {
                     formData.append('contact_number', contactNumber.trim());
