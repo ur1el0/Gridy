@@ -44,7 +44,6 @@ class _QueueScreenState extends State<QueueScreen> {
   void _showRequestTicketModal() {
     final serviceController = TextEditingController(text: 'Document Issuance');
     final notesController = TextEditingController();
-    bool isPriority = false;
 
     final services = [
       'Document Issuance',
@@ -109,16 +108,13 @@ class _QueueScreenState extends State<QueueScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Priority Checkbox (Senior/PWD/Pregnant)
-                  CheckboxListTile(
-                    title: const Text('Priority Lane', style: TextStyle(fontWeight: FontWeight.w600, fontSize: 14)),
-                    subtitle: const Text('Senior Citizens, PWDs, Pregnant Women'),
-                    value: isPriority,
-                    activeColor: const Color(0xFF0047BA),
-                    contentPadding: EdgeInsets.zero,
-                    onChanged: (val) {
-                      setModalState(() => isPriority = val ?? false);
-                    },
+                  const Text(
+                    'Barangay staff verify priority lane eligibility. If you qualify, ask the service desk to review your waiting ticket.',
+                    style: TextStyle(
+                      color: Color(0xFF475569),
+                      fontSize: 13,
+                      height: 1.4,
+                    ),
                   ),
                   const SizedBox(height: 12),
 
@@ -150,7 +146,6 @@ class _QueueScreenState extends State<QueueScreen> {
                         try {
                           final ticket = await _queueService!.requestTicket(
                             serviceType: serviceController.text,
-                            isPriority: isPriority,
                             notes: notesController.text.isNotEmpty ? notesController.text : null,
                           );
                           if (mounted) {

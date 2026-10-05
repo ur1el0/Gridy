@@ -323,6 +323,203 @@ class ServiceAPITests(APITestCase):
         self.assertEqual(AuditLog.objects.filter(action_type=AuditLog.ActionType.DOCUMENT_ACTION).count(), 1)
       
 
+    def test_resident_cannot_self_assign_priority_on_queue_ticket(self):
+        barangay = Barangay.objects.create(name="Resident Priority Claim Barangay")
+        self.resident.barangay = barangay
+        self.resident.save(update_fields=["barangay"])
+        self.client.force_login(self.resident)
+
+        response = self.client.post(
+            reverse("ticket-list"),
+            {"service_type": "DOCUMENT", "is_priority": True},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(QueueTicket.objects.count(), 0)
+        self.assertFalse(
+            AuditLog.objects.filter(
+                action_type=AuditLog.ActionType.QUEUE_ACTION
+            ).exists()
+        )
+
+    def test_admin_priority_ticket_creation_requires_reason_and_is_audited(self):
+        barangay = Barangay.objects.create(name="Admin Priority Creation Barangay")
+        self.official.barangay = barangay
+        self.official.save(update_fields=["barangay"])
+        self.client.force_login(self.official)
+        url = reverse("ticket-list")
+        payload = {
+            "walkin_name": "Priority Walk-in",
+            "service_type": "DOCUMENT",
+            "priority_status": QueueTicket.Priority.PRIORITY,
+            "is_priority": True,
+        }
+
+        missing_reason_response = self.client.post(url, payload, format="json")
+        self.assertEqual(missing_reason_response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertEqual(QueueTicket.objects.count(), 0)
+
+        payload["priority_reason"] = "Eligibility checked at the service desk"
+        response = self.client.post(url, payload, format="json")
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        ticket = QueueTicket.objects.get()
+        self.assertTrue(ticket.is_priority)
+        self.assertEqual(ticket.priority_status, QueueTicket.Priority.PRIORITY)
+        self.assertFalse(response.data.get("priority_reason"))
+        audit_log = AuditLog.objects.get(
+            action_type=AuditLog.ActionType.QUEUE_ACTION,
+            action_by=self.official,
+        )
+        self.assertIn("Eligibility checked at the service desk", audit_log.description)
+        self.assertIn(ticket.ticket_number, audit_log.description)
+        self.assertIn(barangay.name, audit_log.description)
+
+    def test_admin_can_change_waiting_ticket_priority_with_audit_reason(self):
+        barangay = Barangay.objects.create(name="Queue Priority Update Barangay")
+        self.official.barangay = barangay
+        self.official.save(update_fields=["barangay"])
+        self.client.force_login(self.official)
+        ticket = QueueTicket.objects.create(
+            barangay=barangay,
+            ticket_number="T014",
+            service_type="DOCUMENT",
+        )
+        url = reverse("ticket-set-priority", args=[ticket.pk])
+
+        response = self.client.post(
+            url,
+            {
+                "priority_status": QueueTicket.Priority.PRIORITY,
+                "reason": "Eligibility document checked at the desk",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        ticket.refresh_from_db()
+        self.assertTrue(ticket.is_priority)
+        self.assertEqual(ticket.priority_status, QueueTicket.Priority.PRIORITY)
+        audit_log = AuditLog.objects.get(
+            action_type=AuditLog.ActionType.QUEUE_ACTION,
+            action_by=self.official,
+        )
+        self.assertIn("regular to priority", audit_log.description)
+        self.assertIn(barangay.name, audit_log.description)
+        self.assertIn("Eligibility document checked at the desk", audit_log.description)
+
+        response = self.client.post(
+            url,
+            {
+                "priority_status": QueueTicket.Priority.REGULAR,
+                "reason": "Priority eligibility was not confirmed",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        ticket.refresh_from_db()
+        self.assertFalse(ticket.is_priority)
+        self.assertEqual(ticket.priority_status, QueueTicket.Priority.REGULAR)
+        self.assertEqual(
+            AuditLog.objects.filter(
+                action_type=AuditLog.ActionType.QUEUE_ACTION,
+                action_by=self.official,
+            ).count(),
+            2,
+        )
+
+    def test_field_official_cannot_change_ticket_priority(self):
+        barangay = Barangay.objects.create(name="Field Official Priority Barangay")
+        field_official = User.objects.create_user(
+            username="priority_field_official",
+            password="SecurePassword123!",
+            email="priority-field@example.com",
+            role=User.Role.FIELD_OFFICIAL,
+            barangay=barangay,
+        )
+        ticket = QueueTicket.objects.create(
+            barangay=barangay,
+            ticket_number="T015",
+            service_type="DOCUMENT",
+        )
+        self.client.force_login(field_official)
+
+        response = self.client.post(
+            reverse("ticket-set-priority", args=[ticket.pk]),
+            {
+                "priority_status": QueueTicket.Priority.PRIORITY,
+                "reason": "Eligibility document checked at the desk",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        ticket.refresh_from_db()
+        self.assertFalse(ticket.is_priority)
+        self.assertEqual(ticket.priority_status, QueueTicket.Priority.REGULAR)
+        self.assertFalse(
+            AuditLog.objects.filter(
+                action_type=AuditLog.ActionType.QUEUE_ACTION
+            ).exists()
+        )
+
+    def test_ticket_priority_cannot_be_changed_through_generic_update(self):
+        barangay = Barangay.objects.create(name="Generic Priority Update Barangay")
+        self.official.barangay = barangay
+        self.official.save(update_fields=["barangay"])
+        self.client.force_login(self.official)
+        ticket = QueueTicket.objects.create(
+            barangay=barangay,
+            ticket_number="T016",
+            service_type="DOCUMENT",
+        )
+
+        response = self.client.patch(
+            reverse("ticket-detail", args=[ticket.pk]),
+            {
+                "is_priority": True,
+                "priority_status": QueueTicket.Priority.PRIORITY,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        ticket.refresh_from_db()
+        self.assertFalse(ticket.is_priority)
+        self.assertEqual(ticket.priority_status, QueueTicket.Priority.REGULAR)
+
+    def test_priority_cannot_be_changed_after_ticket_starts_serving(self):
+        barangay = Barangay.objects.create(name="Serving Priority Update Barangay")
+        self.official.barangay = barangay
+        self.official.save(update_fields=["barangay"])
+        self.client.force_login(self.official)
+        ticket = QueueTicket.objects.create(
+            barangay=barangay,
+            ticket_number="T017",
+            service_type="DOCUMENT",
+            status=QueueTicket.Status.SERVING,
+        )
+
+        response = self.client.post(
+            reverse("ticket-set-priority", args=[ticket.pk]),
+            {
+                "priority_status": QueueTicket.Priority.PRIORITY,
+                "reason": "Eligibility document checked at the desk",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        ticket.refresh_from_db()
+        self.assertFalse(ticket.is_priority)
+        self.assertFalse(
+            AuditLog.objects.filter(
+                action_type=AuditLog.ActionType.QUEUE_ACTION
+            ).exists()
+        )
+
     def test_resident_can_create_queue_ticket(self):
         barangay = Barangay.objects.create(name="Resident Queue Creation Barangay")
         self.resident.barangay = barangay
@@ -330,12 +527,16 @@ class ServiceAPITests(APITestCase):
         self.client.force_login(self.resident)
         url = reverse('ticket-list')
         payload = {
-            "service_type": "DOCUMENT"
+            "service_type": "DOCUMENT",
+            "is_priority": False,
         }
         response = self.client.post(url, payload, format="json")
         self.assertEqual(response.status_code, status.HTTP_201_CREATED)
         self.assertEqual(QueueTicket.objects.count(), 1)
-        self.assertEqual(QueueTicket.objects.first().ticket_number, 'T001')
+        ticket = QueueTicket.objects.first()
+        self.assertEqual(ticket.ticket_number, 'T001')
+        self.assertFalse(ticket.is_priority)
+        self.assertEqual(ticket.priority_status, QueueTicket.Priority.REGULAR)
 
     def test_resident_without_barangay_cannot_create_queue_ticket(self):
         self.client.force_login(self.resident)

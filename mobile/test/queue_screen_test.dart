@@ -125,4 +125,35 @@ void main() {
     expect(find.text('DOCUMENTS'), findsOneWidget);
     expect(find.text('SCHEDULE'), findsOneWidget);
   });
+
+  testWidgets('ticket request directs priority review to barangay staff', (WidgetTester tester) async {
+    final prefs = await SharedPreferences.getInstance();
+    final storage = StorageService(prefs);
+    await storage.saveUser(const UserModel(
+      id: 2,
+      username: 'queue_resident',
+      email: 'queue@example.com',
+      role: 'RESIDENT',
+      fullName: 'Queue Resident',
+      isVerified: true,
+    ));
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.lightTheme,
+        home: QueueScreen(queueService: MockQueueService(storage: storage)),
+      ),
+    );
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(CheckboxListTile), findsNothing);
+    expect(
+      find.textContaining('Barangay staff verify priority lane eligibility.'),
+      findsOneWidget,
+    );
+  });
 }

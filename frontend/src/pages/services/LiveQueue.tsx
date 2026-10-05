@@ -7,6 +7,7 @@ import { QueueMetrics } from '../../components/queue/QueueMetrics';
 import { ActiveTicketView } from '../../components/queue/ActiveTicketView';
 import { WaitingListTable } from '../../components/queue/WaitingListTable';
 import { NewTicketModal } from '../../components/queue/NewTicketModal';
+import { useAuth } from '../../context/auth-context';
 
 export interface QueueTicket {
     ticket_id: number;
@@ -21,6 +22,8 @@ export interface QueueTicket {
 }
 
 export const LiveQueue: React.FC = () => {
+    const { user } = useAuth();
+    const canManagePriority = user?.role === 'ADMIN';
     const [tickets, setTickets] = useState<QueueTicket[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string>('');
@@ -32,6 +35,7 @@ export const LiveQueue: React.FC = () => {
     const [searchResident, setSearchResident] = useState<string>('');
     const [serviceRequired, setServiceRequired] = useState<string>('');
     const [priorityStatus, setPriorityStatus] = useState<'regular' | 'priority'>('regular');
+    const [priorityReason, setPriorityReason] = useState('');
     const [notes, setNotes] = useState<string>('');
     const [isSubmittingNew, setIsSubmittingNew] = useState<boolean>(false);
     
@@ -163,20 +167,9 @@ export const LiveQueue: React.FC = () => {
         if (waitingTickets.length === 0) return;
         setIsUpdating(true);
         try {
-            // First try dedicated next endpoint, or fallback to sequential patch
-            try {
-                await axiosPrivate.post('/tickets/next/');
-            } catch {
-                if (servingTicket) {
-                    await axiosPrivate.patch(`/tickets/${servingTicket.ticket_id}/`, { status: 'COMPLETED' });
-                }
-                const nextInLine = waitingTickets[0];
-                if (nextInLine) {
-                    await axiosPrivate.patch(`/tickets/${nextInLine.ticket_id}/`, { status: 'SERVING' });
-                }
-            }
+            const response = await axiosPrivate.post('/tickets/next/');
             await fetchTickets();
-            showNotification(`Now serving ticket ${waitingTickets[0]?.ticket_number || ''}`);
+            showNotification(`Now serving ticket ${response.data.current_ticket}`);
         } catch (err) {
             console.error('Failed to advance queue:', err);
             toast.error('Failed to advance queue.');
@@ -201,32 +194,46 @@ export const LiveQueue: React.FC = () => {
         }
     };
 
-    // Handle Manual Call for a specific ticket
-    const handleServeSpecific = async (ticketId: number) => {
-        setIsUpdating(true);
-        try {
-            if (servingTicket) {
-                await axiosPrivate.patch(`/tickets/${servingTicket.ticket_id}/`, { status: 'COMPLETED' });
-            }
-            await axiosPrivate.patch(`/tickets/${ticketId}/`, { status: 'SERVING' });
-            await fetchTickets();
-        } catch (err) {
-            console.error('Failed to call ticket:', err);
-            toast.error('Failed to update ticket status.');
-        } finally {
-            setIsUpdating(false);
-        }
-    };
-
     // Handle Cancel Ticket
     const handleCancelTicket = async (ticketId: number) => {
         if (!window.confirm('Are you sure you want to cancel this ticket?')) return;
         setIsUpdating(true);
         try {
-            await axiosPrivate.patch(`/tickets/${ticketId}/`, { status: 'CANCELLED' });
+            await axiosPrivate.post(`/tickets/${ticketId}/cancel/`);
             await fetchTickets();
-        } catch (err) {
-            console.error('Failed to cancel ticket:', err);
+            toast.success('Queue ticket cancelled.');
+        } catch (err: any) {
+            const message = err.response?.data?.detail || 'Could not cancel this queue ticket.';
+            toast.error(message);
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    const handlePriorityChange = async (
+        ticketId: number,
+        nextPriorityStatus: 'regular' | 'priority',
+        reason: string,
+    ): Promise<boolean> => {
+        setIsUpdating(true);
+        try {
+            await axiosPrivate.post(`/tickets/${ticketId}/priority/`, {
+                priority_status: nextPriorityStatus,
+                reason,
+            });
+            await fetchTickets();
+            toast.success(
+                nextPriorityStatus === 'priority'
+                    ? 'Priority status granted.'
+                    : 'Priority status removed.',
+            );
+            return true;
+        } catch (err: any) {
+            const responseData = err.response?.data;
+            const fieldMessage = responseData?.reason?.[0];
+            const message = responseData?.detail || fieldMessage || 'Could not update priority status.';
+            toast.error(message);
+            return false;
         } finally {
             setIsUpdating(false);
         }
@@ -261,6 +268,9 @@ export const LiveQueue: React.FC = () => {
                 service_type: serviceRequired,
                 priority_status: priorityStatus,
                 is_priority: priorityStatus === 'priority',
+                ...(priorityStatus === 'priority'
+                    ? { priority_reason: priorityReason.trim() }
+                    : {}),
                 notes: notes,
                 status: 'WAITING',
             })
@@ -270,6 +280,7 @@ export const LiveQueue: React.FC = () => {
             setSearchResident('');
             setServiceRequired('');
             setPriorityStatus('regular');
+            setPriorityReason('');
             setNotes('');
             showNotification('New queue ticket issued successfully.');
         } catch (err) {
@@ -285,6 +296,7 @@ export const LiveQueue: React.FC = () => {
         setSearchResident('');
         setServiceRequired('');
         setPriorityStatus('regular');
+        setPriorityReason('');
         setNotes('');
     };
 
@@ -421,7 +433,8 @@ export const LiveQueue: React.FC = () => {
                         waitingTickets={waitingTickets}
                         isUpdating={isUpdating}
                         fetchTickets={fetchTickets}
-                        handleServeSpecific={handleServeSpecific}
+                        canManagePriority={canManagePriority}
+                        handlePriorityChange={handlePriorityChange}
                         handleCancelTicket={handleCancelTicket}
                     />
                 </div>
@@ -435,8 +448,11 @@ export const LiveQueue: React.FC = () => {
                     setSearchResident={setSearchResident}
                     serviceRequired={serviceRequired}
                     setServiceRequired={setServiceRequired}
+                    canManagePriority={canManagePriority}
                     priorityStatus={priorityStatus}
                     setPriorityStatus={setPriorityStatus}
+                    priorityReason={priorityReason}
+                    setPriorityReason={setPriorityReason}
                     notes={notes}
                     setNotes={setNotes}
                     isSubmittingNew={isSubmittingNew}

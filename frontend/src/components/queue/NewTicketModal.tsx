@@ -8,8 +8,11 @@ interface NewTicketModalProps {
     setSearchResident: (val: string) => void;
     serviceRequired: string;
     setServiceRequired: (val: string) => void;
+    canManagePriority: boolean;
     priorityStatus: 'regular' | 'priority';
     setPriorityStatus: (val: 'regular' | 'priority') => void;
+    priorityReason: string;
+    setPriorityReason: (val: string) => void;
     notes: string;
     setNotes: (val: string) => void;
     isSubmittingNew: boolean;
@@ -22,8 +25,11 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
     setSearchResident,
     serviceRequired,
     setServiceRequired,
+    canManagePriority,
     priorityStatus,
     setPriorityStatus,
+    priorityReason,
+    setPriorityReason,
     notes,
     setNotes,
     isSubmittingNew
@@ -101,38 +107,66 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
                         </div>
                     </div>
 
-                    {/* Field 3: Priority Status */}
-                    <div>
-                        <label className="block text-sm font-bold text-[#0f172a] mb-2">
-                            Priority Status
-                        </label>
-                        <div className="grid grid-cols-2 gap-3.5">
-                            <button
-                                type="button"
-                                onClick={() => setPriorityStatus('regular')}
-                                className={`py-3 px-4 rounded-xl text-sm font-bold transition-all cursor-pointer text-center ${
-                                    priorityStatus === 'regular'
-                                        ? 'bg-primary/15 text-primary-text'
-                                        : 'bg-[#EEF2FF]/60 text-[#334155] hover:bg-[#EEF2FF]'
-                                }`}
-                            >
-                                Regular
-                            </button>
+                    {canManagePriority && (
+                        <div>
+                            <label className="block text-sm font-bold text-[#0f172a] mb-2">
+                                Priority status
+                            </label>
+                            <div className="grid grid-cols-2 gap-3.5">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setPriorityStatus('regular');
+                                        setPriorityReason('');
+                                    }}
+                                    className={`py-3 px-4 rounded-xl text-sm font-bold transition-all cursor-pointer text-center ${
+                                        priorityStatus === 'regular'
+                                            ? 'bg-primary/15 text-primary-text'
+                                            : 'bg-[#EEF2FF]/60 text-[#334155] hover:bg-[#EEF2FF]'
+                                    }`}
+                                >
+                                    Regular
+                                </button>
 
-                            <button
-                                type="button"
-                                onClick={() => setPriorityStatus('priority')}
-                                className={`py-3 px-4 rounded-xl text-sm font-bold transition-all cursor-pointer text-center flex items-center justify-center gap-1.5 ${
-                                    priorityStatus === 'priority'
-                                        ? 'bg-primary/15 text-primary-text'
-                                        : 'bg-[#EEF2FF]/60 text-[#334155] hover:bg-[#EEF2FF]'
-                                }`}
-                            >
-                                <span className="font-bold">!</span>
-                                <span>Priority/Senior/PWD</span>
-                            </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setPriorityStatus('priority')}
+                                    className={`py-3 px-4 rounded-xl text-sm font-bold transition-all cursor-pointer text-center flex items-center justify-center gap-1.5 ${
+                                        priorityStatus === 'priority'
+                                            ? 'bg-primary/15 text-primary-text'
+                                            : 'bg-[#EEF2FF]/60 text-[#334155] hover:bg-[#EEF2FF]'
+                                    }`}
+                                >
+                                    <span className="font-bold">!</span>
+                                    <span>Priority lane</span>
+                                </button>
+                            </div>
+                            <p className="mt-2 text-xs text-slate-600">
+                                Assign priority only after checking eligibility at the service desk.
+                            </p>
                         </div>
-                    </div>
+                    )}
+
+                    {canManagePriority && priorityStatus === 'priority' && (
+                        <div>
+                            <label htmlFor="manual-priority-reason" className="block text-sm font-bold text-[#0f172a] mb-2">
+                                Reason for priority assignment
+                            </label>
+                            <textarea
+                                id="manual-priority-reason"
+                                value={priorityReason}
+                                onChange={(event) => setPriorityReason(event.target.value)}
+                                required
+                                maxLength={500}
+                                rows={2}
+                                aria-describedby="manual-priority-reason-help"
+                                className="w-full py-3 px-4 bg-[#EEF2FF]/60 hover:bg-[#EEF2FF] focus:bg-white border border-slate-200 focus:border-primary/40 rounded-xl text-sm text-[#0f172a] outline-none focus:ring-2 focus:ring-primary/20 resize-y"
+                            />
+                            <p id="manual-priority-reason-help" className="mt-1 text-xs text-slate-600">
+                                Record what was checked. Do not include diagnoses or private health details.
+                            </p>
+                        </div>
+                    )}
 
                     {/* Field 4: Notes */}
                     <div>
