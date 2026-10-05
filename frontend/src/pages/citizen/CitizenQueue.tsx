@@ -49,7 +49,6 @@ export const CitizenQueue: React.FC = () => {
 
     // Form State
     const [serviceType, setServiceType] = useState(SERVICE_TYPES[0]);
-    const [isPriority, setIsPriority] = useState(false);
 
     const fetchQueueData = async () => {
         try {
@@ -82,7 +81,6 @@ export const CitizenQueue: React.FC = () => {
             setSubmitting(true);
             const res = await axiosPrivate.post('/tickets/', {
                 service_type: serviceType,
-                is_priority: isPriority,
             });
             toast.success(`Ticket ${res.data.ticket_number} generated!`);
             setIsModalOpen(false);
@@ -212,7 +210,7 @@ export const CitizenQueue: React.FC = () => {
                         <div className="flex items-center gap-5">
                             <div className={`w-16 h-16 rounded-2xl flex items-center justify-center font-black text-2xl shadow-sm ${
                                 activeTicket.status.toUpperCase() === 'SERVING'
-                                    ? 'bg-emerald-600 animate-bounce text-white'
+                                    ? 'bg-emerald-600 text-white'
                                     : 'bg-primary text-primary-foreground'
                             }`}>
                                 {activeTicket.ticket_number}
@@ -319,24 +317,9 @@ export const CitizenQueue: React.FC = () => {
                                 </select>
                             </div>
 
-                            <div className="bg-[#F8FAFD] rounded-xl p-3 border border-slate-200">
-                                <label className="flex items-start gap-3 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={isPriority}
-                                        onChange={(e) => setIsPriority(e.target.checked)}
-                                        className="mt-0.5 w-4 h-4 rounded text-primary-text focus:ring-primary"
-                                    />
-                                    <div className="text-xs">
-                                        <span className="font-bold text-slate-800 block">
-                                            Priority Lane Access
-                                        </span>
-                                        <span className="text-slate-500">
-                                            Eligible for Senior Citizens, Persons with Disabilities (PWD), and Pregnant residents.
-                                        </span>
-                                    </div>
-                                </label>
-                            </div>
+                            <p className="text-xs leading-relaxed text-slate-600">
+                                Barangay staff verify priority lane eligibility. If you qualify, ask the service desk to review your waiting ticket.
+                            </p>
 
                             <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
                                 <button
