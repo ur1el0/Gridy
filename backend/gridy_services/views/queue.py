@@ -12,7 +12,11 @@ from gridy_audit.models import AuditLog
 from gridy_auth.permissions import IsBarangayOfficial, IsBarangayOfficialOrField
 from gridy_services.models import QueueTicket, DocumentRequest
 from gridy_reports.models import IssueReport
-from gridy_services.serializers import QueueTicketSerializer, DashboardSummarySerializer
+from gridy_services.serializers import (
+    DashboardSummarySerializer,
+    QueueTicketPrioritySerializer,
+    QueueTicketSerializer,
+)
 from gridy_communications.tasks import send_notification_to_user_task
 from gridy_audit.services import log_action
 from rest_framework.exceptions import PermissionDenied
@@ -23,6 +27,8 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ['list', 'retrieve', 'create', 'live_status', 'cancel_ticket']:
             return [permissions.IsAuthenticated()]
+        if self.action == 'set_priority':
+            return [IsBarangayOfficial()]
         return [IsBarangayOfficialOrField()]
     
     def get_queryset(self):
@@ -51,12 +57,33 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
                 "A barangay assignment is required to generate queue tickets."
             )
 
-        if user.role == User.Role.ADMIN:
-            serializer.save(user=None, barangay=user.barangay)
-        elif user.role == User.Role.RESIDENT:
-            serializer.save(user=user, barangay=user.barangay)
-        else:
-            raise PermissionDenied("Field officials cannot generate queue tickets.")
+        priority_reason = serializer.validated_data.get('priority_reason')
+        with transaction.atomic():
+            if user.role == User.Role.ADMIN:
+                ticket = serializer.save(user=None, barangay=user.barangay)
+            elif user.role == User.Role.RESIDENT:
+                ticket = serializer.save(
+                    user=user,
+                    barangay=user.barangay,
+                    priority_status=QueueTicket.Priority.REGULAR,
+                    is_priority=False,
+                )
+            else:
+                raise PermissionDenied(
+                    "Field officials cannot generate queue tickets."
+                )
+
+            if ticket.is_priority:
+                log_action(
+                    user=user,
+                    action_type=AuditLog.ActionType.QUEUE_ACTION,
+                    description=(
+                        f"Official {user.username} issued priority queue ticket "
+                        f"{ticket.ticket_number} (ID: {ticket.id}) in "
+                        f"{ticket.barangay.name}. Reason: {priority_reason}"
+                    ),
+                    request=self.request,
+                )
 
     def perform_update(self, serializer):
         serializer.save()
@@ -173,6 +200,77 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
                 "detail": "Queue ticket completed successfully.",
                 "ticket_number": ticket.ticket_number,
                 "status": ticket.status,
+            },
+            status=status.HTTP_200_OK,
+        )
+
+    @extend_schema(request=QueueTicketPrioritySerializer)
+    @action(
+        detail=True,
+        methods=['post'],
+        permission_classes=[IsBarangayOfficial],
+        url_path='priority',
+    )
+    def set_priority(self, request, pk=None):
+        user = request.user
+        if user.barangay_id is None:
+            raise PermissionDenied(
+                "A barangay assignment is required to change queue priority."
+            )
+
+        serializer = QueueTicketPrioritySerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        new_priority_status = serializer.validated_data['priority_status']
+        reason = serializer.validated_data['reason']
+
+        with transaction.atomic():
+            Barangay.objects.select_for_update().get(pk=user.barangay_id)
+            ticket = self.get_object()
+
+            if ticket.status != QueueTicket.Status.WAITING:
+                return Response(
+                    {"detail": "Priority can only be changed for waiting tickets."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            previous_priority_status = ticket.priority_status
+            if previous_priority_status == new_priority_status:
+                return Response(
+                    {
+                        "detail": "Ticket already has the requested priority status.",
+                        "priority_status": ticket.priority_status,
+                        "is_priority": ticket.is_priority,
+                    },
+                    status=status.HTTP_200_OK,
+                )
+
+            ticket.priority_status = new_priority_status
+            ticket.is_priority = (
+                new_priority_status == QueueTicket.Priority.PRIORITY
+            )
+            ticket.save(
+                update_fields=["priority_status", "is_priority", "updated_at"]
+            )
+
+            log_action(
+                user=user,
+                action_type=AuditLog.ActionType.QUEUE_ACTION,
+                description=(
+                    f"Official {user.username} changed queue ticket "
+                    f"{ticket.ticket_number} (ID: {ticket.id}) in "
+                    f"{ticket.barangay.name} priority from "
+                    f"{previous_priority_status} to {new_priority_status}. "
+                    f"Reason: {reason}"
+                ),
+                request=request,
+            )
+
+        return Response(
+            {
+                "detail": "Queue ticket priority updated successfully.",
+                "ticket_number": ticket.ticket_number,
+                "priority_status": ticket.priority_status,
+                "is_priority": ticket.is_priority,
             },
             status=status.HTTP_200_OK,
         )
