@@ -55,7 +55,6 @@ class QueueService {
   /// Creates a new queue ticket for the active resident
   Future<QueueTicketModel> requestTicket({
     required String serviceType,
-    bool isPriority = false,
     String? notes,
   }) async {
     final response = await apiClient.post(
@@ -63,7 +62,6 @@ class QueueService {
       requiresAuth: true,
       body: {
         'service_type': serviceType,
-        'is_priority': isPriority,
         'notes': notes,
       },
     );
