@@ -6,14 +6,14 @@ interface ActiveTicketViewProps {
 
 export const ActiveTicketView: React.FC<ActiveTicketViewProps> = ({ servingTicket }) => {
     return (
-        <div className="bg-white rounded-2xl p-6 shadow-xs border border-[#E2E8F0]/80 flex flex-col justify-between h-full">
+        <div className="bg-surface rounded-large p-6 shadow-xs border border-border/80 flex flex-col justify-between h-full">
             <div>
                 <div className="flex items-center justify-between">
-                    <span className="text-[#64748b] text-xs font-semibold uppercase tracking-wider">
+                    <span className="text-neutral-muted text-xs font-semibold uppercase tracking-wider">
                         Ticket Number
                     </span>
-                    <span className="bg-[#E8F8EE] text-[#16A34A] text-xs font-bold px-3 py-1 rounded-full flex items-center gap-1.5">
-                        <span className="w-2 h-2 rounded-full bg-[#16A34A] animate-pulse"></span>
+                    <span className="bg-feedback-success-soft text-feedback-success-strong text-xs font-bold px-3 py-1 rounded-pill flex items-center gap-1.5">
+                        <span className="w-2 h-2 rounded-pill bg-feedback-success-strong animate-pulse"></span>
                         NOW SERVING
                     </span>
                 </div>
@@ -25,8 +25,8 @@ export const ActiveTicketView: React.FC<ActiveTicketViewProps> = ({ servingTicke
                 </div>
             </div>
 
-            <div className="bg-[#F0F4FA] rounded-xl p-3.5 flex items-center gap-3">
-                <div className="w-9 h-9 rounded-lg bg-slate-300 text-slate-700 font-bold flex items-center justify-center text-sm shrink-0">
+            <div className="bg-surface-queue rounded-medium p-3.5 flex items-center gap-3">
+                <div className="w-9 h-9 rounded-small bg-border-strong text-neutral-secondary-strong font-bold flex items-center justify-center text-sm shrink-0">
                     {servingTicket?.resident_name
                         ? servingTicket.resident_name.charAt(0).toUpperCase()
                         : servingTicket
@@ -34,10 +34,10 @@ export const ActiveTicketView: React.FC<ActiveTicketViewProps> = ({ servingTicke
                         : '-'}
                 </div>
                 <div className="min-w-0 flex-1">
-                    <div className="text-[10px] text-[#64748b] font-medium leading-none uppercase">
+                    <div className="text-[10px] text-neutral-muted font-medium leading-none uppercase">
                         {servingTicket ? servingTicket.service_type : 'Status'}
                     </div>
-                    <div className="text-sm font-bold text-[#0f172a] truncate mt-0.5">
+                    <div className="text-sm font-bold text-neutral-primary truncate mt-0.5">
                         {servingTicket ? (servingTicket.resident_name || 'Walk-in Resident') : 'No resident currently being served'}
                     </div>
                 </div>
@@ -45,4 +45,3 @@ export const ActiveTicketView: React.FC<ActiveTicketViewProps> = ({ servingTicke
         </div>
     );
 };
-
