@@ -15,10 +15,10 @@ export const Button: React.FC<ButtonProps> = ({
     disabled,
     ...props
 }) => {
-    const baseStyle = "w-full py-3.5 px-6 text-white font-bold text-sm rounded-xl shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed";
-    const colorStyle = isAdminMode 
-        ? "bg-[#091B35] hover:bg-[#0F2D59] shadow-[#091B35]/20" 
-        : "bg-[#0284C7] hover:bg-[#0369A1] shadow-[#0284C7]/25";
+    const baseStyle = "w-full py-3.5 px-6 text-white font-bold text-sm rounded-medium shadow-md flex items-center justify-center gap-2 transition-all cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed";
+    const colorStyle = isAdminMode
+        ? "bg-brand-admin hover:bg-brand-admin-hover shadow-brand-admin/20"
+        : "bg-brand-accent hover:bg-brand-accent-hover shadow-brand-accent/25";
 
     return (
         <button

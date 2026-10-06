@@ -46,26 +46,26 @@ export const WaitingListTable: React.FC<WaitingListTableProps> = ({
     };
 
     return (
-        <div className="bg-white rounded-2xl p-6 shadow-xs border border-[#E2E8F0]/80 flex flex-col justify-between h-full">
+        <div className="bg-surface rounded-large p-6 shadow-xs border border-border/80 flex flex-col justify-between h-full">
             <div>
                 <div className="flex items-center justify-between mb-5">
-                    <h2 className="text-base lg:text-lg font-bold text-[#0f172a]">
+                    <h2 className="text-base lg:text-lg font-bold text-neutral-primary">
                         Waiting List
                     </h2>
                     <button
                         type="button"
                         onClick={fetchTickets}
-                        className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                        className="p-1.5 hover:bg-surface-subtle rounded-small transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                         aria-label="Refresh waiting list"
                     >
-                        <RotateCcw className="w-4 h-4 text-slate-500" />
+                        <RotateCcw className="w-4 h-4 text-neutral-muted" />
                     </button>
                 </div>
 
                 <div className="overflow-x-auto">
                     <table className="w-full text-left">
                         <thead>
-                            <tr className="bg-[#EDF3FA]/70 text-[#64748b] text-[11px] font-bold uppercase tracking-wider">
+                            <tr className="bg-surface-table/70 text-neutral-muted text-[11px] font-bold uppercase tracking-wider">
                                 <th className="py-2.5 px-4 rounded-l-lg">NAME</th>
                                 <th className="py-2.5 px-4">QUEUE #</th>
                                 <th className="py-2.5 px-4">SERVICE REQUIRED</th>
@@ -73,10 +73,10 @@ export const WaitingListTable: React.FC<WaitingListTableProps> = ({
                                 <th className="py-2.5 px-4 text-right rounded-r-lg">ACTION</th>
                             </tr>
                         </thead>
-                        <tbody className="text-sm divide-y divide-slate-100">
+                        <tbody className="text-sm divide-y divide-surface-subtle">
                             {waitingTickets.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="py-12 text-center text-sm text-slate-400 font-medium">
+                                    <td colSpan={5} className="py-12 text-center text-sm text-neutral-hint font-medium">
                                         No residents currently in the waiting list.
                                     </td>
                                 </tr>
@@ -92,30 +92,30 @@ export const WaitingListTable: React.FC<WaitingListTableProps> = ({
 
                                     return (
                                         <React.Fragment key={ticket.ticket_id}>
-                                            <tr className="hover:bg-slate-50/60 transition-colors">
+                                            <tr className="hover:bg-background/60 transition-colors">
                                                 <td className="py-3.5 px-4 whitespace-nowrap">
                                                     <div className="flex items-center gap-2.5">
-                                                        <div className="w-7 h-7 rounded-full bg-primary/15 text-primary-text font-bold text-xs flex items-center justify-center shrink-0">
+                                                        <div className="w-7 h-7 rounded-pill bg-primary/15 text-primary-text font-bold text-xs flex items-center justify-center shrink-0">
                                                             {initial}
                                                         </div>
-                                                        <span className="font-bold text-[#0f172a]">{name}</span>
+                                                        <span className="font-bold text-neutral-primary">{name}</span>
                                                     </div>
                                                 </td>
                                                 <td className="py-3.5 px-4 font-bold text-primary-text whitespace-nowrap">
                                                     <div className="flex items-center gap-2">
                                                         <span>{ticket.ticket_number}</span>
                                                         {ticket.is_priority && (
-                                                            <span className="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2 py-0.5 rounded-full border border-amber-200 uppercase tracking-wide">
+                                                            <span className="bg-amber-100 text-amber-800 text-[10px] font-extrabold px-2 py-0.5 rounded-pill border border-amber-200 uppercase tracking-wide">
                                                                 Priority
                                                             </span>
                                                         )}
                                                     </div>
                                                 </td>
-                                                <td className="py-3.5 px-4 text-[#475569] font-medium whitespace-nowrap">
+                                                <td className="py-3.5 px-4 text-neutral-secondary font-medium whitespace-nowrap">
                                                     {ticket.service_type}
                                                 </td>
                                                 <td className="py-3.5 px-4 whitespace-nowrap">
-                                                    <span className="px-3 py-1 rounded-full text-xs font-semibold bg-[#EDF2F7] text-[#64748b] inline-block">
+                                                    <span className="px-3 py-1 rounded-pill text-xs font-semibold bg-surface-waiting text-neutral-muted inline-block">
                                                         Waiting
                                                     </span>
                                                 </td>
@@ -130,7 +130,7 @@ export const WaitingListTable: React.FC<WaitingListTableProps> = ({
                                                                 }}
                                                                 disabled={isUpdating || (editingTicketId !== null && !isEditing)}
                                                                 aria-label={`${priorityAction} for ${ticket.ticket_number}`}
-                                                                className="text-xs font-bold text-primary-text bg-primary/10 hover:bg-primary/20 px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                                                                className="text-xs font-bold text-primary-text bg-primary/10 hover:bg-primary/20 px-2.5 py-1.5 rounded-small transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                                                             >
                                                                 {priorityAction}
                                                             </button>
@@ -140,7 +140,7 @@ export const WaitingListTable: React.FC<WaitingListTableProps> = ({
                                                             onClick={() => handleCancelTicket(ticket.ticket_id)}
                                                             disabled={isUpdating}
                                                             aria-label={`Cancel ${ticket.ticket_number}`}
-                                                            className="text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 border border-red-200 px-2.5 py-1.5 rounded-lg transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
+                                                            className="text-xs font-bold text-red-500 bg-red-50 hover:bg-red-100 border border-red-200 px-2.5 py-1.5 rounded-small transition-colors disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-500"
                                                         >
                                                             Cancel
                                                         </button>
@@ -152,11 +152,11 @@ export const WaitingListTable: React.FC<WaitingListTableProps> = ({
                                                     <td colSpan={5} className="px-4 pb-4">
                                                         <form
                                                             onSubmit={(event) => submitPriorityChange(event, ticket)}
-                                                            className="rounded-xl bg-slate-50 p-4"
+                                                            className="rounded-medium bg-surface-subtle p-4"
                                                         >
                                                             <label
                                                                 htmlFor={`priority-reason-${ticket.ticket_id}`}
-                                                                className="block text-sm font-semibold text-slate-900"
+                                                                className="block text-sm font-semibold text-neutral-primary"
                                                             >
                                                                 Reason for {nextStatus === 'priority' ? 'granting' : 'removing'} priority
                                                             </label>
@@ -168,11 +168,11 @@ export const WaitingListTable: React.FC<WaitingListTableProps> = ({
                                                                 maxLength={500}
                                                                 rows={2}
                                                                 aria-describedby={`priority-reason-help-${ticket.ticket_id}`}
-                                                                className="mt-2 w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                                                className="mt-2 w-full rounded-small border border-border-strong bg-surface px-3 py-2 text-sm text-neutral-primary focus:border-primary focus:outline-none focus:ring-2 focus:ring-primary/20"
                                                             />
                                                             <p
                                                                 id={`priority-reason-help-${ticket.ticket_id}`}
-                                                                className="mt-1 text-xs text-slate-600"
+                                                                className="mt-1 text-xs text-neutral-secondary"
                                                             >
                                                                 Record the eligibility review. Do not enter diagnoses or private health details.
                                                             </p>
@@ -180,14 +180,14 @@ export const WaitingListTable: React.FC<WaitingListTableProps> = ({
                                                                 <button
                                                                     type="button"
                                                                     onClick={closePriorityEditor}
-                                                                    className="rounded-lg px-3 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                                                                    className="rounded-small px-3 py-2 text-sm font-semibold text-neutral-secondary-strong hover:bg-border-strong focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                                                                 >
                                                                     Cancel
                                                                 </button>
                                                                 <button
                                                                     type="submit"
                                                                     disabled={isUpdating || !priorityReason.trim()}
-                                                                    className="rounded-lg bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
+                                                                    className="rounded-small bg-primary px-3 py-2 text-sm font-semibold text-primary-foreground hover:bg-primary-hover disabled:cursor-not-allowed disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary"
                                                                 >
                                                                     {isUpdating ? 'Saving…' : 'Save priority change'}
                                                                 </button>
@@ -206,7 +206,7 @@ export const WaitingListTable: React.FC<WaitingListTableProps> = ({
             </div>
 
             {waitingTickets.length > 0 && (
-                <div className="pt-4 border-t border-slate-100 text-center">
+                <div className="pt-4 border-t border-surface-subtle text-center">
                     <span className="text-xs font-bold text-primary-text">
                         Total Waiting Residents: {waitingTickets.length}
                     </span>

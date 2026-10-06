@@ -66,26 +66,26 @@ interface ActivityItem {
 const COLORS = ['var(--brand-primary)', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
 
 const MetricCardSkeleton = () => (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#E2E8F0]/80 flex flex-col justify-between animate-pulse">
+    <div className="bg-surface rounded-large p-6 shadow-sm border border-border/80 flex flex-col justify-between animate-pulse">
         <div>
-            <div className="w-10 h-10 rounded-xl bg-slate-200"></div>
-            <div className="h-3 w-32 bg-slate-200 rounded mt-5"></div>
-            <div className="h-8 w-16 bg-slate-200 rounded mt-3"></div>
+            <div className="w-10 h-10 rounded-medium bg-border"></div>
+            <div className="h-3 w-32 bg-border rounded mt-5"></div>
+            <div className="h-8 w-16 bg-border rounded mt-3"></div>
         </div>
     </div>
 );
 
 const ChartSkeleton = ({ title }: { title?: string }) => (
-    <div className="bg-white rounded-2xl p-6 shadow-sm border border-[#E2E8F0]/80 animate-pulse">
-        <div className="h-5 w-48 bg-slate-200 rounded mb-6">
+    <div className="bg-surface rounded-large p-6 shadow-sm border border-border/80 animate-pulse">
+        <div className="h-5 w-48 bg-border rounded mb-6">
             {title && <span className="sr-only">{title}</span>}
         </div>
-        <div className="h-[250px] w-full bg-slate-100 rounded-xl flex items-end justify-between px-4 pb-4">
-            <div className="w-12 h-[60%] bg-slate-200 rounded-t-sm"></div>
-            <div className="w-12 h-[80%] bg-slate-200 rounded-t-sm"></div>
-            <div className="w-12 h-[40%] bg-slate-200 rounded-t-sm"></div>
-            <div className="w-12 h-[100%] bg-slate-200 rounded-t-sm"></div>
-            <div className="w-12 h-[30%] bg-slate-200 rounded-t-sm"></div>
+        <div className="h-[250px] w-full bg-surface-subtle rounded-medium flex items-end justify-between px-4 pb-4">
+            <div className="w-12 h-[60%] bg-border rounded-t-sm"></div>
+            <div className="w-12 h-[80%] bg-border rounded-t-sm"></div>
+            <div className="w-12 h-[40%] bg-border rounded-t-sm"></div>
+            <div className="w-12 h-[100%] bg-border rounded-t-sm"></div>
+            <div className="w-12 h-[30%] bg-border rounded-t-sm"></div>
         </div>
     </div>
 );
@@ -181,16 +181,16 @@ export const Dashboard: React.FC = () => {
             {/* Header / Title Section */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
-                    <h1 className="text-2xl lg:text-[28px] font-extrabold text-[#0f172a] tracking-tight">
+                    <h1 className="text-2xl lg:text-[28px] font-extrabold text-neutral-primary tracking-tight">
                         Administrative Overview
                     </h1>
-                    <p className="text-[#64748b] text-sm mt-1">
+                    <p className="text-neutral-muted text-sm mt-1">
                         Real-time status of {user?.barangay?.name ? `Barangay ${user.barangay.name}` : 'your Barangay'} services and community records.
                     </p>
                 </div>
                 <button 
                     onClick={() => navigate('/reports')}
-                    className="bg-primary hover:bg-primary-hover active:bg-primary-hover text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-semibold shadow-sm flex items-center gap-2 transition-all cursor-pointer w-fit shrink-0"
+                    className="bg-primary hover:bg-primary-hover active:bg-primary-hover text-primary-foreground px-5 py-2.5 rounded-medium text-sm font-semibold shadow-sm flex items-center gap-2 transition-all cursor-pointer w-fit shrink-0"
                 >
                     <span>View Report Issue</span>
                 </button>
@@ -208,60 +208,60 @@ export const Dashboard: React.FC = () => {
                 ) : (
                     <>
                         {/* Card 1: Total Registered Residents */}
-                        <div className="bg-white rounded-2xl p-6 shadow-xs border border-[#E2E8F0]/80 flex flex-col justify-between hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+                        <div className="bg-surface rounded-large p-6 shadow-xs border border-border/80 flex flex-col justify-between hover:-translate-y-1 hover:shadow-md transition-all duration-300">
                             <div>
-                                <div className="w-10 h-10 rounded-xl bg-primary/10 text-primary-text flex items-center justify-center">
+                                <div className="w-10 h-10 rounded-medium bg-primary/10 text-primary-text flex items-center justify-center">
                                     <Users className="w-5 h-5" />
                                 </div>
-                                <h3 className="text-[#64748b] text-xs font-semibold uppercase tracking-wider mt-4">
+                                <h3 className="text-neutral-muted text-xs font-semibold uppercase tracking-wider mt-4">
                                     Total Registered Residents
                                 </h3>
-                                <p className="text-3xl font-extrabold text-[#0f172a] mt-1">
+                                <p className="text-3xl font-extrabold text-neutral-primary mt-1">
                                     {summaryData?.total_residents?.toLocaleString() ?? '--'}                        
                                 </p>
                             </div>
                         </div>
 
                         {/* Card 2: Pending Requests */}
-                        <div className="bg-white rounded-2xl p-6 shadow-xs border border-[#E2E8F0]/80 flex flex-col justify-between hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+                        <div className="bg-surface rounded-large p-6 shadow-xs border border-border/80 flex flex-col justify-between hover:-translate-y-1 hover:shadow-md transition-all duration-300">
                             <div>
-                                <div className="w-10 h-10 rounded-xl bg-[#FEECE8] text-[#E05638] flex items-center justify-center">
+                                <div className="w-10 h-10 rounded-medium bg-feedback-danger-soft text-feedback-danger-text-strong flex items-center justify-center">
                                     <FileText className="w-5 h-5" />
                                 </div>
-                                <h3 className="text-[#64748b] text-xs font-semibold uppercase tracking-wider mt-4">
+                                <h3 className="text-neutral-muted text-xs font-semibold uppercase tracking-wider mt-4">
                                     Pending Requests
                                 </h3>
-                                <p className="text-3xl font-extrabold text-[#0f172a] mt-1">
+                                <p className="text-3xl font-extrabold text-neutral-primary mt-1">
                                     {summaryData !== null ? summaryData.document_requests.pending : '--'}
                                 </p>
                             </div>
                         </div>
 
                         {/* Card 3: Active Issues */}
-                        <div className="bg-white rounded-2xl p-6 shadow-xs border border-[#E2E8F0]/80 flex flex-col justify-between hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+                        <div className="bg-surface rounded-large p-6 shadow-xs border border-border/80 flex flex-col justify-between hover:-translate-y-1 hover:shadow-md transition-all duration-300">
                             <div>
-                                <div className="w-10 h-10 rounded-xl bg-[#FEF3C7] text-[#D97706] flex items-center justify-center">
+                                <div className="w-10 h-10 rounded-medium bg-feedback-warning-soft text-feedback-warning flex items-center justify-center">
                                     <Hourglass className="w-5 h-5" />
                                 </div>
-                                <h3 className="text-[#64748b] text-xs font-semibold uppercase tracking-wider mt-4">
+                                <h3 className="text-neutral-muted text-xs font-semibold uppercase tracking-wider mt-4">
                                     Active Issues (In Progress)
                                 </h3>
-                                <p className="text-3xl font-extrabold text-[#0f172a] mt-1">
+                                <p className="text-3xl font-extrabold text-neutral-primary mt-1">
                                     {summaryData !== null ? summaryData.issue_reports.in_progress : '--'}
                                 </p>
                             </div>
                         </div>
 
                         {/* Card 4: Clearance Collections */}
-                        <div className="bg-white rounded-2xl p-6 shadow-xs border border-[#E2E8F0]/80 flex flex-col justify-between hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+                        <div className="bg-surface rounded-large p-6 shadow-xs border border-border/80 flex flex-col justify-between hover:-translate-y-1 hover:shadow-md transition-all duration-300">
                             <div>
-                                <div className="w-10 h-10 rounded-xl bg-[#ECFDF5] text-[#059669] flex items-center justify-center">
+                                <div className="w-10 h-10 rounded-medium bg-feedback-success-pale text-feedback-success-deep flex items-center justify-center">
                                     <Banknote className="w-5 h-5" />
                                 </div>
-                                <h3 className="text-[#64748b] text-xs font-semibold uppercase tracking-wider mt-4">
+                                <h3 className="text-neutral-muted text-xs font-semibold uppercase tracking-wider mt-4">
                                     Clearance Collections
                                 </h3>
-                                <p className="text-3xl font-extrabold text-[#0f172a] mt-1">
+                                <p className="text-3xl font-extrabold text-neutral-primary mt-1">
                                     ₱{summaryData?.document_requests?.total_revenue !== undefined 
                                         ? summaryData.document_requests.total_revenue.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
                                         : '0.00'}
@@ -275,16 +275,16 @@ export const Dashboard: React.FC = () => {
             {loading ? (
                 <ChartSkeleton title="Local Incident Scenarios" />
             ) : (
-                <div className="bg-white rounded-2xl p-6 shadow-xs border border-[#E2E8F0]/80 hover:-translate-y-1 hover:shadow-md transition-all duration-300">
-                    <h2 className="text-base font-bold text-[#0f172a] mb-6">Local Incident Scenarios</h2>
+                <div className="bg-surface rounded-large p-6 shadow-xs border border-border/80 hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+                    <h2 className="text-base font-bold text-neutral-primary mb-6">Local Incident Scenarios</h2>
                     <div className="h-[250px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={scenarioData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--gridy-color-border)" />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--gridy-color-text-muted)' }} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--gridy-color-text-muted)' }} />
                                 <Tooltip cursor={{fill: 'rgba(239,68,68,0.05)'}} />
-                                <Bar dataKey="count" fill="#ef4444" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                                <Bar dataKey="count" fill="var(--gridy-color-danger)" radius={[4, 4, 0, 0]} maxBarSize={40} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
@@ -294,8 +294,8 @@ export const Dashboard: React.FC = () => {
             {/* Demographics Row (2 Cards) */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 {/* Purok Distribution Pie Chart */}
-                <div className="bg-white rounded-2xl p-6 shadow-xs border border-[#E2E8F0]/80">
-                    <h2 className="text-base font-bold text-[#0f172a] mb-6">Purok Distribution</h2>
+                <div className="bg-surface rounded-large p-6 shadow-xs border border-border/80">
+                    <h2 className="text-base font-bold text-neutral-primary mb-6">Purok Distribution</h2>
                     <div className="h-[250px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <PieChart>
@@ -319,14 +319,14 @@ export const Dashboard: React.FC = () => {
                 </div>
 
                 {/* Age Demographics Bar Chart */}
-                <div className="bg-white rounded-2xl p-6 shadow-xs border border-[#E2E8F0]/80">
-                    <h2 className="text-base font-bold text-[#0f172a] mb-6">Age Demographics</h2>
+                <div className="bg-surface rounded-large p-6 shadow-xs border border-border/80">
+                    <h2 className="text-base font-bold text-neutral-primary mb-6">Age Demographics</h2>
                     <div className="h-[250px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={ageData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: '#64748b' }} />
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--gridy-color-border)" />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--gridy-color-text-muted)' }} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--gridy-color-text-muted)' }} />
                                 <Tooltip cursor={{fill: 'rgba(0,71,186,0.05)'}} />
                                 <Bar dataKey="count" fill="var(--brand-primary)" radius={[4, 4, 0, 0]} maxBarSize={40} />
                             </BarChart>
@@ -338,10 +338,10 @@ export const Dashboard: React.FC = () => {
             {/* Bottom Row: Today's Appointments Table & Hall Photo */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
                 {/* Left: Today's Appointments Table Card */}
-                <div className="lg:col-span-12 bg-white rounded-2xl p-6 shadow-xs border border-[#E2E8F0]/80 flex flex-col justify-between">
+                <div className="lg:col-span-12 bg-surface rounded-large p-6 shadow-xs border border-border/80 flex flex-col justify-between">
                     <div>
                         <div className="flex items-center justify-between mb-5">
-                            <h2 className="text-base lg:text-lg font-bold text-[#0f172a]">
+                            <h2 className="text-base lg:text-lg font-bold text-neutral-primary">
                                 Today's Appointments
                             </h2>
                             <NavLink 
@@ -355,17 +355,17 @@ export const Dashboard: React.FC = () => {
                         <div className="overflow-x-auto">
                             <table className="w-full text-left">
                                 <thead>
-                                    <tr className="bg-[#EDF3FA]/70 text-[#64748b] text-[11px] font-bold uppercase tracking-wider">
+                                    <tr className="bg-surface-table/70 text-neutral-muted text-[11px] font-bold uppercase tracking-wider">
                                         <th className="py-2.5 px-4 rounded-l-lg">TIME / DATE</th>
                                         <th className="py-2.5 px-4">EVENT</th>
                                         <th className="py-2.5 px-4">LOCATION</th>
                                         <th className="py-2.5 px-4 rounded-r-lg">STATUS</th>
                                     </tr>
                                 </thead>
-                                <tbody className="text-sm divide-y divide-slate-100">
+                                <tbody className="text-sm divide-y divide-surface-subtle">
                                     {activities.length === 0 ? (
                                         <tr>
-                                            <td colSpan={4} className="py-12 text-center text-sm text-slate-400 font-medium">
+                                            <td colSpan={4} className="py-12 text-center text-sm text-neutral-hint font-medium">
                                                 No appointments or activities scheduled.
                                             </td>
                                         </tr>
@@ -383,30 +383,30 @@ export const Dashboard: React.FC = () => {
                                             const initial = act.title ? act.title.charAt(0).toUpperCase() : 'A';
 
                                             return (
-                                                <tr key={act.id} className="hover:bg-slate-50/60 transition-colors">
-                                                    <td className="py-3.5 px-4 font-semibold text-[#0f172a] whitespace-nowrap">
+                                                <tr key={act.id} className="hover:bg-background/60 transition-colors">
+                                                    <td className="py-3.5 px-4 font-semibold text-neutral-primary whitespace-nowrap">
                                                         <div>{timeFormatted}</div>
                                                         {dateFormatted && (
-                                                            <div className="text-xs text-slate-400 font-normal">{dateFormatted}</div>
+                                                            <div className="text-xs text-neutral-hint font-normal">{dateFormatted}</div>
                                                         )}
                                                     </td>
                                                     <td className="py-3.5 px-4 whitespace-nowrap">
                                                         <div className="flex items-center gap-2.5">
-                                                            <div className="w-7 h-7 rounded-full bg-primary/15 text-primary-text font-bold text-xs flex items-center justify-center shrink-0">
+                                                            <div className="w-7 h-7 rounded-pill bg-primary/15 text-primary-text font-bold text-xs flex items-center justify-center shrink-0">
                                                                 {initial}
                                                             </div>
-                                                            <span className="font-bold text-[#0f172a]">{act.title}</span>
+                                                            <span className="font-bold text-neutral-primary">{act.title}</span>
                                                         </div>
                                                     </td>
-                                                    <td className="py-3.5 px-4 text-[#475569] font-medium whitespace-nowrap">
+                                                    <td className="py-3.5 px-4 text-neutral-secondary font-medium whitespace-nowrap">
                                                         {act.location || '--'}
                                                     </td>
                                                     <td className="py-3.5 px-4 whitespace-nowrap">
                                                         <span
-                                                            className={`px-3 py-1 rounded-full text-xs font-semibold inline-block ${
+                                                            className={`px-3 py-1 rounded-pill text-xs font-semibold inline-block ${
                                                                 isUpcoming
                                                                     ? 'bg-primary/10 text-primary-text'
-                                                                    : 'bg-[#EDF2F7] text-[#64748b]'
+                                                                    : 'bg-surface-waiting text-neutral-muted'
                                                             }`}
                                                         >
                                                             {isUpcoming ? 'Upcoming' : 'Completed'}
