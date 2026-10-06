@@ -16,16 +16,16 @@ export const TextField: React.FC<TextFieldProps> = ({
 }) => {
     return (
         <div className={className}>
-            <label className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-slate-500 uppercase mb-1.5">
+            <label className="flex items-center gap-1.5 text-[11px] font-bold tracking-wider text-neutral-muted uppercase mb-1.5">
                 {icon}
                 {label}
             </label>
             <input
                 {...props}
-                className={`w-full px-4 py-3 bg-[#EEF2F6] focus:bg-white border border-transparent rounded-xl text-sm font-medium text-slate-900 placeholder-slate-400 outline-none transition-all ${
+                className={`w-full px-4 py-3 bg-surface-input focus:bg-surface border border-transparent rounded-medium text-sm font-medium text-neutral-primary placeholder-neutral-hint outline-none transition-all ${
                     isAdminMode
-                        ? 'focus:border-[#091B35] focus:ring-1 focus:ring-[#091B35]'
-                        : 'focus:border-[#0284C7]'
+                        ? 'focus:border-brand-admin focus:ring-1 focus:ring-brand-admin'
+                        : 'focus:border-brand-accent'
                 }`}
             />
         </div>
