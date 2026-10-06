@@ -44,6 +44,7 @@ export const LiveQueue: React.FC = () => {
     const audioEnabledRef = React.useRef(false);
     const audioContextRef = React.useRef<AudioContext | null>(null);
     const previousTicketRef = React.useRef<string | null>(null);
+    const hasLoadedQueueRef = React.useRef(false);
 
     const playChime = React.useCallback(async () => {
         if (!audioEnabledRef.current || typeof window.AudioContext === 'undefined') return;
@@ -95,10 +96,15 @@ export const LiveQueue: React.FC = () => {
             const newServing = newTickets.find((t: any) => t.status.toUpperCase() === 'SERVING');
             const newServingId = newServing ? newServing.ticket_number : null;
             
-            if (previousTicketRef.current !== null && newServingId && newServingId !== previousTicketRef.current) {
+            if (
+                hasLoadedQueueRef.current &&
+                newServingId &&
+                newServingId !== previousTicketRef.current
+            ) {
                 announceTicket(newServingId);
             }
             previousTicketRef.current = newServingId;
+            hasLoadedQueueRef.current = true;
             
             setTickets(newTickets);
             setError('');
@@ -307,6 +313,42 @@ export const LiveQueue: React.FC = () => {
         }, 4000);
     };
 
+    const handleAudioToggle = () => {
+        const nextState = !audioEnabled;
+        setAudioEnabled(nextState);
+        audioEnabledRef.current = nextState;
+
+        if (!nextState) {
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+            }
+            return;
+        }
+
+        try {
+            if (typeof window.AudioContext !== 'undefined') {
+                const context = audioContextRef.current ?? new window.AudioContext();
+                audioContextRef.current = context;
+                if (context.state === 'suspended') {
+                    void context.resume().catch((error: unknown) => {
+                        console.warn('Unable to resume queue audio:', error);
+                    });
+                }
+            }
+
+            if ('speechSynthesis' in window) {
+                window.speechSynthesis.cancel();
+                const confirmation = new SpeechSynthesisUtterance(
+                    'Audio announcements enabled.',
+                );
+                confirmation.lang = 'en-US';
+                window.speechSynthesis.speak(confirmation);
+            }
+        } catch (error) {
+            console.warn('Unable to initialize queue audio:', error);
+        }
+    };
+
     return (
         <div className="space-y-6">
             {/* Header / Title Section */}
@@ -322,14 +364,7 @@ export const LiveQueue: React.FC = () => {
 
                 <div className="flex items-center gap-3">
                     <button
-                        onClick={() => {
-                            const nextState = !audioEnabled;
-                            setAudioEnabled(nextState);
-                            audioEnabledRef.current = nextState;
-                            if (nextState && 'speechSynthesis' in window) {
-                                window.speechSynthesis.cancel();
-                            }
-                        }}
+                        onClick={handleAudioToggle}
                         className={`bg-white hover:bg-slate-50 border border-slate-200 px-4 py-2.5 rounded-xl text-sm font-semibold shadow-xs flex items-center gap-2 transition-all cursor-pointer ${
                             audioEnabled ? 'text-primary' : 'text-slate-700'
                         }`}
