@@ -57,6 +57,58 @@ const renderQueue = (role = 'ADMIN') => {
     );
 };
 
+class MockSpeechSynthesisUtterance {
+    text: string;
+    lang = '';
+    rate = 1;
+    volume = 1;
+
+    constructor(text: string) {
+        this.text = text;
+    }
+}
+
+const mockBrowserAudio = () => {
+    const speechSynthesis = {
+        cancel: vi.fn(),
+        speak: vi.fn(),
+    };
+    const oscillator = {
+        type: 'sine',
+        frequency: { setValueAtTime: vi.fn() },
+        connect: vi.fn(),
+        start: vi.fn(),
+        stop: vi.fn(),
+    };
+    const gain = {
+        gain: {
+            setValueAtTime: vi.fn(),
+            exponentialRampToValueAtTime: vi.fn(),
+        },
+        connect: vi.fn(),
+    };
+    const audioContext = {
+        state: 'suspended',
+        currentTime: 0,
+        destination: {},
+        resume: vi.fn(async () => {
+            audioContext.state = 'running';
+        }),
+        createOscillator: vi.fn(() => oscillator),
+        createGain: vi.fn(() => gain),
+    };
+    function MockAudioContextConstructor() {
+        return audioContext;
+    }
+    const audioContextConstructor = vi.fn(MockAudioContextConstructor);
+
+    vi.stubGlobal('speechSynthesis', speechSynthesis);
+    vi.stubGlobal('SpeechSynthesisUtterance', MockSpeechSynthesisUtterance);
+    vi.stubGlobal('AudioContext', audioContextConstructor);
+
+    return { speechSynthesis, audioContext, audioContextConstructor };
+};
+
 describe('LiveQueue Component', () => {
     beforeEach(() => {
         vi.mocked(axiosPrivate.get).mockReset();
@@ -70,6 +122,7 @@ describe('LiveQueue Component', () => {
 
     afterEach(() => {
         cleanup();
+        vi.unstubAllGlobals();
         vi.useRealTimers();
     });
 
@@ -143,5 +196,54 @@ describe('LiveQueue Component', () => {
             await vi.advanceTimersByTimeAsync(3000);
         });
         expect(axiosPrivate.get).toHaveBeenCalledTimes(2);
+    });
+
+    it('unlocks speech and audio from the announcer control without announcing the initial ticket', async () => {
+        const audio = mockBrowserAudio();
+        renderQueue();
+
+        expect(await screen.findByText('Q-002')).toBeInTheDocument();
+        expect(audio.speechSynthesis.speak).not.toHaveBeenCalled();
+
+        fireEvent.click(screen.getByTitle('Enable Announcer'));
+
+        expect(audio.audioContextConstructor).toHaveBeenCalledOnce();
+        expect(audio.audioContext.resume).toHaveBeenCalledOnce();
+        expect(audio.speechSynthesis.speak).toHaveBeenCalledOnce();
+        expect(audio.speechSynthesis.speak.mock.calls[0][0].text).toBe(
+            'Audio announcements enabled.',
+        );
+    });
+
+    it('announces the first serving ticket after the queue transitions from idle', async () => {
+        vi.useFakeTimers();
+        const audio = mockBrowserAudio();
+        const waitingTickets = [mockTickets[0]];
+        const servingTickets = [
+            { ...mockTickets[0], status: 'SERVING' },
+        ];
+        vi.mocked(axiosPrivate.get)
+            .mockReset()
+            .mockResolvedValueOnce({ data: { results: waitingTickets } } as never)
+            .mockResolvedValueOnce({ data: { results: servingTickets } } as never);
+
+        renderQueue();
+        await act(async () => {
+            await Promise.resolve();
+            await Promise.resolve();
+        });
+
+        fireEvent.click(screen.getByTitle('Enable Announcer'));
+        audio.speechSynthesis.speak.mockClear();
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(3000);
+        });
+
+        expect(axiosPrivate.get).toHaveBeenCalledTimes(2);
+        expect(audio.speechSynthesis.speak).toHaveBeenCalledOnce();
+        expect(audio.speechSynthesis.speak.mock.calls[0][0].text).toBe(
+            'Now serving ticket Q-001. Please proceed to the service counter.',
+        );
     });
 });
