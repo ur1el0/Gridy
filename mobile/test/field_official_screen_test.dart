@@ -90,7 +90,8 @@ void main() {
 
     // 1. Verify Top Bar & Role Badge
     expect(find.text('Field Operations'), findsOneWidget);
-    expect(find.text('Resident View'), findsOneWidget);
+    expect(find.text('Resident View'), findsNothing);
+    expect(find.byTooltip('Log out'), findsOneWidget);
     expect(find.text('Queue Ticker'), findsOneWidget);
     expect(find.text('Verify Clearance'), findsOneWidget);
     expect(find.text('Field Reports'), findsOneWidget);
