@@ -3,9 +3,11 @@ import '../core/network/api_client.dart';
 import '../core/theme/app_colors.dart';
 import '../models/document_request_model.dart';
 import '../models/user_model.dart';
+import '../services/auth_service.dart';
 import '../services/field_official_service.dart';
 import '../services/issue_service.dart';
 import '../services/storage_service.dart';
+import 'login_screen.dart';
 
 class FieldOfficialScreen extends StatefulWidget {
   final FieldOfficialService? fieldOfficialService;
@@ -22,6 +24,7 @@ class FieldOfficialScreen extends StatefulWidget {
 class _FieldOfficialScreenState extends State<FieldOfficialScreen> with SingleTickerProviderStateMixin {
   late TabController _tabController;
   FieldOfficialService? _service;
+  AuthService? _authService;
   UserModel? _currentUser;
   bool _isLoading = true;
 
@@ -51,18 +54,16 @@ class _FieldOfficialScreenState extends State<FieldOfficialScreen> with SingleTi
     _service = widget.fieldOfficialService;
     final storage = await StorageService.init();
     _currentUser = storage.getUser();
+    final apiClient = _service?.apiClient ?? ApiClient();
+    _authService = AuthService(
+      apiClient: apiClient,
+      storageService: storage,
+    );
 
-    if (_service == null) {
-      final apiClient = ApiClient();
-      final token = storage.getAccessToken();
-      if (token != null) {
-        apiClient.setAuthCredentials(accessToken: token);
-      }
-      _service = FieldOfficialService(
-        apiClient: apiClient,
-        storageService: storage,
-      );
-    }
+    _service ??= FieldOfficialService(
+      apiClient: apiClient,
+      storageService: storage,
+    );
 
     await Future.wait([
       _loadQueueStatus(),
@@ -72,6 +73,19 @@ class _FieldOfficialScreenState extends State<FieldOfficialScreen> with SingleTi
     if (mounted) {
       setState(() => _isLoading = false);
     }
+  }
+
+  Future<void> _logout() async {
+    final authService = _authService;
+    if (authService == null) return;
+
+    await authService.logout();
+    if (!mounted) return;
+
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
+    );
   }
 
   Future<void> _loadQueueStatus() async {
@@ -234,15 +248,11 @@ class _FieldOfficialScreenState extends State<FieldOfficialScreen> with SingleTi
           ],
         ),
         actions: [
-          TextButton.icon(
-            onPressed: () => Navigator.pop(context),
-            icon: const Icon(Icons.swap_horiz_rounded, color: Colors.white, size: 18),
-            label: const Text(
-              'Resident View',
-              style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12),
-            ),
+          IconButton(
+            tooltip: 'Log out',
+            onPressed: _authService == null ? null : _logout,
+            icon: const Icon(Icons.logout_rounded, color: Colors.white),
           ),
-          const SizedBox(width: 8),
         ],
         bottom: TabBar(
           controller: _tabController,
