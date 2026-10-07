@@ -1,15 +1,22 @@
 import 'package:flutter/material.dart';
+
 import '../core/theme/app_colors.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
+import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
+import '../widgets/gridy_logo.dart';
 import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
   final UserModel user;
   final AuthService authService;
 
-  const ProfileScreen({super.key, required this.user, required this.authService});
+  const ProfileScreen({
+    super.key,
+    required this.user,
+    required this.authService,
+  });
 
   @override
   State<ProfileScreen> createState() => _ProfileScreenState();
@@ -29,17 +36,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
   void initState() {
     super.initState();
     _currentUser = widget.user;
-    _initControllers();
+    _fullNameController = TextEditingController();
+    _contactNumberController = TextEditingController();
+    _resetFieldsFromUser();
   }
 
-  void _initControllers() {
-    _fullNameController = TextEditingController(text: _currentUser.fullName);
-    _contactNumberController = TextEditingController(text: _currentUser.contactNumber ?? '');
+  void _resetFieldsFromUser() {
+    _fullNameController.text = _currentUser.fullName;
+    _contactNumberController.text = _currentUser.contactNumber ?? '';
     _voterStatus = _currentUser.voterStatus ?? false;
-
-    if (_currentUser.birthDate != null && _currentUser.birthDate!.isNotEmpty) {
-      _birthDate = DateTime.tryParse(_currentUser.birthDate!);
-    }
+    _birthDate =
+        _currentUser.birthDate == null || _currentUser.birthDate!.isEmpty
+        ? null
+        : DateTime.tryParse(_currentUser.birthDate!);
   }
 
   @override
@@ -119,150 +128,198 @@ class _ProfileScreenState extends State<ProfileScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
-      appBar: AppBar(
-        backgroundColor: Colors.white,
-        elevation: 0,
-        iconTheme: const IconThemeData(color: AppColors.primaryNavy),
-        title: const Text(
-          'My Profile',
-          style: TextStyle(color: AppColors.primaryNavy, fontWeight: FontWeight.bold),
-        ),
-        actions: [
-          IconButton(
-            icon: Icon(_isEditing ? Icons.close : Icons.edit_outlined, color: AppColors.primaryNavy),
-            onPressed: _isSaving
-                ? null
-                : () {
-                    setState(() {
-                      if (_isEditing) {
-                        _initControllers();
-                      }
-                      _isEditing = !_isEditing;
-                    });
-                  },
-          ),
-        ],
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: CircleAvatar(
-                radius: 48,
-                backgroundColor: AppColors.primaryNavy,
-                child: Text(
-                  _currentUser.fullName.isNotEmpty ? _currentUser.fullName[0].toUpperCase() : 'R',
-                  style: const TextStyle(fontSize: 36, fontWeight: FontWeight.bold, color: Colors.white),
-                ),
-              ),
-            ),
-            const SizedBox(height: 32),
-
-            // --- Editable or Read-Only Fields ---
-            if (_isEditing) ...[
-              CustomTextField(
-                label: 'FULL NAME',
-                controller: _fullNameController,
-                hintText: 'Your full name',
-                prefixIcon: Icons.person_outline_rounded,
-                enabled: !_isSaving,
-              ),
-              const SizedBox(height: 20),
-              CustomTextField(
-                label: 'CONTACT NUMBER',
-                controller: _contactNumberController,
-                hintText: '09123456789',
-                prefixIcon: Icons.phone_outlined,
-                keyboardType: TextInputType.phone,
-                enabled: !_isSaving,
-              ),
-              const SizedBox(height: 20),
-              const Text(
-                'BIRTH DATE',
-                style: TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B), letterSpacing: 0.5),
+      backgroundColor: AppColors.background,
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 28),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const SizedBox(height: 8),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  IconButton(
+                    tooltip: 'Back',
+                    onPressed: () => Navigator.of(context).maybePop(),
+                    icon: const Icon(Icons.arrow_back_rounded),
+                    color: AppColors.primaryNavy,
+                  ),
+                  TextButton.icon(
+                    onPressed: _isSaving
+                        ? null
+                        : () {
+                            setState(() {
+                              if (_isEditing) _resetFieldsFromUser();
+                              _isEditing = !_isEditing;
+                            });
+                          },
+                    icon: Icon(
+                      _isEditing ? Icons.close_rounded : Icons.edit_outlined,
+                    ),
+                    label: Text(_isEditing ? 'Cancel' : 'Edit Profile'),
+                  ),
+                ],
               ),
               const SizedBox(height: 8),
-              InkWell(
-                onTap: _isSaving ? null : () => _selectBirthDate(context),
-                borderRadius: BorderRadius.circular(16),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: const Color(0xFFE2E8F0), width: 1.2),
+              const Center(child: GridyLogo(iconSize: 64, textSize: 24)),
+              const SizedBox(height: 32),
+              const Text(
+                'My Profile',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textPrimary,
+                  letterSpacing: -0.5,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                _isEditing
+                    ? 'Update your resident information below.'
+                    : 'Review your resident information and account details.',
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                  fontSize: 14.5,
+                  fontWeight: FontWeight.w400,
+                  color: AppColors.textSecondary,
+                  height: 1.35,
+                ),
+              ),
+              const SizedBox(height: 28),
+              if (_isEditing) ...[
+                CustomTextField(
+                  label: 'FULL NAME',
+                  controller: _fullNameController,
+                  hintText: 'Your full name',
+                  prefixIcon: Icons.person_outline_rounded,
+                  enabled: !_isSaving,
+                ),
+                const SizedBox(height: 18),
+                CustomTextField(
+                  label: 'CONTACT NUMBER',
+                  controller: _contactNumberController,
+                  hintText: '09123456789',
+                  prefixIcon: Icons.phone_outlined,
+                  keyboardType: TextInputType.phone,
+                  enabled: !_isSaving,
+                ),
+                const SizedBox(height: 18),
+                const Text(
+                  'BIRTH DATE',
+                  style: TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF64748B),
+                    letterSpacing: 0.5,
                   ),
-                  child: Row(
-                    children: [
-                      const Icon(Icons.calendar_today_rounded, color: Color(0xFF94A3B8), size: 20),
-                      const SizedBox(width: 12),
-                      Text(
-                        _formatDate(_birthDate),
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: _birthDate != null ? AppColors.textPrimary : const Color(0xFF94A3B8),
+                ),
+                const SizedBox(height: 8),
+                InkWell(
+                  onTap: _isSaving ? null : () => _selectBirthDate(context),
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 16,
+                    ),
+                    decoration: BoxDecoration(
+                      color: AppColors.inputBackground,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(
+                          Icons.calendar_today_rounded,
+                          color: AppColors.textMuted,
+                          size: 20,
                         ),
-                      ),
-                    ],
+                        const SizedBox(width: 12),
+                        Text(
+                          _formatDate(_birthDate),
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: _birthDate != null
+                                ? AppColors.textPrimary
+                                : AppColors.textHint,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              SwitchListTile(
-                title: const Text(
-                  'Registered Voter',
-                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: AppColors.textPrimary),
+                const SizedBox(height: 16),
+                SwitchListTile(
+                  title: const Text(
+                    'Registered Voter in this Barangay',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  value: _voterStatus,
+                  activeThumbColor: AppColors.primaryNavy,
+                  contentPadding: EdgeInsets.zero,
+                  onChanged: _isSaving
+                      ? null
+                      : (value) => setState(() => _voterStatus = value),
                 ),
-                value: _voterStatus,
-                activeThumbColor: AppColors.primaryNavy,
-                contentPadding: EdgeInsets.zero,
-                onChanged: _isSaving ? null : (bool value) {
-                  setState(() => _voterStatus = value);
-                },
-              ),
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
+                const SizedBox(height: 20),
+                CustomButton(
+                  text: 'Save Changes',
+                  icon: Icons.check_rounded,
+                  isLoading: _isSaving,
                   onPressed: _isSaving ? null : _saveProfile,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primaryNavy,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                ),
+              ] else ...[
+                _buildInfoTile('FULL NAME', _currentUser.fullName),
+                _buildInfoTile('USERNAME', _currentUser.username),
+                _buildInfoTile('EMAIL ADDRESS', _currentUser.email),
+                _buildInfoTile(
+                  'CONTACT NUMBER',
+                  _currentUser.contactNumber ?? 'Not provided',
+                ),
+                _buildInfoTile(
+                  'BIRTH DATE',
+                  _currentUser.birthDate ?? 'Not provided',
+                ),
+                _buildInfoTile(
+                  'VOTER STATUS',
+                  _currentUser.voterStatus == true
+                      ? 'Registered Voter'
+                      : 'Not Registered',
+                ),
+              ],
+              const SizedBox(height: 36),
+              SizedBox(
+                height: 50,
+                child: OutlinedButton.icon(
+                  onPressed: _isSaving ? null : () => _logout(context),
+                  icon: const Icon(
+                    Icons.logout_rounded,
+                    color: AppColors.error,
                   ),
-                  child: _isSaving
-                      ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                      : const Text('Save Changes', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                  label: const Text(
+                    'Log Out',
+                    style: TextStyle(
+                      color: AppColors.error,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                  style: OutlinedButton.styleFrom(
+                    side: const BorderSide(color: AppColors.error),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
                 ),
               ),
-            ] else ...[
-              _buildInfoTile('FULL NAME', _currentUser.fullName),
-              _buildInfoTile('USERNAME', _currentUser.username),
-              _buildInfoTile('EMAIL ADDRESS', _currentUser.email),
-              _buildInfoTile('CONTACT NUMBER', _currentUser.contactNumber ?? 'Not provided'),
-              _buildInfoTile('BIRTH DATE', _currentUser.birthDate ?? 'Not provided'),
-              _buildInfoTile('VOTER STATUS', _currentUser.voterStatus == true ? 'Registered Voter' : 'Not Registered'),
+              const SizedBox(height: 28),
             ],
-
-            const SizedBox(height: 48),
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: OutlinedButton.icon(
-                onPressed: () => _logout(context),
-                icon: const Icon(Icons.logout, color: Colors.red),
-                label: const Text('Log Out', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
-                style: OutlinedButton.styleFrom(
-                  side: const BorderSide(color: Colors.red),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
@@ -276,20 +333,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
         children: [
           Text(
             label,
-            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w800, color: Color(0xFF64748B), letterSpacing: 0.5),
+            style: const TextStyle(
+              fontSize: 11,
+              fontWeight: FontWeight.w800,
+              color: Color(0xFF64748B),
+              letterSpacing: 0.5,
+            ),
           ),
           const SizedBox(height: 6),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             decoration: BoxDecoration(
-              color: Colors.white,
+              color: AppColors.inputBackground,
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: const Color(0xFFE2E8F0)),
             ),
             child: Text(
               value.isNotEmpty ? value : 'Not provided',
-              style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w600, color: AppColors.textPrimary),
+              style: const TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
             ),
           ),
         ],
