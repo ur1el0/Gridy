@@ -60,12 +60,10 @@ class _FieldOfficialScreenState extends State<FieldOfficialScreen> with SingleTi
       storageService: storage,
     );
 
-    if (_service == null) {
-      _service = FieldOfficialService(
-        apiClient: apiClient,
-        storageService: storage,
-      );
-    }
+    _service ??= FieldOfficialService(
+      apiClient: apiClient,
+      storageService: storage,
+    );
 
     await Future.wait([
       _loadQueueStatus(),
