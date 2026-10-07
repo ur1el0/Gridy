@@ -22,6 +22,13 @@ class FieldOfficialScreen extends StatefulWidget {
 }
 
 class _FieldOfficialScreenState extends State<FieldOfficialScreen> with SingleTickerProviderStateMixin {
+  static const Map<String, int> _urgencyPriority = {
+    'EMERGENCY': 0,
+    'HAZARD': 1,
+    'MODERATE': 2,
+    'MINOR': 3,
+  };
+
   late TabController _tabController;
   FieldOfficialService? _service;
   AuthService? _authService;
@@ -182,6 +189,21 @@ class _FieldOfficialScreenState extends State<FieldOfficialScreen> with SingleTi
     setState(() => _isLoadingReports = true);
     try {
       final items = await _service!.fetchBarangayIssues();
+      items.sort((first, second) {
+        final firstPriority = _urgencyPriority[first.urgency.toUpperCase()] ?? 4;
+        final secondPriority = _urgencyPriority[second.urgency.toUpperCase()] ?? 4;
+        final urgencyOrder = firstPriority.compareTo(secondPriority);
+        if (urgencyOrder != 0) return urgencyOrder;
+
+        final firstCreatedAt = DateTime.tryParse(first.createdAt);
+        final secondCreatedAt = DateTime.tryParse(second.createdAt);
+        if (firstCreatedAt != null && secondCreatedAt != null) {
+          return firstCreatedAt.compareTo(secondCreatedAt);
+        }
+
+        return first.id.compareTo(second.id);
+      });
+
       if (mounted) {
         setState(() {
           _reports = items;
@@ -212,6 +234,36 @@ class _FieldOfficialScreenState extends State<FieldOfficialScreen> with SingleTi
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             content: Text('Failed to update report status.'),
+            backgroundColor: Color(0xFFEF4444),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _updateReportUrgency(int reportId, String newUrgency) async {
+    if (_service == null) return;
+    try {
+      await _service!.updateIssueUrgency(
+        reportId: reportId,
+        urgency: newUrgency,
+      );
+      await _loadBarangayReports();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Report #$reportId urgency updated to $newUrgency.'),
+            backgroundColor: const Color(0xFF10B981),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Failed to update report urgency.'),
             backgroundColor: Color(0xFFEF4444),
             behavior: SnackBarBehavior.floating,
           ),
@@ -622,6 +674,37 @@ class _FieldOfficialScreenState extends State<FieldOfficialScreen> with SingleTi
                     ),
                   ],
                 ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    _buildUrgencyBadge(report.urgency),
+                    const Spacer(),
+                    PopupMenuButton<String>(
+                      tooltip: 'Change urgency',
+                      onSelected: (urgency) =>
+                          _updateReportUrgency(report.id, urgency),
+                      itemBuilder: (context) => const [
+                        PopupMenuItem(
+                          value: 'EMERGENCY',
+                          child: Text('Emergency'),
+                        ),
+                        PopupMenuItem(
+                          value: 'HAZARD',
+                          child: Text('Hazard'),
+                        ),
+                        PopupMenuItem(
+                          value: 'MODERATE',
+                          child: Text('Moderate'),
+                        ),
+                        PopupMenuItem(value: 'MINOR', child: Text('Minor')),
+                      ],
+                      child: const Padding(
+                        padding: EdgeInsets.all(8),
+                        child: Icon(Icons.edit_outlined, size: 18),
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 10),
                 Text(
                   report.title,
@@ -675,6 +758,33 @@ class _FieldOfficialScreenState extends State<FieldOfficialScreen> with SingleTi
             ),
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildUrgencyBadge(String urgency) {
+    final normalizedUrgency = urgency.toUpperCase();
+    final Color color = switch (normalizedUrgency) {
+      'EMERGENCY' => const Color(0xFFB91C1C),
+      'HAZARD' => const Color(0xFFC2410C),
+      'MODERATE' => const Color(0xFFB45309),
+      _ => const Color(0xFF1D4ED8),
+    };
+
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: 0.1),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Text(
+        normalizedUrgency,
+        style: TextStyle(
+          color: color,
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 0.3,
+        ),
       ),
     );
   }

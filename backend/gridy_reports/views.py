@@ -47,22 +47,36 @@ class IssueReportViewSet(viewsets.ModelViewSet):
         )
 
     def perform_update(self, serializer):
-        # 1. Capture the old state before saving
+        # Capture the fields that need an audit trail before saving.
         original_status = serializer.instance.status
+        original_urgency = serializer.instance.urgency
 
-        # 2. Save the new data
         instance = serializer.save()
+        changes = []
 
-        # 3. If the official changed the status, log it and notify
         if original_status != instance.status:
+            changes.append(
+                f"status from {original_status} to {instance.status}"
+            )
+
+        if original_urgency != instance.urgency:
+            changes.append(
+                f"urgency from {original_urgency} to {instance.urgency}"
+            )
+
+        if changes:
             log_action(
                 user=self.request.user,
                 action_type=AuditLog.ActionType.REPORT_ACTION,
-                description=f"Changed issue report #{instance.id} status from {original_status} to {instance.status}.",
+                description=(
+                    f"Updated issue report #{instance.id}: "
+                    f"{'; '.join(changes)}."
+                ),
                 request=self.request
             )
 
-            # Ping the resident's mobile phone
+        # Status changes notify residents; urgency changes are audit-only.
+        if original_status != instance.status:
             if instance.reporter:
                 send_notification_to_user_task.delay(
                     user_id=instance.reporter.id,

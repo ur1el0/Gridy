@@ -91,4 +91,20 @@ class FieldOfficialService {
       requiresAuth: true,
     );
   }
+
+  /// Updates the triaged urgency of a barangay incident report.
+  Future<void> updateIssueUrgency({
+    required int reportId,
+    required String urgency,
+  }) async {
+    final response = await apiClient.patch(
+      '/reports/$reportId/',
+      body: {'urgency': urgency},
+      requiresAuth: true,
+    );
+
+    if (response.statusCode != 200) {
+      throw Exception('Failed to update incident urgency.');
+    }
+  }
 }
