@@ -11,11 +11,32 @@ import 'package:mobile/services/storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 class MockFieldOfficialService extends FieldOfficialService {
-  MockFieldOfficialService({required StorageService storage})
-      : super(
-          apiClient: ApiClient(),
-          storageService: storage,
-        );
+  MockFieldOfficialService({
+    required StorageService storage,
+    List<IssueReport>? reports,
+  }) : reports =
+           reports ??
+           [
+             IssueReport(
+               id: 101,
+               title: 'Clogged Drainage on Purok 4',
+               description:
+                   'Heavy rain causes overflow into residential walkways.',
+               location: 'Near Purok 4 Chapel',
+               status: 'PENDING',
+               category: 'ENVIRONMENT',
+               urgency: 'HAZARD',
+               createdAt: '2026-09-02T10:00:00Z',
+             ),
+           ],
+       super(
+         apiClient: ApiClient(),
+         storageService: storage,
+       );
+
+  final List<IssueReport> reports;
+  int? urgencyUpdatedReportId;
+  String? updatedUrgency;
 
   @override
   Future<Map<String, dynamic>> fetchLiveQueueStatus() async {
@@ -46,18 +67,16 @@ class MockFieldOfficialService extends FieldOfficialService {
 
   @override
   Future<List<IssueReport>> fetchBarangayIssues() async {
-    return [
-      IssueReport(
-        id: 101,
-        title: 'Clogged Drainage on Purok 4',
-        description: 'Heavy rain causes overflow into residential walkways.',
-        location: 'Near Purok 4 Chapel',
-        status: 'PENDING',
-        category: 'ENVIRONMENT',
-        urgency: 'HAZARD',
-        createdAt: '2026-09-02T10:00:00Z',
-      ),
-    ];
+    return reports;
+  }
+
+  @override
+  Future<void> updateIssueUrgency({
+    required int reportId,
+    required String urgency,
+  }) async {
+    urgencyUpdatedReportId = reportId;
+    updatedUrgency = urgency;
   }
 }
 
@@ -134,4 +153,111 @@ void main() {
     expect(find.text('In-Progress'), findsOneWidget);
     expect(find.text('Resolve'), findsOneWidget);
   });
+
+  testWidgets(
+    'Field reports show urgency and put emergencies first',
+    (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1200, 1600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final storage = await StorageService.init();
+      final mockService = MockFieldOfficialService(
+        storage: storage,
+        reports: [
+          IssueReport(
+            id: 201,
+            title: 'Minor noise complaint',
+            description: 'A resident reported loud noise.',
+            location: 'Purok 1',
+            status: 'PENDING',
+            urgency: 'MINOR',
+            createdAt: '2026-10-07T08:00:00Z',
+          ),
+          IssueReport(
+            id: 202,
+            title: 'Emergency electrical wire',
+            description: 'A live wire is hanging near homes.',
+            location: 'Purok 3',
+            status: 'PENDING',
+            urgency: 'EMERGENCY',
+            createdAt: '2026-10-07T09:00:00Z',
+          ),
+          IssueReport(
+            id: 203,
+            title: 'Hazardous flooded road',
+            description: 'Flood water is blocking the road.',
+            location: 'Purok 4',
+            status: 'PENDING',
+            urgency: 'HAZARD',
+            createdAt: '2026-10-07T07:00:00Z',
+          ),
+          IssueReport(
+            id: 204,
+            title: 'Older minor obstruction',
+            description: 'A minor obstruction was reported earlier.',
+            location: 'Purok 2',
+            status: 'PENDING',
+            urgency: 'MINOR',
+            createdAt: '2026-10-07T06:00:00Z',
+          ),
+        ],
+      );
+
+      await tester.pumpWidget(createFieldOfficialScreenTestWidget(mockService));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Field Reports'));
+      await tester.pumpAndSettle();
+
+      final emergencyTop =
+          tester.getTopLeft(find.text('Emergency electrical wire')).dy;
+      final hazardTop =
+          tester.getTopLeft(find.text('Hazardous flooded road')).dy;
+      final olderMinorTop =
+          tester.getTopLeft(find.text('Older minor obstruction')).dy;
+      final minorTop =
+          tester.getTopLeft(find.text('Minor noise complaint')).dy;
+
+      expect(emergencyTop, lessThan(hazardTop));
+      expect(hazardTop, lessThan(minorTop));
+      expect(olderMinorTop, lessThan(minorTop));
+      expect(find.text('EMERGENCY'), findsOneWidget);
+      expect(find.text('HAZARD'), findsOneWidget);
+      expect(find.text('MINOR'), findsNWidgets(2));
+    },
+  );
+
+  testWidgets(
+    'Field staff can change an incident urgency',
+    (WidgetTester tester) async {
+      final storage = await StorageService.init();
+      final mockService = MockFieldOfficialService(storage: storage);
+
+      await tester.pumpWidget(createFieldOfficialScreenTestWidget(mockService));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Field Reports'));
+      await tester.pumpAndSettle();
+
+      final urgencyControl = find.byTooltip('Change urgency');
+      expect(urgencyControl, findsOneWidget);
+      await tester.tap(urgencyControl);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Emergency'), findsOneWidget);
+      expect(find.text('Hazard'), findsOneWidget);
+      expect(find.text('Moderate'), findsOneWidget);
+      expect(find.text('Minor'), findsOneWidget);
+
+      await tester.tap(find.text('Emergency'));
+      await tester.pumpAndSettle();
+
+      expect(mockService.urgencyUpdatedReportId, 101);
+      expect(mockService.updatedUrgency, 'EMERGENCY');
+      expect(
+        find.text('Report #101 urgency updated to EMERGENCY.'),
+        findsOneWidget,
+      );
+    },
+  );
 }
