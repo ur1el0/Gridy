@@ -1,5 +1,26 @@
 from rest_framework import serializers
+from django.urls import reverse
 from gridy_auth.models import User, Resident, Barangay
+
+
+class ResidentPrivateImageField(serializers.ImageField):
+    def to_representation(self, value):
+        if not value:
+            return None
+
+        resident = getattr(value, 'instance', None)
+        if resident is None or resident.pk is None:
+            return None
+
+        url = reverse(
+            'resident_private_media',
+            kwargs={
+                'resident_id': resident.pk,
+                'field_name': self.field_name,
+            },
+        )
+        return url.removeprefix('/api/v1/')
+
 
 class BarangaySerializer(serializers.ModelSerializer):
     class Meta:
@@ -17,6 +38,9 @@ class BarangaySerializer(serializers.ModelSerializer):
 class ResidentSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True, default='')
     email = serializers.CharField(source='user.email', read_only=True, default='')
+    philsys_id_photo = ResidentPrivateImageField(required=False, allow_null=True)
+    secondary_id_photo = ResidentPrivateImageField(required=False, allow_null=True)
+    utility_billing_photo = ResidentPrivateImageField(required=False, allow_null=True)
     class Meta:
         model = Resident
         fields = [
@@ -93,4 +117,3 @@ class UserSerializer(serializers.ModelSerializer):
             profile.save()
 
         return instance
-
