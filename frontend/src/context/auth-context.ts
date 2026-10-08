@@ -6,7 +6,9 @@ export interface User {
     username?: string
     full_name?: string
     role?: string
+    barangay_id?: number | string | null
     barangay?: {
+        id?: number | string
         name?: string
         primary_color?: string
     } | null

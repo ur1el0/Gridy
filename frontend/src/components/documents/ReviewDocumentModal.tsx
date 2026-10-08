@@ -6,7 +6,8 @@ interface ReviewDocumentModalProps {
     selectedRequest: DocumentRequest | null;
     closeModal: () => void;
     getStatusBadge: (status: string) => string;
-    handleStatusUpdate: (newStatus: string, orNumber?: string, feeAmount?: string) => void;
+    handleStatusUpdate: (newStatus: string, orNumber?: string, feeAmount?: string, paymentMethod?: string) => void;
+    handlePaymentReview: (status: 'VERIFIED' | 'REJECTED', note: string) => void;
     isUpdating: boolean;
     handleDownloadPDF: () => void;
 }
@@ -16,16 +17,21 @@ export const ReviewDocumentModal = ({
     closeModal,
     getStatusBadge,
     handleStatusUpdate,
+    handlePaymentReview,
     isUpdating,
     handleDownloadPDF,
 }: ReviewDocumentModalProps) => {
     const [orNumber, setOrNumber] = useState('');
     const [feeAmount, setFeeAmount] = useState('50.00');
+    const [paymentMethod, setPaymentMethod] = useState('');
+    const [paymentReviewNote, setPaymentReviewNote] = useState('');
     const isFeeExempt = isFeeExemptDocumentType(selectedRequest?.document_type);
 
     useEffect(() => {
         if (selectedRequest) {
             setOrNumber(selectedRequest.or_number || '');
+            setPaymentMethod(selectedRequest.payment_method || '');
+            setPaymentReviewNote('');
             setFeeAmount(
                 isFeeExemptDocumentType(selectedRequest.document_type)
                     ? '0.00'
@@ -41,6 +47,7 @@ export const ReviewDocumentModal = ({
             status,
             orNumber.trim(),
             isFeeExempt ? '0.00' : feeAmount.trim(),
+            paymentMethod,
         );
     };
 
@@ -132,8 +139,50 @@ export const ReviewDocumentModal = ({
                                             </p>
                                         )}
                                     </div>
+                                    {!isFeeExempt && (
+                                        <div className="col-span-2">
+                                            <label className="block text-xs font-semibold text-slate-600 mb-1">Payment method</label>
+                                            <select
+                                                value={paymentMethod}
+                                                onChange={(event) => setPaymentMethod(event.target.value)}
+                                                className="w-full rounded-lg border border-slate-300 bg-white px-3 py-2 text-sm"
+                                            >
+                                                <option value="">Select when paid</option>
+                                                <option value="CASH">Cash at barangay hall</option>
+                                                <option value="GCASH">GCash transfer</option>
+                                            </select>
+                                            <p className="mt-1 text-xs text-slate-600">Cash remains available. GCash references are checked manually by barangay staff; Gridy does not process transfers.</p>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
+
+                            {selectedRequest.payment_reference && (
+                                <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-2">
+                                    <h4 className="text-xs font-extrabold uppercase tracking-wider text-amber-900">GCash transfer reference</h4>
+                                    <p className="font-mono text-sm text-slate-900">{selectedRequest.payment_reference}</p>
+                                    <p className="text-xs text-slate-600">Payment status: {(selectedRequest.payment_status || '').replace(/_/g, ' ').toLowerCase()}</p>
+                                    {selectedRequest.payment_review_note && <p className="text-sm text-rose-800">Staff note: {selectedRequest.payment_review_note}</p>}
+                                    {selectedRequest.payment_status === 'PENDING_VERIFICATION' && (
+                                        <div className="space-y-2 border-t border-amber-200 pt-3">
+                                            <label className="block text-xs font-semibold text-slate-700">
+                                                Note (required when rejecting)
+                                                <textarea
+                                                    rows={2}
+                                                    maxLength={500}
+                                                    value={paymentReviewNote}
+                                                    onChange={(event) => setPaymentReviewNote(event.target.value)}
+                                                    className="mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm"
+                                                />
+                                            </label>
+                                            <div className="flex gap-2">
+                                                <button onClick={() => handlePaymentReview('VERIFIED', paymentReviewNote)} disabled={isUpdating} className="rounded-lg bg-emerald-700 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">Verify transfer</button>
+                                                <button onClick={() => handlePaymentReview('REJECTED', paymentReviewNote)} disabled={isUpdating || !paymentReviewNote.trim()} className="rounded-lg bg-rose-700 px-3 py-2 text-xs font-bold text-white disabled:opacity-50">Reject reference</button>
+                                            </div>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
 
                             <div>
                                 <h4 className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-2">Current Status</h4>

@@ -12,6 +12,7 @@ import {
     Radio, 
     Users, 
     Building,
+    HandHeart,
 } from 'lucide-react';
 import mainLogoSvg from '../../assets/MainLogo.svg';
 
@@ -25,6 +26,7 @@ const navItems: NavItem[] = [
     { name: 'Dashboard', path: '/dashboard', icon: LayoutDashboard },
     { name: 'Queue', path: '/queue', icon: ListOrdered },
     { name: 'Documents', path: '/documents', icon: FileText },
+    { name: 'Aid Requests', path: '/aid-requests', icon: HandHeart },
     { name: 'Communications', path: '/communications', icon: Radio },
     { name: 'Residents', path: '/residents', icon: Users },
     { name: 'Barangay Profile', path: '/barangay-settings', icon: Building},

@@ -20,6 +20,10 @@ export interface DocumentRequest {
     admin_notes?: string;
     or_number?: string;
     fee_amount?: number | string;
+    payment_method?: string;
+    payment_reference?: string;
+    payment_status?: string;
+    payment_review_note?: string;
     created_at: string;
 }
 
@@ -104,7 +108,12 @@ export const DocumentRequests: React.FC = () => {
         setSelectedRequest(null);
     };
 
-    const handleStatusUpdate = async (newStatus: string, updatedOr?: string, updatedFee?: string) => {
+    const handleStatusUpdate = async (
+        newStatus: string,
+        updatedOr?: string,
+        updatedFee?: string,
+        paymentMethod?: string,
+    ) => {
         if (!selectedRequest) return;
         setIsUpdating(true);
 
@@ -112,7 +121,8 @@ export const DocumentRequests: React.FC = () => {
             const response = await axiosPrivate.patch(`/document-requests/${selectedRequest.id}/validate/`, {
                 status: newStatus,
                 or_number: updatedOr,
-                fee_amount: isFeeExemptDocumentType(selectedRequest.document_type) ? '0.00' : updatedFee
+                fee_amount: isFeeExemptDocumentType(selectedRequest.document_type) ? '0.00' : updatedFee,
+                payment_method: paymentMethod,
             });
 
             setRequests(prev => prev.map(req =>
@@ -123,6 +133,26 @@ export const DocumentRequests: React.FC = () => {
         } catch (err) {
             console.error("Failed to update status", err);
             toast.error('Failed to update status. Please check permissions or try again.');
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    const handlePaymentReview = async (paymentStatus: 'VERIFIED' | 'REJECTED', note: string) => {
+        if (!selectedRequest) return;
+        setIsUpdating(true);
+        try {
+            const response = await axiosPrivate.patch(
+                `/document-requests/${selectedRequest.id}/payment-review/`,
+                { status: paymentStatus, note },
+            );
+            setRequests((current) => current.map((request) =>
+                request.id === selectedRequest.id ? { ...request, ...response.data } : request,
+            ));
+            setSelectedRequest((current) => current ? { ...current, ...response.data } : current);
+            toast.success(paymentStatus === 'VERIFIED' ? 'GCash payment verified.' : 'GCash reference rejected with a reason.');
+        } catch (err: any) {
+            toast.error(err.response?.data?.note?.[0] || err.response?.data?.detail || 'Could not review this GCash payment.');
         } finally {
             setIsUpdating(false);
         }
@@ -226,6 +256,7 @@ export const DocumentRequests: React.FC = () => {
                     closeModal={closeModal}
                     getStatusBadge={getStatusBadge}
                     handleStatusUpdate={handleStatusUpdate}
+                    handlePaymentReview={handlePaymentReview}
                     isUpdating={isUpdating}
                     handleDownloadPDF={handleDownloadPDF}
                 />

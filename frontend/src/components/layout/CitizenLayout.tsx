@@ -7,7 +7,8 @@ import {
     Radio, 
     LogOut, 
     ShieldCheck, 
-    Building2
+    Building2,
+    HandHeart,
 } from 'lucide-react';
 import mainLogoSvg from '../../assets/MainLogo.svg';
 
@@ -73,6 +74,10 @@ export const CitizenLayout: React.FC = () => {
                                 <Radio className="w-4 h-4" />
                                 <span>Community Bulletin</span>
                             </NavLink>
+                            <NavLink to="/portal/aid" className={navLinkClass}>
+                                <HandHeart className="w-4 h-4" />
+                                <span>Assistance</span>
+                            </NavLink>
                         </nav>
 
                         {/* Right: Resident Profile Pill & Logout */}
@@ -117,6 +122,10 @@ export const CitizenLayout: React.FC = () => {
                     <NavLink to="/portal/bulletin" className={navLinkClass}>
                         <Radio className="w-4 h-4" />
                         <span className="text-xs">Bulletin</span>
+                    </NavLink>
+                    <NavLink to="/portal/aid" className={navLinkClass}>
+                        <HandHeart className="w-4 h-4" />
+                        <span className="text-xs">Aid</span>
                     </NavLink>
                 </div>
             </header>
