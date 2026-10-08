@@ -1,9 +1,12 @@
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone as datetime_timezone
+from importlib import import_module
 from threading import Barrier
+from types import SimpleNamespace
 from unittest.mock import patch
 
-from django.db import close_old_connections, connections
+from django.apps import apps
+from django.db import close_old_connections, connection, connections
 from django.test import (
     TransactionTestCase,
     override_settings,
@@ -16,7 +19,7 @@ from rest_framework.test import APIRequestFactory, APITestCase, force_authentica
 from gridy_audit.models import AuditLog
 from gridy_auth.models import Barangay, Resident, User
 from gridy_reports.models import IssueReport
-from gridy_services.models import DocumentRequest, QueueTicket
+from gridy_services.models import AidRequest, DocumentRequest, QueueTicket
 from gridy_services.views.queue import QueueTicketViewSet
 # Create your tests here.
 
@@ -1032,6 +1035,420 @@ class QueueConcurrencyTests(TransactionTestCase):
         second_ticket.refresh_from_db()
         self.assertEqual(first_ticket.status, QueueTicket.Status.COMPLETED)
         self.assertEqual(second_ticket.status, QueueTicket.Status.SERVING)
+
+class DocumentPaymentWorkflowTests(APITestCase):
+    def setUp(self):
+        self.barangay = Barangay.objects.create(name="Payment Workflow Barangay")
+        self.resident = User.objects.create_user(
+            username="payment_resident",
+            password="SecurePassword123!",
+            email="payment-resident@example.com",
+            role=User.Role.RESIDENT,
+            barangay=self.barangay,
+        )
+        Resident.objects.create(
+            user=self.resident,
+            full_name="Payment Resident",
+            birth_date="1990-01-01",
+            is_verified=True,
+        )
+        self.official = User.objects.create_user(
+            username="payment_official",
+            password="SecurePassword123!",
+            email="payment-official@example.com",
+            role=User.Role.ADMIN,
+            barangay=self.barangay,
+        )
+
+    def make_request(self, **overrides):
+        values = {
+            "user": self.resident,
+            "barangay": self.barangay,
+            "document_type": "Barangay Clearance",
+            "purpose": "Employment",
+            "status": DocumentRequest.Status.READY_FOR_PICKUP,
+            "fee_amount": "50.00",
+            "payment_status": DocumentRequest.PaymentStatus.UNPAID,
+        }
+        values.update(overrides)
+        return DocumentRequest.objects.create(**values)
+
+    def test_existing_official_receipts_backfill_as_verified_cash(self):
+        paid_document = self.make_request(or_number="OR-LEGACY-100")
+        unpaid_document = self.make_request(or_number="")
+        migration = import_module(
+            "gridy_services.migrations.0011_document_payment_review"
+        )
+
+        migration.initialize_existing_payment_status(
+            apps,
+            SimpleNamespace(connection=connection),
+        )
+
+        paid_document.refresh_from_db()
+        unpaid_document.refresh_from_db()
+        self.assertEqual(paid_document.payment_method, DocumentRequest.PaymentMethod.CASH)
+        self.assertEqual(
+            paid_document.payment_status,
+            DocumentRequest.PaymentStatus.VERIFIED,
+        )
+        self.assertEqual(
+            unpaid_document.payment_status,
+            DocumentRequest.PaymentStatus.UNPAID,
+        )
+
+    def test_resident_can_submit_gcash_reference_for_own_ready_request(self):
+        document = self.make_request()
+        self.client.force_login(self.resident)
+
+        response = self.client.post(
+            reverse("document-request-payment-reference", args=[document.pk]),
+            {"payment_reference": " GCASH-REF-2048 "},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        document.refresh_from_db()
+        self.assertEqual(document.payment_method, DocumentRequest.PaymentMethod.GCASH)
+        self.assertEqual(document.payment_reference, "GCASH-REF-2048")
+        self.assertEqual(
+            document.payment_status,
+            DocumentRequest.PaymentStatus.PENDING_VERIFICATION,
+        )
+
+    def test_resident_cannot_submit_gcash_reference_for_another_resident(self):
+        document = self.make_request()
+        other_resident = User.objects.create_user(
+            username="other_payment_resident",
+            password="SecurePassword123!",
+            role=User.Role.RESIDENT,
+            barangay=self.barangay,
+        )
+        self.client.force_login(other_resident)
+
+        response = self.client.post(
+            reverse("document-request-payment-reference", args=[document.pk]),
+            {"payment_reference": "GCASH-REF-2048"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        document.refresh_from_db()
+        self.assertFalse(document.payment_reference)
+
+    def test_gcash_reference_requires_a_ready_paid_request(self):
+        document = self.make_request(status=DocumentRequest.Status.PROCESSING)
+        self.client.force_login(self.resident)
+
+        response = self.client.post(
+            reverse("document-request-payment-reference", args=[document.pk]),
+            {"payment_reference": "GCASH-REF-2048"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+
+    def test_gcash_review_requires_a_reason_when_rejected(self):
+        document = self.make_request(
+            payment_method=DocumentRequest.PaymentMethod.GCASH,
+            payment_reference="GCASH-REF-2048",
+            payment_status=DocumentRequest.PaymentStatus.PENDING_VERIFICATION,
+        )
+        self.client.force_login(self.official)
+
+        response = self.client.patch(
+            reverse("document-request-payment-review", args=[document.pk]),
+            {"status": DocumentRequest.PaymentStatus.REJECTED},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        document.refresh_from_db()
+        self.assertEqual(
+            document.payment_status,
+            DocumentRequest.PaymentStatus.PENDING_VERIFICATION,
+        )
+
+    def test_official_can_verify_gcash_reference_and_audit_it(self):
+        document = self.make_request(
+            payment_method=DocumentRequest.PaymentMethod.GCASH,
+            payment_reference="GCASH-REF-2048",
+            payment_status=DocumentRequest.PaymentStatus.PENDING_VERIFICATION,
+        )
+        self.client.force_login(self.official)
+
+        response = self.client.patch(
+            reverse("document-request-payment-review", args=[document.pk]),
+            {"status": DocumentRequest.PaymentStatus.VERIFIED},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        document.refresh_from_db()
+        self.assertEqual(
+            document.payment_status,
+            DocumentRequest.PaymentStatus.VERIFIED,
+        )
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action_by=self.official,
+                action_type=AuditLog.ActionType.DOCUMENT_ACTION,
+                description__icontains=f"#{document.pk}",
+            ).exists()
+        )
+
+    def test_official_from_another_barangay_cannot_review_gcash_reference(self):
+        document = self.make_request(
+            payment_method=DocumentRequest.PaymentMethod.GCASH,
+            payment_reference="GCASH-REF-2048",
+            payment_status=DocumentRequest.PaymentStatus.PENDING_VERIFICATION,
+        )
+        other_barangay = Barangay.objects.create(name="Other Payment Barangay")
+        other_official = User.objects.create_user(
+            username="other_payment_official",
+            password="SecurePassword123!",
+            role=User.Role.ADMIN,
+            barangay=other_barangay,
+        )
+        self.client.force_login(other_official)
+
+        response = self.client.patch(
+            reverse("document-request-payment-review", args=[document.pk]),
+            {"status": DocumentRequest.PaymentStatus.VERIFIED},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        document.refresh_from_db()
+        self.assertEqual(
+            document.payment_status,
+            DocumentRequest.PaymentStatus.PENDING_VERIFICATION,
+        )
+
+    def test_paid_document_cannot_be_released_before_payment_verification(self):
+        document = self.make_request(
+            payment_method=DocumentRequest.PaymentMethod.GCASH,
+            payment_reference="GCASH-REF-2048",
+            payment_status=DocumentRequest.PaymentStatus.PENDING_VERIFICATION,
+        )
+        self.client.force_login(self.official)
+
+        response = self.client.patch(
+            reverse("document-request-validate", args=[document.pk]),
+            {
+                "status": DocumentRequest.Status.RELEASED,
+                "or_number": "OR-1001",
+                "payment_method": DocumentRequest.PaymentMethod.GCASH,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        document.refresh_from_db()
+        self.assertEqual(document.status, DocumentRequest.Status.READY_FOR_PICKUP)
+
+    def test_cash_can_be_recorded_at_release_with_official_receipt(self):
+        document = self.make_request()
+        self.client.force_login(self.official)
+
+        response = self.client.patch(
+            reverse("document-request-validate", args=[document.pk]),
+            {
+                "status": DocumentRequest.Status.RELEASED,
+                "or_number": "OR-1002",
+                "payment_method": DocumentRequest.PaymentMethod.CASH,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        document.refresh_from_db()
+        self.assertEqual(document.status, DocumentRequest.Status.RELEASED)
+        self.assertEqual(
+            document.payment_status,
+            DocumentRequest.PaymentStatus.VERIFIED,
+        )
+
+    def test_exempt_document_release_does_not_require_payment(self):
+        document = self.make_request(
+            document_type="Certificate of Indigency",
+            fee_amount="0.00",
+            payment_status=DocumentRequest.PaymentStatus.NOT_REQUIRED,
+        )
+        self.client.force_login(self.official)
+
+        response = self.client.patch(
+            reverse("document-request-validate", args=[document.pk]),
+            {"status": DocumentRequest.Status.RELEASED},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        document.refresh_from_db()
+        self.assertEqual(
+            document.payment_status,
+            DocumentRequest.PaymentStatus.NOT_REQUIRED,
+        )
+
+
+class AidRequestAPITests(APITestCase):
+    def setUp(self):
+        self.barangay = Barangay.objects.create(name="Aid Workflow Barangay")
+        self.other_barangay = Barangay.objects.create(
+            name="Other Aid Workflow Barangay"
+        )
+        self.resident = User.objects.create_user(
+            username="aid_resident",
+            password="SecurePassword123!",
+            role=User.Role.RESIDENT,
+            barangay=self.barangay,
+        )
+        Resident.objects.create(
+            user=self.resident,
+            full_name="Aid Resident",
+            birth_date="1992-02-02",
+            is_verified=True,
+        )
+        self.official = User.objects.create_user(
+            username="aid_official",
+            password="SecurePassword123!",
+            role=User.Role.ADMIN,
+            barangay=self.barangay,
+        )
+        self.other_official = User.objects.create_user(
+            username="other_aid_official",
+            password="SecurePassword123!",
+            role=User.Role.ADMIN,
+            barangay=self.other_barangay,
+        )
+        self.url = reverse("aid-request-list")
+
+    def test_resident_can_submit_assistance_request_with_server_owned_fields(self):
+        self.client.force_login(self.resident)
+
+        response = self.client.post(
+            self.url,
+            {
+                "assistance_type": "Medical assistance",
+                "reason": "Requesting help with a clinic bill.",
+                "status": AidRequest.Status.APPROVED,
+                "staff_notes": "Forged decision",
+                "barangay": self.other_barangay.pk,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        aid_request = AidRequest.objects.get(pk=response.data["id"])
+        self.assertEqual(aid_request.requester, self.resident)
+        self.assertEqual(aid_request.barangay, self.barangay)
+        self.assertEqual(aid_request.status, AidRequest.Status.PENDING)
+        self.assertFalse(aid_request.staff_notes)
+
+    def test_resident_can_only_see_own_assistance_requests(self):
+        AidRequest.objects.create(
+            requester=self.resident,
+            barangay=self.barangay,
+            assistance_type="Food assistance",
+            reason="Temporary household need.",
+        )
+        self.client.force_login(self.resident)
+
+        response = self.client.get(self.url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        results = response.data.get("results", response.data)
+        self.assertEqual(len(results), 1)
+        self.assertEqual(results[0]["requester_name"], "Aid Resident")
+
+    def test_official_review_is_barangay_scoped_audited_and_manual(self):
+        aid_request = AidRequest.objects.create(
+            requester=self.resident,
+            barangay=self.barangay,
+            assistance_type="Educational assistance",
+            reason="Requesting support for school expenses.",
+        )
+        self.client.force_login(self.official)
+
+        response = self.client.patch(
+            reverse("aid-request-detail", args=[aid_request.pk]),
+            {
+                "status": AidRequest.Status.APPROVED,
+                "staff_notes": "Reviewed by staff.",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        aid_request.refresh_from_db()
+        self.assertEqual(aid_request.status, AidRequest.Status.APPROVED)
+        self.assertEqual(aid_request.reviewed_by, self.official)
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action_by=self.official,
+                action_type=AuditLog.ActionType.USER_ACTION,
+                description__icontains=f"#{aid_request.pk}",
+            ).exists()
+        )
+
+    def test_official_cannot_review_another_barangays_request(self):
+        aid_request = AidRequest.objects.create(
+            requester=self.resident,
+            barangay=self.barangay,
+            assistance_type="Medical assistance",
+            reason="Requesting help with a clinic bill.",
+        )
+        self.client.force_login(self.other_official)
+
+        response = self.client.patch(
+            reverse("aid-request-detail", args=[aid_request.pk]),
+            {"status": AidRequest.Status.APPROVED},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        aid_request.refresh_from_db()
+        self.assertEqual(aid_request.status, AidRequest.Status.PENDING)
+
+    def test_declining_assistance_requires_staff_reason(self):
+        aid_request = AidRequest.objects.create(
+            requester=self.resident,
+            barangay=self.barangay,
+            assistance_type="Medical assistance",
+            reason="Requesting help with a clinic bill.",
+        )
+        self.client.force_login(self.official)
+
+        response = self.client.patch(
+            reverse("aid-request-detail", args=[aid_request.pk]),
+            {"status": AidRequest.Status.DECLINED},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        aid_request.refresh_from_db()
+        self.assertEqual(aid_request.status, AidRequest.Status.PENDING)
+
+    def test_decided_assistance_request_cannot_be_edited(self):
+        aid_request = AidRequest.objects.create(
+            requester=self.resident,
+            barangay=self.barangay,
+            assistance_type="Medical assistance",
+            reason="Requesting help with a clinic bill.",
+            status=AidRequest.Status.APPROVED,
+        )
+        self.client.force_login(self.official)
+
+        response = self.client.patch(
+            reverse("aid-request-detail", args=[aid_request.pk]),
+            {"staff_notes": "Changed after approval."},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        aid_request.refresh_from_db()
+        self.assertFalse(aid_request.staff_notes)
+
 
 class PublicQueueStatusAPITests(APITestCase):
     def setUp(self):

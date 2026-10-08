@@ -1,6 +1,6 @@
 from rest_framework import serializers
 from gridy_auth.models import User
-from .models import DocumentRequest, QueueTicket
+from .models import AidRequest, DocumentRequest, QueueTicket
 from .fee_policy import enforce_fee_policy
 
 class FeePolicyValidationMixin:
@@ -35,6 +35,10 @@ class DocumentRequestSerializer(FeePolicyValidationMixin, serializers.ModelSeria
             'admin_notes',
             'or_number',
             'fee_amount',
+            'payment_method',
+            'payment_reference',
+            'payment_status',
+            'payment_review_note',
             'created_at',
             'updated_at',
         ]
@@ -44,6 +48,10 @@ class DocumentRequestSerializer(FeePolicyValidationMixin, serializers.ModelSeria
             'admin_notes',
             'or_number',
             'fee_amount',
+            'payment_method',
+            'payment_reference',
+            'payment_status',
+            'payment_review_note',
             'created_at',
             'updated_at',
         ]
@@ -61,7 +69,13 @@ class DocumentRequestSerializer(FeePolicyValidationMixin, serializers.ModelSeria
 class DocumentRequestReviewSerializer(FeePolicyValidationMixin, serializers.ModelSerializer):
     class Meta:
         model = DocumentRequest
-        fields = ["status", "admin_notes", "or_number", "fee_amount"]
+        fields = [
+            "status",
+            "admin_notes",
+            "or_number",
+            "fee_amount",
+            "payment_method",
+        ]
 
     def validate_status(self, value):
         allowed_statuses = {
@@ -74,6 +88,102 @@ class DocumentRequestReviewSerializer(FeePolicyValidationMixin, serializers.Mode
             raise serializers.ValidationError("Invalid status transition")
 
         return value
+
+class PaymentReferenceSerializer(serializers.Serializer):
+    payment_reference = serializers.CharField(
+        max_length=100,
+        allow_blank=False,
+        trim_whitespace=True,
+    )
+
+
+class PaymentReviewSerializer(serializers.Serializer):
+    status = serializers.ChoiceField(
+        choices=(
+            DocumentRequest.PaymentStatus.VERIFIED,
+            DocumentRequest.PaymentStatus.REJECTED,
+        )
+    )
+    note = serializers.CharField(
+        max_length=500,
+        required=False,
+        allow_blank=True,
+        trim_whitespace=True,
+    )
+
+    def validate(self, attrs):
+        if (
+            attrs["status"] == DocumentRequest.PaymentStatus.REJECTED
+            and not attrs.get("note", "").strip()
+        ):
+            raise serializers.ValidationError({
+                "note": "A reason is required when rejecting a transfer."
+            })
+        return attrs
+
+
+class AidRequestSerializer(serializers.ModelSerializer):
+    requester_name = serializers.SerializerMethodField()
+
+    class Meta:
+        model = AidRequest
+        fields = [
+            "id",
+            "requester_name",
+            "assistance_type",
+            "reason",
+            "status",
+            "staff_notes",
+            "created_at",
+            "updated_at",
+        ]
+        read_only_fields = [
+            "status",
+            "staff_notes",
+            "created_at",
+            "updated_at",
+        ]
+
+    def get_requester_name(self, obj) -> str:
+        profile = getattr(obj.requester, "profile", None)
+        return (
+            profile.full_name
+            if profile and profile.full_name
+            else obj.requester.username
+        )
+
+
+class AidRequestReviewSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = AidRequest
+        fields = ["status", "staff_notes"]
+
+    def validate_status(self, value):
+        if value not in {
+            AidRequest.Status.UNDER_REVIEW,
+            AidRequest.Status.APPROVED,
+            AidRequest.Status.DECLINED,
+        }:
+            raise serializers.ValidationError("Select a valid review status.")
+        return value
+
+    def validate(self, attrs):
+        status_value = attrs.get(
+            "status",
+            getattr(self.instance, "status", None),
+        )
+        notes = attrs.get(
+            "staff_notes",
+            getattr(self.instance, "staff_notes", ""),
+        )
+        if status_value == AidRequest.Status.DECLINED and not notes.strip():
+            raise serializers.ValidationError({
+                "staff_notes": (
+                    "A reason is required when declining an assistance request."
+                )
+            })
+        return attrs
+
 
 class QueueTicketSerializer(serializers.ModelSerializer):
     ticket_id = serializers.IntegerField(source='id', read_only=True)
@@ -243,5 +353,3 @@ class DashboardSummarySerializer(serializers.Serializer):
     document_requests = DocumentStatsSerializer()
     issue_reports = IssueStatsSerializer()
     queue_activity = QueueActivitySerializer()
-
-    
