@@ -57,9 +57,32 @@ class DocumentRequest(models.Model):
     )
     admin_notes = models.TextField(blank=True, null=True)
 
+    class PaymentMethod(models.TextChoices):
+        CASH = "CASH", "Cash"
+        GCASH = "GCASH", "GCash"
+
+    class PaymentStatus(models.TextChoices):
+        NOT_REQUIRED = "NOT_REQUIRED", "Not required"
+        UNPAID = "UNPAID", "Unpaid"
+        PENDING_VERIFICATION = "PENDING_VERIFICATION", "Pending verification"
+        VERIFIED = "VERIFIED", "Verified"
+        REJECTED = "REJECTED", "Rejected"
+
     # Official Receipt (OR) & Fee Auditing
     or_number = models.CharField(max_length=50, blank=True, null=True, help_text="Official Receipt Number issued by Barangay Treasurer")
     fee_amount = models.DecimalField(max_digits=8, decimal_places=2, default=0.00, help_text="Clearance issuance fee in PHP")
+    payment_method = models.CharField(
+        max_length=10,
+        choices=PaymentMethod.choices,
+        blank=True,
+    )
+    payment_reference = models.CharField(max_length=100, blank=True)
+    payment_status = models.CharField(
+        max_length=25,
+        choices=PaymentStatus.choices,
+        default=PaymentStatus.NOT_REQUIRED,
+    )
+    payment_review_note = models.TextField(blank=True)
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -74,6 +97,52 @@ class DocumentRequest(models.Model):
             models.Index(fields=['barangay', 'status']),
             models.Index(fields=['status']),
         ]
+
+class AidRequest(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Pending review"
+        UNDER_REVIEW = "UNDER_REVIEW", "Under review"
+        APPROVED = "APPROVED", "Approved"
+        DECLINED = "DECLINED", "Declined"
+
+    requester = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name="aid_requests",
+    )
+    barangay = models.ForeignKey(
+        Barangay,
+        on_delete=models.CASCADE,
+        related_name="aid_requests",
+    )
+    assistance_type = models.CharField(max_length=100)
+    reason = models.TextField(max_length=2000)
+    status = models.CharField(
+        max_length=20,
+        choices=Status.choices,
+        default=Status.PENDING,
+    )
+    staff_notes = models.TextField(blank=True)
+    reviewed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviewed_aid_requests",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["barangay", "status", "created_at"]),
+            models.Index(fields=["requester", "created_at"]),
+        ]
+        ordering = ["-created_at", "-id"]
+
+    def __str__(self):
+        return f"{self.assistance_type} request by {self.requester_id} ({self.status})"
+
 
 class QueueTicket(models.Model):
     class Status(models.TextChoices):
