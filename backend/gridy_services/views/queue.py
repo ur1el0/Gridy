@@ -3,6 +3,8 @@ from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.views import APIView
 from rest_framework.response import Response
+from datetime import datetime, time, timedelta
+
 from django.db import transaction
 from django.db.models import Count, Q, Sum
 from django.utils import timezone
@@ -10,7 +12,7 @@ from drf_spectacular.utils import extend_schema
 
 from gridy_audit.models import AuditLog
 from gridy_auth.permissions import IsBarangayOfficial, IsBarangayOfficialOrField
-from gridy_services.models import QueueTicket, DocumentRequest
+from gridy_services.models import MANILA_TIME_ZONE, QueueTicket, DocumentRequest
 from gridy_reports.models import IssueReport
 from gridy_services.serializers import (
     DashboardSummarySerializer,
@@ -286,20 +288,77 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
 
         with transaction.atomic():
             Barangay.objects.select_for_update().get(pk=user.barangay_id)
+            now = timezone.now()
+            local_today = timezone.localtime(now, MANILA_TIME_ZONE).date()
+            day_start = datetime.combine(
+                local_today,
+                time.min,
+                tzinfo=MANILA_TIME_ZONE,
+            )
+            next_day_start = day_start + timedelta(days=1)
 
             QueueTicket.objects.filter(
                 barangay_id=user.barangay_id,
                 status=QueueTicket.Status.SERVING,
-            ).update(status=QueueTicket.Status.COMPLETED)
+                called_at__isnull=True,
+            ).update(called_at=now)
+            QueueTicket.objects.filter(
+                barangay_id=user.barangay_id,
+                status=QueueTicket.Status.SERVING,
+            ).update(status=QueueTicket.Status.COMPLETED, updated_at=now)
 
-            next_ticket = (
+            served_today = QueueTicket.objects.filter(
+                barangay_id=user.barangay_id,
+                status__in=(
+                    QueueTicket.Status.COMPLETED,
+                    QueueTicket.Status.SERVING,
+                ),
+                called_at__gte=day_start,
+                called_at__lt=next_day_start,
+            )
+            last_regular_call = (
+                served_today.filter(is_priority=False)
+                .order_by("-called_at", "-id")
+                .values("called_at", "id")
+                .first()
+            )
+            priority_calls_since_regular = served_today.filter(is_priority=True)
+            if last_regular_call:
+                priority_calls_since_regular = priority_calls_since_regular.filter(
+                    Q(called_at__gt=last_regular_call["called_at"])
+                    | Q(
+                        called_at=last_regular_call["called_at"],
+                        id__gt=last_regular_call["id"],
+                    )
+                )
+
+            regular_ticket = (
                 QueueTicket.objects.filter(
                     barangay_id=user.barangay_id,
                     status=QueueTicket.Status.WAITING,
+                    is_priority=False,
                 )
-                .order_by("-is_priority", "created_at", "id")
+                .order_by("created_at", "id")
                 .first()
             )
+            priority_ticket = (
+                QueueTicket.objects.filter(
+                    barangay_id=user.barangay_id,
+                    status=QueueTicket.Status.WAITING,
+                    is_priority=True,
+                )
+                .order_by("created_at", "id")
+                .first()
+            )
+
+            if regular_ticket and priority_ticket:
+                next_ticket = (
+                    regular_ticket
+                    if priority_calls_since_regular.count() >= 2
+                    else priority_ticket
+                )
+            else:
+                next_ticket = regular_ticket or priority_ticket
 
             if not next_ticket:
                 return Response(
@@ -308,7 +367,10 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
                 )
 
             next_ticket.status = QueueTicket.Status.SERVING
-            next_ticket.save()
+            next_ticket.called_at = now
+            next_ticket.save(
+                update_fields=["status", "called_at", "updated_at"]
+            )
 
             log_action(
                 user=user,

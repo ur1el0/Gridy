@@ -185,6 +185,7 @@ class QueueTicket(models.Model):
         default=Status.WAITING,
     )
     is_priority = models.BooleanField(default=False)
+    called_at = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -237,5 +238,6 @@ class QueueTicket(models.Model):
         indexes = [
             models.Index(fields=['status', 'created_at']),
             models.Index(fields=['created_at']),
+            models.Index(fields=['barangay', 'called_at'], name='gridy_queue_call_idx'),
         ]
             

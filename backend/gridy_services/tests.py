@@ -1036,6 +1036,103 @@ class QueueConcurrencyTests(TransactionTestCase):
         self.assertEqual(first_ticket.status, QueueTicket.Status.COMPLETED)
         self.assertEqual(second_ticket.status, QueueTicket.Status.SERVING)
 
+    def test_next_ticket_serves_two_priority_tickets_before_regular(self):
+        tickets = [
+            QueueTicket.objects.create(
+                barangay=self.barangay,
+                ticket_number=f"R{number:03d}",
+                service_type="DOCUMENT",
+                is_priority=False,
+                status=QueueTicket.Status.WAITING,
+            )
+            for number in range(1, 3)
+        ]
+        tickets.extend(
+            QueueTicket.objects.create(
+                barangay=self.barangay,
+                ticket_number=f"P{number:03d}",
+                service_type="DOCUMENT",
+                is_priority=True,
+                priority_status=QueueTicket.Priority.PRIORITY,
+                status=QueueTicket.Status.WAITING,
+            )
+            for number in range(1, 5)
+        )
+        view = QueueTicketViewSet.as_view({"post": "next_ticket"})
+
+        def advance_queue():
+            request = APIRequestFactory().post("/api/v1/tickets/next/")
+            force_authenticate(request, user=self.official)
+            return view(request)
+
+        served = [advance_queue().data["current_ticket"] for _ in range(6)]
+
+        self.assertEqual(
+            served,
+            ["P001", "P002", "R001", "P003", "P004", "R002"],
+        )
+
+    def test_next_ticket_uses_priority_when_regular_lane_is_empty(self):
+        QueueTicket.objects.create(
+            barangay=self.barangay,
+            ticket_number="P001",
+            service_type="DOCUMENT",
+            is_priority=True,
+            priority_status=QueueTicket.Priority.PRIORITY,
+            status=QueueTicket.Status.WAITING,
+        )
+        request = APIRequestFactory().post("/api/v1/tickets/next/")
+        force_authenticate(request, user=self.official)
+
+        response = QueueTicketViewSet.as_view({"post": "next_ticket"})(request)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["current_ticket"], "P001")
+
+    def test_next_ticket_resets_priority_count_at_manila_day_boundary(self):
+        from datetime import datetime
+        from zoneinfo import ZoneInfo
+
+        manila = ZoneInfo("Asia/Manila")
+        previous_day_call = datetime(2026, 10, 8, 23, 59, tzinfo=manila)
+        next_day_call = datetime(2026, 10, 9, 0, 1, tzinfo=manila)
+        QueueTicket.objects.create(
+            barangay=self.barangay,
+            ticket_number="R000",
+            service_type="DOCUMENT",
+            is_priority=False,
+            status=QueueTicket.Status.COMPLETED,
+            called_at=previous_day_call,
+        )
+        QueueTicket.objects.create(
+            barangay=self.barangay,
+            ticket_number="R001",
+            service_type="DOCUMENT",
+            is_priority=False,
+            status=QueueTicket.Status.WAITING,
+        )
+        QueueTicket.objects.create(
+            barangay=self.barangay,
+            ticket_number="P001",
+            service_type="DOCUMENT",
+            is_priority=True,
+            priority_status=QueueTicket.Priority.PRIORITY,
+            status=QueueTicket.Status.WAITING,
+        )
+        request = APIRequestFactory().post("/api/v1/tickets/next/")
+        force_authenticate(request, user=self.official)
+
+        with patch(
+            "gridy_services.views.queue.timezone.now",
+            return_value=next_day_call,
+        ):
+            response = QueueTicketViewSet.as_view(
+                {"post": "next_ticket"}
+            )(request)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["current_ticket"], "P001")
+
 class DocumentPaymentWorkflowTests(APITestCase):
     def setUp(self):
         self.barangay = Barangay.objects.create(name="Payment Workflow Barangay")
