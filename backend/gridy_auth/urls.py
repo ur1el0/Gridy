@@ -17,6 +17,7 @@ from .views import (
     PasswordResetRequestView,
     PasswordResetConfirmView,
 )
+from .views.resident_media import ResidentPrivateMediaView
 
 router = DefaultRouter()
 router.register(r'resident', ResidentViewSet, basename='resident')
@@ -37,4 +38,9 @@ urlpatterns = [
     path('reject-resident/<int:pk>/', RejectResidentView.as_view(), name='reject_resident'),
     path('password-reset/', PasswordResetRequestView.as_view(), name='password_reset_request'),
     path('password-reset/confirm/', PasswordResetConfirmView.as_view(), name='password_reset_confirm'),
+    path(
+        'resident/<int:resident_id>/media/<str:field_name>/',
+        ResidentPrivateMediaView.as_view(),
+        name='resident_private_media',
+    ),
 ] + router.urls

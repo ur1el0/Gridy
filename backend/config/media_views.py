@@ -16,21 +16,27 @@ class ProtectedMediaView(APIView):
     SENSITIVE_DIRECTORIES = ('resident_ids/', 'resident_billings/', 'blotter/')
 
     def get(self, request, path):
-        # 1. Enforce Authentication for Sensitive PII
-        if path.startswith(self.SENSITIVE_DIRECTORIES):
-            if not request.user or not request.user.is_authenticated:
-                raise Http404("File not found or access denied.")
+        if not hasattr(settings, "MEDIA_ROOT"):
+            raise Http404("File not found.")
 
-        # 2. Resolve absolute file path securely (Fixed misplaced parenthesis)
-        document_root = settings.MEDIA_ROOT
-        file_path = os.path.abspath(os.path.join(document_root, path))
+        document_root = os.path.realpath(settings.MEDIA_ROOT)
+        file_path = os.path.realpath(os.path.join(document_root, path))
 
-        # 3. Prevent Directory Traversal Attacks
-        if not file_path.startswith(os.path.abspath(document_root)):
+        try:
+            if os.path.commonpath((document_root, file_path)) != document_root:
+                raise Http404("Invalid file path.")
+        except ValueError:
             raise Http404("Invalid file path.")
+
+        relative_path = os.path.relpath(file_path, document_root).replace(os.sep, "/")
+        if any(
+            relative_path == directory.rstrip("/")
+            or relative_path.startswith(directory)
+            for directory in self.SENSITIVE_DIRECTORIES
+        ):
+            raise Http404("File not found.")
 
         if not os.path.exists(file_path):
             raise Http404("File not found.")
 
-        # 4. Stream the file directly
-        return FileResponse(open(file_path, 'rb'))
+        return FileResponse(open(file_path, "rb"))
