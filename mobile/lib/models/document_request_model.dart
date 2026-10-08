@@ -10,6 +10,10 @@ class DocumentRequestModel {
   final String? adminNotes;
   final String? orNumber;
   final double? feeAmount;
+  final String? paymentMethod;
+  final String? paymentReference;
+  final String paymentStatus;
+  final String? paymentReviewNote;
   final bool isWalkin;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -23,6 +27,10 @@ class DocumentRequestModel {
     this.adminNotes,
     this.orNumber,
     this.feeAmount,
+    this.paymentMethod,
+    this.paymentReference,
+    this.paymentStatus = 'NOT_REQUIRED',
+    this.paymentReviewNote,
     this.isWalkin = false,
     this.createdAt,
     this.updatedAt,
@@ -32,7 +40,10 @@ class DocumentRequestModel {
     return DocumentRequestModel(
       id: (json['request_id'] ?? json['id']) is int
           ? (json['request_id'] ?? json['id']) as int
-          : int.tryParse((json['request_id'] ?? json['id'])?.toString() ?? '') ?? 0,
+          : int.tryParse(
+                  (json['request_id'] ?? json['id'])?.toString() ?? '',
+                ) ??
+                0,
       documentType: json['document_type'] as String? ?? 'Document Request',
       purpose: json['purpose'] as String?,
       urgencyTag: json['urgency_tag'] as String? ?? 'REGULAR',
@@ -41,12 +52,20 @@ class DocumentRequestModel {
       orNumber: json['or_number'] as String?,
       feeAmount: json['fee_amount'] != null
           ? (json['fee_amount'] is num
-              ? (json['fee_amount'] as num).toDouble()
-              : double.tryParse(json['fee_amount'].toString()))
+                ? (json['fee_amount'] as num).toDouble()
+                : double.tryParse(json['fee_amount'].toString()))
           : null,
+      paymentMethod: json['payment_method'] as String?,
+      paymentReference: json['payment_reference'] as String?,
+      paymentStatus: json['payment_status'] as String? ?? 'NOT_REQUIRED',
+      paymentReviewNote: json['payment_review_note'] as String?,
       isWalkin: json['is_walkin'] as bool? ?? false,
-      createdAt: json['created_at'] != null ? DateTime.tryParse(json['created_at'].toString()) : null,
-      updatedAt: json['updated_at'] != null ? DateTime.tryParse(json['updated_at'].toString()) : null,
+      createdAt: json['created_at'] != null
+          ? DateTime.tryParse(json['created_at'].toString())
+          : null,
+      updatedAt: json['updated_at'] != null
+          ? DateTime.tryParse(json['updated_at'].toString())
+          : null,
     );
   }
 
@@ -59,11 +78,16 @@ class DocumentRequestModel {
       'admin_notes': adminNotes,
       'or_number': orNumber,
       'fee_amount': feeAmount,
+      'payment_method': paymentMethod,
+      'payment_reference': paymentReference,
+      'payment_status': paymentStatus,
+      'payment_review_note': paymentReviewNote,
       'is_walkin': isWalkin,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
     };
   }
+
   bool get isPending => status.toUpperCase() == 'PENDING';
   bool get isProcessing => status.toUpperCase() == 'PROCESSING';
   bool get isReadyForPickup => status.toUpperCase() == 'READY_FOR_PICKUP';
@@ -74,7 +98,7 @@ class DocumentRequestModel {
   /// Formatted fee string in Philippine Pesos (e.g. "₱50.00")
   String? get formattedFee =>
       feeAmount != null ? '₱${feeAmount!.toStringAsFixed(2)}' : null;
-      
+
   /// Returns tracking ID formatted matching reference design (e.g. "ID: #BC-2026-0892")
   String get formattedTrackingId {
     final prefix = _getDocumentPrefix(documentType);
@@ -90,8 +114,18 @@ class DocumentRequestModel {
     }
     final dt = createdAt!;
     final months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     final monthName = months[dt.month - 1];
     return 'Requested $monthName ${dt.day}, ${dt.year}';

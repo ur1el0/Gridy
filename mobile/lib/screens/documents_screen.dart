@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+
 import '../core/network/api_client.dart';
 import '../core/theme/app_colors.dart';
 import '../models/document_request_model.dart';
@@ -22,11 +23,7 @@ class DocumentsScreen extends StatefulWidget {
   final DocumentService? documentService;
   final AuthService? authService;
 
-  const DocumentsScreen({
-    super.key,
-    this.documentService,
-    this.authService,
-  });
+  const DocumentsScreen({super.key, this.documentService, this.authService});
 
   @override
   State<DocumentsScreen> createState() => _DocumentsScreenState();
@@ -63,10 +60,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     _currentUser = storage.getUser();
 
     final apiClient = ApiClient();
-    _authService ??= AuthService(
-      apiClient: apiClient,
-      storageService: storage,
-    );
+    _authService ??= AuthService(apiClient: apiClient, storageService: storage);
     _documentService ??= DocumentService(
       apiClient: apiClient,
       storageService: storage,
@@ -122,6 +116,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       builder: (ctx) => DocumentDetailsDialog(
         request: req,
         documentService: _documentService,
+        onRequestUpdated: _loadDocumentsData,
       ),
     );
   }
@@ -131,10 +126,8 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => ProfileScreen(
-          user: _currentUser!,
-          authService: _authService!,
-        ),
+        builder: (_) =>
+            ProfileScreen(user: _currentUser!, authService: _authService!),
       ),
     );
   }
@@ -156,7 +149,10 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
         preferredSize: const Size.fromHeight(64),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20.0,
+              vertical: 8.0,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -205,11 +201,13 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                     ),
                     child: Center(
                       child: Text(
-                        _currentUser != null && _currentUser!.fullName.isNotEmpty
+                        _currentUser != null &&
+                                _currentUser!.fullName.isNotEmpty
                             ? _currentUser!.fullName[0].toUpperCase()
-                            : (_currentUser != null && _currentUser!.username.isNotEmpty
-                                ? _currentUser!.username[0].toUpperCase()
-                                : 'C'),
+                            : (_currentUser != null &&
+                                      _currentUser!.username.isNotEmpty
+                                  ? _currentUser!.username[0].toUpperCase()
+                                  : 'C'),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -227,7 +225,9 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryNavy),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  AppColors.primaryNavy,
+                ),
               ),
             )
           : RefreshIndicator(
@@ -300,7 +300,11 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                           ),
                           suffixIcon: _searchQuery.isNotEmpty
                               ? IconButton(
-                                  icon: const Icon(Icons.clear_rounded, size: 18, color: Color(0xFF64748B)),
+                                  icon: const Icon(
+                                    Icons.clear_rounded,
+                                    size: 18,
+                                    color: Color(0xFF64748B),
+                                  ),
                                   onPressed: () {
                                     _searchController.clear();
                                     setState(() => _searchQuery = '');
@@ -308,7 +312,10 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                                 )
                               : null,
                           border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 14,
+                          ),
                         ),
                       ),
                     ),
