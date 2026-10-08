@@ -1,7 +1,7 @@
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
-from gridy_auth.models import User
+from gridy_auth.models import Barangay, User
 from .models import Announcement
 from datetime import timedelta
 from django.utils import timezone
@@ -70,6 +70,45 @@ class AnnouncementAPITests(APITestCase):
 
         self.assertEqual(len(regular_items), 2, "Should be two regular announcements")
         self.assertEqual(regular_items[0]['id'], ann3.id, "Regular announcements are not ordered correctly by time")
+
+
+class PublicAnnouncementAPITests(APITestCase):
+    def test_public_feed_is_barangay_scoped_and_exposes_only_post_details(self):
+        first_barangay = Barangay.objects.create(name="Public Announcement A")
+        second_barangay = Barangay.objects.create(name="Public Announcement B")
+        first_admin = User.objects.create_user(
+            username="public_announcement_admin_a",
+            password="SecurePassword123!",
+            role=User.Role.ADMIN,
+            barangay=first_barangay,
+        )
+        second_admin = User.objects.create_user(
+            username="public_announcement_admin_b",
+            password="SecurePassword123!",
+            role=User.Role.ADMIN,
+            barangay=second_barangay,
+        )
+        announcement = Announcement.objects.create(
+            title="Office schedule",
+            content="The barangay hall opens at 8 AM.",
+            created_by=first_admin,
+        )
+        Announcement.objects.create(
+            title="Announcement in another tenant",
+            content="This must not appear in the first feed.",
+            created_by=second_admin,
+        )
+
+        response = self.client.get(
+            reverse("public-announcements", args=[first_barangay.pk])
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(response.data), 1)
+        self.assertEqual(response.data[0]["id"], announcement.pk)
+        self.assertEqual(response.data[0]["title"], "Office schedule")
+        self.assertNotIn("created_by", response.data[0])
+        self.assertNotIn("image", response.data[0])
 
 class ActivityScheduleAPITests(APITestCase):
     def setUp(self):

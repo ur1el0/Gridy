@@ -21,6 +21,13 @@ class AnnouncementSerializer(serializers.ModelSerializer):
             return value
 
 
+class PublicAnnouncementSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = Announcement
+        fields = ["id", "title", "content", "is_pinned", "created_at"]
+        read_only_fields = fields
+
+
 class ActivityScheduleSerializer(serializers.ModelSerializer):
     class Meta:
         model = ActivitySchedule

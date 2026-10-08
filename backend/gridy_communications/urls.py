@@ -2,6 +2,7 @@ from django.urls import path, include
 from rest_framework.routers import DefaultRouter
 from gridy_communications.views import (
     AnnouncementViewSet,
+    PublicAnnouncementListView,
     ActivityScheduleViewSet, 
     FCMDeviceViewSet, 
     EmergencyHotlineViewSet,
@@ -19,4 +20,9 @@ router.register(r'admin-notifications', AdminNotificationViewSet, basename='admi
 
 urlpatterns = [
     path('', include(router.urls)),
+    path(
+        'public/barangays/<int:barangay_id>/announcements/',
+        PublicAnnouncementListView.as_view(),
+        name='public-announcements',
+    ),
 ]
