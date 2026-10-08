@@ -1,6 +1,7 @@
 import toast from 'react-hot-toast';
 import { useState, useEffect, useMemo } from "react";
 import { axiosPrivate } from "../../api/axios";
+import { usePrivateMediaUrl } from "../../hooks/usePrivateMediaUrl";
 import { 
     CheckCircle, 
     Clock, 
@@ -48,6 +49,9 @@ export default function ResidentVerification() {
     const [residentToReject, setResidentToReject] = useState<Resident | null>(null);
     const [rejectionReason, setRejectionReason] = useState('');
     const [isRejecting, setIsRejecting] = useState(false);
+    const philsysMedia = usePrivateMediaUrl(residentToInspect?.philsys_id_photo);
+    const billingMedia = usePrivateMediaUrl(residentToInspect?.utility_billing_photo);
+    const secondaryIdMedia = usePrivateMediaUrl(residentToInspect?.secondary_id_photo);
 
     const availablePuroks = useMemo(() => {
         const puroks = pendingResidents
@@ -336,21 +340,27 @@ export default function ResidentVerification() {
                                                 </span>
                                             </div>
                                             {residentToInspect.philsys_id_photo ? (
-                                                <a 
-                                                    href={residentToInspect.philsys_id_photo} 
-                                                    target="_blank" 
-                                                    rel="noopener noreferrer" 
-                                                    className="group relative block rounded-lg overflow-hidden border border-slate-200 bg-white"
-                                                >
-                                                    <img 
-                                                        src={residentToInspect.philsys_id_photo} 
-                                                        alt="PhilSys ID" 
-                                                        className="w-full h-40 object-cover group-hover:scale-105 transition-transform" 
-                                                    />
-                                                    <span className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded flex items-center gap-1">
-                                                        <ExternalLink className="w-3 h-3" /> Open
-                                                    </span>
-                                                </a>
+                                                philsysMedia.url ? (
+                                                    <a
+                                                        href={philsysMedia.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="group relative block rounded-lg overflow-hidden border border-slate-200 bg-white"
+                                                    >
+                                                        <img
+                                                            src={philsysMedia.url}
+                                                            alt="PhilSys ID"
+                                                            className="w-full h-40 object-cover group-hover:scale-105 transition-transform"
+                                                        />
+                                                        <span className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded flex items-center gap-1">
+                                                            <ExternalLink className="w-3 h-3" /> Open
+                                                        </span>
+                                                    </a>
+                                                ) : (
+                                                    <div role="status" className="h-40 flex items-center justify-center text-xs text-slate-500">
+                                                        {philsysMedia.isLoading ? "Loading protected image…" : "Unable to load protected image."}
+                                                    </div>
+                                                )
                                             ) : (
                                                 <div className="h-40 rounded-lg border-2 border-dashed border-slate-200 flex items-center justify-center text-xs text-slate-400 italic bg-white">
                                                     No photo uploaded
@@ -369,21 +379,27 @@ export default function ResidentVerification() {
                                                 </span>
                                             </div>
                                             {residentToInspect.utility_billing_photo ? (
-                                                <a 
-                                                    href={residentToInspect.utility_billing_photo} 
-                                                    target="_blank" 
-                                                    rel="noopener noreferrer" 
-                                                    className="group relative block rounded-lg overflow-hidden border border-slate-200 bg-white"
-                                                >
-                                                    <img 
-                                                        src={residentToInspect.utility_billing_photo} 
-                                                        alt="Utility Billing" 
-                                                        className="w-full h-40 object-cover group-hover:scale-105 transition-transform" 
-                                                    />
-                                                    <span className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded flex items-center gap-1">
-                                                        <ExternalLink className="w-3 h-3" /> Open
-                                                    </span>
-                                                </a>
+                                                billingMedia.url ? (
+                                                    <a
+                                                        href={billingMedia.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="group relative block rounded-lg overflow-hidden border border-slate-200 bg-white"
+                                                    >
+                                                        <img
+                                                            src={billingMedia.url}
+                                                            alt="Utility Billing"
+                                                            className="w-full h-40 object-cover group-hover:scale-105 transition-transform"
+                                                        />
+                                                        <span className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded flex items-center gap-1">
+                                                            <ExternalLink className="w-3 h-3" /> Open
+                                                        </span>
+                                                    </a>
+                                                ) : (
+                                                    <div role="status" className="h-40 flex items-center justify-center text-xs text-slate-500">
+                                                        {billingMedia.isLoading ? "Loading protected image…" : "Unable to load protected image."}
+                                                    </div>
+                                                )
                                             ) : (
                                                 <div className="h-40 rounded-lg border-2 border-dashed border-slate-200 flex items-center justify-center text-xs text-slate-400 italic bg-white">
                                                     No bill uploaded
@@ -402,21 +418,27 @@ export default function ResidentVerification() {
                                                 </span>
                                             </div>
                                             {residentToInspect.secondary_id_photo ? (
-                                                <a 
-                                                    href={residentToInspect.secondary_id_photo} 
-                                                    target="_blank" 
-                                                    rel="noopener noreferrer" 
-                                                    className="group relative block rounded-lg overflow-hidden border border-slate-200 bg-white"
-                                                >
-                                                    <img 
-                                                        src={residentToInspect.secondary_id_photo} 
-                                                        alt="Secondary ID" 
-                                                        className="w-full h-40 object-cover group-hover:scale-105 transition-transform" 
-                                                    />
-                                                    <span className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded flex items-center gap-1">
-                                                        <ExternalLink className="w-3 h-3" /> Open
-                                                    </span>
-                                                </a>
+                                                secondaryIdMedia.url ? (
+                                                    <a
+                                                        href={secondaryIdMedia.url}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="group relative block rounded-lg overflow-hidden border border-slate-200 bg-white"
+                                                    >
+                                                        <img
+                                                            src={secondaryIdMedia.url}
+                                                            alt="Secondary ID"
+                                                            className="w-full h-40 object-cover group-hover:scale-105 transition-transform"
+                                                        />
+                                                        <span className="absolute bottom-2 right-2 bg-black/70 text-white text-[10px] px-2 py-0.5 rounded flex items-center gap-1">
+                                                            <ExternalLink className="w-3 h-3" /> Open
+                                                        </span>
+                                                    </a>
+                                                ) : (
+                                                    <div role="status" className="h-40 flex items-center justify-center text-xs text-slate-500">
+                                                        {secondaryIdMedia.isLoading ? "Loading protected image…" : "Unable to load protected image."}
+                                                    </div>
+                                                )
                                             ) : (
                                                 <div className="h-40 rounded-lg border-2 border-dashed border-slate-200 flex items-center justify-center text-xs text-slate-400 italic bg-white">
                                                     None (Optional)

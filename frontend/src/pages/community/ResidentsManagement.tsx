@@ -1,6 +1,7 @@
 import toast from 'react-hot-toast';
 import React, { useEffect, useState } from "react";
 import { axiosPrivate } from "../../api/axios";
+import { usePrivateMediaUrl } from "../../hooks/usePrivateMediaUrl";
 import { 
     Search, Trash2, Mail, Phone, Upload, Download, FileSpreadsheet, 
     X, ShieldCheck, CheckCircle2, User, 
@@ -41,6 +42,9 @@ export const ResidentsManagement: React.FC = () => {
     const [selectedResident, setSelectedResident] = useState<Resident | null>(null);
     const [emailDraft, setEmailDraft] = useState("");
     const [savingEmail, setSavingEmail] = useState(false);
+    const philsysMedia = usePrivateMediaUrl(selectedResident?.philsys_id_photo);
+    const secondaryIdMedia = usePrivateMediaUrl(selectedResident?.secondary_id_photo);
+    const billingMedia = usePrivateMediaUrl(selectedResident?.utility_billing_photo);
 
     // Import Modal State
     const [isImportModalOpen, setIsImportModalOpen] = useState(false);
@@ -457,15 +461,21 @@ export const ResidentsManagement: React.FC = () => {
                                         </div>
                                     </div>
                                     {selectedResident.philsys_id_photo && (
-                                        <a 
-                                            href={selectedResident.philsys_id_photo} 
-                                            target="_blank" 
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1 text-xs font-bold text-primary-text hover:underline"
-                                        >
-                                            <span>View ID Photo</span>
-                                            <ExternalLink className="w-3.5 h-3.5" />
-                                        </a>
+                                        philsysMedia.url ? (
+                                            <a
+                                                href={philsysMedia.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1 text-xs font-bold text-primary-text hover:underline"
+                                            >
+                                                <span>View ID Photo</span>
+                                                <ExternalLink className="w-3.5 h-3.5" />
+                                            </a>
+                                        ) : (
+                                            <span role="status" className="text-xs text-slate-500">
+                                                {philsysMedia.isLoading ? "Loading attachment…" : "Unable to load attachment."}
+                                            </span>
+                                        )
                                     )}
                                 </div>
                             </div>
@@ -481,15 +491,21 @@ export const ResidentsManagement: React.FC = () => {
                                         <span className="font-semibold text-slate-800">{selectedResident.secondary_id_type || 'None provided'}</span>
                                     </div>
                                     {selectedResident.secondary_id_photo ? (
-                                        <a 
-                                            href={selectedResident.secondary_id_photo} 
-                                            target="_blank" 
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1 text-xs font-bold text-primary-text hover:underline mt-1"
-                                        >
-                                            <span>View Attached ID Photo</span>
-                                            <ExternalLink className="w-3 h-3" />
-                                        </a>
+                                        secondaryIdMedia.url ? (
+                                            <a
+                                                href={secondaryIdMedia.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1 text-xs font-bold text-primary-text hover:underline mt-1"
+                                            >
+                                                <span>View Attached ID Photo</span>
+                                                <ExternalLink className="w-3 h-3" />
+                                            </a>
+                                        ) : (
+                                            <span role="status" className="text-xs text-slate-500">
+                                                {secondaryIdMedia.isLoading ? "Loading attachment…" : "Unable to load attachment."}
+                                            </span>
+                                        )
                                     ) : (
                                         <div className="text-xs text-slate-400 italic">No secondary photo uploaded.</div>
                                     )}
@@ -504,15 +520,21 @@ export const ResidentsManagement: React.FC = () => {
                                         <span className="font-semibold text-slate-800">{selectedResident.utility_billing_type || 'Utility / House Billing'}</span>
                                     </div>
                                     {selectedResident.utility_billing_photo ? (
-                                        <a 
-                                            href={selectedResident.utility_billing_photo} 
-                                            target="_blank" 
-                                            rel="noopener noreferrer"
-                                            className="inline-flex items-center gap-1 text-xs font-bold text-primary-text hover:underline mt-1"
-                                        >
-                                            <span>View Billing Receipt</span>
-                                            <ExternalLink className="w-3 h-3" />
-                                        </a>
+                                        billingMedia.url ? (
+                                            <a
+                                                href={billingMedia.url}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="inline-flex items-center gap-1 text-xs font-bold text-primary-text hover:underline mt-1"
+                                            >
+                                                <span>View Billing Receipt</span>
+                                                <ExternalLink className="w-3 h-3" />
+                                            </a>
+                                        ) : (
+                                            <span role="status" className="text-xs text-slate-500">
+                                                {billingMedia.isLoading ? "Loading attachment…" : "Unable to load attachment."}
+                                            </span>
+                                        )
                                     ) : (
                                         <div className="text-xs text-slate-400 italic">No utility billing attached.</div>
                                     )}
