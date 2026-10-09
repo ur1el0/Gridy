@@ -2,7 +2,7 @@
 
 ## 1. Project Context & Objectives
 
-Gridy is a comprehensive Web and Mobile-Based Barangay Information and Service Management System designed to transition local governance from fragmented, manual processes to a centralized digital ecosystem. It is built to support a hybrid communication approach, bridging digital applications with traditional face-to-face local transactions.
+KapitBayan is a comprehensive Web and Mobile-Based Barangay Information and Service Management System designed to transition local governance from fragmented, manual processes to a centralized digital ecosystem. It is built to support a hybrid communication approach, bridging digital applications with traditional face-to-face local transactions.
 
 Following the enterprise software engineering lifecycle, the system objectives are:
 

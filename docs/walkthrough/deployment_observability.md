@@ -1,6 +1,6 @@
 # Containerization & Observability Architecture
 
-This guide details the Docker containerization architecture and the internal observability monitoring endpoints used in the Gridy project.
+This guide details the Docker containerization architecture and the internal observability monitoring endpoints used in the KapitBayan project.
 
 ---
 
@@ -32,7 +32,7 @@ Per **ADR 009**, Prometheus and Grafana were fully decommissioned, reducing syst
 
 ## 3. Native Observability: Structured Health Check Endpoint
 
-In place of heavy external scraping daemons, Gridy exposes a lightweight, enterprise-standard health monitoring route:
+In place of heavy external scraping daemons, KapitBayan exposes a lightweight, enterprise-standard health monitoring route:
 
 * **Endpoint**: `GET /api/v1/health/`
 * **Diagnostic Checks**:

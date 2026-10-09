@@ -53,6 +53,56 @@ class SeedBarangaysCommandTests(TestCase):
         self.assertFalse(User.objects.get(username="admin_dupay").has_usable_password())
         self.assertFalse(User.objects.get(username="admin_daungan").has_usable_password())
 
+    @override_settings(DEBUG=True)
+    def test_seed_barangays_migrates_legacy_dilg_display_name_in_place(self):
+        call_command("seed_barangays", confirm_demo_only=True)
+        dilg_admin = User.objects.get(username="dilg_admin")
+        user_id = dilg_admin.pk
+        original_email = dilg_admin.email
+
+        dilg_admin.first_name = "Gridy Demo"
+        dilg_admin.save(update_fields=["first_name"])
+
+        call_command("seed_barangays", confirm_demo_only=True)
+
+        dilg_admin.refresh_from_db()
+        self.assertEqual(dilg_admin.pk, user_id)
+        self.assertEqual(dilg_admin.first_name, "KapitBayan Demo")
+        self.assertEqual(dilg_admin.email, original_email)
+        self.assertEqual(User.objects.filter(username="dilg_admin").count(), 1)
+
+    @override_settings(DEBUG=True)
+    def test_analytics_seed_migrates_legacy_display_markers_in_place(self):
+        call_command("seed_demo_analytics", confirm_demo_only=True)
+        barangay = Barangay.objects.get(name="KapitBayan Demo Barangay North")
+        resident = User.objects.get(username="gridy_demo_north_resident_01")
+        document = DocumentRequest.objects.get(
+            user=resident,
+            purpose="KapitBayan Demo 01 DOC 001",
+        )
+        barangay_id = barangay.pk
+        document_id = document.pk
+
+        barangay.name = "Gridy Demo Barangay North"
+        barangay.save(update_fields=["name"])
+        document.purpose = "GRIDY DEMO 01 DOC 001"
+        document.save(update_fields=["purpose"])
+
+        call_command("seed_demo_analytics", confirm_demo_only=True)
+
+        barangay.refresh_from_db()
+        document.refresh_from_db()
+        self.assertEqual(barangay.pk, barangay_id)
+        self.assertEqual(barangay.name, "KapitBayan Demo Barangay North")
+        self.assertEqual(document.pk, document_id)
+        self.assertEqual(document.purpose, "KapitBayan Demo 01 DOC 001")
+        self.assertFalse(
+            Barangay.objects.filter(name="Gridy Demo Barangay North").exists()
+        )
+        self.assertFalse(
+            DocumentRequest.objects.filter(purpose="GRIDY DEMO 01 DOC 001").exists()
+        )
+
     @override_settings(DEBUG=False)
     def test_seed_barangays_refuses_when_debug_is_disabled(self):
         with self.assertRaises(CommandError):

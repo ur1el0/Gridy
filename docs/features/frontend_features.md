@@ -1,6 +1,6 @@
-# Gridy Frontend Architecture & Features Manual
+# KapitBayan Frontend Architecture & Features Manual
 
-This document details the core frontend features and architecture implemented in the Gridy Web Application, built using React, TypeScript, and Vite.
+This document details the core frontend features and architecture implemented in the KapitBayan Web Application, built using React, TypeScript, and Vite.
 
 ---
 

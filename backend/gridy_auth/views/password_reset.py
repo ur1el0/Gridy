@@ -40,7 +40,7 @@ class PasswordResetRequestView(APIView):
                 reset_link = f"{settings.FRONTEND_URL.rstrip('/')}/reset-password?uidb64={uid}&token={token}"
 
                 send_mail(
-                    subject="Gridy: Password Reset Request",
+                    subject="KapitBayan: Password Reset Request",
                     message=f"Hello,\n\nYou requested a password reset. Click the link below to set a new password:\n\n{reset_link}\n\nIf you did not request this, please ignore this email.",
                     from_email=settings.EMAIL_HOST_USER,
                     recipient_list=[email],

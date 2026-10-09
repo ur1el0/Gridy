@@ -126,6 +126,21 @@ class ResidentEmailUpdateAPITests(IsolatedAuthAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(mail.outbox), 0)
 
+    def test_password_reset_email_uses_kapitbayan_brand(self):
+        self.resident_user.email = "reset.resident@example.com"
+        self.resident_user.save(update_fields=["email"])
+        self.client.force_authenticate(user=None)
+
+        response = self.client.post(
+            reverse("password_reset_request"),
+            {"email": self.resident_user.email},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(len(mail.outbox), 1)
+        self.assertEqual(mail.outbox[0].subject, "KapitBayan: Password Reset Request")
+
     def test_resident_cannot_use_directory_endpoint_to_set_email(self):
         self.client.force_authenticate(user=self.resident_user)
 

@@ -4,7 +4,7 @@
 Accepted
 
 ## Context
-Gridy serves two frontend clients: a React Admin Web Dashboard and a Flutter Mobile Application. Without a centralized, machine-readable API specification, changes made to the backend views (e.g., changes to endpoint URLs or required request keys) can silently break client applications.
+KapitBayan serves two frontend clients: a React Admin Web Dashboard and a Flutter Mobile Application. Without a centralized, machine-readable API specification, changes made to the backend views (e.g., changes to endpoint URLs or required request keys) can silently break client applications.
 
 ## Decision
 We chose `drf-spectacular` to automatically generate and validate an OpenAPI 3.0 schema directly from our Django REST Framework codebase.

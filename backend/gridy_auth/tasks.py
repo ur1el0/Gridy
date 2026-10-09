@@ -34,8 +34,8 @@ def send_welcome_email(user_email, full_name):
     Sends a welcome email to newly registered users in a non-blocking background thread.
     """
     try:
-        subject = "Welcome to Gridy!"
-        message = f"Hello {full_name}, \n\nWelcome to Gridy. We are excited to have you on board!"
+        subject = "Welcome to KapitBayan!"
+        message = f"Hello {full_name}, \n\nWelcome to KapitBayan. We are excited to have you on board!"
         sent_count = send_mail(
             subject,
             message,
@@ -54,14 +54,14 @@ def send_barangay_approval_email(user_email, applicant_name, barangay_name):
     """Tell the verified first official how to establish their login password."""
     try:
         reset_page = f"{settings.FRONTEND_URL.rstrip('/')}/forgot-password"
-        subject = "Gridy barangay account approved"
+        subject = "KapitBayan barangay account approved"
         message = (
             f"Hello {applicant_name},\n\n"
             f"The application for {barangay_name} was approved and your official "
-            "account is ready. No password was created for you. Visit the Gridy "
+            "account is ready. No password was created for you. Visit the KapitBayan "
             f"password recovery page ({reset_page}) and request a private reset "
             "link using this email address to set your password.\n\n"
-            "Gridy staff will never ask you to send your password or payment-account credentials."
+            "KapitBayan staff will never ask you to send your password or payment-account credentials."
         )
         sent_count = send_mail(
             subject,

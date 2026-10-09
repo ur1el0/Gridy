@@ -2,7 +2,7 @@
 
 ## 1. Hosting Infrastructure & Origin Topology
 
-Gridy is configured for an intended **Same-Origin Reverse Proxy Architecture** for its production web deployment to guarantee robust cookie security and eliminate third-party cookie restrictions:
+KapitBayan is configured for an intended **Same-Origin Reverse Proxy Architecture** for its production web deployment to guarantee robust cookie security and eliminate third-party cookie restrictions:
 
 *   **Backend & Database:** Deployed on **Render.com**. Render provides a managed PostgreSQL instance and auto-deploys the Django backend from the `main` branch.
     *   **Production API Hostname:** `https://gridy-backend.onrender.com`

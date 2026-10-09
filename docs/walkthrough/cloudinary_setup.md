@@ -1,6 +1,6 @@
 # Cloudinary Media Storage Configuration & Setup Guide
 
-Gridy uses **Cloudinary** to store and serve image attachments uploaded by residents when filing incident reports. This secures fast load times, offloads file traffic from our main servers, and provides automated image compression.
+KapitBayan uses **Cloudinary** to store and serve image attachments uploaded by residents when filing incident reports. This secures fast load times, offloads file traffic from our main servers, and provides automated image compression.
 
 ---
 
@@ -36,7 +36,7 @@ When a resident submits an incident report via the mobile or web application:
    `POST /api/v1/reports/`
 2. **Backend Processing:**
    * Receives request variables (`title`, `description`, `location`) and the binary file stream (`image`).
-   * Gridy automatically intercepts the binary attachment, compresses the file, and pushes it directly to Cloudinary.
+   * KapitBayan automatically intercepts the binary attachment, compresses the file, and pushes it directly to Cloudinary.
    * On successful response from Cloudinary, the backend stores the secure URL (`image_url`) inside our database tables and returns it to the client.
 3. **Response:**
    ```json

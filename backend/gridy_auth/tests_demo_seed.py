@@ -21,7 +21,7 @@ class DemoAnalyticsSeedTests(TestCase):
         call_command("seed_demo_analytics", confirm_demo_only=True, stdout=StringIO())
 
         self.assertEqual(self._counts(), first_counts)
-        self.assertEqual(Barangay.objects.filter(name__startswith="Gridy Demo Barangay").count(), 3)
+        self.assertEqual(Barangay.objects.filter(name__startswith="KapitBayan Demo Barangay").count(), 3)
         self.assertEqual(Resident.objects.filter(user__username__startswith="gridy_demo_").count(), 12)
         self.assertTrue(
             all(
@@ -29,8 +29,8 @@ class DemoAnalyticsSeedTests(TestCase):
                 for user in User.objects.filter(username__startswith="gridy_demo_")
             )
         )
-        self.assertGreater(QueueTicket.objects.filter(barangay__name__startswith="Gridy Demo").count(), 0)
-        self.assertGreater(DocumentRequest.objects.filter(purpose__startswith="GRIDY DEMO").count(), 0)
+        self.assertGreater(QueueTicket.objects.filter(barangay__name__startswith="KapitBayan Demo").count(), 0)
+        self.assertGreater(DocumentRequest.objects.filter(purpose__startswith="KapitBayan Demo").count(), 0)
         self.assertGreater(AidRequest.objects.filter(reason__startswith="Synthetic presentation").count(), 0)
 
     @override_settings(DEBUG=False)
@@ -53,11 +53,11 @@ class DemoAnalyticsSeedTests(TestCase):
 
     def _counts(self):
         return {
-            "barangays": Barangay.objects.filter(name__startswith="Gridy Demo Barangay").count(),
+            "barangays": Barangay.objects.filter(name__startswith="KapitBayan Demo Barangay").count(),
             "users": User.objects.filter(username__startswith="gridy_demo_").count(),
             "residents": Resident.objects.filter(user__username__startswith="gridy_demo_").count(),
-            "documents": DocumentRequest.objects.filter(purpose__startswith="GRIDY DEMO").count(),
-            "tickets": QueueTicket.objects.filter(barangay__name__startswith="Gridy Demo").count(),
+            "documents": DocumentRequest.objects.filter(purpose__startswith="KapitBayan Demo").count(),
+            "tickets": QueueTicket.objects.filter(barangay__name__startswith="KapitBayan Demo").count(),
             "aid_requests": AidRequest.objects.filter(reason__startswith="Synthetic presentation").count(),
         }
 

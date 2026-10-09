@@ -1,6 +1,6 @@
-# Gridy Backend Features Manual
+# KapitBayan Backend Features Manual
 
-This document details the core backend features and functionalities implemented in Gridy.
+This document details the core backend features and functionalities implemented in KapitBayan.
 
 ---
 

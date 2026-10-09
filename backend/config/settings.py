@@ -354,8 +354,8 @@ elif not Path(FIREBASE_SERVICE_ACCOUNT_JSON_PATH).is_absolute():
 
 
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'Gridy API',
-    'DESCRIPTION': 'Barangay Information and Service Management System API',
+    'TITLE': 'KapitBayan API',
+    'DESCRIPTION': 'KapitBayan Barangay Information and Service Management System API',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'SERVE_PERMISSIOMNS': ['gridy_auth.permissions.IsBarangayOfficial'],

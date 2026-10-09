@@ -12,9 +12,21 @@ from gridy_services.models import AidRequest, DocumentRequest, QueueTicket
 
 
 DEMO_BARANGAYS = (
-    ("north", "Gridy Demo Barangay North"),
-    ("central", "Gridy Demo Barangay Central"),
-    ("south", "Gridy Demo Barangay South"),
+    (
+        "north",
+        "Gridy Demo Barangay North",
+        "KapitBayan Demo Barangay North",
+    ),
+    (
+        "central",
+        "Gridy Demo Barangay Central",
+        "KapitBayan Demo Barangay Central",
+    ),
+    (
+        "south",
+        "Gridy Demo Barangay South",
+        "KapitBayan Demo Barangay South",
+    ),
 )
 
 
@@ -32,7 +44,11 @@ class Command(BaseCommand):
         require_local_demo_database(confirmed=options["confirm_demo_only"])
 
         with transaction.atomic():
-            for tenant_index, (key, barangay_name) in enumerate(DEMO_BARANGAYS, start=1):
+            for tenant_index, (key, legacy_name, barangay_name) in enumerate(
+                DEMO_BARANGAYS,
+                start=1,
+            ):
+                self._rename_legacy_barangay(legacy_name, barangay_name)
                 barangay, _ = Barangay.objects.get_or_create(
                     name=barangay_name,
                     defaults={
@@ -77,8 +93,27 @@ class Command(BaseCommand):
                 self._seed_aid_requests(barangay, residents)
 
         self.stdout.write(self.style.SUCCESS(
-            "Synthetic Gridy presentation data is ready in three isolated demo barangays."
+            "Synthetic KapitBayan presentation data is ready in three isolated demo barangays."
         ))
+
+    def _rename_legacy_barangay(self, legacy_name, current_name):
+        legacy_rows = list(
+            Barangay.objects.filter(name=legacy_name).order_by("pk")[:2]
+        )
+        current_rows = list(
+            Barangay.objects.filter(name=current_name).order_by("pk")[:2]
+        )
+        if (
+            len(legacy_rows) > 1
+            or len(current_rows) > 1
+            or (legacy_rows and current_rows)
+        ):
+            raise CommandError(
+                f"Cannot safely migrate ambiguous demo barangay names: {legacy_name}."
+            )
+        if legacy_rows:
+            legacy_rows[0].name = current_name
+            legacy_rows[0].save(update_fields=["name"])
 
     def _get_demo_user(self, *, username, role, barangay, is_staff=False):
         user, created = User.objects.get_or_create(
@@ -154,20 +189,48 @@ class Command(BaseCommand):
                 if status == DocumentRequest.Status.RELEASED
                 else DocumentRequest.PaymentStatus.UNPAID
             )
-            marker = f"GRIDY DEMO {tenant_index:02d} DOC {sequence:03d}"
-            document, created = DocumentRequest.objects.get_or_create(
-                user=resident,
-                purpose=marker,
-                defaults={
-                    "barangay": barangay,
-                    "document_type": document_type,
-                    "status": status,
-                    "fee_amount": fee,
-                    "payment_method": "CASH" if payment_status == DocumentRequest.PaymentStatus.VERIFIED else "",
-                    "payment_status": payment_status,
-                    "or_number": f"DEMO-OR-{tenant_index:02d}-{sequence:03d}" if payment_status == DocumentRequest.PaymentStatus.VERIFIED else "",
-                },
+            marker = f"KapitBayan Demo {tenant_index:02d} DOC {sequence:03d}"
+            legacy_marker = f"GRIDY DEMO {tenant_index:02d} DOC {sequence:03d}"
+            matching_documents = list(
+                DocumentRequest.objects.filter(
+                    user=resident,
+                    purpose__in=(marker, legacy_marker),
+                ).order_by("pk")[:2]
             )
+            if len(matching_documents) > 1:
+                raise CommandError(
+                    f"Cannot safely migrate duplicate demo document marker: {legacy_marker}."
+                )
+            if matching_documents:
+                document = matching_documents[0]
+                created = False
+                if document.purpose == legacy_marker:
+                    document.purpose = marker
+                    document.save(update_fields=["purpose"])
+            else:
+                document, created = DocumentRequest.objects.get_or_create(
+                    user=resident,
+                    purpose=marker,
+                    defaults={
+                        "barangay": barangay,
+                        "document_type": document_type,
+                        "status": status,
+                        "fee_amount": fee,
+                        "payment_method": (
+                            "CASH"
+                            if payment_status
+                            == DocumentRequest.PaymentStatus.VERIFIED
+                            else ""
+                        ),
+                        "payment_status": payment_status,
+                        "or_number": (
+                            f"DEMO-OR-{tenant_index:02d}-{sequence:03d}"
+                            if payment_status
+                            == DocumentRequest.PaymentStatus.VERIFIED
+                            else ""
+                        ),
+                    },
+                )
             self._backdate(
                 DocumentRequest,
                 document,

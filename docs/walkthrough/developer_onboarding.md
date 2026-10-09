@@ -1,6 +1,6 @@
-# Gridy Backend Developer Onboarding and Setup Guide
+# KapitBayan Backend Developer Onboarding and Setup Guide
 
-This document guides developers through setting up the local development environment for the Gridy Django REST Framework backend.
+This document guides developers through setting up the local development environment for the KapitBayan Django REST Framework backend.
 
 ---
 
@@ -17,7 +17,7 @@ Before setting up the project, ensure you have the following installed on your m
 ## Local Environment Setup
 
 ### 1. Clone and Navigate to the Repository
-Navigate to the root directory of the Gridy project:
+Navigate to the root directory of the KapitBayan project:
 ```bash
 cd Gridy
 ```
@@ -85,7 +85,7 @@ python backend/manage.py makemigrations
 python backend/manage.py migrate
 ```
 
-For a local development database only, seed synthetic barangays and starter records. The created accounts have unusable passwords; create staff login accounts through Gridy's normal registration process.
+For a local development database only, seed synthetic barangays and starter records. The created accounts have unusable passwords; create staff login accounts through KapitBayan's normal registration process.
 ```bash
 python backend/manage.py seed_barangays --confirm-demo-only
 ```

@@ -4,7 +4,7 @@
 Accepted (Asynchronous Task Queue superseded by ADR 009)
 
 ## Context
-Gridy requires a structured, scalable backend framework to implement a secure Barangay Management & Resident Engagement system. The system needs built-in support for:
+KapitBayan requires a structured, scalable backend framework to implement a secure Barangay Management & Resident Engagement system. The system needs built-in support for:
 - Role-Based Access Control (RBAC)
 - Relational database transactions (for queuing tickets and document validation pipeline)
 - Task queues (for sending notifications and running background analytics metrics checks)

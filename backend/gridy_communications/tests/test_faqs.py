@@ -85,7 +85,7 @@ class FAQAPITests(APITestCase):
 
         post_res = self.client.post(
             self.list_url,
-            {"question": "What is Gridy?", "answer": "Gridy is a barangay management system.", "order": 2},
+            {"question": "What is KapitBayan?", "answer": "KapitBayan is a barangay management system.", "order": 2},
             format="json",
         )
         self.assertEqual(post_res.status_code, status.HTTP_201_CREATED)
@@ -94,11 +94,11 @@ class FAQAPITests(APITestCase):
         new_detail_url = reverse("faq-detail", kwargs={"pk": new_faq_id})
         patch_res = self.client.patch(
             new_detail_url,
-            {"answer": "Updated Gridy explanation."},
+            {"answer": "Updated KapitBayan explanation."},
             format="json",
         )
         self.assertEqual(patch_res.status_code, status.HTTP_200_OK)
-        self.assertEqual(patch_res.data["answer"], "Updated Gridy explanation.")
+        self.assertEqual(patch_res.data["answer"], "Updated KapitBayan explanation.")
 
         delete_res = self.client.delete(new_detail_url)
         self.assertEqual(delete_res.status_code, status.HTTP_204_NO_CONTENT)

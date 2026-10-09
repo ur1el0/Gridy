@@ -1,6 +1,6 @@
 # Asynchronous Background Task Architecture (`@async_task`)
 
-This guide outlines the background task execution architecture in Gridy, which decouples long-running I/O operations from the synchronous HTTP request-response cycle.
+This guide outlines the background task execution architecture in KapitBayan, which decouples long-running I/O operations from the synchronous HTTP request-response cycle.
 
 ---
 
