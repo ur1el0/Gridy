@@ -3,14 +3,21 @@ services:
     image: postgres:15-alpine
     container_name: gridy_db
     restart: always
+    env_file:
+      - ./.env
     environment:
       POSTGRES_DB: gridy_db
       POSTGRES_USER: gridy_user
-      POSTGRES_PASSWORD: gridy_password
     ports:
-      - "5433:5432"
+      - "127.0.0.1:5433:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U gridy_user -d gridy_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
 
   backend:
     build: ./backend
@@ -19,14 +26,15 @@ services:
     command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ./backend:/app
+      - media_data:/app/media
     ports:
       - "8000:8000"
     env_file:
       - ./backend/.env
-    environment:
-      - DATABASE_URL=postgres://gridy_user:gridy_password@db:5432/gridy_db
+      - ./.env
     depends_on:
-      - db
+      db:
+        condition: service_healthy
 
   frontend:
     build: ./frontend
@@ -35,7 +43,9 @@ services:
     ports:
       - "8080:80"
     depends_on:
-      - backend
+      backend:
+        condition: service_healthy
 
 volumes:
   postgres_data:
+  media_data:

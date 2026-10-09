@@ -12,8 +12,11 @@ In accordance with **ADR 009** (*Stack Simplification & Defended Capstone Propos
 * **`gridy_backend` (Django DRF via Gunicorn)**: RESTful API service exposing business logic, role-based authorization, and PDF clearance generation.
 * **`gridy_frontend` (React + Vite via Nginx)**: Production administrative and citizen web portal served statically through Nginx on port 80.
 
-To launch the entire system locally:
-`docker compose up --build`
+This Compose file is for local development and demos. It runs Django's development server; do not use it as the production deployment configuration. Copy `.env.example` to `.env` and `backend/.env.example` to `backend/.env`, then set `POSTGRES_PASSWORD` and `DATABASE_URL` in the root `.env` using the same database credentials. Use `db` as the host, `gridy_db` as the database, and port `5432` in the URL. Set the admin registration passkey in `backend/.env` before starting:
+
+```bash
+docker compose up --build
+```
 
 ---
 
@@ -36,3 +39,15 @@ In place of heavy external scraping daemons, Gridy exposes a lightweight, enterp
   * **Database Latency**: Executes a live SQL probe against PostgreSQL, measuring query round-trip time in milliseconds.
   * **Cache / Memory Status**: Verifies local caching responsiveness.
   * **Service Readiness**: Reports overall HTTP 200 operational readiness without Celery or Redis dependencies.
+
+The backend image runs as an unprivileged user and uses this endpoint as its Docker health check. Docker Compose waits for PostgreSQL readiness before starting backend migrations, then waits for the backend health check before starting the frontend. The database port is bound to localhost for local use.
+
+## 4. Production notification configuration
+
+When `DEBUG=False`, Django refuses to start without SMTP host, username, password, sender address, and an existing Firebase service-account JSON path. Firebase credentials are parsed during application startup; invalid credentials also stop production startup. Set `EMAIL_HOST`, `EMAIL_PORT`, `EMAIL_USE_TLS`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `DEFAULT_FROM_EMAIL`, and `FIREBASE_SERVICE_ACCOUNT_JSON_PATH` in the deployment environment. The Firebase path defaults to `backend/firebase-admin-key.json` when unset; keep the key outside the image and repository.
+
+Email and push sends run in daemon threads, so a successful API response means the request was accepted by the application, not that a provider delivered it. Provider failures and thread-start failures are logged without recipient identifiers. These threads do not retry and may be interrupted by a process restart. Confirm delivery by configuring valid provider credentials and checking the SMTP/FCM provider logs and the application logs after a real registration or notification event.
+
+## 5. Release rollback and database recovery
+
+Take and verify a database backup before applying a release's migrations. If an application release needs to be rolled back, redeploy the previous application code while leaving the database at its migrated schema; do not reverse migrations `gridy_services.0011` through `0013` or `gridy_auth.0014`. Reversing `0011` removes payment review fields and data, `0012` removes aid requests, and `0013` removes queue call timestamps. The data change in `0014` has no reverse operation, so restoring the former seeded passwords is not supported. Restore a pre-release backup only when the loss of all changes since that backup is acceptable and explicitly intended.
