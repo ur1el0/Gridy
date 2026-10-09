@@ -11,9 +11,12 @@ https://docs.djangoproject.com/en/6.0/ref/settings/
 """
 
 import os
+import sys
 import environ
 from pathlib import Path
 from django.core.exceptions import ImproperlyConfigured
+
+IS_TESTING = "test" in sys.argv or "pytest" in sys.modules
 
 env = environ.Env(
     DEBUG=(bool, False)
@@ -44,7 +47,11 @@ PRIVACY_CONSENT_VERSION = "resident-v1"
 # SECURITY WARNING: don't run with debug turned on in production
 DEBUG = env('DEBUG')
 
-ALLOWED_HOSTS = env.list('ALLOWED_HOSTS', default=['localhost', '127.0.0.1', '.onrender.com'])
+ALLOWED_HOSTS = list(dict.fromkeys([
+    *env.list('ALLOWED_HOSTS', default=['.onrender.com']),
+    'localhost',
+    '127.0.0.1',
+]))
 
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
 if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
@@ -122,11 +129,9 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Add ASGI application for WebSockets
 ASGI_APPLICATION = 'config.asgi.application'
 
-import sys
+# Use the in-memory channel layer during tests.
 
-# Configure the Redis Channel Layer (Point to the existing gridy_redis container)
-
-if 'test' in sys.argv or 'pytest' in sys.modules:
+if IS_TESTING:
     CHANNEL_LAYERS = {
         "default": {
             "BACKEND": "channels.layers.InMemoryChannelLayer"
@@ -278,25 +283,11 @@ else:
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
 
 
-# pyrefly: ignore [missing-import]
-import firebase_admin
-# pyrefly: ignore [missing-import]
-from firebase_admin import credentials
-
-
-# 1. Read the JSON key path from .env
 FIREBASE_SERVICE_ACCOUNT_JSON_PATH = env('FIREBASE_SERVICE_ACCOUNT_JSON_PATH', default='')
-
-# 2. Defensively check if the file path is set and actually exists
-if FIREBASE_SERVICE_ACCOUNT_JSON_PATH and os.path.exists(FIREBASE_SERVICE_ACCOUNT_JSON_PATH):
-    try:
-        cred = credentials.Certificate(FIREBASE_SERVICE_ACCOUNT_JSON_PATH)
-        firebase_admin.initialize_app(cred)
-        print("Firebase Admin SDK succesfully initialized.")
-    except Exception as e:
-        print(f"Error initializing Firebase Admin SDK: {e}")
-else: 
-    print("Warning: Firebase service account JSON key not found. FCM notifications are disabled.")
+if not FIREBASE_SERVICE_ACCOUNT_JSON_PATH:
+    FIREBASE_SERVICE_ACCOUNT_JSON_PATH = str(BASE_DIR / 'firebase-admin-key.json')
+elif not Path(FIREBASE_SERVICE_ACCOUNT_JSON_PATH).is_absolute():
+    FIREBASE_SERVICE_ACCOUNT_JSON_PATH = str(BASE_DIR / FIREBASE_SERVICE_ACCOUNT_JSON_PATH)
 
 
 SPECTACULAR_SETTINGS = {
@@ -351,16 +342,42 @@ LOGGING = {
 
 # Email Configuration (SMTP)
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
-EMAIL_HOST = 'smtp.gmail.com'
-EMAIL_PORT = 587
-EMAIL_USE_TLS = True
-EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='')
+EMAIL_HOST = env('EMAIL_HOST', default='smtp.gmail.com')
+EMAIL_PORT = env.int('EMAIL_PORT', default=587)
+EMAIL_USE_TLS = env.bool('EMAIL_USE_TLS', default=True)
+EMAIL_HOST_USER = env('EMAIL_HOST_USER', default='').strip()
 EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
+DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER).strip()
 
-import sys
+if not DEBUG and not IS_TESTING:
+    missing_email_settings = [
+        name
+        for name, value in (
+            ('EMAIL_HOST', EMAIL_HOST),
+            ('EMAIL_HOST_USER', EMAIL_HOST_USER),
+            ('EMAIL_HOST_PASSWORD', EMAIL_HOST_PASSWORD),
+            ('DEFAULT_FROM_EMAIL', DEFAULT_FROM_EMAIL),
+        )
+        if not value.strip()
+    ]
+    if missing_email_settings:
+        raise ImproperlyConfigured(
+            'Production email delivery requires: '
+            + ', '.join(missing_email_settings)
+            + '.'
+        )
+
+    if (
+        not FIREBASE_SERVICE_ACCOUNT_JSON_PATH
+        or not Path(FIREBASE_SERVICE_ACCOUNT_JSON_PATH).is_file()
+    ):
+        raise ImproperlyConfigured(
+            'Production push notifications require a valid '
+            'FIREBASE_SERVICE_ACCOUNT_JSON_PATH.'
+        )
 
 # Local tests default to SQLite; CI can select PostgreSQL for row-level tests.
-if "test" in sys.argv or "pytest" in sys.modules:
+if IS_TESTING:
     EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 
     if env.bool("GRIDY_TEST_USE_SQLITE", default=True):
