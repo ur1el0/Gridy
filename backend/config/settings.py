@@ -263,6 +263,25 @@ CLOUDINARY_CLOUD_NAME = env('CLOUDINARY_CLOUD_NAME', default='')
 CLOUDINARY_API_KEY = env('CLOUDINARY_API_KEY', default='')
 CLOUDINARY_API_SECRET = env('CLOUDINARY_API_SECRET', default='')
 
+if not DEBUG and not IS_TESTING:
+    missing_cloudinary_settings = [
+        name
+        for name, value in (
+            ('CLOUDINARY_CLOUD_NAME', CLOUDINARY_CLOUD_NAME),
+            ('CLOUDINARY_API_KEY', CLOUDINARY_API_KEY),
+            ('CLOUDINARY_API_SECRET', CLOUDINARY_API_SECRET),
+        )
+        if not value.strip()
+    ]
+    if missing_cloudinary_settings:
+        raise ImproperlyConfigured(
+            'Production media storage requires: '
+            + ', '.join(missing_cloudinary_settings)
+            + '.'
+        )
+
+STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
+
 if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
     CLOUDINARY_STORAGE = { 
         'CLOUD_NAME': CLOUDINARY_CLOUD_NAME,
@@ -277,10 +296,17 @@ if CLOUDINARY_CLOUD_NAME and CLOUDINARY_API_KEY and CLOUDINARY_API_SECRET:
             "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
         },
     }
-    STATICFILES_STORAGE = 'django.contrib.staticfiles.storage.StaticFilesStorage'
 else:
     MEDIA_URL = '/media/'
     MEDIA_ROOT = os.path.join(BASE_DIR, 'media')
+    STORAGES = {
+        "default": {
+            "BACKEND": "django.core.files.storage.FileSystemStorage",
+        },
+        "staticfiles": {
+            "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        },
+    }
 
 
 FIREBASE_SERVICE_ACCOUNT_JSON_PATH = env('FIREBASE_SERVICE_ACCOUNT_JSON_PATH', default='')
@@ -375,6 +401,32 @@ if not DEBUG and not IS_TESTING:
             'Production push notifications require a valid '
             'FIREBASE_SERVICE_ACCOUNT_JSON_PATH.'
         )
+
+    # Production Security Headers & Cookie Policies
+    SESSION_COOKIE_SECURE = env.bool('SESSION_COOKIE_SECURE', default=True)
+    CSRF_COOKIE_SECURE = env.bool('CSRF_COOKIE_SECURE', default=True)
+    SECURE_SSL_REDIRECT = env.bool('SECURE_SSL_REDIRECT', default=True)
+    SECURE_HSTS_SECONDS = env.int('SECURE_HSTS_SECONDS', default=31536000)
+    SECURE_HSTS_INCLUDE_SUBDOMAINS = True
+    SECURE_HSTS_PRELOAD = True
+    SECURE_CONTENT_TYPE_NOSNIFF = True
+
+REFRESH_COOKIE_SAMESITE = env('REFRESH_COOKIE_SAMESITE', default='Strict')
+
+SENTRY_DSN = env('SENTRY_DSN', default='').strip()
+if SENTRY_DSN and not IS_TESTING:
+    try:
+        import sentry_sdk
+        from sentry_sdk.integrations.django import DjangoIntegration
+
+        sentry_sdk.init(
+            dsn=SENTRY_DSN,
+            integrations=[DjangoIntegration()],
+            traces_sample_rate=env.float('SENTRY_TRACES_SAMPLE_RATE', default=0.1),
+            send_default_pii=False,
+        )
+    except Exception:
+        pass
 
 # Local tests default to SQLite; CI can select PostgreSQL for row-level tests.
 if IS_TESTING:

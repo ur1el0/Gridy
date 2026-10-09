@@ -1,7 +1,11 @@
 import axios from 'axios';
 
-// Get the base URL from Vite environment variables, default to local Django server
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/v1';
+// Base URL resolution helper supporting build-time env injection and fallback
+export function resolveApiBaseUrl(envUrl = import.meta.env.VITE_API_BASE_URL): string {
+    return envUrl || 'http://127.0.0.1:8000/api/v1';
+}
+
+const BASE_URL = resolveApiBaseUrl();
 const REQUEST_TIMEOUT_MS = 15_000;
 
 export const axiosPrivate = axios.create({

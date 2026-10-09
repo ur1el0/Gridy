@@ -62,6 +62,22 @@ class DemoAnalyticsSeedTests(TestCase):
         }
 
 
+class BarangaySeedTests(TestCase):
+    @override_settings(DEBUG=True)
+    def test_seeds_dilg_admin_idempotently_without_a_usable_password(self):
+        call_command("seed_barangays", confirm_demo_only=True, stdout=StringIO())
+
+        dilg_admin = User.objects.get(username="dilg_admin")
+        self.assertEqual(dilg_admin.role, User.Role.DILG_ADMIN)
+        self.assertTrue(dilg_admin.is_staff)
+        self.assertIsNone(dilg_admin.barangay_id)
+        self.assertFalse(dilg_admin.has_usable_password())
+
+        call_command("seed_barangays", confirm_demo_only=True, stdout=StringIO())
+
+        self.assertEqual(User.objects.filter(username="dilg_admin").count(), 1)
+
+
 class LegacyDemoCredentialMigrationTests(TestCase):
     def test_migration_disables_only_exact_legacy_demo_accounts(self):
         seeded_user = User.objects.create_user(
