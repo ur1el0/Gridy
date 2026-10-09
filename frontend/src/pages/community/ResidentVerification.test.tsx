@@ -89,4 +89,34 @@ describe("ResidentVerification Component", () => {
             expect(screen.getAllByText("Purok 3")[0]).toBeInTheDocument();
         });
     });
+
+    it("opens the resident dossier and approves from the inspected view", async () => {
+        const resident = {
+            id: 3,
+            full_name: "Ana Santos",
+            birth_date: "1992-03-04",
+            voter_status: true,
+            contact_number: "09123456789",
+            purok: "4",
+            is_verified: false,
+            guardian: null,
+        };
+        vi.mocked(axiosPrivate.get).mockResolvedValueOnce({ data: { results: [resident] } });
+        vi.mocked(axiosPrivate.patch).mockResolvedValueOnce({ data: {} });
+
+        render(<ResidentVerification />);
+
+        await screen.findByText("Ana Santos");
+        fireEvent.click(screen.getByRole("button", { name: "Inspect" }));
+
+        const dossier = screen.getByRole("dialog", { name: "Ana Santos" });
+        expect(dossier).toHaveTextContent("Applicant Dossier & Verification Proofs");
+        fireEvent.click(screen.getByRole("button", { name: "Approve Registration" }));
+
+        await waitFor(() => {
+            expect(axiosPrivate.patch).toHaveBeenCalledWith("auth/verify-resident/3/");
+            expect(screen.queryByRole("dialog", { name: "Ana Santos" })).not.toBeInTheDocument();
+            expect(screen.queryByText("Ana Santos")).not.toBeInTheDocument();
+        });
+    });
 });

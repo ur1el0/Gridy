@@ -1,4 +1,4 @@
-import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, it, expect, vi } from "vitest";
 import { LiveQueue } from "./LiveQueue";
 import { axiosPrivate } from "../../api/axios";
@@ -123,6 +123,7 @@ describe('LiveQueue Component', () => {
     afterEach(() => {
         cleanup();
         vi.unstubAllGlobals();
+        vi.restoreAllMocks();
         vi.useRealTimers();
     });
 
@@ -207,6 +208,40 @@ describe('LiveQueue Component', () => {
             expect(axiosPrivate.post).toHaveBeenCalledWith('/tickets/next/');
             expect(screen.getByText('Now serving ticket Q-001')).toBeInTheDocument();
         });
+    });
+
+    it('marks the serving ticket complete using its server endpoint', async () => {
+        renderQueue('FIELD_OFFICIAL');
+
+        await screen.findByText('Q-002');
+        fireEvent.click(screen.getByRole('button', { name: 'Mark as Done' }));
+
+        await waitFor(() => {
+            expect(axiosPrivate.post).toHaveBeenCalledWith('/tickets/2/complete/');
+        });
+    });
+
+    it('opens queue history, deletes a ticket, and closes the modal', async () => {
+        vi.spyOn(window, 'confirm').mockReturnValue(true);
+        vi.mocked(axiosPrivate.delete).mockResolvedValueOnce({ data: {} } as never);
+        renderQueue();
+
+        await screen.findByText('Q-002');
+        fireEvent.click(screen.getByRole('button', { name: 'Queue History' }));
+
+        const history = screen.getByRole('dialog', { name: 'Queue Activity History' });
+        expect(history).toHaveTextContent('Q-001');
+        fireEvent.click(within(history).getAllByRole('button', { name: 'Delete' })[0]);
+
+        await waitFor(() => {
+            expect(window.confirm).toHaveBeenCalledWith(
+                'Are you sure you want to permanently delete this queue record?',
+            );
+            expect(axiosPrivate.delete).toHaveBeenCalledWith('/tickets/1/');
+        });
+
+        fireEvent.click(screen.getByRole('button', { name: 'Close queue history' }));
+        expect(screen.queryByRole('dialog', { name: 'Queue Activity History' })).not.toBeInTheDocument();
     });
 
     it('polls tickets every three seconds and clears the interval on unmount', async () => {
