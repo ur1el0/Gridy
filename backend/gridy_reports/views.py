@@ -7,7 +7,6 @@ from gridy_auth.models import User
 
 from gridy_audit.services import log_action
 from gridy_audit.models import AuditLog
-from gridy_communications.tasks import send_notification_to_user_task
 
 class IssueReportViewSet(viewsets.ModelViewSet):
     serializer_class = IssueReportSerializer
@@ -75,16 +74,6 @@ class IssueReportViewSet(viewsets.ModelViewSet):
                 request=self.request
             )
 
-        # Status changes notify residents; urgency changes are audit-only.
-        if original_status != instance.status:
-            if instance.reporter:
-                send_notification_to_user_task.delay(
-                    user_id=instance.reporter.id,
-                    title="Issue Report Update",
-                    body=f"Your issue report '{instance.title}' has been marked as {instance.get_status_display()}.",
-                    data={"report_id": str(instance.id)}
-                )
-                
     def perform_destroy(self, instance):
         log_action(
             user=self.request.user,

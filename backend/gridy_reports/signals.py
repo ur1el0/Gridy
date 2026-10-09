@@ -1,9 +1,8 @@
-import firebase_admin
-from firebase_admin import messaging
+from django.db import transaction
 from django.db.models.signals import pre_save, post_save
 from django.dispatch import receiver
 from .models import IssueReport
-from gridy_communications.models import FCMDevice
+from gridy_communications.tasks import send_notification_to_user_task
 
 @receiver(pre_save, sender=IssueReport)
 def capture_old_status(sender, instance, **kwargs):
@@ -27,27 +26,15 @@ def notify_issue_update(sender, instance, created, **kwargs):
 
     if old_status != instance.status and  not created:
 
-        # 1. Format the visual notification text
-        status_text = instance.get_status_display()
-        title = "Gridy Issue Update"
-        body = f"Your report '{instance.title}' is now marked as: {status_text}."
-
-        # 2. Get all logged-in devices for the resident who reported the issue
-        devices = FCMDevice.objects.filter(user=instance.reporter)
-        tokens = [device.token for device in devices]
-
-        # 3. Fire the payload to Google's FCM servers
-        if tokens and firebase_admin._apps:
-            message = messaging.MulticastMessage(
-                notification=messaging.Notification(
-                    title=title,
-                    body=body,
-                ),
-                tokens=tokens,
+        reporter_id = instance.reporter_id
+        title = "Issue Report Update"
+        body = f"Your issue report '{instance.title}' has been marked as {instance.get_status_display()}."
+        data = {"report_id": str(instance.pk)}
+        transaction.on_commit(
+            lambda: send_notification_to_user_task.delay(
+                user_id=reporter_id,
+                title=title,
+                body=body,
+                data=data,
             )
-
-            try:
-                response = messaging.send_each_for_multicast(message)
-                print(f"Successfully send push notifications to {response.success_count} devices.")
-            except Exception as e:
-                print(f"Failed to send push notifications: {e}")
+        )

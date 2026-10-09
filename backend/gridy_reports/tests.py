@@ -1,4 +1,6 @@
 
+from unittest.mock import patch
+
 from rest_framework.test import APITestCase
 from rest_framework import status
 from django.urls import reverse
@@ -111,6 +113,44 @@ class IssueReportAPITests(APITestCase):
         )
         self.assertIn(IssueReport.Urgency.MINOR, audit_log.description)
         self.assertIn(IssueReport.Urgency.EMERGENCY, audit_log.description)
+
+    @patch('gridy_reports.signals.send_notification_to_user_task.delay')
+    def test_status_change_schedules_one_notification_after_commit(self, notify):
+        barangay = Barangay.objects.create(name="Report Update Barangay")
+        resident = User.objects.create_user(
+            username="report_update_resident",
+            password=None,
+            role=User.Role.RESIDENT,
+            barangay=barangay,
+        )
+        official = User.objects.create_user(
+            username="report_update_official",
+            password=None,
+            role=User.Role.ADMIN,
+            barangay=barangay,
+        )
+        report = IssueReport.objects.create(
+            reporter=resident,
+            title="Blocked sidewalk",
+            description="Construction materials block the sidewalk.",
+            location="Purok 2",
+        )
+        self.client.force_login(official)
+
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.patch(
+                reverse('issue-report-detail', args=[report.id]),
+                {"status": IssueReport.Status.IN_PROGRESS},
+                format='json',
+            )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        notify.assert_called_once_with(
+            user_id=resident.id,
+            title="Issue Report Update",
+            body="Your issue report 'Blocked sidewalk' has been marked as In Progress.",
+            data={"report_id": str(report.id)},
+        )
 
     def test_resident_cannot_update_report_urgency(self):
         report = IssueReport.objects.create(
