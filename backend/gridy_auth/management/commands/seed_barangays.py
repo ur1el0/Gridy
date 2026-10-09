@@ -149,10 +149,9 @@ class Command(BaseCommand):
                 }
             )
 
-        # C. Barangay Cotta seed users
-        # These fixture accounts have no usable password. Provision real credentials
-        # through the normal account-management flow.
-        def get_cotta_user(username, defaults):
+        # Demo accounts have no usable password. Set local credentials interactively
+        # with `manage.py changepassword` when a presentation login is needed.
+        def get_demo_user(username, defaults):
             user, created = User.objects.get_or_create(
                 username=username,
                 defaults=defaults,
@@ -162,7 +161,20 @@ class Command(BaseCommand):
                 user.save(update_fields=["password"])
             return user
 
-        admin_cotta = get_cotta_user(
+        # C. DILG administration account
+        get_demo_user(
+            "dilg_admin",
+            {
+                "email": "dilg.admin@example.invalid",
+                "first_name": "Gridy Demo",
+                "last_name": "DILG Admin",
+                "role": User.Role.DILG_ADMIN,
+                "is_staff": True,
+            },
+        )
+
+        # D. Barangay Cotta seed users
+        admin_cotta = get_demo_user(
             "admin_cotta",
             {
                 "email": "captain.cotta@gridy.local",
@@ -174,7 +186,7 @@ class Command(BaseCommand):
             },
         )
 
-        get_cotta_user(
+        get_demo_user(
             "tanod_cotta",
             {
                 "email": "official.cotta@gridy.local",
@@ -185,7 +197,7 @@ class Command(BaseCommand):
             },
         )
 
-        resident_cotta_one = get_cotta_user(
+        resident_cotta_one = get_demo_user(
             "resident_cotta_one",
             {
                 "email": "resident1.cotta@gridy.local",
@@ -206,7 +218,7 @@ class Command(BaseCommand):
             },
         )
 
-        resident_cotta_two = get_cotta_user(
+        resident_cotta_two = get_demo_user(
             "resident_cotta_two",
             {
                 "email": "resident2.cotta@gridy.local",
