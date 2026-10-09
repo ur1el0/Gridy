@@ -47,6 +47,15 @@ PRIVACY_CONSENT_VERSION = "resident-v1"
 # SECURITY WARNING: don't run with debug turned on in production
 DEBUG = env('DEBUG')
 
+
+def get_test_use_sqlite():
+    preferred_key = "KAPITBAYAN_TEST_USE_SQLITE"
+    legacy_key = "GRIDY_TEST_USE_SQLITE"
+    if preferred_key in os.environ:
+        return env.bool(preferred_key)
+    return env.bool(legacy_key, default=True)
+
+
 def get_allowed_hosts(debug=False, raw_hosts=None, render_hostname=None):
     if raw_hosts is None:
         if debug:
@@ -394,7 +403,7 @@ LOGGING = {
             'level': 'INFO',
             'propagate': False,
         },
-        'gridy': {
+        'kapitbayan': {
             'handlers': ['console'],
             'level': 'INFO',
             'propagate': False,
@@ -469,7 +478,7 @@ if SENTRY_DSN and not IS_TESTING:
 if IS_TESTING:
     EMAIL_BACKEND = "django.core.mail.backends.locmem.EmailBackend"
 
-    if env.bool("GRIDY_TEST_USE_SQLITE", default=True):
+    if get_test_use_sqlite():
         DATABASES = {
             'default': {
                 'ENGINE': 'django.db.backends.sqlite3',

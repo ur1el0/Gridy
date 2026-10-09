@@ -19,7 +19,7 @@ describe('axios client configuration', () => {
         // Nginx reverse proxy default used in Docker builds
         expect(resolveApiBaseUrl('/api/v1')).toBe('/api/v1');
         // Custom production domain override
-        expect(resolveApiBaseUrl('https://api.gridy.ph/api/v1')).toBe('https://api.gridy.ph/api/v1');
+        expect(resolveApiBaseUrl('https://api.example.test/api/v1')).toBe('https://api.example.test/api/v1');
         // Render backend destination override
         expect(resolveApiBaseUrl('https://gridy-backend.onrender.com/api/v1')).toBe('https://gridy-backend.onrender.com/api/v1');
         // Development fallback when unset

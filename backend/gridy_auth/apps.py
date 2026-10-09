@@ -1,5 +1,5 @@
 from django.apps import AppConfig
 
 
-class GridyAuthConfig(AppConfig):
+class KapitBayanAuthConfig(AppConfig):
     name = 'gridy_auth'

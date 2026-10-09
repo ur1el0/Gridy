@@ -8,7 +8,8 @@ from django.core.exceptions import ImproperlyConfigured
 
 logger = logging.getLogger(__name__)
 
-class GridyCommunicationsConfig(AppConfig):
+
+class KapitBayanCommunicationsConfig(AppConfig):
     name = 'gridy_communications'
 
     def ready(self):

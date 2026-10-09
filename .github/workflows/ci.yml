@@ -1,4 +1,4 @@
-name: Gridy CI Pipeline
+name: KapitBayan CI Pipeline
 
 on:
   push:
@@ -51,7 +51,7 @@ jobs:
           DEBUG: "True"
           ADMIN_REGISTRATION_PASSKEY: "ci-only-test-value-not-for-deployment"
           DATABASE_URL: "postgres://gridy_user:gridy_password@localhost:5432/gridy_db"
-          GRIDY_TEST_USE_SQLITE: "False"
+          KAPITBAYAN_TEST_USE_SQLITE: "False"
         run: |
           cd backend
           DJANGO_SETTINGS_MODULE=config.settings python -c "import django; django.setup(); from django.db import connection; assert connection.vendor == 'postgresql', connection.vendor"
@@ -66,7 +66,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build Backend Docker Image
-        run: docker build --tag gridy-backend:ci ./backend
+        run: docker build --tag kapitbayan-backend:ci ./backend
 
   frontend-tests:
     runs-on: ubuntu-latest
@@ -108,7 +108,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Build Frontend Docker Image
-        run: docker build --tag gridy-frontend:ci ./frontend
+        run: docker build --tag kapitbayan-frontend:ci ./frontend
 
   mobile-tests:
     runs-on: ubuntu-latest
