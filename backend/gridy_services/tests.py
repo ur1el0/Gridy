@@ -1884,6 +1884,84 @@ class PublicQueueStatusAPITests(APITestCase):
             response.status_code,
             status.HTTP_401_UNAUTHORIZED,
         )
+
+    def test_live_status_for_user_without_barangay_returns_empty_summary_and_ignores_null_tickets(self):
+        # Create legacy tickets with null barangay
+        QueueTicket.objects.create(
+            ticket_number="NULL-001",
+            status=QueueTicket.Status.SERVING,
+            barangay=None,
+        )
+        QueueTicket.objects.create(
+            ticket_number="NULL-002",
+            status=QueueTicket.Status.WAITING,
+            barangay=None,
+        )
+        unassigned_user = User.objects.create_user(
+            username="unassigned_queue_user",
+            password="SecurePassword123!",
+            email="unassigned_queue@example.com",
+            role=User.Role.RESIDENT,
+            barangay=None,
+            is_active=True,
+        )
+        self.client.force_login(unassigned_user)
+        response = self.client.get(reverse("ticket-live-status"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(
+            response.data,
+            {
+                "current_ticket": None,
+                "total_waiting": 0,
+                "avg_wait_mins": 0,
+            },
+        )
+
+    def test_live_status_isolates_assigned_barangay_and_ignores_other_barangays(self):
+        barangay_a = Barangay.objects.create(name="Barangay Alpha")
+        barangay_b = Barangay.objects.create(name="Barangay Beta")
+
+        QueueTicket.objects.create(
+            ticket_number="A-001",
+            status=QueueTicket.Status.SERVING,
+            barangay=barangay_a,
+        )
+        QueueTicket.objects.create(
+            ticket_number="A-002",
+            status=QueueTicket.Status.WAITING,
+            barangay=barangay_a,
+        )
+        QueueTicket.objects.create(
+            ticket_number="A-003",
+            status=QueueTicket.Status.WAITING,
+            barangay=barangay_a,
+        )
+
+        QueueTicket.objects.create(
+            ticket_number="B-001",
+            status=QueueTicket.Status.SERVING,
+            barangay=barangay_b,
+        )
+        QueueTicket.objects.create(
+            ticket_number="B-002",
+            status=QueueTicket.Status.WAITING,
+            barangay=barangay_b,
+        )
+
+        user_a = User.objects.create_user(
+            username="user_alpha",
+            password="SecurePassword123!",
+            email="user_alpha@example.com",
+            role=User.Role.RESIDENT,
+            barangay=barangay_a,
+            is_active=True,
+        )
+        self.client.force_login(user_a)
+        response = self.client.get(reverse("ticket-live-status"))
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["current_ticket"], "A-001")
+        self.assertEqual(response.data["total_waiting"], 2)
+        self.assertEqual(response.data["avg_wait_mins"], 4)
         
 class SystemHealthAPITests(APITestCase):
     def test_health_check_endpoint_success(self):
@@ -1928,3 +2006,133 @@ class SystemHealthAPITests(APITestCase):
 
         self.assertNotIn("Access-Control-Allow-Origin", response)
         self.assertNotIn("Access-Control-Allow-Credentials", response)
+
+
+class DILGAnalyticsAPITests(APITestCase):
+    def setUp(self):
+        self.barangay_a = Barangay.objects.create(name="Barangay Analytics A")
+        self.barangay_b = Barangay.objects.create(name="Barangay Analytics B")
+
+        self.dilg_admin = User.objects.create_user(
+            username="dilg_analytics_admin",
+            password="SecurePassword123!",
+            email="dilg_analytics@example.gov.ph",
+            role=User.Role.DILG_ADMIN,
+            is_active=True,
+        )
+        self.barangay_admin = User.objects.create_user(
+            username="brgy_analytics_admin",
+            password="SecurePassword123!",
+            email="brgy_analytics@example.gov.ph",
+            role=User.Role.ADMIN,
+            barangay=self.barangay_a,
+            is_active=True,
+        )
+        self.resident_a = User.objects.create_user(
+            username="resident_analytics_a",
+            password="SecurePassword123!",
+            email="resident_a@example.com",
+            role=User.Role.RESIDENT,
+            barangay=self.barangay_a,
+            is_active=True,
+        )
+        self.resident_b = User.objects.create_user(
+            username="resident_analytics_b",
+            password="SecurePassword123!",
+            email="resident_b@example.com",
+            role=User.Role.RESIDENT,
+            barangay=self.barangay_b,
+            is_active=True,
+        )
+        self.url = reverse("dilg-analytics")
+
+    def test_unauthorized_users_cannot_access_dilg_analytics(self):
+        # 1. Anonymous user -> 401
+        res = self.client.get(self.url)
+        self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
+
+        # 2. Barangay Official -> 403
+        self.client.force_login(self.barangay_admin)
+        res = self.client.get(self.url)
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+        # 3. Resident -> 403
+        self.client.force_login(self.resident_a)
+        res = self.client.get(self.url)
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_dilg_analytics_includes_walkin_and_digital_clearances_per_barangay(self):
+        # Barangay A requests
+        # Digital pending
+        DocumentRequest.objects.create(
+            user=self.resident_a,
+            barangay=self.barangay_a,
+            document_type="Barangay Clearance",
+            status=DocumentRequest.Status.PENDING,
+        )
+        # Walk-in pending (user=None, barangay=barangay_a)
+        DocumentRequest.objects.create(
+            user=None,
+            barangay=self.barangay_a,
+            is_walkin=True,
+            walkin_name="Walk-in Juan",
+            document_type="Barangay Clearance",
+            status=DocumentRequest.Status.PENDING,
+        )
+        # Digital released
+        DocumentRequest.objects.create(
+            user=self.resident_a,
+            barangay=self.barangay_a,
+            document_type="Certificate of Indigency",
+            status=DocumentRequest.Status.RELEASED,
+        )
+        # Walk-in released (user=None, barangay=barangay_a)
+        DocumentRequest.objects.create(
+            user=None,
+            barangay=self.barangay_a,
+            is_walkin=True,
+            walkin_name="Walk-in Maria",
+            document_type="Certificate of Residency",
+            status=DocumentRequest.Status.RELEASED,
+        )
+        # Rejected request (should not be counted as pending or released)
+        DocumentRequest.objects.create(
+            user=self.resident_a,
+            barangay=self.barangay_a,
+            document_type="Barangay Clearance",
+            status=DocumentRequest.Status.REJECTED,
+        )
+
+        # Barangay B requests
+        # Walk-in pending
+        DocumentRequest.objects.create(
+            user=None,
+            barangay=self.barangay_b,
+            is_walkin=True,
+            walkin_name="Walk-in Pedro",
+            document_type="Barangay Clearance",
+            status=DocumentRequest.Status.PENDING,
+        )
+        # Digital released
+        DocumentRequest.objects.create(
+            user=self.resident_b,
+            barangay=self.barangay_b,
+            document_type="Barangay Clearance",
+            status=DocumentRequest.Status.RELEASED,
+        )
+
+        self.client.force_login(self.dilg_admin)
+        res = self.client.get(self.url)
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+
+        data_by_barangay = {item["barangay_name"]: item for item in res.data}
+        self.assertIn("Barangay Analytics A", data_by_barangay)
+        self.assertIn("Barangay Analytics B", data_by_barangay)
+
+        a_docs = data_by_barangay["Barangay Analytics A"]["documents"]
+        self.assertEqual(a_docs["pending"], 2, "Barangay A should have 1 digital + 1 walk-in pending")
+        self.assertEqual(a_docs["released"], 2, "Barangay A should have 1 digital + 1 walk-in released")
+
+        b_docs = data_by_barangay["Barangay Analytics B"]["documents"]
+        self.assertEqual(b_docs["pending"], 1, "Barangay B should have 1 walk-in pending")
+        self.assertEqual(b_docs["released"], 1, "Barangay B should have 1 digital released")

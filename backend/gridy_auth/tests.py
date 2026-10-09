@@ -1384,6 +1384,23 @@ class ResidentEmailUpdateAPITests(IsolatedAuthAPITestCase):
         self.resident_user.refresh_from_db()
         self.assertEqual(self.resident_user.email, "")
 
+    def test_official_cannot_use_directory_endpoint_to_post_resident_create(self):
+        initial_resident_count = Resident.objects.count()
+        response = self.client.post(
+            reverse("resident-list"),
+            {
+                "full_name": "Direct Post Resident",
+                "birth_date": "1998-08-08",
+            },
+            format="json",
+        )
+
+        self.assertEqual(
+            response.status_code,
+            status.HTTP_405_METHOD_NOT_ALLOWED,
+        )
+        self.assertEqual(Resident.objects.count(), initial_resident_count)
+
 
 class ResidentPrivateMediaAPITests(IsolatedAuthAPITestCase):
     def setUp(self):

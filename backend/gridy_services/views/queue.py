@@ -150,14 +150,26 @@ class QueueTicketViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=['get'], url_path='live-status')
     def live_status(self, request):
         user = request.user
-        barangay_filter = {'barangay': user.barangay} if (user and user.is_authenticated) else {}
-        serving_ticket = QueueTicket.objects.filter(status=QueueTicket.Status.SERVING, **barangay_filter).first()
-        total_waiting = QueueTicket.objects.filter(status=QueueTicket.Status.WAITING, **barangay_filter).count()
+        if not user or not user.is_authenticated or not user.barangay_id:
+            return Response({
+                "current_ticket": None,
+                "total_waiting": 0,
+                "avg_wait_mins": 0,
+            }, status=status.HTTP_200_OK)
+
+        serving_ticket = QueueTicket.objects.filter(
+            barangay_id=user.barangay_id,
+            status=QueueTicket.Status.SERVING,
+        ).first()
+        total_waiting = QueueTicket.objects.filter(
+            barangay_id=user.barangay_id,
+            status=QueueTicket.Status.WAITING,
+        ).count()
 
         return Response({
             "current_ticket": serving_ticket.ticket_number if serving_ticket else None,
             "total_waiting": total_waiting,
-            "avg_wait_mins": total_waiting * 2 
+            "avg_wait_mins": total_waiting * 2,
         }, status=status.HTTP_200_OK)
 
     @action(

@@ -244,7 +244,8 @@ class RejectResidentView(APIView):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
 class ResidentViewSet(viewsets.ModelViewSet):
-    """CRUD endpoint for verified residents. Only Barangay Officials can access this full directory."""
+    """Directory endpoint for verified residents. Supports list, retrieve, update, and delete."""
+    http_method_names = ["get", "put", "patch", "delete", "head", "options"]
     permission_classes = [permissions.IsAuthenticated, IsBarangayOfficial]
     serializer_class = ResidentSerializer
 

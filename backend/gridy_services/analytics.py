@@ -20,9 +20,16 @@ class DILGAnalyticsView(APIView):
             total_residents = Resident.objects.filter(user__barangay=barangay).count()
             verified_residents = Resident.objects.filter(user__barangay=barangay, is_verified=True).count()
 
-            # 2. Document Requests
-            docs_pending = DocumentRequest.objects.filter(user__barangay=barangay, status=DocumentRequest.Status.PENDING).count()
-            docs_released = DocumentRequest.objects.filter(user__barangay=barangay, status=DocumentRequest.Status.RELEASED).count()
+            # 2. Document Requests (Count digital resident requests and walk-in clearances)
+            barangay_docs = DocumentRequest.objects.filter(
+                Q(user__barangay=barangay) | Q(barangay=barangay)
+            )
+            docs_pending = barangay_docs.filter(
+                status=DocumentRequest.Status.PENDING
+            ).distinct().count()
+            docs_released = barangay_docs.filter(
+                status=DocumentRequest.Status.RELEASED
+            ).distinct().count()
 
             # 3. Queue Tickets
             queue_priority = QueueTicket.objects.filter(barangay=barangay,is_priority=True).count()
