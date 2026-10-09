@@ -12,7 +12,7 @@ void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
   test(
-    'submits a trimmed GCash reference and parses manual review status',
+    'submits a selected transfer recipient and parses manual review status',
     () async {
       SharedPreferences.setMockInitialValues({});
       final preferences = await SharedPreferences.getInstance();
@@ -25,7 +25,9 @@ void main() {
             'document_type': 'Barangay Clearance',
             'status': 'READY_FOR_PICKUP',
             'fee_amount': '50.00',
-            'payment_method': 'GCASH',
+            'payment_method': 'MAYA',
+            'payment_recipient': 7,
+            'payment_recipient_id': 7,
             'payment_reference': 'TRANSFER-100',
             'payment_status': 'PENDING_VERIFICATION',
             'payment_review_note': '',
@@ -47,6 +49,7 @@ void main() {
 
       final document = await service.submitPaymentReference(
         requestId: 12,
+        paymentRecipientId: 7,
         paymentReference: '  TRANSFER-100  ',
       );
 
@@ -56,10 +59,12 @@ void main() {
         '/api/v1/document-requests/12/payment-reference/',
       );
       expect(jsonDecode(submittedRequest.body), {
+        'payment_recipient_id': 7,
         'payment_reference': 'TRANSFER-100',
       });
       expect(document.id, 12);
-      expect(document.paymentMethod, 'GCASH');
+      expect(document.paymentMethod, 'MAYA');
+      expect(document.paymentRecipientId, 7);
       expect(document.paymentStatus, 'PENDING_VERIFICATION');
     },
   );
