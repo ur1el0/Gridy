@@ -11,7 +11,7 @@ import '../services/storage_service.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/resident_identity_verification_section.dart';
 import '../widgets/resident_registration_details_section.dart';
-import '../widgets/gridy_logo.dart';
+import '../widgets/kapitbayan_logo.dart';
 import 'login_screen.dart';
 
 class RegisterScreen extends StatefulWidget {
@@ -361,7 +361,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 const SizedBox(height: 32),
 
                 // Logo & Brand Name
-                const GridyLogo(iconSize: 64, textSize: 24),
+                const KapitBayanLogo(iconSize: 64, textSize: 24),
 
                 const SizedBox(height: 32),
 

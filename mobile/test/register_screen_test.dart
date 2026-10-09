@@ -28,7 +28,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify brand & title headers
-    expect(find.text('GRIDY'), findsOneWidget);
+    expect(find.text('KapitBayan'), findsOneWidget);
     expect(find.text('Create an Account'), findsOneWidget);
     expect(find.text('Please provide your details to join our\ncommunity.'), findsOneWidget);
 

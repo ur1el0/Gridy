@@ -27,7 +27,7 @@ void showPrivacyPolicySheet(BuildContext context) {
           ),
           const SizedBox(height: 12),
           const Text(
-            'Gridy Resident Portal is committed to protecting your personal information. '
+            'KapitBayan Resident Portal is committed to protecting your personal information. '
             'All data submitted during login, registration, document requests, and queue ticketing '
             'is encrypted and processed in full compliance with the Republic Act No. 10173 (Data Privacy Act of 2012).\n\n'
             'Your citizen ID, contact information, and request logs are accessible strictly by authorized Barangay Officials.',

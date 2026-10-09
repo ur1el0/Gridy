@@ -40,7 +40,7 @@ void main() {
 
       final apiClient = ApiClient(
         client: mockClient,
-        baseUrl: 'https://gridy.test/api/v1',
+        baseUrl: 'https://kapitbayan.test/api/v1',
       )..setAuthCredentials(accessToken: 'resident-token');
       final service = DocumentService(
         apiClient: apiClient,

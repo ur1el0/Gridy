@@ -1,13 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../core/theme/app_colors.dart';
 
-class GridyLogo extends StatelessWidget {
+class KapitBayanLogo extends StatelessWidget {
   final double iconSize;
   final double textSize;
   final bool showText;
 
-  const GridyLogo({
+  const KapitBayanLogo({
     super.key,
     this.iconSize = 64,
     this.textSize = 24,
@@ -19,31 +18,18 @@ class GridyLogo extends StatelessWidget {
     return Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        // App Icon Badge matching frontend
-        Container(
+        Image.asset(
+          'assets/images/kapitbayan_symbol.png',
           width: iconSize,
           height: iconSize,
-          decoration: BoxDecoration(
-            color: const Color(0xFF091B35),
-            borderRadius: BorderRadius.circular(iconSize * 0.26),
-            boxShadow: [
-              BoxShadow(
-                color: const Color(0xFF091B35).withValues(alpha: 0.25),
-                blurRadius: 16,
-                offset: const Offset(0, 6),
-              ),
-            ],
-          ),
-          padding: EdgeInsets.all(iconSize * 0.14),
-          child: SvgPicture.asset(
-            'assets/images/MainLogo.svg',
-            fit: BoxFit.contain,
-          ),
+          fit: BoxFit.contain,
+          semanticLabel: 'KapitBayan',
+          excludeFromSemantics: showText,
         ),
         if (showText) ...[
           const SizedBox(height: 12),
           Text(
-            'GRIDY',
+            'KapitBayan',
             style: TextStyle(
               fontSize: textSize,
               fontWeight: FontWeight.w900,

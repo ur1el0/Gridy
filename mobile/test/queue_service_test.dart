@@ -30,7 +30,7 @@ void main() {
       );
     });
     final service = QueueService(
-      apiClient: ApiClient(client: client, baseUrl: 'https://gridy.test'),
+      apiClient: ApiClient(client: client, baseUrl: 'https://kapitbayan.test'),
       storageService: StorageService(preferences),
     );
 

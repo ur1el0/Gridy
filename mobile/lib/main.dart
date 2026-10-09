@@ -42,15 +42,15 @@ void main() async {
     ),
   );
   
-  runApp(GridyApp(
+  runApp(KapitBayanApp(
     home: initialScreen,
   ));
 }
 
-class GridyApp extends StatelessWidget {
+class KapitBayanApp extends StatelessWidget {
   final Widget? home;
 
-  const GridyApp({
+  const KapitBayanApp({
     super.key,
     this.home,
   });
@@ -58,7 +58,7 @@ class GridyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Gridy - Resident Portal',
+      title: 'KapitBayan - Resident Portal',
       debugShowCheckedModeBanner: false,
       theme: AppTheme.lightTheme,
       home: home ?? const LoginScreen(),

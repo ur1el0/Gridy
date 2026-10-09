@@ -3,7 +3,6 @@ import 'report_issue_screen.dart';
 import '../services/push_notification_service.dart';
 
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 
 import '../core/network/api_client.dart';
 import '../core/theme/app_colors.dart';
@@ -130,22 +129,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 // Brand Logo & Title Header
                 Row(
                   children: [
-                    Container(
+                    Image.asset(
+                      'assets/images/kapitbayan_symbol.png',
                       width: 38,
                       height: 38,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF091B35),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      padding: const EdgeInsets.all(7),
-                      child: SvgPicture.asset(
-                        'assets/images/MainLogo.svg',
-                        fit: BoxFit.contain,
-                      ),
+                      fit: BoxFit.contain,
                     ),
                     const SizedBox(width: 10),
                     const Text(
-                      'Gridy',
+                      'KapitBayan',
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w900,

@@ -82,8 +82,8 @@ void main() {
     await tester.pumpWidget(createScheduleScreenTestWidget(mockService));
     await tester.pumpAndSettle();
 
-    // 1. Verify Gridy Logo Header & Avatar
-    expect(find.text('Gridy'), findsOneWidget);
+    // 1. Verify KapitBayan Logo Header & Avatar
+    expect(find.text('KapitBayan'), findsOneWidget);
     expect(find.text('J'), findsOneWidget); // User initial
 
     // 2. Verify "MY APPOINTMENTS" Section

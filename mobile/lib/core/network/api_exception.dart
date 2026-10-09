@@ -77,6 +77,7 @@ class NotFoundException extends ApiException {
 /// Thrown for connectivity, socket, or timeout issues.
 class NetworkException extends ApiException {
   const NetworkException([
-    super.message = 'Unable to connect to Gridy server. Please check your internet connection or server status.',
+    super.message =
+        'Unable to connect to KapitBayan. Please check your internet connection or server status.',
   ]) : super(statusCode: null);
 }

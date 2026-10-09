@@ -6,7 +6,7 @@ import '../config/app_config.dart';
 import 'api_exception.dart';
 
 /// Centralized HTTP client managing requests, headers, cookies, timeouts,
-/// and error mapping for Gridy REST APIs.
+/// and error mapping for KapitBayan REST APIs.
 class ApiClient {
   final http.Client _client;
   final String _baseUrl;

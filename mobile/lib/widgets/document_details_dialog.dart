@@ -141,7 +141,7 @@ class _DocumentDetailsDialogState extends State<DocumentDetailsDialog> {
       }
 
       final directory = await getApplicationDocumentsDirectory();
-      final fileName = 'gridy_clearance_${widget.request.id}.pdf';
+      final fileName = 'kapitbayan_clearance_${widget.request.id}.pdf';
       final file = File('${directory.path}/$fileName');
 
       await file.writeAsBytes(pdfBytes, flush: true);

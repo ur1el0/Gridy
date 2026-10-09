@@ -5,7 +5,7 @@ import '../core/theme/app_colors.dart';
 import '../models/auth_response.dart';
 import '../services/auth_service.dart';
 import '../services/storage_service.dart';
-import '../widgets/gridy_logo.dart';
+import '../widgets/kapitbayan_logo.dart';
 import '../widgets/login_information_sheets.dart';
 import '../widgets/login_credentials_section.dart';
 import 'dashboard_screen.dart';
@@ -261,7 +261,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               );
                             },
-                            child: const GridyLogo(iconSize: 64, textSize: 24),
+                            child: const KapitBayanLogo(iconSize: 64, textSize: 24),
                           ),
                         ),
                         const SizedBox(height: 24),

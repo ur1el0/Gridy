@@ -3,7 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/screens/login_screen.dart';
-import 'package:mobile/widgets/gridy_logo.dart';
+import 'package:mobile/widgets/kapitbayan_logo.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -31,7 +31,7 @@ void main() {
   ) async {
     await pumpLogin(tester);
 
-    await tester.longPress(find.byType(GridyLogo));
+    await tester.longPress(find.byType(KapitBayanLogo));
     await tester.pumpAndSettle();
 
     expect(find.text('Official Sign In'), findsOneWidget);

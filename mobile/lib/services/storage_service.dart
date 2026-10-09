@@ -7,11 +7,17 @@ import '../models/user_model.dart';
 
 /// Manages secure session tokens and ordinary cached app preferences.
 class StorageService {
-  static const String _keyAccessToken = 'gridy_access_token';
-  static const String _keyRefreshCookie = 'gridy_refresh_cookie';
-  static const String _keyUser = 'gridy_cached_user';
-  static const String _keyRememberMe = 'gridy_remember_me';
-  static const String _keySavedUsername = 'gridy_saved_username';
+  static const String _keyAccessToken = 'kapitbayan_access_token';
+  static const String _keyRefreshCookie = 'kapitbayan_refresh_cookie';
+  static const String _keyUser = 'kapitbayan_cached_user';
+  static const String _keyRememberMe = 'kapitbayan_remember_me';
+  static const String _keySavedUsername = 'kapitbayan_saved_username';
+
+  static const String _legacyKeyAccessToken = 'gridy_access_token';
+  static const String _legacyKeyRefreshCookie = 'gridy_refresh_cookie';
+  static const String _legacyKeyUser = 'gridy_cached_user';
+  static const String _legacyKeyRememberMe = 'gridy_remember_me';
+  static const String _legacyKeySavedUsername = 'gridy_saved_username';
 
   final SharedPreferences _prefs;
   final FlutterSecureStorage _secureStorage;
@@ -31,37 +37,83 @@ class StorageService {
     final secureStore = secureStorage ?? FlutterSecureStorage();
     final storage = StorageService(prefs, secureStorage: secureStore);
 
-    storage._accessToken = await storage._readAndMigrateToken(_keyAccessToken);
+    storage._accessToken = await storage._readAndMigrateToken(
+      _keyAccessToken,
+      _legacyKeyAccessToken,
+    );
     storage._refreshCookie = await storage._readAndMigrateToken(
       _keyRefreshCookie,
+      _legacyKeyRefreshCookie,
+    );
+    await storage._migrateStringPreference(_keyUser, _legacyKeyUser);
+    await storage._migrateBoolPreference(_keyRememberMe, _legacyKeyRememberMe);
+    await storage._migrateStringPreference(
+      _keySavedUsername,
+      _legacyKeySavedUsername,
     );
 
     return storage;
   }
 
-  /// Reads a secure token, migrating its old SharedPreferences value if needed.
-  Future<String?> _readAndMigrateToken(String key) async {
+  /// Reads current or legacy token storage and migrates it into the new key.
+  /// The source value is retained until the secure write succeeds.
+  Future<String?> _readAndMigrateToken(String key, String legacyKey) async {
     final secureValue = await _secureStorage.read(key: key);
-    final legacyValue = _prefs.getString(key);
-
     if (secureValue != null && secureValue.isNotEmpty) {
-      if (legacyValue != null) {
-        await _prefs.remove(key);
-      }
+      await _removeLegacyTokenCopies(key, legacyKey);
       return secureValue;
     }
 
-    if (legacyValue == null || legacyValue.isEmpty) {
-      if (legacyValue != null) {
-        await _prefs.remove(key);
-      }
+    final currentPreference = _prefs.getString(key);
+    final legacySecureValue = await _secureStorage.read(key: legacyKey);
+    final legacyPreference = _prefs.getString(legacyKey);
+    final value = _firstNonEmpty([
+      legacySecureValue,
+      currentPreference,
+      legacyPreference,
+    ]);
+
+    if (value == null) {
+      await _removeLegacyTokenCopies(key, legacyKey);
       return null;
     }
 
-    // Remove the plaintext copy only after the secure write succeeds.
-    await _secureStorage.write(key: key, value: legacyValue);
+    await _secureStorage.write(key: key, value: value);
+    await _removeLegacyTokenCopies(key, legacyKey);
+    return value;
+  }
+
+  String? _firstNonEmpty(Iterable<String?> values) {
+    for (final value in values) {
+      if (value != null && value.isNotEmpty) return value;
+    }
+    return null;
+  }
+
+  Future<void> _removeLegacyTokenCopies(String key, String legacyKey) async {
+    await _secureStorage.delete(key: legacyKey);
     await _prefs.remove(key);
-    return legacyValue;
+    await _prefs.remove(legacyKey);
+  }
+
+  Future<void> _migrateStringPreference(String key, String legacyKey) async {
+    if (!_prefs.containsKey(key)) {
+      final legacyValue = _prefs.getString(legacyKey);
+      if (legacyValue != null) {
+        await _prefs.setString(key, legacyValue);
+      }
+    }
+    await _prefs.remove(legacyKey);
+  }
+
+  Future<void> _migrateBoolPreference(String key, String legacyKey) async {
+    if (!_prefs.containsKey(key)) {
+      final legacyValue = _prefs.getBool(legacyKey);
+      if (legacyValue != null) {
+        await _prefs.setBool(key, legacyValue);
+      }
+    }
+    await _prefs.remove(legacyKey);
   }
 
   /// Saves authentication tokens to secure storage.
@@ -142,12 +194,17 @@ class StorageService {
       await Future.wait<void>([
         _secureStorage.delete(key: _keyAccessToken),
         _secureStorage.delete(key: _keyRefreshCookie),
+        _secureStorage.delete(key: _legacyKeyAccessToken),
+        _secureStorage.delete(key: _legacyKeyRefreshCookie),
       ]);
     } finally {
-      // Also remove any legacy plaintext copies and the cached user.
+      // Also remove plaintext copies in both namespaces and cached user data.
       await _prefs.remove(_keyAccessToken);
       await _prefs.remove(_keyRefreshCookie);
       await _prefs.remove(_keyUser);
+      await _prefs.remove(_legacyKeyAccessToken);
+      await _prefs.remove(_legacyKeyRefreshCookie);
+      await _prefs.remove(_legacyKeyUser);
     }
   }
 
@@ -160,6 +217,8 @@ class StorageService {
       await Future.wait<void>([
         _secureStorage.delete(key: _keyAccessToken),
         _secureStorage.delete(key: _keyRefreshCookie),
+        _secureStorage.delete(key: _legacyKeyAccessToken),
+        _secureStorage.delete(key: _legacyKeyRefreshCookie),
       ]);
     } finally {
       await _prefs.clear();

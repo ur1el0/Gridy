@@ -94,7 +94,7 @@ void main() {
       await tester.pumpAndSettle();
 
       // 1. App Bar Header & Brand
-      expect(find.text('Gridy', skipOffstage: false), findsWidgets);
+      expect(find.text('KapitBayan', skipOffstage: false), findsWidgets);
 
       // 2. Hero Card
       expect(

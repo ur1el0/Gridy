@@ -1,4 +1,4 @@
-/// Represents an authenticated user in the Gridy platform.
+/// Represents an authenticated user in the KapitBayan platform.
 class UserModel {
   final int id;
   final String username;
