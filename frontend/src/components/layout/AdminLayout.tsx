@@ -1,16 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/auth-context';
 import { 
-    Search, 
     Bell, 
-    HelpCircle
+    HelpCircle,
+    Menu,
+    X,
 } from 'lucide-react';
 import { Sidebar } from './Sidebar';
 
 export const AdminLayout: React.FC = () => {
     const { user } = useAuth();
-    const navigate = useNavigate()
+    const navigate = useNavigate();
+    const [isMobileNavigationOpen, setIsMobileNavigationOpen] = useState(false);
 
     const userInitial = user?.full_name 
         ? user.full_name.charAt(0).toUpperCase() 
@@ -19,45 +21,59 @@ export const AdminLayout: React.FC = () => {
     const userName = user?.full_name || user?.username || 'Admin Juan';
 
     return (
-        <div className="flex h-screen bg-[#F0F4FA] text-slate-900 font-sans antialiased overflow-hidden">
+        <div className="min-h-screen flex flex-col md:h-screen md:flex-row bg-[#F0F4FA] text-slate-900 font-sans antialiased md:overflow-hidden">
             {/* Sidebar Navigation */}
             <Sidebar />
 
             {/* Main Right Content Section */}
-            <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+            <div className="flex min-h-screen min-w-0 flex-1 flex-col md:min-h-0 md:overflow-hidden">
                 {/* Top Navigation Bar */}
-                <header className="h-20 bg-transparent flex items-center justify-between px-8 shrink-0">
-                    {/* Search Input Box */}
-                    <div className="relative flex items-center w-96">
-                        <Search className="w-4 h-4 text-slate-400 absolute left-4 pointer-events-none" />
-                        <input
-                            type="text"
-                            placeholder="Search for documents or residents..."
-                            className="w-full bg-white/80 focus:bg-white text-slate-800 placeholder-slate-400 text-sm font-medium pl-11 pr-4 py-2.5 rounded-full border border-slate-200/80 shadow-xs focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all"
-                        />
+                <header className="h-16 sm:h-20 bg-transparent flex items-center justify-between gap-3 px-4 sm:px-6 lg:px-8 shrink-0">
+                    <div className="flex min-w-0 items-center gap-3">
+                        <button
+                            type="button"
+                            onClick={() => setIsMobileNavigationOpen((open) => !open)}
+                            aria-label={isMobileNavigationOpen ? 'Close navigation menu' : 'Open navigation menu'}
+                            aria-expanded={isMobileNavigationOpen}
+                            aria-controls="admin-mobile-navigation"
+                            className="md:hidden inline-flex h-10 w-10 items-center justify-center rounded-xl border border-slate-200 bg-white text-slate-700 shadow-xs transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-admin/40"
+                        >
+                            {isMobileNavigationOpen ? <X className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
+                        </button>
+                        <span className="truncate text-sm font-semibold text-slate-700 sm:text-base">
+                            {user?.role === 'DILG_ADMIN' ? 'DILG oversight' : 'Gridy administration'}
+                        </span>
                     </div>
 
                     {/* Right Header Controls */}
-                    <div className="flex items-center gap-4">
-                        <button onClick={() => navigate('/notifications')} className="p-2 text-primary-text hover:bg-primary/10 rounded-full transition-colors relative" title="Notifications">
-                            <Bell className="w-5 h-5" />
+                    <div className="flex shrink-0 items-center gap-2 sm:gap-4">
+                        <button type="button" onClick={() => navigate('/notifications')} className="rounded-full p-2 text-primary-text transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-admin/40" aria-label="Notifications">
+                            <Bell className="w-5 h-5" aria-hidden="true" />
                         </button>
                         
-                        <button onClick={() => navigate('/faqs')} className="p-2 text-primary-text hover:bg-primary/10 rounded-full transition-colors" title="Help & Info">
-                            <HelpCircle className="w-5 h-5" />
+                        <button type="button" onClick={() => navigate('/faqs')} className="rounded-full p-2 text-primary-text transition-colors hover:bg-primary/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-admin/40" aria-label="Help and information">
+                            <HelpCircle className="w-5 h-5" aria-hidden="true" />
                         </button>
 
-                        <div onClick={() => navigate('/profile')} className="flex items-center gap-3 cursor-pointer pl-2">
-                            <span className="text-sm font-bold text-slate-800">{userName}</span>
+                        <button type="button" onClick={() => navigate('/profile')} aria-label={`Open profile for ${userName}`} className="flex items-center gap-2 rounded-xl pl-1 sm:gap-3 sm:pl-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-admin/40">
+                            <span className="hidden max-w-40 truncate text-sm font-bold text-slate-800 sm:block">{userName}</span>
                             <div className="w-9 h-9 rounded-xl bg-slate-300 text-slate-700 font-bold flex items-center justify-center text-sm shadow-xs border border-slate-200">
                                 {userInitial}
                             </div>
-                        </div>
+                        </button>
                     </div>
                 </header>
 
+                <div
+                    id="admin-mobile-navigation"
+                    hidden={!isMobileNavigationOpen}
+                    className="border-y border-slate-200 bg-white shadow-sm md:hidden"
+                >
+                    <Sidebar compact onNavigate={() => setIsMobileNavigationOpen(false)} />
+                </div>
+
                 {/* Page Content View */}
-                <main className="flex-1 overflow-y-auto px-8 pb-8 flex flex-col justify-between">
+                <main className="flex flex-1 flex-col justify-between overflow-y-auto px-4 pb-8 sm:px-6 lg:px-8">
                     <div>
                         <Outlet />
                     </div>

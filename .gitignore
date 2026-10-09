@@ -21,6 +21,7 @@ backend/media/
 # Instructions + Further Context
 .agents/AGENTS.md
 .agents/MEMORY.md
+/AGENTS.md
 
 
 # Cmake build artifacts
@@ -42,3 +43,5 @@ backend/staticfiles/
 .coverage.*
 htmlcov/
 .pytest_cache/
+
+*.AGENTS.md

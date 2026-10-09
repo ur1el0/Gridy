@@ -29,8 +29,8 @@ def send_fcm_notification(token, title, body, data=None):
         response = messaging.send(message)
         logger.info(f"Successfully sent FCM notification: {response}")
         return response
-    except Exception:
-        logger.exception("FCM device notification delivery failed.")
+    except Exception as exc:
+        logger.error("FCM device notification delivery failed (%s).", type(exc).__name__)
         return None
 
 def send_fcm_topic_notification(topic, title, body, data=None):
@@ -62,8 +62,8 @@ def send_fcm_topic_notification(topic, title, body, data=None):
         response = messaging.send(message)
         logger.info(f"Successfully sent to topic {topic}: {response}")
         return response
-    except Exception:
-        logger.exception("FCM topic notification delivery failed.")
+    except Exception as exc:
+        logger.error("FCM topic notification delivery failed (%s).", type(exc).__name__)
         return None
 
 

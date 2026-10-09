@@ -53,17 +53,19 @@ class ApiClient {
         rawRefreshToken = _cookieHeader;
       }
 
-      final response = await _client.post(
-        _buildUri(AppConfig.tokenRefreshEndpoint),
-        headers: {
-          'Content-Type': 'application/json',
-          'Accept': 'application/json',
-          'Cookie': _cookieHeader!,
-        },
-        body: rawRefreshToken != null
-            ? jsonEncode({'refresh': rawRefreshToken})
-            : null,
-      );
+      final response = await _client
+          .post(
+            _buildUri(AppConfig.tokenRefreshEndpoint),
+            headers: {
+              'Content-Type': 'application/json',
+              'Accept': 'application/json',
+              'Cookie': _cookieHeader!,
+            },
+            body: rawRefreshToken != null
+                ? jsonEncode({'refresh': rawRefreshToken})
+                : null,
+          )
+          .timeout(AppConfig.requestTimeout);
 
       if (response.statusCode >= 200 && response.statusCode < 300) {
         final Map<String, dynamic> data = jsonDecode(
@@ -293,8 +295,8 @@ class ApiClient {
       throw const NetworkException();
     } on ApiException {
       rethrow;
-    } catch (e) {
-      throw ApiException('Unexpected network error: $e');
+    } catch (_) {
+      throw const ApiException('The request failed. Please try again.');
     }
   }
 
@@ -359,18 +361,13 @@ class ApiClient {
           decodedBody,
         );
 
-      case 500:
-      case 502:
-      case 503:
-      case 504:
-        throw ApiException(
-          detailMessage ??
-              'Server error occurred (${response.statusCode}). Please try again later.',
-          statusCode: response.statusCode,
-          details: decodedBody,
-        );
-
       default:
+        if (response.statusCode >= 500) {
+          throw ApiException(
+            'The service could not complete this request. Please try again.',
+            statusCode: response.statusCode,
+          );
+        }
         throw ApiException(
           detailMessage ??
               'Request failed with status code ${response.statusCode}.',

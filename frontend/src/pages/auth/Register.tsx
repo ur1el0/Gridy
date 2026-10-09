@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { axiosPublic } from '../../api/axios';
+import { getSafeApiErrorMessage } from '../../api/error-message';
 import { Shield, FileCheck2, Clock, Users, KeyRound, IdCard, ChevronDown } from 'lucide-react';
 import { TextField } from '../../components/ui/TextField';
 import { FileUploadZone } from '../../components/ui/FileUploadZone';
@@ -183,7 +184,13 @@ export const Register: React.FC = () => {
                 navigate('/login');
             }, 2000);
         } catch (err: any) {
-            console.error('Registration failed:', err);
+            if (!err.response || err.response.status >= 500) {
+                setError(getSafeApiErrorMessage(
+                    err,
+                    "We couldn't create your account. Check your connection and try again.",
+                ));
+                return;
+            }
             if (err.response?.data) {
                 const data = err.response.data;
                 if (typeof data === 'string') {
@@ -364,7 +371,7 @@ export const Register: React.FC = () => {
 
                     {/* Alerts */}
                     {error && (
-                        <div className="mb-5 bg-red-50/90 border border-red-200 rounded-xl p-3.5 flex items-center gap-3">
+                        <div role="alert" className="mb-5 bg-red-50/90 border border-red-200 rounded-xl p-3.5 flex items-center gap-3">
                             <svg className="w-5 h-5 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>

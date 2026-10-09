@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { axiosPrivate } from "../../api/axios";
+import { InlineErrorState } from "../../components/ui/InlineErrorState";
 import { 
         Radio,
         Pin,
@@ -33,35 +34,39 @@ export const CitizenBulletin: React.FC = () => {
         const [announcements, setAnnouncements] = useState<Announcement[]>([])
         const [activities, setActivities] = useState<Activity[]>([])
         const [loading, setLoading] = useState(true)
+        const [loadErrors, setLoadErrors] = useState({ announcements: false, activities: false })
+
+        const fetchData = useCallback(async () => {
+                setLoading(true)
+                try {
+                        const [annRes, actRes] = await Promise.allSettled([
+                                axiosPrivate.get('/announcements/'),
+                                axiosPrivate.get('/activities/'),
+                        ])
+                        setLoadErrors({
+                                announcements: annRes.status === 'rejected',
+                                activities: actRes.status === 'rejected',
+                        })
+                        if (annRes.status === 'fulfilled') {
+                                const responseData = annRes.value.data.results || annRes.value.data || []
+                                const data = Array.isArray(responseData) ? responseData : []
+                                setAnnouncements(
+                                        [...data].sort((a, b) => (b.is_pinned ? 1 : 0) - (a.is_pinned ? 1 : 0))
+                                )
+                        }
+
+                        if (actRes.status === 'fulfilled') {
+                                const responseData = actRes.value.data.results || actRes.value.data || []
+                                setActivities(Array.isArray(responseData) ? responseData : [])
+                        }
+                } finally {
+                        setLoading(false)
+                }
+        }, [])
 
         useEffect(() => {
-                const fetchData = async () => {
-                        try {
-                                setLoading(true)
-                                const [annRes, actRes] = await Promise.allSettled([
-                                        axiosPrivate.get('/announcements/'),
-                                        axiosPrivate.get('/activities/'),
-                                ])
-                                if (annRes.status === 'fulfilled') {
-                                        const data = annRes.value.data.results || annRes.value.data || []
-                                        // Sort pinned items to the top
-                                        setAnnouncements(
-                                                [...data].sort((a, b) => (b.is_pinned ? 1 : 0) - (a.is_pinned ? 1 : 0))
-                                        )
-                                }
-
-                                if (actRes.status === 'fulfilled') {
-                                        const data = actRes.value.data.results || actRes.value.data || []
-                                        setActivities(data)
-                                }
-                        } catch (err) {
-                                console.error('Bulletin load error', err)
-                        } finally {
-                                setLoading(false)
-                        }
-                }
-                fetchData()
-        }, [])
+                void fetchData()
+        }, [fetchData])
         
 return (
         <div className="space-y-6">
@@ -79,6 +84,7 @@ return (
                 <div className="flex bg-[#F1F5F9] p-1.5 rounded-xl border border-slate-200 shrink-0">
                     <button
                         onClick={() => setActiveTab('announcements')}
+                        aria-pressed={activeTab === 'announcements'}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                             activeTab === 'announcements'
                                 ? 'bg-white text-primary-text shadow-xs'
@@ -90,6 +96,7 @@ return (
                     </button>
                     <button
                         onClick={() => setActiveTab('activities')}
+                        aria-pressed={activeTab === 'activities'}
                         className={`flex items-center gap-2 px-4 py-2 rounded-lg text-xs font-bold transition-all cursor-pointer ${
                             activeTab === 'activities'
                                 ? 'bg-white text-primary-text shadow-xs'
@@ -106,6 +113,12 @@ return (
                     <Loader2 className="w-8 h-8 animate-spin text-primary-text mb-2" />
                     <p className="text-sm">Retrieving bulletin notices...</p>
                 </div>
+            ) : loadErrors[activeTab] ? (
+                <InlineErrorState
+                    message={activeTab === 'announcements' ? "We couldn't load announcements." : "We couldn't load activities."}
+                    onRetry={() => void fetchData()}
+                    retrying={loading}
+                />
             ) : activeTab === 'announcements' ? (
                 /* Announcements Feed */
                 announcements.length === 0 ? (

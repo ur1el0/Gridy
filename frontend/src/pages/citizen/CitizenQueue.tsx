@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { axiosPrivate } from '../../api/axios';
+import { getSafeApiErrorMessage } from '../../api/error-message';
+import { InlineErrorState } from '../../components/ui/InlineErrorState';
 import {  
     Clock, 
     Users, 
@@ -43,6 +45,7 @@ export const CitizenQueue: React.FC = () => {
     });
     const [activeTicket, setActiveTicket] = useState<UserTicket | null>(null);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [cancelling, setCancelling] = useState(false);
@@ -50,26 +53,27 @@ export const CitizenQueue: React.FC = () => {
     // Form State
     const [serviceType, setServiceType] = useState(SERVICE_TYPES[0]);
 
-    const fetchQueueData = async () => {
+    const fetchQueueData = async (showLoading = false) => {
+        if (showLoading) setLoading(true);
         try {
-            // 1. Fetch live lobby summary
-            const statusRes = await axiosPrivate.get('/tickets/live-status/');
-            setLiveStatus(statusRes.data);
-
-            // 2. Fetch resident's own tickets to find any currently active
-            const ticketsRes = await axiosPrivate.get('/tickets/');
+            const [statusRes, ticketsRes] = await Promise.all([
+                axiosPrivate.get('/tickets/live-status/'),
+                axiosPrivate.get('/tickets/'),
+            ]);
             const list = ticketsRes.data.results || ticketsRes.data || [];
             const current = list.find((t: UserTicket) => ['WAITING', 'SERVING'].includes(t.status.toUpperCase()));
+            setLiveStatus(statusRes.data);
             setActiveTicket(current || null);
-        } catch (err) {
-            console.error('Queue poll error:', err);
+            setLoadError(false);
+        } catch {
+            setLoadError(true);
         } finally {
             setLoading(false);
         }
     };
 
     useEffect(() => {
-        fetchQueueData();
+        fetchQueueData(true);
         // Auto-poll live queue status every 5 seconds
         const interval = setInterval(fetchQueueData, 5000);
         return () => clearInterval(interval);
@@ -85,9 +89,11 @@ export const CitizenQueue: React.FC = () => {
             toast.success(`Ticket ${res.data.ticket_number} generated!`);
             setIsModalOpen(false);
             fetchQueueData();
-        } catch (err: any) {
-            const msg = err.response?.data?.detail || 'Failed to generate queue ticket.';
-            toast.error(msg);
+        } catch (err) {
+            toast.error(getSafeApiErrorMessage(
+                err,
+                "We couldn't create your queue ticket. Check your connection and try again.",
+            ));
         } finally {
             setSubmitting(false);
         }
@@ -104,9 +110,11 @@ export const CitizenQueue: React.FC = () => {
             setActiveTicket(null);
             toast.success('You have left the queue.');
             fetchQueueData();
-        } catch (err: any) {
-            const msg = err.response?.data?.detail || 'Failed to cancel queue ticket.';
-            toast.error(msg);
+        } catch (err) {
+            toast.error(getSafeApiErrorMessage(
+                err,
+                "We couldn't cancel your queue ticket. Check your connection and try again.",
+            ));
         } finally {
             setCancelling(false);
         }
@@ -124,7 +132,7 @@ export const CitizenQueue: React.FC = () => {
                         Real-time lobby ticker and digital queuing for barangay hall physical counters.
                     </p>
                 </div>
-                {!activeTicket && (
+                {!loading && !loadError && !activeTicket && (
                     <button
                         onClick={() => setIsModalOpen(true)}
                         className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-semibold shadow-xs transition-all cursor-pointer shrink-0"
@@ -149,7 +157,7 @@ export const CitizenQueue: React.FC = () => {
                         </span>
                     </div>
                     <div className="mt-4 text-4xl sm:text-5xl font-black tracking-tight text-primary-foreground font-mono">
-                        {liveStatus.current_ticket || '—'}
+                        {loadError ? '—' : liveStatus.current_ticket || '—'}
                     </div>
                     <p className="text-xs text-primary-foreground opacity-80 mt-2 flex items-center gap-1.5">
                         <Volume2 className="w-3.5 h-3.5 text-primary-foreground" />
@@ -168,7 +176,7 @@ export const CitizenQueue: React.FC = () => {
                         </div>
                     </div>
                     <div className="mt-4 text-3xl font-extrabold text-slate-900">
-                        {liveStatus.total_waiting}
+                        {loadError ? '—' : liveStatus.total_waiting}
                     </div>
                     <p className="text-xs text-slate-500 mt-2">
                         In active queue line
@@ -186,7 +194,7 @@ export const CitizenQueue: React.FC = () => {
                         </div>
                     </div>
                     <div className="mt-4 text-3xl font-extrabold text-slate-900">
-                        ~{liveStatus.avg_wait_mins} <span className="text-base font-normal text-slate-500">mins</span>
+                        {loadError ? '—' : <>~{liveStatus.avg_wait_mins} <span className="text-base font-normal text-slate-500">mins</span></>}
                     </div>
                     <p className="text-xs text-slate-500 mt-2">
                         Based on current service pace
@@ -200,6 +208,12 @@ export const CitizenQueue: React.FC = () => {
                     <Loader2 className="w-6 h-6 animate-spin text-primary-text mr-2" />
                     <span>Synchronizing your queue ticket...</span>
                 </div>
+            ) : loadError ? (
+                <InlineErrorState
+                    message="We couldn't load your queue details."
+                    onRetry={() => void fetchQueueData(true)}
+                    retrying={loading}
+                />
             ) : activeTicket ? (
                 <div className={`rounded-2xl p-6 sm:p-8 border shadow-sm transition-all ${
                     activeTicket.status.toUpperCase() === 'SERVING'
@@ -286,13 +300,15 @@ export const CitizenQueue: React.FC = () => {
             {/* Take Ticket Modal */}
             {isModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-                    <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+                    <div role="dialog" aria-modal="true" aria-labelledby="queue-ticket-dialog-title" className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
                         <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-                            <h3 className="text-lg font-extrabold text-slate-900">
+                            <h3 id="queue-ticket-dialog-title" className="text-lg font-extrabold text-slate-900">
                                 Generate Digital Queue Ticket
                             </h3>
                             <button
                                 onClick={() => setIsModalOpen(false)}
+                                type="button"
+                                aria-label="Close queue ticket form"
                                 className="text-slate-400 hover:text-slate-600 rounded-lg p-1"
                             >
                                 <X className="w-5 h-5" />
@@ -301,10 +317,11 @@ export const CitizenQueue: React.FC = () => {
 
                         <form onSubmit={handleTakeTicket} className="mt-4 space-y-4">
                             <div>
-                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                                <label htmlFor="queue-service-type" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
                                     Select Service
                                 </label>
                                 <select
+                                    id="queue-service-type"
                                     value={serviceType}
                                     onChange={(e) => setServiceType(e.target.value)}
                                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#F8FAFD] text-sm text-slate-800 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"

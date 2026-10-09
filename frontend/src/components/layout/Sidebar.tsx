@@ -33,14 +33,22 @@ const navItems: NavItem[] = [
     { name: 'Barangay Profile', path: '/barangay-settings', icon: Building},
 ];
 
-export const Sidebar: React.FC = () => {
+interface SidebarProps {
+    compact?: boolean;
+    onNavigate?: () => void;
+}
+
+export const Sidebar: React.FC<SidebarProps> = ({ compact = false, onNavigate }) => {
     const { user, logout } = useAuth();
     const location = useLocation();
 
     return (
-        <aside className="w-64 bg-[#F8FAFD] border-r border-[#E2E8F0] h-screen flex flex-col justify-between select-none shrink-0">
+        <aside
+            aria-label={compact ? 'Mobile administration menu' : 'Administration sidebar'}
+            className={`${compact ? 'w-full' : 'hidden h-screen w-64 shrink-0 border-r md:flex'} bg-[#F8FAFD] border-[#E2E8F0] flex flex-col justify-between select-none`}
+        >
             <div>
-                <div className="h-20 flex items-center px-6 gap-3">
+                <div className={`${compact ? 'h-14 px-4' : 'h-20 px-6'} flex items-center gap-3`}>
                     <div className="w-9 h-9 rounded-xl bg-[#091b35] flex items-center justify-center p-1.5 shadow-sm shrink-0">
                         <img src={mainLogoSvg} alt="Gridy Logo" className="w-full h-full object-contain" />
                     </div>
@@ -52,7 +60,7 @@ export const Sidebar: React.FC = () => {
                 </div>
 
                 {/* Navigation Items */}
-                <nav className="px-3.5 py-2">
+                <nav aria-label={compact ? 'Mobile administration' : 'Admin navigation'} className="px-3.5 py-2">
                     <ul className="space-y-1">
                         {/* DILG Oversight View */}
                         {user?.role === 'DILG_ADMIN' ? (
@@ -60,9 +68,11 @@ export const Sidebar: React.FC = () => {
                                 <li>
                                     <NavLink
                                         to="/dilg-applications"
+                                        onClick={onNavigate}
+                                        aria-current={location.pathname === '/dilg-applications' ? 'page' : undefined}
                                         className={({ isActive }) => `flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 group ${
                                             isActive ? 'bg-primary/10 text-primary-text font-bold shadow-xs' : 'text-[#475569] font-medium hover:bg-[#EEF3FA] hover:text-[#0f172a]'
-                                        }`}
+                                        } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40`}
                                     >
                                         <ClipboardCheck className="h-5 w-5 text-primary-text" />
                                         <span>Barangay Applications</span>
@@ -71,9 +81,11 @@ export const Sidebar: React.FC = () => {
                                 <li>
                                     <NavLink
                                         to="/dilg-analytics"
+                                        onClick={onNavigate}
+                                        aria-current={location.pathname === '/dilg-analytics' ? 'page' : undefined}
                                         className={({ isActive }) => `flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 group ${
                                             isActive ? 'bg-primary/10 text-primary-text font-bold shadow-xs' : 'text-[#475569] font-medium hover:bg-[#EEF3FA] hover:text-[#0f172a]'
-                                        }`}
+                                        } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40`}
                                     >
                                         <div className="w-5 h-5 flex items-center justify-center shrink-0">
                                             <Globe className="w-5 h-5 transition-colors duration-150 text-primary-text" />
@@ -95,11 +107,13 @@ export const Sidebar: React.FC = () => {
                                     <li key={item.name}>
                                         <NavLink
                                             to={item.path}
+                                            onClick={onNavigate}
                                             className={`flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 group ${
                                                 isActive
                                                     ? 'bg-primary/10 text-primary-text font-bold shadow-xs'
                                                     : 'text-[#475569] font-medium hover:bg-[#EEF3FA] hover:text-[#0f172a]'
-                                            }`}
+                                            } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40`}
+                                            aria-current={isActive ? 'page' : undefined}
                                         >
                                             <div className="w-5 h-5 flex items-center justify-center shrink-0">
                                                 <Icon className={`w-5 h-5 transition-colors duration-150 ${
@@ -121,12 +135,14 @@ export const Sidebar: React.FC = () => {
             <div className="px-3.5 pb-6 space-y-1">
                 <NavLink
                     to="/settings"
+                    onClick={onNavigate}
+                    aria-current={location.pathname === '/settings' ? 'page' : undefined}
                     className={({ isActive }) =>
                         `flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group ${
                             isActive
                                 ? 'bg-primary/10 text-primary-text font-bold shadow-xs'
                                 : 'text-[#475569] hover:bg-[#EEF3FA] hover:text-[#0f172a]'
-                        }`
+                        } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40`
                     }
                 >
                     <div className="w-5 h-5 flex items-center justify-center shrink-0">
@@ -136,7 +152,12 @@ export const Sidebar: React.FC = () => {
                 </NavLink>
 
                 <button
-                    onClick={logout}
+                    onClick={async () => {
+                        onNavigate?.();
+                        await logout();
+                    }}
+                    type="button"
+                    aria-label="Log out"
                     className="w-full flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-sm font-semibold text-[#DC2626] hover:bg-red-50 hover:text-red-700 transition-all duration-150 text-left cursor-pointer group"
                 >
                     <div className="w-5 h-5 flex items-center justify-center shrink-0">

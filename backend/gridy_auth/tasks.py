@@ -16,8 +16,12 @@ def async_task(func):
         thread = threading.Thread(target=func, args=args, kwargs=kwargs, daemon=True)
         try:
             thread.start()
-        except Exception:
-            logger.exception("Could not start background task %s.", func.__name__)
+        except Exception as exc:
+            logger.error(
+                "Could not start background task %s (%s).",
+                func.__name__,
+                type(exc).__name__,
+            )
             return None
         return thread
     
@@ -42,8 +46,8 @@ def send_welcome_email(user_email, full_name):
         if sent_count != 1:
             logger.error("Email backend did not accept the welcome message.")
         return sent_count
-    except Exception:
-        logger.exception("Welcome email delivery failed.")
+    except Exception as exc:
+        logger.error("Welcome email delivery failed (%s).", type(exc).__name__)
 
 @async_task
 def send_barangay_approval_email(user_email, applicant_name, barangay_name):
@@ -66,8 +70,8 @@ def send_barangay_approval_email(user_email, applicant_name, barangay_name):
             [user_email],
             fail_silently=False,
         )
-    except Exception:
-        logger.exception("Barangay approval email delivery failed.")
+    except Exception as exc:
+        logger.error("Barangay approval email delivery failed (%s).", type(exc).__name__)
         return
 
     if sent_count != 1:

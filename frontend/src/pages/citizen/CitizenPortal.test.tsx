@@ -56,6 +56,38 @@ describe('Resident Portal Components', () => {
         });
     });
 
+    it('shows a document load error instead of an empty state and retries', async () => {
+        const documentResponses = vi.fn()
+            .mockRejectedValueOnce(new Error('Network unavailable'))
+            .mockResolvedValueOnce({ data: { results: [] } });
+        vi.mocked(axiosPrivate.get).mockImplementation((url: string) => {
+            if (url === '/document-requests/') {
+                return documentResponses();
+            }
+            if (url === '/payment-recipients/') {
+                return Promise.resolve({ data: { results: [] } });
+            }
+            return Promise.reject(new Error(`Unhandled GET url: ${url}`));
+        });
+
+        render(
+            <BrowserRouter>
+                <AuthProvider>
+                    <CitizenDocuments />
+                </AuthProvider>
+            </BrowserRouter>
+        );
+
+        expect(await screen.findByRole('alert')).toHaveTextContent("We couldn't load your document requests.");
+        expect(screen.queryByText('No active document requests')).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+
+        await waitFor(() => {
+            expect(screen.getByText('No active document requests')).toBeInTheDocument();
+        });
+    });
+
     it('renders list of active clearance requests when data is returned', async () => {
         const mockRequests = [
             {

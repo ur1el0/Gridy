@@ -1,6 +1,7 @@
 import React, { useState} from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { axiosPublic } from "../../api/axios";
+import { getSafeApiErrorMessage } from "../../api/error-message";
 import { Shield, CheckCircle, AlertTriangle } from "lucide-react";
 
 export const ResetPassword = () => {
@@ -42,7 +43,11 @@ export const ResetPassword = () => {
             setTimeout(() => navigate('/login'), 3000)
         } catch (error: any) {
             setStatus('error')
-            setErrorMessage(error.response?.data?.token?.[0] || "Invalid or expired reset link. Please request a new one.")
+            const tokenError = error.response?.status < 500 ? error.response?.data?.token?.[0] : undefined
+            setErrorMessage(tokenError || getSafeApiErrorMessage(
+                error,
+                "We couldn't reset your password. Try again or request a new reset link.",
+            ))
         }
     }
 
@@ -76,7 +81,7 @@ export const ResetPassword = () => {
                 ) : (
                     <form onSubmit={handleSubmit} className="space-y-4">
                         {status === 'error' && (
-                            <div className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100">
+                            <div role="alert" className="p-3 bg-red-50 text-red-600 text-sm rounded-lg border border-red-100">
                                 {errorMessage}
                             </div>
                         )}
