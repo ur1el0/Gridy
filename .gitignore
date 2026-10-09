@@ -22,14 +22,14 @@ backend/media/
 .agents/AGENTS.md
 .agents/MEMORY.md
 /AGENTS.md
+/CODEX_ANTIGRAVITY_WORKFLOW.md
 
 
 # Cmake build artifacts
 build/
 clearance.pdf
 
-# Scratch scripts and temporary test files
-test_*.py
+# Scratch scripts and temporary files
 scratch/
 
 # Issue reports and temporary upload artifacts
