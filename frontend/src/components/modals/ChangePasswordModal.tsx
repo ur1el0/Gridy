@@ -1,6 +1,7 @@
 import React, { useState} from "react";
 import { X, Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react";
 import { axiosPrivate } from '../../api/axios';
+import { getSafeApiErrorMessage } from '../../api/error-message';
 
 
 interface Props {
@@ -40,13 +41,18 @@ export const ChangePasswordModal: React.FC<Props> = ({ isOpen, onClose, onSucces
                         onSuccess()
                 } catch (err: any) {
                         // Extract the first error message from the DRF response
-                        if (err.response?.data) {
+                        if (!err.response || err.response.status >= 500) {
+                                setError(getSafeApiErrorMessage(
+                                        err,
+                                        "We couldn't change your password. Check your connection and try again.",
+                                ))
+                        } else if (err.response?.data) {
                                 const data = err.response.data
                                 if (data.old_password) setError(data.old_password[0])
                                 else if (data.new_password) setError(data.new_password[0])
                                 else if (data.non_field_errors) setError(data.non_field_errors[0])
                         } else {
-                                setError("Network error occurred.")    
+                                setError("We couldn't change your password. Check your connection and try again.")
                         }
                 } finally {
                         setIsLoading(false)

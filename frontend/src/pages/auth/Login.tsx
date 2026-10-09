@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/auth-context';
 import { axiosPublic } from '../../api/axios';
+import { getSafeApiErrorMessage } from '../../api/error-message';
 import { Shield, FileCheck2, Clock, Users, KeyRound } from 'lucide-react';
 
 export const Login: React.FC = () => {
@@ -50,15 +51,11 @@ export const Login: React.FC = () => {
             } else {
                 setError('Login failed: Authentication token was not returned.');
             }
-        } catch (err: any) {
-            console.error('Login failed:', err);
-            if (err.response?.data?.detail) {
-                setError(err.response.data.detail);
-            } else if (err.response?.data?.error) {
-                setError(err.response.data.error);
-            } else {
-                setError('Login failed. Please check your credentials and try again.');
-            }
+        } catch (err) {
+            setError(getSafeApiErrorMessage(
+                err,
+                "We couldn't sign you in. Check your connection and credentials, then try again.",
+            ));
         } finally {
             setLoading(false);
         }
@@ -206,7 +203,7 @@ export const Login: React.FC = () => {
 
                     {/* Error Alert */}
                     {error && (
-                        <div className="mb-6 bg-red-50/90 border border-red-200 rounded-xl p-4 flex items-center gap-3">
+                        <div role="alert" className="mb-6 bg-red-50/90 border border-red-200 rounded-xl p-4 flex items-center gap-3">
                             <svg className="w-5 h-5 text-red-500 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                             </svg>
