@@ -34,6 +34,7 @@ describe('CitizenQueue', () => {
 
         fireEvent.click(await screen.findByRole('button', { name: /get queue ticket/i }));
         expect(screen.getByText(/staff verify priority lane eligibility/i)).toBeInTheDocument();
+        expect(screen.getByLabelText('Select Service')).toBeInTheDocument();
         expect(screen.queryByRole('checkbox', { name: /priority/i })).not.toBeInTheDocument();
         expect(screen.queryByRole('button', { name: /priority lane/i })).not.toBeInTheDocument();
 
@@ -43,6 +44,22 @@ describe('CitizenQueue', () => {
             expect(axiosPrivate.post).toHaveBeenCalledWith('/tickets/', {
                 service_type: 'Document Processing & Clearances',
             });
+        });
+    });
+
+    it('shows a queue load error instead of an empty ticket state and retries', async () => {
+        vi.mocked(axiosPrivate.get).mockRejectedValueOnce(new Error('Network unavailable'));
+
+        render(<CitizenQueue />);
+
+        expect(await screen.findByRole('alert')).toHaveTextContent("We couldn't load your queue details.");
+        expect(screen.queryByText('You do not have an active queue ticket')).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /get a ticket now/i })).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+
+        await waitFor(() => {
+            expect(screen.getByText('You do not have an active queue ticket')).toBeInTheDocument();
         });
     });
 });

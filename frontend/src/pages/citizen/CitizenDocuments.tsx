@@ -1,6 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import toast from 'react-hot-toast';
 import { axiosPrivate } from '../../api/axios';
+import { getSafeApiErrorMessage } from '../../api/error-message';
+import { InlineErrorState } from '../../components/ui/InlineErrorState';
 import { 
     FileText, 
     Plus, 
@@ -52,6 +54,7 @@ const DOCUMENT_TYPES = [
 export const CitizenDocuments: React.FC = () => {
     const [requests, setRequests] = useState<DocumentRequest[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [downloadingId, setDownloadingId] = useState<number | null>(null);
@@ -71,8 +74,9 @@ export const CitizenDocuments: React.FC = () => {
             const res = await axiosPrivate.get('/document-requests/');
             const data = res.data.results || res.data;
             setRequests(Array.isArray(data) ? data : []);
+            setLoadError(false);
         } catch {
-            toast.error('Failed to load your document requests.');
+            setLoadError(true);
         } finally {
             setLoading(false);
         }
@@ -105,9 +109,11 @@ export const CitizenDocuments: React.FC = () => {
             setIsModalOpen(false);
             setPurpose('');
             fetchRequests();
-        } catch (err: any) {
-            const msg = err.response?.data?.detail || err.response?.data?.message || 'Failed to submit request.';
-            toast.error(msg);
+        } catch (err) {
+            toast.error(getSafeApiErrorMessage(
+                err,
+                "We couldn't submit your document request. Check your connection and try again.",
+            ));
         } finally {
             setSubmitting(false);
         }
@@ -123,9 +129,11 @@ export const CitizenDocuments: React.FC = () => {
             await axiosPrivate.delete(`/document-requests/${id}/`);
             setRequests((prev) => prev.filter((r) => r.id !== id));
             toast.success('Document request cancelled.');
-        } catch (err: any) {
-            const msg = err.response?.data?.detail || err.response?.data?.message || 'Failed to cancel request.';
-            toast.error(msg);
+        } catch (err) {
+            toast.error(getSafeApiErrorMessage(
+                err,
+                "We couldn't cancel your request. Check your connection and try again.",
+            ));
         } finally {
             setCancellingId(null);
         }
@@ -247,6 +255,12 @@ export const CitizenDocuments: React.FC = () => {
                     <Loader2 className="w-8 h-8 animate-spin text-primary-text mb-2" />
                     <p className="text-sm">Retrieving your certificate records...</p>
                 </div>
+            ) : loadError ? (
+                <InlineErrorState
+                    message="We couldn't load your document requests."
+                    onRetry={() => void fetchRequests()}
+                    retrying={loading}
+                />
             ) : requests.length === 0 ? (
                 <div className="bg-white rounded-2xl p-12 border border-slate-200 text-center flex flex-col items-center justify-center">
                     <div className="w-14 h-14 rounded-2xl bg-sky-50 text-primary-text flex items-center justify-center mb-3">
