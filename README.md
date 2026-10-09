@@ -87,7 +87,7 @@ docker compose exec backend python manage.py seed_demo_analytics --confirm-demo-
 - **OpenAPI Documentation:** [http://localhost:8000/api/schema/swagger-ui/](http://localhost:8000/api/schema/swagger-ui/)
 - **Telemetry Health Check:** [http://localhost:8000/api/v1/health/](http://localhost:8000/api/v1/health/)
 
-The local PostgreSQL port is bound to `127.0.0.1:5433`. Production deployments must use their deployment platform's service configuration and provide valid SMTP credentials plus a Firebase service-account key path; see [deployment and observability](docs/walkthrough/deployment_observability.md).
+The local PostgreSQL port is bound to `127.0.0.1:5433`. Production deployments must use their deployment platform's service configuration and provide valid SMTP credentials, Cloudinary credentials for persistent media storage, and a Firebase service-account key mounted at runtime; see [deployment and observability](docs/walkthrough/deployment_observability.md).
 
 ### 2. Local Setup (Without Docker)
 
