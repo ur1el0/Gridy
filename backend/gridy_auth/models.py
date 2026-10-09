@@ -1,11 +1,15 @@
 from django.db import models
+from django.db.models import Q
+from django.db.models.functions import Lower
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
 
 # Create your models here.
 
 class Barangay(models.Model):
-    name = models.CharField(max_length=255, unique=True)
+    name = models.CharField(max_length=255)
+    municipality = models.CharField(max_length=120, blank=True, default="")
+    province = models.CharField(max_length=120, blank=True, default="")
     primary_color = models.CharField(
         max_length=7,
         default="#082B66",
@@ -22,8 +26,76 @@ class Barangay(models.Model):
     captain_name = models.CharField(max_length=255, blank=True, null=True, help_text="Full name of the incumbent Punong Barangay")
     office_contact = models.CharField(max_length=255, blank=True, null=True, help_text="Office Address or Phone Number")
 
+    class Meta:
+        constraints = [
+            models.UniqueConstraint(
+                Lower("name"),
+                Lower("municipality"),
+                Lower("province"),
+                condition=~Q(municipality="") & ~Q(province=""),
+                name="unique_barangay_locality",
+            ),
+        ]
+
     def __str__(self):
+        if self.municipality and self.province:
+            return f"{self.name} ({self.municipality}, {self.province})"
         return self.name
+
+
+class BarangayApplication(models.Model):
+    class Status(models.TextChoices):
+        PENDING = "PENDING", "Pending review"
+        APPROVED = "APPROVED", "Approved"
+        REJECTED = "REJECTED", "Rejected"
+
+    name = models.CharField(max_length=255)
+    municipality = models.CharField(max_length=120)
+    province = models.CharField(max_length=120)
+    applicant_name = models.CharField(max_length=255)
+    applicant_position = models.CharField(max_length=120)
+    applicant_email = models.EmailField()
+    applicant_phone = models.CharField(max_length=30)
+    status = models.CharField(
+        max_length=12,
+        choices=Status.choices,
+        default=Status.PENDING,
+        db_index=True,
+    )
+    review_note = models.TextField(blank=True)
+    reviewed_by = models.ForeignKey(
+        "gridy_auth.User",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="reviewed_barangay_applications",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    created_barangay = models.ForeignKey(
+        Barangay,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="onboarding_application",
+    )
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        constraints = [
+            models.UniqueConstraint(
+                Lower("name"),
+                Lower("municipality"),
+                Lower("province"),
+                condition=Q(status="PENDING"),
+                name="unique_pending_barangay_application",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.name}, {self.municipality} ({self.get_status_display()})"
+
 
 class User(AbstractUser):
     class Role(models.TextChoices):
