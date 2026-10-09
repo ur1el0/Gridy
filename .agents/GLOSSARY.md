@@ -74,8 +74,14 @@ The `Next Ticket` policy that serves up to two waiting priority tickets for each
 ### Assistance Request
 A resident-submitted request for barangay aid or allowance. Barangay officials review and record the decision; Gridy does not automate eligibility or promise funds.
 
+### Payment Recipient
+A payment destination configured by one barangay, such as its GCash wallet, Maya wallet, bank account, or another approved e-payment account. Gridy stores the recipient name, account identifier, and transfer instructions so residents in that barangay can make a transfer. It never stores wallet or bank passwords, PINs, or one-time codes.
+
 ### Payment Verification
-The manual check by barangay staff that a GCash transfer reference matches an actual received transfer. A reference entered by a resident alone does not authorize document release; staff must verify the payment and record the official receipt.
+The manual check by barangay staff that an electronic transfer reference matches money received by that barangay. A reference entered by a resident alone does not authorize document release; staff must verify the payment and record the official receipt. Cash collection remains available.
+
+### Barangay Onboarding Application
+A public request to add a barangay to Gridy. The application does not create a tenant or account until a DILG administrator completes independent verification and approves it.
 
 ### Public Announcement Page
 A read-only, publicly accessible Gridy page that displays a barangay's announcements. Requests and other transactions remain inside the authenticated Gridy portal. Gridy does not control replies on external social platforms.
