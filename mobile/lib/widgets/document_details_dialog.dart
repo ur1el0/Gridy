@@ -8,6 +8,8 @@ import '../core/theme/app_colors.dart';
 import '../models/document_request_model.dart';
 import '../models/payment_recipient_model.dart';
 import '../services/document_service.dart';
+import 'document_payment_section.dart';
+import 'document_request_summary.dart';
 
 /// Modal dialog showing complete document request lifecycle details and PDF download
 class DocumentDetailsDialog extends StatefulWidget {
@@ -293,209 +295,24 @@ class _DocumentDetailsDialogState extends State<DocumentDetailsDialog> {
               const Divider(color: Color(0xFFF1F5F9), height: 1),
               const SizedBox(height: 16),
 
-              // Details List
-              _DetailRow(
-                label: 'Current Status',
-                value: req.statusDisplay,
-                valueColor: req.statusBadgeTextColor,
-              ),
-              const SizedBox(height: 12),
-              _DetailRow(
-                label: 'Urgency Priority',
-                value: req.urgencyTag.toUpperCase() == 'URGENT'
-                    ? 'Urgent / Priority'
-                    : 'Regular',
-              ),
-              const SizedBox(height: 12),
-              _DetailRow(
-                label: 'Submission Date',
-                value: req.formattedRequestedDate,
+              DocumentRequestSummary(
+                request: req,
+                paymentStatus: _paymentStatus,
+                paymentReviewNote: _paymentReviewNote,
               ),
 
-              if (req.orNumber != null && req.orNumber!.isNotEmpty) ...[
-                const SizedBox(height: 12),
-                _DetailRow(
-                  label: 'Official Receipt (O.R.)',
-                  value: req.orNumber!,
-                ),
-              ],
-              if (req.formattedFee != null) ...[
-                const SizedBox(height: 12),
-                _DetailRow(
-                  label: 'Assessment Fee',
-                  value: req.formattedFee!,
-                  valueColor: const Color(0xFF0F766E),
-                ),
-              ],
-              if ((req.feeAmount ?? 0) > 0) ...[
-                const SizedBox(height: 12),
-                _DetailRow(
-                  label: 'Payment status',
-                  value: _paymentStatus.replaceAll('_', ' '),
-                ),
-                if (_paymentReviewNote != null &&
-                    _paymentReviewNote!.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    'Staff note: $_paymentReviewNote',
-                    style: const TextStyle(
-                      color: Color(0xFFB91C1C),
-                      fontSize: 12,
-                    ),
-                  ),
-                ],
-              ],
-              if (req.isWalkin) ...[
-                const SizedBox(height: 12),
-                const _DetailRow(
-                  label: 'Filing Channel',
-                  value: 'Barangay Hall Walk-In',
-                ),
-              ],
-
-              if (req.adminNotes != null && req.adminNotes!.isNotEmpty) ...[
-                const SizedBox(height: 16),
-                const Text(
-                  'BARANGAY REMARKS / NOTES',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textLabel,
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                  ),
-                  child: Text(
-                    req.adminNotes!,
-                    style: const TextStyle(
-                      fontSize: 12.5,
-                      color: AppColors.textPrimary,
-                      height: 1.4,
-                    ),
-                  ),
-                ),
-              ],
-
-              if (canSubmitElectronicPayment) ...[
-                const SizedBox(height: 16),
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
-                    border: Border.all(color: const Color(0xFFE2E8F0)),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      const Text(
-                        'Choose the official recipient configured by your barangay. Staff will verify the transfer reference manually before release.',
-                        style: TextStyle(
-                          fontSize: 12,
-                          height: 1.4,
-                          color: AppColors.textPrimary,
-                        ),
-                      ),
-                      const SizedBox(height: 10),
-                      if (_isLoadingPaymentRecipients)
-                        const LinearProgressIndicator(),
-                      if (_paymentRecipientError != null)
-                        Text(
-                          _paymentRecipientError!,
-                          style: const TextStyle(color: Colors.red),
-                        ),
-                      if (!_isLoadingPaymentRecipients &&
-                          _paymentRecipientError == null &&
-                          _paymentRecipients.isEmpty)
-                        const Text(
-                          'Your barangay has no e-payment recipient configured. Contact the barangay hall or pay in person.',
-                        ),
-                      if (_paymentRecipients.isNotEmpty) ...[
-                        DropdownButtonFormField<int>(
-                          initialValue:
-                              _paymentRecipients.any(
-                                (item) => item.id == _selectedRecipientId,
-                              )
-                              ? _selectedRecipientId
-                              : null,
-                          isExpanded: true,
-                          decoration: const InputDecoration(
-                            labelText: 'Payment recipient',
-                            border: OutlineInputBorder(),
-                          ),
-                          items: _paymentRecipients
-                              .map(
-                                (recipient) => DropdownMenuItem<int>(
-                                  value: recipient.id,
-                                  child: Text(
-                                    '${recipient.displayName} · ${recipient.providerLabel}',
-                                    overflow: TextOverflow.ellipsis,
-                                  ),
-                                ),
-                              )
-                              .toList(),
-                          onChanged: (value) =>
-                              setState(() => _selectedRecipientId = value),
-                        ),
-                        if (_selectedRecipientId != null)
-                          Builder(
-                            builder: (context) {
-                              final recipient = _paymentRecipients.firstWhere(
-                                (item) => item.id == _selectedRecipientId,
-                              );
-                              return Padding(
-                                padding: const EdgeInsets.only(top: 8),
-                                child: Text(
-                                  '${recipient.recipientName} · ${recipient.recipientIdentifier}'
-                                  '${recipient.instructions.isEmpty ? '' : '\n${recipient.instructions}'}',
-                                  style: const TextStyle(
-                                    fontSize: 12,
-                                    height: 1.4,
-                                  ),
-                                ),
-                              );
-                            },
-                          ),
-                        const SizedBox(height: 10),
-                        TextField(
-                          controller: _paymentReferenceController,
-                          maxLength: 100,
-                          decoration: const InputDecoration(
-                            labelText: 'Transfer reference',
-                            border: OutlineInputBorder(),
-                            counterText: '',
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            onPressed:
-                                _isSubmittingPayment ||
-                                    _selectedRecipientId == null
-                                ? null
-                                : _handleSubmitPaymentReference,
-                            child: Text(
-                              _isSubmittingPayment
-                                  ? 'Submitting…'
-                                  : 'Submit transfer reference',
-                            ),
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ],
+              DocumentPaymentSection(
+                canSubmitElectronicPayment: canSubmitElectronicPayment,
+                isLoadingRecipients: _isLoadingPaymentRecipients,
+                recipientError: _paymentRecipientError,
+                recipients: _paymentRecipients,
+                selectedRecipientId: _selectedRecipientId,
+                referenceController: _paymentReferenceController,
+                isSubmitting: _isSubmittingPayment,
+                onSelectedRecipientChanged: (value) =>
+                    setState(() => _selectedRecipientId = value),
+                onSubmitPaymentReference: _handleSubmitPaymentReference,
+              ),
 
               const SizedBox(height: 24),
 
@@ -562,39 +379,6 @@ class _DocumentDetailsDialogState extends State<DocumentDetailsDialog> {
           ),
         ),
       ),
-    );
-  }
-}
-
-class _DetailRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final Color? valueColor;
-
-  const _DetailRow({required this.label, required this.value, this.valueColor});
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12.5,
-            color: AppColors.textMuted,
-            fontWeight: FontWeight.w500,
-          ),
-        ),
-        Text(
-          value,
-          style: TextStyle(
-            fontSize: 12.5,
-            fontWeight: FontWeight.w700,
-            color: valueColor ?? AppColors.textPrimary,
-          ),
-        ),
-      ],
     );
   }
 }

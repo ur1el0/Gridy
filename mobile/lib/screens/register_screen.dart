@@ -9,7 +9,8 @@ import '../models/barangay_model.dart';
 import '../services/auth_service.dart';
 import '../services/storage_service.dart';
 import '../widgets/custom_button.dart';
-import '../widgets/custom_text_field.dart';
+import '../widgets/resident_identity_verification_section.dart';
+import '../widgets/resident_registration_details_section.dart';
 import '../widgets/gridy_logo.dart';
 import 'login_screen.dart';
 
@@ -100,7 +101,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
     } catch (_) {
       if (!mounted) return;
       setState(
-        () => _barangayLoadError = 'Approved barangays could not be loaded. Check your connection and try again.',
+        () => _barangayLoadError =
+            'Approved barangays could not be loaded. Check your connection and try again.',
       );
     } finally {
       if (mounted) setState(() => _isLoadingBarangays = false);
@@ -170,84 +172,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
         }
       } catch (e) {
         if (!mounted) return;
-        ScaffoldMessenger.of(context)
-            .showSnackBar(SnackBar(content: Text('Failed to pick image: $e')));
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text('Failed to pick image: $e')));
       }
     }
-  }
-
-  Widget _buildPhotoUploadCard({
-    required String title,
-    required XFile? selectedFile,
-    required VoidCallback onPick,
-    required VoidCallback onRemove,
-    bool enabled = true,
-  }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFF8FAFC),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: selectedFile != null
-              ? const Color(0xFF10B981)
-              : const Color(0xFFE2E8F0),
-          width: 1.2,
-        ),
-      ),
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-      child: Row(
-        children: [
-          Icon(
-            selectedFile != null
-                ? Icons.check_circle_rounded
-                : Icons.upload_file_rounded,
-            color: selectedFile != null
-                ? const Color(0xFF10B981)
-                : const Color(0xFF94A3B8),
-            size: 22,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Text(
-              selectedFile != null ? selectedFile.name : title,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight: selectedFile != null
-                    ? FontWeight.w600
-                    : FontWeight.w500,
-                color: selectedFile != null
-                    ? AppColors.textPrimary
-                    : const Color(0xFF94A3B8),
-              ),
-              overflow: TextOverflow.ellipsis,
-            ),
-          ),
-          if (selectedFile != null)
-            IconButton(
-              icon: const Icon(
-                Icons.close_rounded,
-                size: 18,
-                color: Color(0xFFEF4444),
-              ),
-              onPressed: onRemove,
-              padding: EdgeInsets.zero,
-              constraints: const BoxConstraints(),
-            )
-          else
-            TextButton(
-              onPressed: enabled ? onPick : null,
-              style: TextButton.styleFrom(
-                foregroundColor: AppColors.primaryNavy,
-                textStyle: const TextStyle(
-                  fontSize: 12,
-                  fontWeight: FontWeight.w700,
-                ),
-              ),
-              child: const Text('SELECT'),
-            ),
-        ],
-      ),
-    );
   }
 
   Future<void> _handleRegister() async {
@@ -378,7 +307,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
       if (!mounted) return;
       setState(() {
         _isLoading = false;
-        _errorMessage = 'An unexpected error occurred during registration. Please try again.';
+        _errorMessage =
+            'An unexpected error occurred during registration. Please try again.';
       });
     }
   }
@@ -513,652 +443,70 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 const SizedBox(height: 28),
 
-                // Full Name Input
-                CustomTextField(
-                  label: 'FULL NAME',
-                  controller: _fullNameController,
-                  hintText: 'Johnathan Doe',
-                  prefixIcon: Icons.person_outline_rounded,
-                  textInputAction: TextInputAction.next,
-                  enabled: !_isLoading,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your full name';
-                    }
-                    return null;
-                  },
-                ),
-
-                const SizedBox(height: 18),
-
-                // Local Barangay Jurisdiction Dropdown
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'LOCAL BARANGAY JURISDICTION',
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.textLabel,
-                        letterSpacing: 0.8,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Container(
-                      decoration: BoxDecoration(
-                        color: AppColors.inputBackground,
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      child: DropdownButtonFormField<int>(
-                        initialValue: _selectedBarangayId,
-                        isExpanded: true,
-                        icon: const Icon(
-                          Icons.keyboard_arrow_down_rounded,
-                          color: AppColors.textMuted,
-                        ),
-                        style: const TextStyle(
-                          fontSize: 15,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textPrimary,
-                        ),
-                        decoration: const InputDecoration(
-                          border: InputBorder.none,
-                          enabledBorder: InputBorder.none,
-                          focusedBorder: InputBorder.none,
-                          errorBorder: InputBorder.none,
-                          focusedErrorBorder: InputBorder.none,
-                          contentPadding: EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 12,
-                          ),
-                          prefixIcon: Icon(
-                            Icons.location_on_outlined,
-                            color: AppColors.textMuted,
-                            size: 20,
-                          ),
-                        ),
-                        hint: const Text(
-                          'Select your Barangay',
-                          style: TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w400,
-                            color: AppColors.textHint,
-                          ),
-                        ),
-                        items: _barangays
-                            .map(
-                              (barangay) => DropdownMenuItem(
-                                value: barangay.id,
-                                child: Text(
-                                  barangay.displayName,
-                                  overflow: TextOverflow.ellipsis,
-                                ),
-                              ),
-                            )
-                            .toList(),
-                        onChanged:
-                            _isLoading ||
-                                _isLoadingBarangays ||
-                                _barangays.isEmpty
-                            ? null
-                            : (value) {
-                                setState(() {
-                                  _selectedBarangayId = value;
-                                });
-                              },
-                        validator: (value) {
-                          if (value == null) {
-                            return 'Please select your barangay';
-                          }
-                          return null;
-                        },
-                      ),
-                    ),
-                    if (_isLoadingBarangays)
-                      const Padding(
-                        padding: EdgeInsets.only(top: 8),
-                        child: Text(
-                          'Loading approved barangays…',
-                          style: TextStyle(
-                            color: AppColors.textMuted,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                    if (_barangayLoadError != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8),
-                        child: Text(
-                          _barangayLoadError!,
-                          style: const TextStyle(
-                            color: Colors.red,
-                            fontSize: 12,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-
-                // Barangay ID / Username Input
-                CustomTextField(
-                  label: 'BARANGAY ID / USERNAME',
-                  controller: _usernameController,
-                  hintText: 'CID-99201',
-                  prefixIcon: Icons.fingerprint_rounded,
-                  textInputAction: TextInputAction.next,
-                  enabled: !_isLoading,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your barangay ID or username';
-                    }
-                    return null;
-                  },
-                ),
-
-                const SizedBox(height: 18),
-
-                // Email Address Input
-                CustomTextField(
-                  label: 'EMAIL ADDRESS',
-                  controller: _emailController,
-                  hintText: 'name@civic.gov',
-                  prefixIcon: Icons.mail_outline_rounded,
-                  keyboardType: TextInputType.emailAddress,
-                  textInputAction: TextInputAction.next,
-                  enabled: !_isLoading,
-                  validator: (value) {
-                    if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your email address';
-                    }
-                    final emailRegex = RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$');
-                    if (!emailRegex.hasMatch(value.trim())) {
-                      return 'Please enter a valid email address';
-                    }
-                    return null;
-                  },
-                ),
-
-                const SizedBox(height: 18),
-
-                // Password Input
-                CustomTextField(
-                  label: 'PASSWORD',
-                  controller: _passwordController,
-                  hintText: '••••••••',
-                  prefixIcon: Icons.lock_outline_rounded,
-                  obscureText: _obscurePassword,
-                  textInputAction: TextInputAction.next,
-                  enabled: !_isLoading,
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
-                      color: AppColors.textMuted,
-                      size: 20,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscurePassword = !_obscurePassword;
-                      });
-                    },
+                ResidentRegistrationDetailsSection(
+                  fullNameController: _fullNameController,
+                  usernameController: _usernameController,
+                  emailController: _emailController,
+                  passwordController: _passwordController,
+                  confirmPasswordController: _confirmPasswordController,
+                  contactNumberController: _contactNumberController,
+                  guardianController: _guardianController,
+                  barangays: _barangays,
+                  selectedBarangayId: _selectedBarangayId,
+                  isLoadingBarangays: _isLoadingBarangays,
+                  barangayLoadError: _barangayLoadError,
+                  obscurePassword: _obscurePassword,
+                  obscureConfirmPassword: _obscureConfirmPassword,
+                  birthDate: _birthDate,
+                  requiresGuardian: _requiresGuardian,
+                  voterStatus: _voterStatus,
+                  isLoading: _isLoading,
+                  onBarangayChanged: (value) =>
+                      setState(() => _selectedBarangayId = value),
+                  onTogglePasswordVisibility: () =>
+                      setState(() => _obscurePassword = !_obscurePassword),
+                  onToggleConfirmPasswordVisibility: () => setState(
+                    () => _obscureConfirmPassword = !_obscureConfirmPassword,
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please enter a password';
-                    }
-                    if (value.length < 8) {
-                      return 'Password must be at least 8 characters';
-                    }
-                    return null;
-                  },
+                  onSelectBirthDate: () => _selectBirthDate(context),
+                  onVoterStatusChanged: (value) =>
+                      setState(() => _voterStatus = value),
+                  onSubmit: _handleRegister,
                 ),
 
-                const SizedBox(height: 18),
-
-                // Confirm Password Input
-                CustomTextField(
-                  label: 'CONFIRM PASSWORD',
-                  controller: _confirmPasswordController,
-                  hintText: '••••••••',
-                  prefixIcon: Icons.shield_outlined,
-                  obscureText: _obscureConfirmPassword,
-                  textInputAction: TextInputAction.done,
-                  enabled: !_isLoading,
-                  onFieldSubmitted: (_) => _handleRegister(),
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscureConfirmPassword
-                          ? Icons.visibility_outlined
-                          : Icons.visibility_off_outlined,
-                      color: AppColors.textMuted,
-                      size: 20,
-                    ),
-                    onPressed: () {
-                      setState(() {
-                        _obscureConfirmPassword = !_obscureConfirmPassword;
-                      });
-                    },
+                ResidentIdentityVerificationSection(
+                  philsysIdController: _philsysIdController,
+                  philsysPhoto: _philsysPhoto,
+                  utilityBillingPhoto: _utilityBillingPhoto,
+                  secondaryIdPhoto: _secondaryIdPhoto,
+                  utilityBillingType: _utilityBillingType,
+                  secondaryIdType: _secondaryIdType,
+                  billingTypes: _billingTypes,
+                  secondaryIdTypes: _secondaryIdTypes,
+                  dataPrivacyConsent: _dataPrivacyConsent,
+                  isLoading: _isLoading,
+                  onPickPhilsysPhoto: () => _pickImageSource(
+                    (file) => setState(() => _philsysPhoto = file),
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return 'Please confirm your password';
-                    }
-                    if (value != _passwordController.text) {
-                      return 'Passwords do not match';
-                    }
-                    return null;
-                  },
+                  onPickUtilityBillingPhoto: () => _pickImageSource(
+                    (file) => setState(() => _utilityBillingPhoto = file),
+                  ),
+                  onPickSecondaryIdPhoto: () => _pickImageSource(
+                    (file) => setState(() => _secondaryIdPhoto = file),
+                  ),
+                  onRemovePhilsysPhoto: () =>
+                      setState(() => _philsysPhoto = null),
+                  onRemoveUtilityBillingPhoto: () =>
+                      setState(() => _utilityBillingPhoto = null),
+                  onRemoveSecondaryIdPhoto: () =>
+                      setState(() => _secondaryIdPhoto = null),
+                  onUtilityBillingTypeChanged: (value) =>
+                      setState(() => _utilityBillingType = value),
+                  onSecondaryIdTypeChanged: (value) =>
+                      setState(() => _secondaryIdType = value),
+                  onPrivacyConsentChanged: (value) =>
+                      setState(() => _dataPrivacyConsent = value ?? false),
                 ),
-
-                const SizedBox(height: 24),
-
-                CustomTextField(
-                  label: 'CONTACT NUMBER (OPTIONAL)',
-                  controller: _contactNumberController,
-                  hintText: '09123456789',
-                  prefixIcon: Icons.phone_outlined,
-                  keyboardType: TextInputType.phone,
-                  enabled: !_isLoading,
-                ),
-                const SizedBox(height: 24),
-
-                const Text(
-                  'BIRTH DATE',
-                  style: TextStyle(
-                    fontSize: 11,
-                    fontWeight: FontWeight.w800,
-                    color: Color(0xFF64748B),
-                    letterSpacing: 0.5,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                InkWell(
-                  onTap: _isLoading ? null : () => _selectBirthDate(context),
-                  borderRadius: BorderRadius.circular(16),
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 16,
-                    ),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(16),
-                      border: Border.all(
-                        color: const Color(0xFFE2E8F0),
-                        width: 1.2,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        const Icon(
-                          Icons.calendar_today_rounded,
-                          color: Color(0xFF94A3B8),
-                          size: 20,
-                        ),
-                        const SizedBox(width: 12),
-                        Text(
-                          _birthDate != null
-                              ? "${_birthDate!.year}-${_birthDate!.month.toString().padLeft(2, '0')}-${_birthDate!.day.toString().padLeft(2, '0')}"
-                              : "Select your birth date",
-                          style: TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w600,
-                            color: _birthDate != null
-                                ? AppColors.textPrimary
-                                : const Color(0xFF94A3B8),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-
-                if (_requiresGuardian) ...[
-                  const SizedBox(height: 24),
-                  CustomTextField(
-                    label: "GUARDIAN'S REGISTERED ID (REQUIRED)",
-                    controller: _guardianController,
-                    hintText: 'CID-XXXXX',
-                    prefixIcon: Icons.supervisor_account_outlined,
-                    enabled: !_isLoading,
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    'Residents under 18 must be registered under a verified parent or guardian.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: Color(0xFFEF4444),
-                      fontWeight: FontWeight.w600,
-                    ),
-                  ),
-                ],
-
-                const SizedBox(height: 16),
-                SwitchListTile(
-                  title: const Text(
-                    'Registered Voter in this Barangay',
-                    style: TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textPrimary,
-                    ),
-                  ),
-                  value: _voterStatus,
-                  activeThumbColor: AppColors.primaryNavy,
-                  contentPadding: EdgeInsets.zero,
-                  onChanged: _isLoading
-                      ? null
-                      : (bool value) {
-                          setState(() {
-                            _voterStatus = value;
-                          });
-                        },
-                ),
-                const SizedBox(height: 20),
-
-                // Section Divider & Collapsible Container: Identity & Residency Verification Proofs
-                Material(
-                  color: const Color(0xFFF1F5F9),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
-                    side: const BorderSide(color: Color(0xFFE2E8F0)),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: Theme(
-                    data: Theme.of(context)
-                        .copyWith(dividerColor: Colors.transparent),
-                    child: ExpansionTile(
-                      leading: const Icon(
-                        Icons.badge_outlined,
-                        color: AppColors.primaryNavy,
-                        size: 22,
-                      ),
-                      title: const Text(
-                        'IDENTITY & RESIDENCY VERIFICATION',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w800,
-                          color: AppColors.textPrimary,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      subtitle: Text(
-                        (_philsysPhoto != null ||
-                                _utilityBillingPhoto != null ||
-                                _secondaryIdPhoto != null ||
-                                _philsysIdController.text.trim().isNotEmpty)
-                            ? 'Proofs Attached (Tap to view/edit)'
-                            : 'Tap to expand and upload ID proofs',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color:
-                              (_philsysPhoto != null ||
-                                  _utilityBillingPhoto != null ||
-                                  _secondaryIdPhoto != null ||
-                                  _philsysIdController.text.trim().isNotEmpty)
-                              ? const Color(0xFF10B981)
-                              : AppColors.textSecondary,
-                          fontWeight:
-                              (_philsysPhoto != null ||
-                                  _utilityBillingPhoto != null ||
-                                  _secondaryIdPhoto != null ||
-                                  _philsysIdController.text.trim().isNotEmpty)
-                              ? FontWeight.w700
-                              : FontWeight.w400,
-                        ),
-                      ),
-                      childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-                      children: [
-                        const Text(
-                          'Provide your Philippine National ID (PhilSys) and a household utility bill to verify local residency.',
-                          style: TextStyle(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                            height: 1.35,
-                          ),
-                        ),
-                        const SizedBox(height: 16),
-
-                        // 1. PhilSys ID Number
-                        CustomTextField(
-                          label: 'PHILSYS NATIONAL ID NUMBER',
-                          controller: _philsysIdController,
-                          hintText: 'e.g. 1234-5678-9012-3456',
-                          prefixIcon: Icons.fingerprint_rounded,
-                          enabled: !_isLoading,
-                        ),
-                        const SizedBox(height: 12),
-
-                        // PhilSys ID Photo Upload
-                        const Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            'PHILSYS ID CARD PHOTO',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textLabel,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        _buildPhotoUploadCard(
-                          title: 'Upload PhilSys ID Photo',
-                          selectedFile: _philsysPhoto,
-                          onPick: () =>
-                              _pickImageSource((file) => _philsysPhoto = file),
-                          onRemove: () => setState(() => _philsysPhoto = null),
-                          enabled: !_isLoading,
-                        ),
-
-                        const SizedBox(height: 18),
-
-                        // 2. Utility Proof of Residency
-                        const Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            'BILLING STATEMENT TYPE',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textLabel,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
-                          ),
-                          child: DropdownButtonFormField<String>(
-                            initialValue: _utilityBillingType,
-                            isExpanded: true,
-                            decoration: const InputDecoration(
-                              border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 12,
-                              ),
-                              prefixIcon: Icon(
-                                Icons.receipt_long_outlined,
-                                color: AppColors.textMuted,
-                                size: 20,
-                              ),
-                            ),
-                            items: _billingTypes
-                                .map(
-                                  (type) => DropdownMenuItem(
-                                    value: type,
-                                    child: Text(
-                                      type,
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        color: AppColors.textPrimary,
-                                      ),
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: _isLoading
-                                ? null
-                                : (val) {
-                                    if (val != null) {
-                                      setState(() => _utilityBillingType = val);
-                                    }
-                                  },
-                          ),
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Utility Billing Photo Upload
-                        const Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            'UPLOAD BILLING RECEIPT',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textLabel,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        _buildPhotoUploadCard(
-                          title: 'Upload Billing Receipt Photo',
-                          selectedFile: _utilityBillingPhoto,
-                          onPick: () => _pickImageSource(
-                            (file) => _utilityBillingPhoto = file,
-                          ),
-                          onRemove: () =>
-                              setState(() => _utilityBillingPhoto = null),
-                          enabled: !_isLoading,
-                        ),
-
-                        const SizedBox(height: 18),
-
-                        // 3. Optional Secondary Valid ID
-                        const Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            'SECONDARY VALID ID (OPTIONAL)',
-                            style: TextStyle(
-                              fontSize: 11,
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textLabel,
-                              letterSpacing: 0.5,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(height: 6),
-                        Container(
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: const Color(0xFFE2E8F0)),
-                          ),
-                          child: DropdownButtonFormField<String>(
-                            initialValue: _secondaryIdType,
-                            isExpanded: true,
-                            decoration: const InputDecoration(
-                              border: InputBorder.none,
-                              contentPadding: EdgeInsets.symmetric(
-                                horizontal: 14,
-                                vertical: 12,
-                              ),
-                              prefixIcon: Icon(
-                                Icons.credit_card_outlined,
-                                color: AppColors.textMuted,
-                                size: 20,
-                              ),
-                            ),
-                            items: _secondaryIdTypes
-                                .map(
-                                  (type) => DropdownMenuItem(
-                                    value: type,
-                                    child: Text(
-                                      type.isEmpty
-                                          ? 'None / Not Applicable'
-                                          : type,
-                                      style: const TextStyle(
-                                        fontSize: 14,
-                                        color: AppColors.textPrimary,
-                                      ),
-                                    ),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: _isLoading
-                                ? null
-                                : (val) {
-                                    if (val != null) {
-                                      setState(() => _secondaryIdType = val);
-                                    }
-                                  },
-                          ),
-                        ),
-                        if (_secondaryIdType.isNotEmpty) ...[
-                          const SizedBox(height: 12),
-                          const Align(
-                            alignment: Alignment.centerLeft,
-                            child: Text(
-                              'UPLOAD SECONDARY ID',
-                              style: TextStyle(
-                                fontSize: 11,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textLabel,
-                                letterSpacing: 0.5,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 6),
-                          _buildPhotoUploadCard(
-                            title: 'Upload Secondary ID Photo',
-                            selectedFile: _secondaryIdPhoto,
-                            onPick: () => _pickImageSource(
-                              (file) => _secondaryIdPhoto = file,
-                            ),
-                            onRemove: () =>
-                                setState(() => _secondaryIdPhoto = null),
-                            enabled: !_isLoading,
-                          ),
-                        ],
-                      ],
-                    ),
-                  ),
-                ),
-
-                const SizedBox(height: 16),
-
-                // RA 10173 Data Privacy Act Consent Checkbox
-                CheckboxListTile(
-                  value: _dataPrivacyConsent,
-                  activeColor: AppColors.primaryNavy,
-                  contentPadding: EdgeInsets.zero,
-                  controlAffinity: ListTileControlAffinity.leading,
-                  title: const Text(
-                    'I consent to provide my personal data as a resident for barangay verification, in accordance with the RA 10173 Data Privacy Act.',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: AppColors.textSecondary,
-                      height: 1.35,
-                    ),
-                  ),
-                  onChanged: _isLoading
-                      ? null
-                      : (bool? value) {
-                          setState(() {
-                            _dataPrivacyConsent = value ?? false;
-                          });
-                        },
-                ),
-                const SizedBox(height: 24),
 
                 // Register Account Action Button
                 CustomButton(

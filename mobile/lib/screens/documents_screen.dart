@@ -11,6 +11,8 @@ import '../services/storage_service.dart';
 import '../widgets/custom_bottom_nav.dart';
 import '../widgets/document_details_dialog.dart';
 import '../widgets/document_request_card.dart';
+import '../widgets/document_search_field.dart';
+import '../widgets/empty_document_requests.dart';
 import '../widgets/request_document_dialog.dart';
 import '../widgets/request_document_grid.dart';
 import 'dashboard_screen.dart';
@@ -265,59 +267,15 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                     const SizedBox(height: 18),
 
                     // Search Bar
-                    Container(
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF1F5F9),
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(
-                          color: const Color(0xFFE2E8F0),
-                          width: 1.0,
-                        ),
-                      ),
-                      child: TextField(
-                        controller: _searchController,
-                        onChanged: (val) {
-                          setState(() {
-                            _searchQuery = val;
-                          });
-                        },
-                        style: const TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w500,
-                          color: AppColors.textPrimary,
-                        ),
-                        decoration: InputDecoration(
-                          hintText: 'Search for certificates or permits...',
-                          hintStyle: const TextStyle(
-                            fontSize: 14,
-                            fontWeight: FontWeight.w500,
-                            color: Color(0xFF94A3B8),
-                          ),
-                          prefixIcon: const Icon(
-                            Icons.search_rounded,
-                            color: Color(0xFF64748B),
-                            size: 22,
-                          ),
-                          suffixIcon: _searchQuery.isNotEmpty
-                              ? IconButton(
-                                  icon: const Icon(
-                                    Icons.clear_rounded,
-                                    size: 18,
-                                    color: Color(0xFF64748B),
-                                  ),
-                                  onPressed: () {
-                                    _searchController.clear();
-                                    setState(() => _searchQuery = '');
-                                  },
-                                )
-                              : null,
-                          border: InputBorder.none,
-                          contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 16,
-                            vertical: 14,
-                          ),
-                        ),
-                      ),
+                    DocumentSearchField(
+                      controller: _searchController,
+                      query: _searchQuery,
+                      onChanged: (value) =>
+                          setState(() => _searchQuery = value),
+                      onClear: () {
+                        _searchController.clear();
+                        setState(() => _searchQuery = '');
+                      },
                     ),
 
                     const SizedBox(height: 24),
@@ -345,59 +303,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
 
                     // List of Requests
                     if (filteredRequests.isEmpty)
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(28),
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(18),
-                          border: Border.all(
-                            color: const Color(0xFFF1F5F9),
-                            width: 1.2,
-                          ),
-                        ),
-                        child: Column(
-                          children: [
-                            Container(
-                              width: 52,
-                              height: 52,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFFF1F5F9),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Center(
-                                child: Icon(
-                                  Icons.folder_open_rounded,
-                                  color: Color(0xFF64748B),
-                                  size: 26,
-                                ),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              _searchQuery.isEmpty
-                                  ? 'No active document requests'
-                                  : 'No requests matching "$_searchQuery"',
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.textPrimary,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              _searchQuery.isEmpty
-                                  ? 'Tap any certificate above to submit a new request.'
-                                  : 'Try adjusting your search query or clear the filter.',
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                color: AppColors.textMuted,
-                              ),
-                            ),
-                          ],
-                        ),
-                      )
+                      EmptyDocumentRequests(searchQuery: _searchQuery)
                     else
                       ListView.builder(
                         shrinkWrap: true,

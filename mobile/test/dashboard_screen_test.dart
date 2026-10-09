@@ -15,10 +15,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 class MockDashboardService extends DashboardService {
   MockDashboardService({required StorageService storage})
-      : super(
-          apiClient: ApiClient(),
-          storageService: storage,
-        );
+    : super(apiClient: ApiClient(), storageService: storage);
 
   @override
   Future<DashboardData> fetchDashboardData() async {
@@ -78,7 +75,90 @@ void main() {
     SharedPreferences.setMockInitialValues({});
   });
 
-  testWidgets('DashboardScreen renders all sections from reference UI correctly', (WidgetTester tester) async {
+  testWidgets(
+    'DashboardScreen renders all sections from reference UI correctly',
+    (WidgetTester tester) async {
+      final prefs = await SharedPreferences.getInstance();
+      final storage = StorageService(prefs);
+      final mockService = MockDashboardService(storage: storage);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: DashboardScreen(dashboardService: mockService),
+        ),
+      );
+
+      // Initial frame processing
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      // 1. App Bar Header & Brand
+      expect(find.text('Gridy', skipOffstage: false), findsWidgets);
+
+      // 2. Hero Card
+      expect(
+        find.text('VERIFIED RESIDENT', skipOffstage: false),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Welcome back, Juan', skipOffstage: false),
+        findsOneWidget,
+      );
+
+      // 3. Metric Summary Cards
+      expect(find.text('ANNOUNCEMENTS', skipOffstage: false), findsOneWidget);
+      expect(
+        find.text('MY PENDING\nREQUESTS', skipOffstage: false),
+        findsOneWidget,
+      );
+
+      // 4. Recent Notifications
+      expect(
+        find.text('Recent Notifications', skipOffstage: false),
+        findsOneWidget,
+      );
+      expect(find.text('View all', skipOffstage: false), findsOneWidget);
+      expect(
+        find.text('Tax Clearance Approved', skipOffstage: false),
+        findsOneWidget,
+      );
+
+      // 5. Quick Services Action Cards
+      expect(find.text('Quick Services', skipOffstage: false), findsOneWidget);
+      expect(
+        find.text('Request Document', skipOffstage: false),
+        findsOneWidget,
+      );
+      expect(find.text('Report Issue', skipOffstage: false), findsOneWidget);
+      expect(
+        find.text('Barangay Hotline', skipOffstage: false),
+        findsOneWidget,
+      );
+      expect(find.text('My Reports', skipOffstage: false), findsOneWidget);
+
+      // 6. Community Schedule Timeline
+      expect(
+        find.text('Community Schedule', skipOffstage: false),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Vaccination Drive', skipOffstage: false),
+        findsOneWidget,
+      );
+      expect(find.text('Barangay Center', skipOffstage: false), findsOneWidget);
+
+      // 7. Bottom Navigation Bar Tabs
+      expect(find.text('DASHBOARD', skipOffstage: false), findsOneWidget);
+      expect(find.text('QUEUE', skipOffstage: false), findsOneWidget);
+      expect(find.text('DOCUMENTS', skipOffstage: false), findsOneWidget);
+      expect(find.text('SCHEDULE', skipOffstage: false), findsOneWidget);
+    },
+  );
+
+  testWidgets('opening a recent notification shows its detail sheet', (
+    WidgetTester tester,
+  ) async {
     final prefs = await SharedPreferences.getInstance();
     final storage = StorageService(prefs);
     final mockService = MockDashboardService(storage: storage);
@@ -89,43 +169,21 @@ void main() {
         home: DashboardScreen(dashboardService: mockService),
       ),
     );
-
-    // Initial frame processing
     await tester.pump();
     await tester.pumpAndSettle();
 
-    // 1. App Bar Header & Brand
-    expect(find.text('Gridy', skipOffstage: false), findsWidgets);
+    final notification = find.text('Tax Clearance Approved');
+    await tester.ensureVisible(notification);
+    await tester.tap(notification);
+    await tester.pumpAndSettle();
 
-    // 2. Hero Card
-    expect(find.text('VERIFIED RESIDENT', skipOffstage: false), findsOneWidget);
-    expect(find.text('Welcome back, Juan', skipOffstage: false), findsOneWidget);
-
-    // 3. Metric Summary Cards
-    expect(find.text('ANNOUNCEMENTS', skipOffstage: false), findsOneWidget);
-    expect(find.text('MY PENDING\nREQUESTS', skipOffstage: false), findsOneWidget);
-
-    // 4. Recent Notifications
-    expect(find.text('Recent Notifications', skipOffstage: false), findsOneWidget);
-    expect(find.text('View all', skipOffstage: false), findsOneWidget);
-    expect(find.text('Tax Clearance Approved', skipOffstage: false), findsOneWidget);
-
-    // 5. Quick Services Action Cards
-    expect(find.text('Quick Services', skipOffstage: false), findsOneWidget);
-    expect(find.text('Request Document', skipOffstage: false), findsOneWidget);
-    expect(find.text('Report Issue', skipOffstage: false), findsOneWidget);
-    expect(find.text('Barangay Hotline', skipOffstage: false), findsOneWidget);
-    expect(find.text('My Reports', skipOffstage: false), findsOneWidget);
-
-    // 6. Community Schedule Timeline
-    expect(find.text('Community Schedule', skipOffstage: false), findsOneWidget);
-    expect(find.text('Vaccination Drive', skipOffstage: false), findsOneWidget);
-    expect(find.text('Barangay Center', skipOffstage: false), findsOneWidget);
-
-    // 7. Bottom Navigation Bar Tabs
-    expect(find.text('DASHBOARD', skipOffstage: false), findsOneWidget);
-    expect(find.text('QUEUE', skipOffstage: false), findsOneWidget);
-    expect(find.text('DOCUMENTS', skipOffstage: false), findsOneWidget);
-    expect(find.text('SCHEDULE', skipOffstage: false), findsOneWidget);
+    expect(
+      find.textContaining('Advisory Category: Document Services'),
+      findsOneWidget,
+    );
+    expect(find.text('Dismiss'), findsOneWidget);
+    await tester.tap(find.text('Dismiss'));
+    await tester.pumpAndSettle();
+    expect(find.text('Recent Notifications'), findsOneWidget);
   });
 }

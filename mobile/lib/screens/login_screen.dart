@@ -5,9 +5,9 @@ import '../core/theme/app_colors.dart';
 import '../models/auth_response.dart';
 import '../services/auth_service.dart';
 import '../services/storage_service.dart';
-import '../widgets/custom_button.dart';
-import '../widgets/custom_text_field.dart';
 import '../widgets/gridy_logo.dart';
+import '../widgets/login_information_sheets.dart';
+import '../widgets/login_credentials_section.dart';
 import 'dashboard_screen.dart';
 import 'register_screen.dart';
 import 'admin_dashboard_screen.dart';
@@ -17,10 +17,7 @@ import 'forgot_password_screen.dart';
 class LoginScreen extends StatefulWidget {
   final AuthService? authService;
 
-  const LoginScreen({
-    super.key,
-    this.authService,
-  });
+  const LoginScreen({super.key, this.authService});
 
   @override
   State<LoginScreen> createState() => _LoginScreenState();
@@ -49,10 +46,7 @@ class _LoginScreenState extends State<LoginScreen> {
     } else {
       final storage = await StorageService.init();
       final apiClient = ApiClient();
-      _authService = AuthService(
-        apiClient: apiClient,
-        storageService: storage,
-      );
+      _authService = AuthService(apiClient: apiClient, storageService: storage);
     }
   }
 
@@ -177,9 +171,9 @@ class _LoginScreenState extends State<LoginScreen> {
         destinationScreen = const DashboardScreen();
       }
 
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(builder: (_) => destinationScreen),
-      );
+      Navigator.of(
+        context,
+      ).pushReplacement(MaterialPageRoute(builder: (_) => destinationScreen));
     } on ForbiddenException catch (e) {
       if (!mounted) return;
       setState(() {
@@ -229,9 +223,7 @@ class _LoginScreenState extends State<LoginScreen> {
             return SingleChildScrollView(
               padding: const EdgeInsets.symmetric(horizontal: 28.0),
               child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  minHeight: constraints.maxHeight,
-                ),
+                constraints: BoxConstraints(minHeight: constraints.maxHeight),
                 child: IntrinsicHeight(
                   child: Form(
                     key: _formKey,
@@ -254,7 +246,9 @@ class _LoginScreenState extends State<LoginScreen> {
                                     _isOfficialMode
                                         ? 'Barangay Personnel Official Mode Activated'
                                         : 'Switched to Citizen Resident Portal',
-                                    style: const TextStyle(fontWeight: FontWeight.w600),
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                    ),
                                   ),
                                   backgroundColor: _isOfficialMode
                                       ? const Color(0xFFD97706)
@@ -267,10 +261,7 @@ class _LoginScreenState extends State<LoginScreen> {
                                 ),
                               );
                             },
-                            child: const GridyLogo(
-                              iconSize: 64,
-                              textSize: 24,
-                            ),
+                            child: const GridyLogo(iconSize: 64, textSize: 24),
                           ),
                         ),
                         const SizedBox(height: 24),
@@ -329,7 +320,6 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 40),
 
-
                         // Dynamic Error Alert Banner
                         if (_errorMessage != null) ...[
                           const SizedBox(height: 20),
@@ -385,90 +375,23 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         const SizedBox(height: 28),
 
-                        // Citizen ID / Username Input
-                        CustomTextField(
-                          label: 'Citizen ID / Username',
-                          controller: _usernameController,
-                          hintText: 'resident',
-                          prefixIcon: Icons.person_outline_rounded,
-                          textInputAction: TextInputAction.next,
-                          enabled: !_isLoading,
-                          validator: (value) {
-                            if (value == null || value.trim().isEmpty) {
-                              return 'Please enter your citizen ID or username';
-                            }
-                            return null;
-                          },
-                        ),
-
-                        const SizedBox(height: 20),
-
-                        // Password Input
-                        CustomTextField(
-                          label: 'Password',
-                          controller: _passwordController,
-                          hintText: '••••••••',
-                          prefixIcon: Icons.lock_outline_rounded,
-                          obscureText: _obscurePassword,
-                          textInputAction: TextInputAction.done,
-                          enabled: !_isLoading,
-                          onFieldSubmitted: (_) => _handleLogin(),
-                          suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword
-                                  ? Icons.visibility_outlined
-                                  : Icons.visibility_off_outlined,
-                              color: AppColors.textMuted,
-                              size: 20,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              });
-                            },
+                        LoginCredentialsSection(
+                          usernameController: _usernameController,
+                          passwordController: _passwordController,
+                          isOfficialMode: _isOfficialMode,
+                          isLoading: _isLoading,
+                          obscurePassword: _obscurePassword,
+                          onTogglePasswordVisibility: () => setState(
+                            () => _obscurePassword = !_obscurePassword,
                           ),
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your password';
-                            }
-                            return null;
-                          },
-                        ),
-
-                        const SizedBox(height: 16),
-
-                        // Forgot Password Row
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: TextButton(
-                            onPressed: () {
-                              Navigator.of(context).push(
-                                MaterialPageRoute<void>(
-                                  builder: (_) => ForgotPasswordScreen(authService: _authService),
-                                ),
-                              );
-                            },
-                            child: const Text(
-                              'Forgot Password?',
-                              style: TextStyle(
-                                fontSize: 13.5,
-                                fontWeight: FontWeight.w700,
-                                color: AppColors.primaryNavy,
+                          onForgotPassword: () => Navigator.of(context).push(
+                            MaterialPageRoute<void>(
+                              builder: (_) => ForgotPasswordScreen(
+                                authService: _authService,
                               ),
                             ),
                           ),
-                        ),
-
-                        const SizedBox(height: 28),
-
-                        // Login Action Button
-                        CustomButton(
-                          text: _isOfficialMode
-                              ? 'Authenticate Official'
-                              : 'Sign In to Citizen Portal',
-                          isLoading: _isLoading,
-                          icon: Icons.arrow_forward_rounded,
-                          onPressed: _handleLogin,
+                          onSubmit: _handleLogin,
                         ),
 
                         const SizedBox(height: 32),
@@ -571,142 +494,10 @@ class _LoginScreenState extends State<LoginScreen> {
   }
 
   void _showPrivacyPolicyModal(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Privacy Policy & Data Protection',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 12),
-            const Text(
-              'Gridy Resident Portal is committed to protecting your personal information. '
-              'All data submitted during login, registration, document requests, and queue ticketing '
-              'is encrypted and processed in full compliance with the Republic Act No. 10173 (Data Privacy Act of 2012).\n\n'
-              'Your citizen ID, contact information, and request logs are accessible strictly by authorized Barangay Officials.',
-              style: TextStyle(
-                fontSize: 13.5,
-                color: AppColors.textSecondary,
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryNavy,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text('Close', style: TextStyle(color: Colors.white)),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    showPrivacyPolicySheet(context);
   }
 
   void _showSupportModal(BuildContext context) {
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (context) => Container(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Center(
-              child: Container(
-                width: 40,
-                height: 4,
-                decoration: BoxDecoration(
-                  color: Colors.grey[300],
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-            ),
-            const SizedBox(height: 20),
-            const Text(
-              'Barangay Resident Support',
-              style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: AppColors.textPrimary,
-              ),
-            ),
-            const SizedBox(height: 16),
-            const Row(
-              children: [
-                Icon(Icons.phone_rounded, color: AppColors.primaryNavy, size: 20),
-                SizedBox(width: 12),
-                Text('(02) 8920-0000 / Hotline 161', style: TextStyle(fontWeight: FontWeight.w600)),
-              ],
-            ),
-            const SizedBox(height: 12),
-            const Row(
-              children: [
-                Icon(Icons.email_rounded, color: AppColors.primaryNavy, size: 20),
-                SizedBox(width: 12),
-                Text('support@gridy.gov.ph', style: TextStyle(fontWeight: FontWeight.w600)),
-              ],
-            ),
-            const SizedBox(height: 12),
-            const Row(
-              children: [
-                Icon(Icons.access_time_filled_rounded, color: AppColors.primaryNavy, size: 20),
-                SizedBox(width: 12),
-                Text('Mon - Fri: 8:00 AM - 5:00 PM', style: TextStyle(fontWeight: FontWeight.w600)),
-              ],
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              child: ElevatedButton(
-                onPressed: () => Navigator.pop(context),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryNavy,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                child: const Text('Close', style: TextStyle(color: Colors.white)),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    showSupportSheet(context);
   }
 }
