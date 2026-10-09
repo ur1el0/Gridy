@@ -1,6 +1,7 @@
 import toast from 'react-hot-toast';
 import React, { useEffect, useState } from 'react';
 import { axiosPrivate } from '../../api/axios';
+import { getSafeApiErrorMessage } from '../../api/error-message';
 import { DocumentTable } from '../../components/documents/DocumentTable';
 import { ReviewDocumentModal } from '../../components/documents/ReviewDocumentModal';
 import { isFeeExemptDocumentType } from '../../utils/documentFees';
@@ -191,9 +192,11 @@ export const DocumentRequests: React.FC = () => {
             await axiosPrivate.delete(`/document-requests/${id}/`);
             setRequests(prev => prev.filter(req => req.id !== id));
             toast.success('Clearance request deleted successfully.');
-        } catch (err: any) {
-            console.error('Failed to delete clearance request:', err);
-            toast.error(err.response?.data?.detail || 'Failed to delete clearance request.');
+        } catch (err) {
+            toast.error(getSafeApiErrorMessage(
+                err,
+                "We couldn't delete this clearance request. Check your connection and try again.",
+            ));
         }
     };
 
@@ -220,9 +223,11 @@ export const DocumentRequests: React.FC = () => {
             setWalkinName('');
             setWalkinPurok('');
             setNewPurpose('');
-        } catch (err: any) {
-            console.error("Failed to create walk-in clearance.", err);
-            toast.error(err.response?.data?.walkin_name || 'Failed to submit walk-in request.');
+        } catch (err) {
+            toast.error(getSafeApiErrorMessage(
+                err,
+                "We couldn't submit this walk-in request. Check your connection and try again.",
+            ));
         } finally {
             setIsSubmitting(false);
         }

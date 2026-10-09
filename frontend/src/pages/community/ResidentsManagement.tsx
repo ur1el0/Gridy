@@ -1,6 +1,7 @@
 import toast from 'react-hot-toast';
 import React, { useEffect, useState } from "react";
 import { axiosPrivate } from "../../api/axios";
+import { getSafeApiErrorMessage } from "../../api/error-message";
 import { usePrivateMediaUrl } from "../../hooks/usePrivateMediaUrl";
 import { 
     Search, Trash2, Mail, Phone, Upload, Download, FileSpreadsheet, 
@@ -184,12 +185,19 @@ export const ResidentsManagement: React.FC = () => {
             fetchResidents();
         } catch (err: any) {
             const errorData = err.response?.data;
+            if (!err.response || err.response.status >= 500) {
+                toast.error(getSafeApiErrorMessage(
+                    err,
+                    "We couldn't import the resident records. Check your connection and try again.",
+                ));
+                return;
+            }
             if (errorData && errorData.imported !== undefined) {
                 setImportSummary(errorData);
                 toast.error('Import completed with validation warnings.');
                 fetchResidents();
             } else {
-                toast.error(errorData?.detail || 'Failed to import CSV file.');
+                toast.error(getSafeApiErrorMessage(err, 'Failed to import CSV file.'));
             }
         } finally {
             setImporting(false);

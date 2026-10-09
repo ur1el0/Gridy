@@ -1,5 +1,6 @@
 import React, { useEffect, useState, useMemo } from 'react';
 import { axiosPrivate } from '../../api/axios';
+import { getSafeApiErrorMessage } from '../../api/error-message';
 import toast from 'react-hot-toast';
 import { History, Plus, X, SkipForward, CheckCircle, Bell, Volume2, VolumeX } from 'lucide-react';
 
@@ -208,9 +209,11 @@ export const LiveQueue: React.FC = () => {
             await axiosPrivate.post(`/tickets/${ticketId}/cancel/`);
             await fetchTickets();
             toast.success('Queue ticket cancelled.');
-        } catch (err: any) {
-            const message = err.response?.data?.detail || 'Could not cancel this queue ticket.';
-            toast.error(message);
+        } catch (err) {
+            toast.error(getSafeApiErrorMessage(
+                err,
+                "We couldn't cancel this queue ticket. Check your connection and try again.",
+            ));
         } finally {
             setIsUpdating(false);
         }
@@ -236,8 +239,11 @@ export const LiveQueue: React.FC = () => {
             return true;
         } catch (err: any) {
             const responseData = err.response?.data;
-            const fieldMessage = responseData?.reason?.[0];
-            const message = responseData?.detail || fieldMessage || 'Could not update priority status.';
+            const fieldMessage = err.response?.status < 500 ? responseData?.reason?.[0] : undefined;
+            const message = fieldMessage || getSafeApiErrorMessage(
+                err,
+                "We couldn't update priority status. Check your connection and try again.",
+            );
             toast.error(message);
             return false;
         } finally {
