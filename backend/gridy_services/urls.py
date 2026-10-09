@@ -6,6 +6,7 @@ from .views import (
     QueueTicketViewSet,
     DashboardSummaryView,
     PublicQueueStatusView,
+    PaymentRecipientViewSet,
 )
 from .analytics import DILGAnalyticsView
 
@@ -13,6 +14,7 @@ router = DefaultRouter()
 router.register(r'document-requests', DocumentRequestViewSet, basename='document-request')
 router.register(r'aid-requests', AidRequestViewSet, basename='aid-request')
 router.register(r'tickets', QueueTicketViewSet, basename='ticket')
+router.register(r'payment-recipients', PaymentRecipientViewSet, basename='payment-recipient')
 
 urlpatterns = [
     path('', include(router.urls)),

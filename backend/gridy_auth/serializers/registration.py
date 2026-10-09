@@ -22,7 +22,11 @@ class RegisterSerializer(serializers.ModelSerializer):
         required=True,
     )
     contact_number = serializers.CharField(write_only=True, required=False, allow_blank=True)
-    barangay_id = serializers.IntegerField(write_only=True, required=False, allow_null=True)
+    barangay_id = serializers.IntegerField(
+        write_only=True,
+        required=True,
+        min_value=1,
+    )
     guardian_id = serializers.CharField(write_only=True, required=False, allow_blank=True)
     philsys_id_number = serializers.CharField(write_only=True, required=False, allow_blank=True)
     philsys_id_photo = serializers.ImageField(write_only=True, required=False, allow_null=True)
@@ -143,7 +147,11 @@ class RegisterSerializer(serializers.ModelSerializer):
 class AdminRegisterSerializer(serializers.Serializer):
     username = serializers.CharField(max_length=150, write_only=True, required=False, allow_blank=True)
     full_name = serializers.CharField(max_length=255, write_only=True)
-    barangay_id = serializers.IntegerField(required=False, allow_null=True, write_only=True)
+    barangay_id = serializers.IntegerField(
+        required=True,
+        min_value=1,
+        write_only=True,
+    )
     email = serializers.EmailField(write_only=True)
     password = serializers.CharField(write_only=True)
     confirm_password = serializers.CharField(write_only=True)
@@ -225,4 +233,3 @@ class AdminRegisterSerializer(serializers.Serializer):
             )
 
         return user
-

@@ -17,7 +17,11 @@ class DocumentRequestSerializer(FeePolicyValidationMixin, serializers.ModelSeria
     request_id = serializers.IntegerField(source='id', read_only=True)
     requester_name = serializers.SerializerMethodField()
     purok = serializers.SerializerMethodField()
-    
+    payment_recipient = serializers.SerializerMethodField()
+    payment_recipient_name_snapshot = serializers.SerializerMethodField()
+    payment_recipient_identifier_snapshot = serializers.SerializerMethodField()
+    payment_instructions_snapshot = serializers.SerializerMethodField()
+
     class Meta:
         model = DocumentRequest
         fields = [
@@ -36,6 +40,10 @@ class DocumentRequestSerializer(FeePolicyValidationMixin, serializers.ModelSeria
             'or_number',
             'fee_amount',
             'payment_method',
+            'payment_recipient',
+            'payment_recipient_name_snapshot',
+            'payment_recipient_identifier_snapshot',
+            'payment_instructions_snapshot',
             'payment_reference',
             'payment_status',
             'payment_review_note',
@@ -49,6 +57,10 @@ class DocumentRequestSerializer(FeePolicyValidationMixin, serializers.ModelSeria
             'or_number',
             'fee_amount',
             'payment_method',
+            'payment_recipient',
+            'payment_recipient_name_snapshot',
+            'payment_recipient_identifier_snapshot',
+            'payment_instructions_snapshot',
             'payment_reference',
             'payment_status',
             'payment_review_note',
@@ -65,6 +77,28 @@ class DocumentRequestSerializer(FeePolicyValidationMixin, serializers.ModelSeria
         if obj.user and hasattr(obj.user, 'profile') and obj.user.profile.purok:
             return str(obj.user.profile.purok)
         return str(obj.walkin_purok) if obj.walkin_purok else "N/A"
+
+    def _can_view_payment_recipient_snapshot(self, obj):
+        request = self.context.get("request")
+        user = getattr(request, "user", None)
+        return bool(
+            user
+            and user.is_authenticated
+            and user.role != User.Role.DILG_ADMIN
+            and user.barangay_id == obj.barangay_id
+        )
+
+    def get_payment_recipient(self, obj) -> int | None:
+        return obj.payment_recipient_id if self._can_view_payment_recipient_snapshot(obj) else None
+
+    def get_payment_recipient_name_snapshot(self, obj) -> str | None:
+        return obj.payment_recipient_name_snapshot if self._can_view_payment_recipient_snapshot(obj) else None
+
+    def get_payment_recipient_identifier_snapshot(self, obj) -> str | None:
+        return obj.payment_recipient_identifier_snapshot if self._can_view_payment_recipient_snapshot(obj) else None
+
+    def get_payment_instructions_snapshot(self, obj) -> str | None:
+        return obj.payment_instructions_snapshot if self._can_view_payment_recipient_snapshot(obj) else None
             
 class DocumentRequestReviewSerializer(FeePolicyValidationMixin, serializers.ModelSerializer):
     class Meta:
@@ -90,6 +124,7 @@ class DocumentRequestReviewSerializer(FeePolicyValidationMixin, serializers.Mode
         return value
 
 class PaymentReferenceSerializer(serializers.Serializer):
+    payment_recipient_id = serializers.IntegerField(min_value=1)
     payment_reference = serializers.CharField(
         max_length=100,
         allow_blank=False,

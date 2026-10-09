@@ -235,6 +235,7 @@ REST_FRAMEWORK = {
         'auth_login': '10/minute',
         'auth_register': '20/hour',
         'auth_admin_register': '5/hour',
+        'barangay_application': '5/hour',
         'password_reset_request': '5/hour',
         'password_reset_confirm': '10/hour',
     }
