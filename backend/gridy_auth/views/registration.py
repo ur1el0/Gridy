@@ -43,10 +43,7 @@ class AdminRegisterView(APIView):
             user = serializer.save()
 
             full_name = f"{user.first_name} {user.last_name}".strip() or user.username
-            try:
-                send_welcome_email.delay(user.email, full_name)
-            except Exception:
-                pass
+            send_welcome_email.delay(user.email, full_name)
 
             return Response(
                 UserSerializer(user).data,

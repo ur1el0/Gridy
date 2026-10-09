@@ -14,7 +14,11 @@ def async_task(func):
     @functools.wraps(func)
     def wrapper(*args, **kwargs):
         thread = threading.Thread(target=func, args=args, kwargs=kwargs, daemon=True)
-        thread.start()
+        try:
+            thread.start()
+        except Exception:
+            logger.exception("Could not start background task %s.", func.__name__)
+            return None
         return thread
     
     wrapper.delay = wrapper
@@ -28,16 +32,18 @@ def send_welcome_email(user_email, full_name):
     try:
         subject = "Welcome to Gridy!"
         message = f"Hello {full_name}, \n\nWelcome to Gridy. We are excited to have you on board!"
-        send_mail(
+        sent_count = send_mail(
             subject,
             message,
             settings.DEFAULT_FROM_EMAIL,
             [user_email],
             fail_silently=False,
         )
-        return f"Sent welcome email to {user_email}"
-    except Exception as e:
-        logger.error(f"Failed to send welcome email to {user_email}: {e}")
+        if sent_count != 1:
+            logger.error("Email backend did not accept the welcome message.")
+        return sent_count
+    except Exception:
+        logger.exception("Welcome email delivery failed.")
 
 @async_task
 def send_barangay_approval_email(user_email, applicant_name, barangay_name):
@@ -53,12 +59,17 @@ def send_barangay_approval_email(user_email, applicant_name, barangay_name):
             "link using this email address to set your password.\n\n"
             "Gridy staff will never ask you to send your password or payment-account credentials."
         )
-        send_mail(
+        sent_count = send_mail(
             subject,
             message,
             settings.DEFAULT_FROM_EMAIL,
             [user_email],
             fail_silently=False,
         )
-    except Exception as error:
-        logger.error("Failed to send barangay account setup email: %s", error)
+    except Exception:
+        logger.exception("Barangay approval email delivery failed.")
+        return
+
+    if sent_count != 1:
+        logger.error("Email backend did not accept the barangay approval message.")
+    return sent_count

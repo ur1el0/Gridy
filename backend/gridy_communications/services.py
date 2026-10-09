@@ -29,8 +29,8 @@ def send_fcm_notification(token, title, body, data=None):
         response = messaging.send(message)
         logger.info(f"Successfully sent FCM notification: {response}")
         return response
-    except Exception as e:
-        logger.error(f"Error sending FCM notification: {e}")
+    except Exception:
+        logger.exception("FCM device notification delivery failed.")
         return None
 
 def send_fcm_topic_notification(topic, title, body, data=None):
@@ -62,8 +62,8 @@ def send_fcm_topic_notification(topic, title, body, data=None):
         response = messaging.send(message)
         logger.info(f"Successfully sent to topic {topic}: {response}")
         return response
-    except Exception as e:
-        logger.error(f"Error sending to topic {topic}: {e}")
+    except Exception:
+        logger.exception("FCM topic notification delivery failed.")
         return None
 
 
@@ -74,7 +74,7 @@ def send_notification_to_user(user, title, body, data=None):
 
     devices = user.fcm_devices.all()
     if not devices.exists():
-        logger.warning(f"No FCM devices registered for user {user.username}, skipping notification.")
+        logger.info("No registered devices for push notification recipient.")
         return []
 
     responses = []
