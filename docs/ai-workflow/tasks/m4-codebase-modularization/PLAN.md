@@ -5,8 +5,8 @@
 ## 1. Plan Overview
 
 - **Associated Brief:** [TASK_BRIEF.md](TASK_BRIEF.md)
-- **Task Status:** Planning complete; implementation pending a clean M2/M3 boundary
-- **Target Branch:** `feat/seed-dilg-admin`, after the existing changes are safely saved/isolated
+- **Task Status:** Complete (Milestones 1–6; see `STATUS.md` for verified results)
+- **Checkpoint Branches:** Scoped branch and commit sequence is recorded in `STATUS.md`; final modularization checkpoint is `6b79fe8` on `refactor/m4-full-regression`.
 - **Estimated Complexity:** High
 - **Role split:** Temporary user-directed override: Codex handles planning, implementation, verification, and review. Antigravity is inactive until the user explicitly restores collaboration.
 - **Schema expectation:** No migrations.
@@ -128,21 +128,21 @@
 
 ## 3. Comprehensive Verification Checklist
 
-- [ ] M4 began from a baseline isolated from the M2/M3 implementation diff.
-- [ ] Pytest and Django test discovery both collect the expected backend suites.
-- [ ] All moved backend tests are represented exactly once and pass.
-- [ ] Backend URL names, action names, imports, permissions, and response contracts are unchanged.
-- [ ] Existing React page tests pass and extracted interactive UI has coverage.
-- [ ] Flutter screens remain declarative; extracted widgets preserve navigation, state, layout, accessibility, and service boundaries.
-- [ ] `dart analyze` and Flutter tests pass, including coverage for extracted interactive widgets.
-- [ ] Frontend lint and production build pass.
-- [ ] Django check and migration dry-run pass with no generated migration.
-- [ ] `git diff --check` passes; each completed milestone is saved in a scoped local checkpoint commit; no unrelated paths are staged or committed; nothing is pushed without explicit authorization.
-- [ ] `STATUS.md` contains actual results and the test mapping.
+- [x] M4 began from a baseline isolated from the M2/M3 implementation diff.
+- [x] Pytest and Django test discovery both collect the expected backend suites.
+- [x] All moved backend tests are represented exactly once and pass.
+- [x] Backend URL names, action names, imports, permissions, and response contracts are unchanged.
+- [x] Existing React page tests pass and extracted interactive UI has coverage.
+- [x] Flutter screens remain declarative; extracted widgets preserve navigation, state, layout, accessibility, and service boundaries.
+- [x] `dart analyze` and Flutter tests pass, including coverage for extracted interactive widgets.
+- [x] Frontend lint and production build pass.
+- [x] Django check and migration dry-run pass with no generated migration.
+- [x] `git diff --check` passes; each completed milestone is saved in a scoped local checkpoint commit; no unrelated paths are staged or committed; nothing is pushed without explicit authorization.
+- [x] `STATUS.md` contains actual results and the test mapping.
 
 ## 4. Risks, Dependencies & Rollback
 
-- **Dirty baseline:** The current M2/M3 code changes are still unstaged. Do not begin M4 source edits in that shared state; first use a clean saved/isolated baseline.
+- **Dirty baseline (resolved):** M2/M3 changes were saved in scoped commits before M4 source moves began. The completed branch/checkpoint sequence is recorded in `STATUS.md`.
 - **Discovery behavior:** Pytest and Django use different discovery flows. Running only one runner can silently omit tests.
 - **Large rename diff:** Keep one domain/app per milestone and preserve test names/assertions so moves remain reviewable.
 - **View routing:** DRF discovers `@action` methods on viewsets; moving action methods must preserve router registration and names. Test URL reversing and API tests after changes.
