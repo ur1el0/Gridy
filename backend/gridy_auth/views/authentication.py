@@ -78,12 +78,13 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
             # Set refresh token in HttpOnly SameSite secure cookie
             secure_cookie = not settings.DEBUG
+            samesite_policy = getattr(settings, 'REFRESH_COOKIE_SAMESITE', 'Strict')
             response.set_cookie(
                 key='refresh_token',
                 value=refresh_token_str,
                 httponly=True,
                 secure=secure_cookie,
-                samesite='Strict',
+                samesite=samesite_policy,
                 expires=expires_at
             )
 
@@ -180,12 +181,13 @@ class CustomTokenRefreshView(TokenRefreshView):
         # Update cookie with the rotated refresh token
         if new_refresh_token_str:
             secure_cookie = not settings.DEBUG
+            samesite_policy = getattr(settings, 'REFRESH_COOKIE_SAMESITE', 'Strict')
             response.set_cookie(
                 key='refresh_token',
                 value=new_refresh_token_str,
                 httponly=True,
                 secure=secure_cookie,
-                samesite='Strict',
+                samesite=samesite_policy,
                 expires=new_expires_at
             )
             
