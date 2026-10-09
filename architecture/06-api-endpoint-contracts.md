@@ -5,7 +5,7 @@ All protected endpoints enforce authorization using short-lived JWT Bearer token
 
 `Authorization: Bearer <access_token>`
 
-Per **ADR 002 (HttpOnly Cookie Authentication)**, refresh tokens are never returned in response payloads or stored in JavaScript memory (`localStorage`/`sessionStorage`). They are set and rotated within secure, server-managed `HttpOnly; SameSite=Strict` cookies by default for same-origin or reverse-proxy deployments. The policy is configurable via `REFRESH_COOKIE_SAMESITE`; if direct cross-origin API access without a reverse proxy is deployed, `SameSite=None` and `Secure=True` are required alongside strict `CORS_ALLOWED_ORIGINS` and `CSRF_TRUSTED_ORIGINS`.
+Per **ADR 002 (HttpOnly Cookie Authentication)**, refresh tokens are never returned in response payloads or stored in JavaScript memory (`localStorage`/`sessionStorage`). Under the intended production architecture (configured same-origin reverse proxy, see `architecture/11-deployment-and-ci-cd.md`), the web frontend is configured to use a same-origin reverse proxy (Vercel rewrites to `https://gridy-backend.onrender.com` / Docker Nginx proxying to Gunicorn), so browser requests target `/api/v1` directly on the frontend origin. Refresh tokens are scoped to `Path=/api/v1/auth/` and transmitted within secure, server-managed `HttpOnly; SameSite=Strict` cookies. The policy is configurable via `REFRESH_COOKIE_SAMESITE`; if direct cross-origin API access without a reverse proxy is deployed, `SameSite=None` and `Secure=True` are required alongside strict `CORS_ALLOWED_ORIGINS` and `CSRF_TRUSTED_ORIGINS`.
 
 ---
 

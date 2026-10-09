@@ -47,26 +47,50 @@ PRIVACY_CONSENT_VERSION = "resident-v1"
 # SECURITY WARNING: don't run with debug turned on in production
 DEBUG = env('DEBUG')
 
-ALLOWED_HOSTS = list(dict.fromkeys([
-    *env.list('ALLOWED_HOSTS', default=['.onrender.com']),
-    'localhost',
-    '127.0.0.1',
-]))
+def get_allowed_hosts(debug=False, raw_hosts=None, render_hostname=None):
+    if raw_hosts is None:
+        if debug:
+            raw_hosts = env.list('ALLOWED_HOSTS', default=['gridy-backend.onrender.com', 'localhost', '127.0.0.1'])
+        else:
+            raw_hosts = env.list('ALLOWED_HOSTS', default=['gridy-backend.onrender.com'])
+    hosts = list(dict.fromkeys(raw_hosts))
+    if 'gridy-backend.onrender.com' not in hosts:
+        hosts.append('gridy-backend.onrender.com')
+    if debug:
+        for local_host in ['localhost', '127.0.0.1']:
+            if local_host not in hosts:
+                hosts.append(local_host)
+    if render_hostname and render_hostname not in hosts:
+        hosts.append(render_hostname)
+    return hosts
+
 
 RENDER_EXTERNAL_HOSTNAME = os.environ.get('RENDER_EXTERNAL_HOSTNAME')
-if RENDER_EXTERNAL_HOSTNAME and RENDER_EXTERNAL_HOSTNAME not in ALLOWED_HOSTS:
-    ALLOWED_HOSTS.append(RENDER_EXTERNAL_HOSTNAME)
+ALLOWED_HOSTS = get_allowed_hosts(DEBUG, render_hostname=RENDER_EXTERNAL_HOSTNAME)
 
 # Reverse-Proxy SSL Awareness (Render / Cloudflare Edge)
 SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
 
+
+def get_csrf_trusted_origins(debug=False, raw_origins=None):
+    if raw_origins is None:
+        if debug:
+            raw_origins = env.list('CSRF_TRUSTED_ORIGINS', default=[
+                'https://gridy.vercel.app',
+                'https://gridy-backend.onrender.com',
+                'http://localhost:5173',
+                'http://localhost:3000',
+            ])
+        else:
+            raw_origins = env.list('CSRF_TRUSTED_ORIGINS', default=[
+                'https://gridy.vercel.app',
+                'https://gridy-backend.onrender.com',
+            ])
+    return list(dict.fromkeys(raw_origins))
+
+
 # CSRF Trusted Origins for Cross-Domain Web Portal & Admin
-CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[
-    'https://*.onrender.com',
-    'https://*.vercel.app',
-    'http://localhost:5173',
-    'http://localhost:3000',
-])
+CSRF_TRUSTED_ORIGINS = get_csrf_trusted_origins(DEBUG)
 
 # Frontend Client URL for Authentication Links
 FRONTEND_URL = env('FRONTEND_URL', default='http://localhost:5173')
@@ -196,26 +220,39 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/6.0/howto/static-files/
 
 STATIC_URL = 'static/'
-STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles') 
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+def get_cors_allowed_origins(debug=False, raw_origins=None):
+    if raw_origins is None:
+        if debug:
+            raw_origins = env.list('CORS_ALLOWED_ORIGINS', default=[
+                'http://localhost',
+                'http://127.0.0.1',
+                'http://localhost:3000',
+                'http://127.0.0.1:3000',
+                'http://localhost:5173',
+                'http://127.0.0.1:5173',
+                'http://localhost:5174',
+                'http://127.0.0.1:5174',
+            ])
+        else:
+            raw_origins = env.list('CORS_ALLOWED_ORIGINS', default=[])
+    return list(dict.fromkeys(raw_origins))
+
+
+def get_cors_allowed_origin_regexes(debug=False):
+    if debug:
+        return [
+            r"^http://localhost:\d+$",
+            r"^http://127\.0\.0\.1:\d+$",
+        ]
+    return []
+
 
 CORS_ALLOW_ALL_ORIGINS = False
 CORS_ALLOW_CREDENTIALS = True
-CORS_ALLOWED_ORIGINS = env.list('CORS_ALLOWED_ORIGINS', default=[
-    'http://localhost',
-    'http://127.0.0.1',
-    'http://localhost:3000', 
-    'http://127.0.0.1:3000',
-    'http://localhost:5173',
-    'http://127.0.0.1:5173',
-    'http://localhost:5174',
-    'http://127.0.0.1:5174',
-])
-
-if DEBUG:
-    CORS_ALLOWED_ORIGIN_REGEXES = [
-        r"^http://localhost:\d+$",
-        r"^http://127\.0\.0\.1:\d+$",
-    ]
+CORS_ALLOWED_ORIGINS = get_cors_allowed_origins(DEBUG)
+CORS_ALLOWED_ORIGIN_REGEXES = get_cors_allowed_origin_regexes(DEBUG)
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (

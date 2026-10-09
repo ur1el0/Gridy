@@ -1,8 +1,14 @@
 import axios from 'axios';
 
 // Base URL resolution helper supporting build-time env injection and fallback
-export function resolveApiBaseUrl(envUrl = import.meta.env.VITE_API_BASE_URL): string {
-    return envUrl || 'http://127.0.0.1:8000/api/v1';
+export function resolveApiBaseUrl(
+    envUrl = import.meta.env.VITE_API_BASE_URL,
+    isProd = import.meta.env.PROD
+): string {
+    if (envUrl) {
+        return envUrl;
+    }
+    return isProd ? '/api/v1' : 'http://127.0.0.1:8000/api/v1';
 }
 
 const BASE_URL = resolveApiBaseUrl();

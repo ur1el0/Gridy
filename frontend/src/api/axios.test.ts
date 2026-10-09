@@ -20,8 +20,13 @@ describe('axios client configuration', () => {
         expect(resolveApiBaseUrl('/api/v1')).toBe('/api/v1');
         // Custom production domain override
         expect(resolveApiBaseUrl('https://api.gridy.ph/api/v1')).toBe('https://api.gridy.ph/api/v1');
-        // Fallback when environment variable is empty or undefined
-        expect(resolveApiBaseUrl('')).toBe('http://127.0.0.1:8000/api/v1');
-        expect(resolveApiBaseUrl(undefined)).toBe('http://127.0.0.1:8000/api/v1');
+        // Render backend destination override
+        expect(resolveApiBaseUrl('https://gridy-backend.onrender.com/api/v1')).toBe('https://gridy-backend.onrender.com/api/v1');
+        // Development fallback when unset
+        expect(resolveApiBaseUrl('', false)).toBe('http://127.0.0.1:8000/api/v1');
+        expect(resolveApiBaseUrl(undefined, false)).toBe('http://127.0.0.1:8000/api/v1');
+        // Production fallback when unset (same-origin proxy default)
+        expect(resolveApiBaseUrl('', true)).toBe('/api/v1');
+        expect(resolveApiBaseUrl(undefined, true)).toBe('/api/v1');
     });
 });
