@@ -24,8 +24,22 @@ interface DocumentRequest {
     payment_reference?: string;
     payment_status?: string;
     payment_review_note?: string;
+    payment_recipient?: number | null;
+    payment_recipient_name_snapshot?: string | null;
+    payment_recipient_identifier_snapshot?: string | null;
+    payment_instructions_snapshot?: string | null;
     admin_notes?: string;
     created_at: string;
+}
+
+interface PaymentRecipient {
+    id: number;
+    provider: string;
+    provider_label: string;
+    display_name: string;
+    recipient_name: string;
+    recipient_identifier: string;
+    instructions: string;
 }
 
 const DOCUMENT_TYPES = [
@@ -43,6 +57,8 @@ export const CitizenDocuments: React.FC = () => {
     const [downloadingId, setDownloadingId] = useState<number | null>(null);
     const [cancellingId, setCancellingId] = useState<number | null>(null);
     const [paymentReference, setPaymentReference] = useState<Record<number, string>>({});
+    const [selectedRecipientId, setSelectedRecipientId] = useState<Record<number, string>>({});
+    const [paymentRecipients, setPaymentRecipients] = useState<PaymentRecipient[]>([]);
     const [submittingPaymentId, setSubmittingPaymentId] = useState<number | null>(null);
 
     // Form State
@@ -64,6 +80,12 @@ export const CitizenDocuments: React.FC = () => {
 
     useEffect(() => {
         fetchRequests();
+        axiosPrivate.get('/payment-recipients/')
+            .then((response) => {
+                const data = response.data.results || response.data;
+                setPaymentRecipients(Array.isArray(data) ? data : []);
+            })
+            .catch(() => setPaymentRecipients([]));
     }, []);
 
     const handleCreateRequest = async (e: React.SubmitEvent<HTMLElement>) => {
@@ -134,8 +156,13 @@ export const CitizenDocuments: React.FC = () => {
 
     const handleSubmitPaymentReference = async (id: number) => {
         const reference = paymentReference[id]?.trim();
+        const recipientId = Number(selectedRecipientId[id]);
+        if (!recipientId) {
+            toast.error('Select an e-payment recipient configured by your barangay.');
+            return;
+        }
         if (!reference) {
-            toast.error('Enter the GCash transaction reference.');
+            toast.error('Enter the transfer reference.');
             return;
         }
 
@@ -143,13 +170,13 @@ export const CitizenDocuments: React.FC = () => {
         try {
             const response = await axiosPrivate.post(
                 `/document-requests/${id}/payment-reference/`,
-                { payment_reference: reference },
+                { payment_recipient_id: recipientId, payment_reference: reference },
             );
             setRequests((current) => current.map((request) =>
                 request.id === id ? { ...request, ...response.data } : request,
             ));
             setPaymentReference((current) => ({ ...current, [id]: '' }));
-            toast.success('Reference sent to barangay staff for manual verification.');
+            toast.success('Transfer reference sent to barangay staff for manual verification.');
         } catch (err: any) {
             toast.error(err.response?.data?.detail || 'Could not submit the payment reference.');
         } finally {
@@ -285,23 +312,28 @@ export const CitizenDocuments: React.FC = () => {
                                                                         void handleSubmitPaymentReference(req.id);
                                                                     }}
                                                                 >
-                                                                    <p>Confirm the recipient using your barangay’s official announcement or posted instructions before transferring. Submit the transaction reference for staff verification.</p>
-                                                                    <input
-                                                                        required
-                                                                        maxLength={100}
-                                                                        aria-label={`GCash reference for request ${req.id}`}
-                                                                        value={paymentReference[req.id] ?? ''}
-                                                                        onChange={(event) => setPaymentReference((current) => ({ ...current, [req.id]: event.target.value }))}
-                                                                        placeholder="GCash transaction reference"
-                                                                        className="w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs"
-                                                                    />
-                                                                    <button
-                                                                        type="submit"
-                                                                        disabled={submittingPaymentId === req.id}
-                                                                        className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
-                                                                    >
-                                                                        {submittingPaymentId === req.id ? 'Submitting…' : 'Submit GCash reference'}
-                                                                    </button>
+                                                                    <p>Select an official recipient configured by your barangay, follow its instructions, and enter your transfer reference. Staff verify the transfer manually.</p>
+                                                                    {paymentRecipients.length === 0 ? (
+                                                                        <p role="status" className="rounded-lg bg-amber-50 p-3 text-xs text-amber-900">Your barangay has not configured an e-payment recipient. Contact the barangay hall or pay in person.</p>
+                                                                    ) : (
+                                                                        <>
+                                                                            <label className="block text-xs font-semibold text-slate-700">
+                                                                                Payment recipient
+                                                                                <select required aria-label={`Payment recipient for request ${req.id}`} value={selectedRecipientId[req.id] || ''} onChange={(event) => setSelectedRecipientId((current) => ({ ...current, [req.id]: event.target.value }))} className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs">
+                                                                                    <option value="">Select a recipient</option>
+                                                                                    {paymentRecipients.map((recipient) => <option key={recipient.id} value={recipient.id}>{recipient.display_name} · {recipient.provider_label}</option>)}
+                                                                                </select>
+                                                                            </label>
+                                                                            {(() => {
+                                                                                const recipient = paymentRecipients.find((item) => item.id === Number(selectedRecipientId[req.id]));
+                                                                                return recipient ? <div className="rounded-lg bg-white p-3 text-xs text-slate-700"><p className="font-bold">{recipient.recipient_name}</p><p>{recipient.recipient_identifier}</p>{recipient.instructions && <p className="mt-1">{recipient.instructions}</p>}</div> : null;
+                                                                            })()}
+                                                                            <input required maxLength={100} aria-label={`Transfer reference for request ${req.id}`} value={paymentReference[req.id] ?? ''} onChange={(event) => setPaymentReference((current) => ({ ...current, [req.id]: event.target.value }))} placeholder="Transfer reference" className="w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs" />
+                                                                            <button type="submit" disabled={submittingPaymentId === req.id} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50">
+                                                                                {submittingPaymentId === req.id ? 'Submitting…' : 'Submit transfer reference'}
+                                                                            </button>
+                                                                        </>
+                                                                    )}
                                                                 </form>
                                                             )}
                                                     </div>

@@ -12,6 +12,40 @@ MANILA_TIME_ZONE = ZoneInfo("Asia/Manila")
 
 # Create your models here.
 
+class PaymentRecipient(models.Model):
+    class Provider(models.TextChoices):
+        GCASH = "GCASH", "GCash"
+        MAYA = "MAYA", "Maya"
+        BANK = "BANK", "Bank transfer"
+        OTHER = "OTHER", "Other"
+
+    barangay = models.ForeignKey(
+        Barangay,
+        on_delete=models.CASCADE,
+        related_name="payment_recipients",
+    )
+    provider = models.CharField(max_length=16, choices=Provider.choices)
+    display_name = models.CharField(max_length=100)
+    recipient_name = models.CharField(max_length=255)
+    recipient_identifier = models.CharField(max_length=100)
+    instructions = models.TextField(blank=True, max_length=1000)
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        ordering = ["provider", "display_name"]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["barangay", "provider", "display_name"],
+                name="unique_payment_recipient_per_barangay",
+            ),
+        ]
+
+    def __str__(self):
+        return f"{self.get_provider_display()} — {self.display_name}"
+
+
 class DocumentRequest(models.Model):
     class Status(models.TextChoices):
         PENDING = 'PENDING', 'Pending'
@@ -60,6 +94,9 @@ class DocumentRequest(models.Model):
     class PaymentMethod(models.TextChoices):
         CASH = "CASH", "Cash"
         GCASH = "GCASH", "GCash"
+        MAYA = "MAYA", "Maya"
+        BANK = "BANK", "Bank transfer"
+        OTHER = "OTHER", "Other"
 
     class PaymentStatus(models.TextChoices):
         NOT_REQUIRED = "NOT_REQUIRED", "Not required"
@@ -72,10 +109,20 @@ class DocumentRequest(models.Model):
     or_number = models.CharField(max_length=50, blank=True, null=True, help_text="Official Receipt Number issued by Barangay Treasurer")
     fee_amount = models.DecimalField(max_digits=8, decimal_places=2, default=0.00, help_text="Clearance issuance fee in PHP")
     payment_method = models.CharField(
-        max_length=10,
+        max_length=12,
         choices=PaymentMethod.choices,
         blank=True,
     )
+    payment_recipient = models.ForeignKey(
+        PaymentRecipient,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="document_requests",
+    )
+    payment_recipient_name_snapshot = models.CharField(max_length=255, blank=True)
+    payment_recipient_identifier_snapshot = models.CharField(max_length=100, blank=True)
+    payment_instructions_snapshot = models.TextField(blank=True)
     payment_reference = models.CharField(max_length=100, blank=True)
     payment_status = models.CharField(
         max_length=25,

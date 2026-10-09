@@ -104,6 +104,7 @@ void main() {
 
     // Expect field validation error messages
     expect(find.text('Please enter your full name', skipOffstage: false), findsOneWidget);
+    expect(find.text('Please select your barangay', skipOffstage: false), findsOneWidget);
     expect(find.text('Please enter your barangay ID or username', skipOffstage: false), findsOneWidget);
     expect(find.text('Please enter your email address', skipOffstage: false), findsOneWidget);
     expect(find.text('Please enter a password', skipOffstage: false), findsOneWidget);

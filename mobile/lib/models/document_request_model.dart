@@ -12,6 +12,10 @@ class DocumentRequestModel {
   final double? feeAmount;
   final String? paymentMethod;
   final String? paymentReference;
+  final int? paymentRecipientId;
+  final String? paymentRecipientName;
+  final String? paymentRecipientIdentifier;
+  final String? paymentInstructions;
   final String paymentStatus;
   final String? paymentReviewNote;
   final bool isWalkin;
@@ -29,6 +33,10 @@ class DocumentRequestModel {
     this.feeAmount,
     this.paymentMethod,
     this.paymentReference,
+    this.paymentRecipientId,
+    this.paymentRecipientName,
+    this.paymentRecipientIdentifier,
+    this.paymentInstructions,
     this.paymentStatus = 'NOT_REQUIRED',
     this.paymentReviewNote,
     this.isWalkin = false,
@@ -57,6 +65,11 @@ class DocumentRequestModel {
           : null,
       paymentMethod: json['payment_method'] as String?,
       paymentReference: json['payment_reference'] as String?,
+      paymentRecipientId: json['payment_recipient'] as int?,
+      paymentRecipientName: json['payment_recipient_name_snapshot'] as String?,
+      paymentRecipientIdentifier:
+          json['payment_recipient_identifier_snapshot'] as String?,
+      paymentInstructions: json['payment_instructions_snapshot'] as String?,
       paymentStatus: json['payment_status'] as String? ?? 'NOT_REQUIRED',
       paymentReviewNote: json['payment_review_note'] as String?,
       isWalkin: json['is_walkin'] as bool? ?? false,
@@ -80,6 +93,10 @@ class DocumentRequestModel {
       'fee_amount': feeAmount,
       'payment_method': paymentMethod,
       'payment_reference': paymentReference,
+      'payment_recipient': paymentRecipientId,
+      'payment_recipient_name_snapshot': paymentRecipientName,
+      'payment_recipient_identifier_snapshot': paymentRecipientIdentifier,
+      'payment_instructions_snapshot': paymentInstructions,
       'payment_status': paymentStatus,
       'payment_review_note': paymentReviewNote,
       'is_walkin': isWalkin,

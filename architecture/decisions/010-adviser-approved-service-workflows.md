@@ -1,7 +1,7 @@
 # ADR 010: Adviser-Approved Resident Service Workflows
 
 ## Status
-Accepted for the capstone implementation.
+Accepted for the capstone implementation; payment-provider details are superseded in part by ADR 011.
 
 ## Context
 
@@ -20,6 +20,6 @@ The adviser requested a bounded queue policy that protects regular residents whi
 
 - Residents can complete the principal workflows from web and mobile without adding a payment gateway, automated aid eligibility rules, or a new after-hours chat service.
 - Staff retain the final decision on assistance eligibility and payment settlement, with audit records for sensitive review actions.
-- Barangays must publish their official GCash recipient through trusted barangay instructions or announcements; Gridy does not store or process the transfer itself.
+- The original GCash-only recipient workflow was later expanded by ADR 011 to tenant-configured manual transfer recipients. Gridy still does not process transfers.
 - Public social posts may have their own comment controls. Those controls belong to each external platform and are not enforced by Gridy.
 - Demonstration charts can use repeatable records without exposing seeded credentials or writing demo records to Neon or another remote database.

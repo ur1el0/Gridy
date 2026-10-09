@@ -38,3 +38,27 @@ def send_welcome_email(user_email, full_name):
         return f"Sent welcome email to {user_email}"
     except Exception as e:
         logger.error(f"Failed to send welcome email to {user_email}: {e}")
+
+@async_task
+def send_barangay_approval_email(user_email, applicant_name, barangay_name):
+    """Tell the verified first official how to establish their login password."""
+    try:
+        reset_page = f"{settings.FRONTEND_URL.rstrip('/')}/forgot-password"
+        subject = "Gridy barangay account approved"
+        message = (
+            f"Hello {applicant_name},\n\n"
+            f"The application for {barangay_name} was approved and your official "
+            "account is ready. No password was created for you. Visit the Gridy "
+            f"password recovery page ({reset_page}) and request a private reset "
+            "link using this email address to set your password.\n\n"
+            "Gridy staff will never ask you to send your password or payment-account credentials."
+        )
+        send_mail(
+            subject,
+            message,
+            settings.DEFAULT_FROM_EMAIL,
+            [user_email],
+            fail_silently=False,
+        )
+    except Exception as error:
+        logger.error("Failed to send barangay account setup email: %s", error)

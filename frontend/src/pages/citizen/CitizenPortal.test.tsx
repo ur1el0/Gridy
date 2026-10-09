@@ -38,7 +38,9 @@ describe('Resident Portal Components', () => {
     });
 
     it('renders empty state when citizen has no active document requests', async () => {
-        vi.mocked(axiosPrivate.get).mockResolvedValueOnce({ data: { results: [] } });
+        vi.mocked(axiosPrivate.get)
+            .mockResolvedValueOnce({ data: { results: [] } })
+            .mockResolvedValueOnce({ data: [] });
 
         render(
             <BrowserRouter>
@@ -66,7 +68,9 @@ describe('Resident Portal Components', () => {
             },
         ];
 
-        vi.mocked(axiosPrivate.get).mockResolvedValueOnce({ data: { results: mockRequests } });
+        vi.mocked(axiosPrivate.get)
+            .mockResolvedValueOnce({ data: { results: mockRequests } })
+            .mockResolvedValueOnce({ data: [] });
 
         render(
             <BrowserRouter>
@@ -94,7 +98,10 @@ describe('Resident Portal Components', () => {
             },
         ];
 
-        vi.mocked(axiosPrivate.get).mockResolvedValueOnce({ data: { results: mockRequests } });
+        vi.mocked(axiosPrivate.get)
+            .mockResolvedValueOnce({ data: { results: mockRequests } })
+            .mockResolvedValueOnce({ data: [] })
+            .mockResolvedValueOnce({ data: { results: [] } });
         vi.mocked(axiosPrivate.delete).mockResolvedValueOnce({ data: {} });
         vi.spyOn(window, 'confirm').mockReturnValue(true);
 

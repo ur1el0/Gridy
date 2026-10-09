@@ -1,10 +1,13 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+
 import '../core/config/app_config.dart';
 import '../core/network/api_client.dart';
 import '../core/network/api_exception.dart';
 import '../models/auth_response.dart';
+import '../models/barangay_model.dart';
 import '../models/user_model.dart';
 import 'storage_service.dart';
 
@@ -69,6 +72,21 @@ class AuthService {
     );
 
     return authResponse;
+  }
+
+  /// Lists approved barangays available for resident registration.
+  Future<List<BarangayModel>> fetchBarangays() async {
+    final response = await apiClient.get(
+      '/auth/public/barangays/',
+      requiresAuth: false,
+    );
+    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+    final List<dynamic> results = decoded is Map<String, dynamic>
+        ? (decoded['results'] as List<dynamic>? ?? <dynamic>[])
+        : decoded as List<dynamic>;
+    return results
+        .map((item) => BarangayModel.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 
   /// Register a new resident account against Django backend `/api/v1/auth/register/`

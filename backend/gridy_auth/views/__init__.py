@@ -23,3 +23,4 @@ from .residents import (
     RejectResidentView,
     ResidentViewSet
 )
+from .onboarding import BarangayApplicationViewSet, PublicBarangayDirectoryView

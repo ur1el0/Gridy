@@ -6,6 +6,13 @@ import { TextField } from '../../components/ui/TextField';
 import { FileUploadZone } from '../../components/ui/FileUploadZone';
 import { Button } from '../../components/ui/Button';
 
+interface PublicBarangay {
+    id: number;
+    name: string;
+    municipality: string;
+    province: string;
+}
+
 export const Register: React.FC = () => {
     const [isAdminMode, setIsAdminMode] = useState(false);
 
@@ -32,6 +39,9 @@ export const Register: React.FC = () => {
 
     // Admin-specific fields
     const [barangayId, setBarangayId] = useState('');
+    const [barangays, setBarangays] = useState<PublicBarangay[]>([]);
+    const [loadingBarangays, setLoadingBarangays] = useState(true);
+    const [barangayDirectoryError, setBarangayDirectoryError] = useState('');
     const [affirmation, setAffirmation] = useState(false);
     const [dataPrivacyConsent, setDataPrivacyConsent] = useState(false);
     const [passkey, setPasskey] = useState('');
@@ -42,6 +52,22 @@ export const Register: React.FC = () => {
     const [loading, setLoading] = useState(false);
 
     const navigate = useNavigate();
+
+    React.useEffect(() => {
+        let isMounted = true;
+        axiosPublic.get('/auth/public/barangays/')
+            .then((response) => {
+                const data = response.data.results || response.data;
+                if (isMounted) setBarangays(Array.isArray(data) ? data : []);
+            })
+            .catch(() => {
+                if (isMounted) setBarangayDirectoryError('Approved barangays could not be loaded. Please try again later.');
+            })
+            .finally(() => {
+                if (isMounted) setLoadingBarangays(false);
+            });
+        return () => { isMounted = false; };
+    }, []);
 
     // Dynamically calculate if applicant is under 18
     const isMinor = React.useMemo(() => {
@@ -548,14 +574,25 @@ export const Register: React.FC = () => {
                             <select
                                 required
                                 value={barangayId}
+                                disabled={loadingBarangays || barangays.length === 0}
                                 onChange={(e) => setBarangayId(e.target.value)}
-                                className={`w-full px-4 py-3 bg-[#EEF2F6] focus:bg-white border border-transparent rounded-xl text-sm font-medium text-slate-900 outline-none transition-all cursor-pointer ${isAdminMode ? 'focus:border-[#091B35] focus:ring-1 focus:ring-[#091B35]' : 'focus:border-[#0284C7]'}`}
+                                className={`w-full px-4 py-3 bg-[#EEF2F6] focus:bg-white border border-transparent rounded-xl text-sm font-medium text-slate-900 outline-none transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 ${isAdminMode ? 'focus:border-[#091B35] focus:ring-1 focus:ring-[#091B35]' : 'focus:border-[#0284C7]'}`}
                             >
-                                <option value="">Select your Barangay</option>
-                                <option value="2">Barangay Ibabang Dupay (Lucena City)</option>
-                                <option value="3">Barangay Daungan (Pagbilao, Quezon)</option>
+                                <option value="">{loadingBarangays ? 'Loading approved barangays…' : 'Select your Barangay'}</option>
+                                {barangays.map((barangay) => (
+                                    <option key={barangay.id} value={barangay.id}>
+                                        {barangay.name}{barangay.municipality ? ` (${barangay.municipality}${barangay.province ? `, ${barangay.province}` : ''})` : ''}
+                                    </option>
+                                ))}
                             </select>
+                            {barangayDirectoryError && <p role="alert" className="mt-2 text-xs text-rose-700">{barangayDirectoryError}</p>}
                         </div>
+
+                        {isAdminMode && (
+                            <p className="text-xs text-slate-600">
+                                Registering a new barangay? <Link to="/register/barangay" className="font-bold text-primary-text underline">Apply for DILG review</Link>.
+                            </p>
+                        )}
 
                         {/* Passwords */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -635,7 +672,11 @@ export const Register: React.FC = () => {
                                 isAdminMode={isAdminMode}
                                 loading={loading}
                                 loadingText={isAdminMode ? 'Creating Admin Account...' : 'Creating Resident Account...'}
-                                disabled={(!isAdminMode && !dataPrivacyConsent) || (isAdminMode && (!affirmation || !passkey))}
+                                disabled={
+                                    loadingBarangays || barangays.length === 0 ||
+                                    (!isAdminMode && !dataPrivacyConsent) ||
+                                    (isAdminMode && (!affirmation || !passkey))
+                                }
                             >
                                 {isAdminMode ? 'Create Admin Account' : 'Create Resident Account'}
                             </Button>

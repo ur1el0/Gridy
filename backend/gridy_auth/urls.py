@@ -16,6 +16,8 @@ from .views import (
     BarangayViewSet,
     PasswordResetRequestView,
     PasswordResetConfirmView,
+    BarangayApplicationViewSet,
+    PublicBarangayDirectoryView,
 )
 from .views.resident_media import ResidentPrivateMediaView
 
@@ -23,11 +25,13 @@ router = DefaultRouter()
 router.register(r'resident', ResidentViewSet, basename='resident')
 router.register(r'barangay', BarangayViewSet, basename='barangay')
 router.register(r"sessions", SessionViewSet, basename="session")
+router.register(r"barangay-applications", BarangayApplicationViewSet, basename="barangay-application")
 
 
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='auth_register'),
     path('register/admin/', AdminRegisterView.as_view(), name='auth_register_admin'),
+    path('public/barangays/', PublicBarangayDirectoryView.as_view(), name='public-barangay-list'),
     path('login/', CustomTokenObtainPairView.as_view(), name='auth_login'),
     path('token/refresh/', CustomTokenRefreshView.as_view(), name='auth_token_refresh'),
     path('logout/', LogoutView.as_view(), name='auth_logout'),

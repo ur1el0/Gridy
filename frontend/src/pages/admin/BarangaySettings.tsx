@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { axiosPrivate } from '../../api/axios';
 import { useAuth } from '../../context/auth-context';
+import { PaymentRecipientSettings } from './PaymentRecipientSettings';
 
 export const BarangaySettings: React.FC = () => {
     const [barangayId, setBarangayId] = useState<number | null>(null);
@@ -203,6 +204,8 @@ export const BarangaySettings: React.FC = () => {
                     </button>
                 </div>
             </form>
+
+            <PaymentRecipientSettings />
         </div>
     );
 };

@@ -19,7 +19,7 @@ from rest_framework.test import APIRequestFactory, APITestCase, force_authentica
 from gridy_audit.models import AuditLog
 from gridy_auth.models import Barangay, Resident, User
 from gridy_reports.models import IssueReport
-from gridy_services.models import AidRequest, DocumentRequest, QueueTicket
+from gridy_services.models import AidRequest, DocumentRequest, QueueTicket, PaymentRecipient
 from gridy_services.views.queue import QueueTicketViewSet
 # Create your tests here.
 
@@ -1156,6 +1156,13 @@ class DocumentPaymentWorkflowTests(APITestCase):
             role=User.Role.ADMIN,
             barangay=self.barangay,
         )
+        self.gcash_recipient = PaymentRecipient.objects.create(
+            barangay=self.barangay,
+            provider=PaymentRecipient.Provider.GCASH,
+            display_name="GCash - Barangay Hall",
+            recipient_name="Barangay Treasurer",
+            recipient_identifier="09170000000",
+        )
 
     def make_request(self, **overrides):
         values = {
@@ -1169,6 +1176,255 @@ class DocumentPaymentWorkflowTests(APITestCase):
         }
         values.update(overrides)
         return DocumentRequest.objects.create(**values)
+
+
+    def test_resident_can_list_only_active_payment_recipients_in_own_barangay(self):
+        own_recipient = PaymentRecipient.objects.create(
+            barangay=self.barangay,
+            provider=PaymentRecipient.Provider.MAYA,
+            display_name="Maya - Barangay Hall",
+            recipient_name="Barangay Mabini Treasurer",
+            recipient_identifier="09170000001",
+            instructions="Use the clearance request number as the note.",
+        )
+        PaymentRecipient.objects.create(
+            barangay=self.barangay,
+            provider=PaymentRecipient.Provider.GCASH,
+            display_name="Inactive GCash",
+            recipient_name="Barangay Mabini Treasurer",
+            recipient_identifier="09170000002",
+            is_active=False,
+        )
+        other_barangay = Barangay.objects.create(name="Other Recipient Tenant")
+        PaymentRecipient.objects.create(
+            barangay=other_barangay,
+            provider=PaymentRecipient.Provider.GCASH,
+            display_name="Other Barangay",
+            recipient_name="Other Treasurer",
+            recipient_identifier="09179999999",
+        )
+        self.client.force_authenticate(self.resident)
+
+        response = self.client.get(reverse("payment-recipient-list"))
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        results = response.data["results"] if isinstance(response.data, dict) else response.data
+        self.assertCountEqual(
+            [item["id"] for item in results],
+            [own_recipient.id, self.gcash_recipient.id],
+        )
+        maya_result = next(item for item in results if item["id"] == own_recipient.id)
+        self.assertEqual(maya_result["provider"], PaymentRecipient.Provider.MAYA)
+        self.assertEqual(maya_result["recipient_identifier"], "09170000001")
+
+    def test_barangay_admin_can_configure_and_audit_payment_recipient(self):
+        self.client.force_authenticate(self.official)
+
+        created = self.client.post(
+            reverse("payment-recipient-list"),
+            {
+                "provider": PaymentRecipient.Provider.MAYA,
+                "display_name": "Maya Treasury",
+                "recipient_name": "Barangay Treasurer",
+                "recipient_identifier": "09170000001",
+                "instructions": "Use the request number as the transfer note.",
+            },
+            format="json",
+        )
+
+        self.assertEqual(created.status_code, status.HTTP_201_CREATED)
+        recipient = PaymentRecipient.objects.get(pk=created.data["id"])
+        self.assertEqual(recipient.barangay, self.barangay)
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action_by=self.official,
+                action_type=AuditLog.ActionType.USER_ACTION,
+                description__contains=f"payment recipient #{recipient.pk}",
+            ).exists()
+        )
+        self.assertFalse(
+            AuditLog.objects.filter(description__contains=recipient.recipient_identifier).exists()
+        )
+
+        updated = self.client.patch(
+            reverse("payment-recipient-detail", args=[recipient.pk]),
+            {"is_active": False},
+            format="json",
+        )
+
+        self.assertEqual(updated.status_code, status.HTTP_200_OK)
+        recipient.refresh_from_db()
+        self.assertFalse(recipient.is_active)
+        self.assertTrue(
+            AuditLog.objects.filter(
+                action_by=self.official,
+                action_type=AuditLog.ActionType.USER_ACTION,
+                description__contains=f"payment recipient #{recipient.pk}",
+            ).count()
+            >= 2
+        )
+
+    def test_payment_recipient_rejects_whitespace_only_destination_fields(self):
+        self.client.force_authenticate(self.official)
+
+        response = self.client.post(
+            reverse("payment-recipient-list"),
+            {
+                "provider": PaymentRecipient.Provider.GCASH,
+                "display_name": "   ",
+                "recipient_name": "Barangay Treasurer",
+                "recipient_identifier": "09170000001",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertFalse(PaymentRecipient.objects.filter(barangay=self.barangay).exclude(pk=self.gcash_recipient.pk).exists())
+
+    def test_payment_recipient_configuration_is_limited_to_own_barangay_admin(self):
+        other_barangay = Barangay.objects.create(name="Other Recipient Tenant")
+        other_recipient = PaymentRecipient.objects.create(
+            barangay=other_barangay,
+            provider=PaymentRecipient.Provider.GCASH,
+            display_name="Other Barangay",
+            recipient_name="Other Treasurer",
+            recipient_identifier="09179999999",
+        )
+        self.client.force_authenticate(self.official)
+
+        response = self.client.patch(
+            reverse("payment-recipient-detail", args=[other_recipient.pk]),
+            {"is_active": False},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        other_recipient.refresh_from_db()
+        self.assertTrue(other_recipient.is_active)
+
+        field_official = User.objects.create_user(
+            username="payment_field_official",
+            password="SecurePassword123!",
+            role=User.Role.FIELD_OFFICIAL,
+            barangay=self.barangay,
+        )
+        self.client.force_authenticate(field_official)
+        field_response = self.client.post(
+            reverse("payment-recipient-list"),
+            {
+                "provider": PaymentRecipient.Provider.MAYA,
+                "display_name": "Unauthorized Maya",
+                "recipient_name": "Barangay Treasurer",
+                "recipient_identifier": "09170000002",
+            },
+            format="json",
+        )
+        self.assertEqual(field_response.status_code, status.HTTP_403_FORBIDDEN)
+
+        dilg_admin = User.objects.create_user(
+            username="recipient_dilg_admin",
+            password="SecurePassword123!",
+            role=User.Role.DILG_ADMIN,
+            is_staff=True,
+        )
+        self.client.force_authenticate(dilg_admin)
+        dilg_response = self.client.get(reverse("payment-recipient-list"))
+        self.assertEqual(dilg_response.status_code, status.HTTP_403_FORBIDDEN)
+
+    def test_dilg_document_view_hides_payment_recipient_details(self):
+        document = self.make_request(
+            payment_method=DocumentRequest.PaymentMethod.GCASH,
+            payment_recipient=self.gcash_recipient,
+            payment_recipient_name_snapshot="Barangay Treasurer",
+            payment_recipient_identifier_snapshot="09170000000",
+            payment_instructions_snapshot="Use the request number.",
+        )
+        dilg_admin = User.objects.create_user(
+            username="payment_dilg_admin",
+            password="SecurePassword123!",
+            role=User.Role.DILG_ADMIN,
+            is_staff=True,
+        )
+        self.client.force_authenticate(dilg_admin)
+
+        response = self.client.get(
+            reverse("document-request-detail", args=[document.pk])
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertIsNone(response.data["payment_recipient"])
+        self.assertIsNone(response.data["payment_recipient_name_snapshot"])
+        self.assertIsNone(response.data["payment_recipient_identifier_snapshot"])
+        self.assertIsNone(response.data["payment_instructions_snapshot"])
+
+    def test_resident_payment_uses_selected_recipient_and_snapshots_details(self):
+        recipient = PaymentRecipient.objects.create(
+            barangay=self.barangay,
+            provider=PaymentRecipient.Provider.MAYA,
+            display_name="Maya - Barangay Hall",
+            recipient_name="Barangay Mabini Treasurer",
+            recipient_identifier="09170000001",
+            instructions="Use request number as reference.",
+        )
+        document = self.make_request()
+        self.client.force_authenticate(self.resident)
+
+        response = self.client.post(
+            reverse("document-request-payment-reference", args=[document.pk]),
+            {
+                "payment_recipient_id": recipient.id,
+                "payment_reference": " MAYA-REF-2048 ",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        document.refresh_from_db()
+        self.assertEqual(document.payment_method, DocumentRequest.PaymentMethod.MAYA)
+        self.assertEqual(document.payment_recipient, recipient)
+        self.assertEqual(document.payment_recipient_name_snapshot, "Barangay Mabini Treasurer")
+        self.assertEqual(document.payment_recipient_identifier_snapshot, "09170000001")
+        self.assertEqual(document.payment_reference, "MAYA-REF-2048")
+
+    def test_resident_cannot_submit_recipient_from_another_barangay(self):
+        other_barangay = Barangay.objects.create(name="Other Recipient Tenant")
+        recipient = PaymentRecipient.objects.create(
+            barangay=other_barangay,
+            provider=PaymentRecipient.Provider.GCASH,
+            display_name="Other Barangay",
+            recipient_name="Other Treasurer",
+            recipient_identifier="09179999999",
+        )
+        document = self.make_request()
+        self.client.force_authenticate(self.resident)
+
+        response = self.client.post(
+            reverse("document-request-payment-reference", args=[document.pk]),
+            {"payment_recipient_id": recipient.id, "payment_reference": "REF-2048"},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        document.refresh_from_db()
+        self.assertFalse(document.payment_reference)
+
+    def test_official_can_manually_verify_maya_transfer(self):
+        document = self.make_request(
+            payment_method=DocumentRequest.PaymentMethod.MAYA,
+            payment_reference="MAYA-REF-2048",
+            payment_status=DocumentRequest.PaymentStatus.PENDING_VERIFICATION,
+        )
+        self.client.force_authenticate(self.official)
+
+        response = self.client.patch(
+            reverse("document-request-payment-review", args=[document.pk]),
+            {"status": DocumentRequest.PaymentStatus.VERIFIED},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        document.refresh_from_db()
+        self.assertEqual(document.payment_status, DocumentRequest.PaymentStatus.VERIFIED)
 
     def test_existing_official_receipts_backfill_as_verified_cash(self):
         paid_document = self.make_request(or_number="OR-LEGACY-100")
@@ -1200,7 +1456,10 @@ class DocumentPaymentWorkflowTests(APITestCase):
 
         response = self.client.post(
             reverse("document-request-payment-reference", args=[document.pk]),
-            {"payment_reference": " GCASH-REF-2048 "},
+            {
+                "payment_recipient_id": self.gcash_recipient.id,
+                "payment_reference": " GCASH-REF-2048 ",
+            },
             format="json",
         )
 
@@ -1225,7 +1484,10 @@ class DocumentPaymentWorkflowTests(APITestCase):
 
         response = self.client.post(
             reverse("document-request-payment-reference", args=[document.pk]),
-            {"payment_reference": "GCASH-REF-2048"},
+            {
+                "payment_recipient_id": self.gcash_recipient.id,
+                "payment_reference": "GCASH-REF-2048",
+            },
             format="json",
         )
 
@@ -1239,7 +1501,10 @@ class DocumentPaymentWorkflowTests(APITestCase):
 
         response = self.client.post(
             reverse("document-request-payment-reference", args=[document.pk]),
-            {"payment_reference": "GCASH-REF-2048"},
+            {
+                "payment_recipient_id": self.gcash_recipient.id,
+                "payment_reference": "GCASH-REF-2048",
+            },
             format="json",
         )
 

@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import '../core/network/api_client.dart';
 import '../models/document_request_model.dart';
+import '../models/payment_recipient_model.dart';
 import 'storage_service.dart';
 
 /// Service coordinating document request fetching, creation, and PDF downloads
@@ -65,14 +66,36 @@ class DocumentService {
     }
   }
 
-  /// Sends a resident-entered GCash reference for manual barangay verification.
+  /// Lists active electronic payment recipients for the resident's barangay.
+  Future<List<PaymentRecipientModel>> fetchPaymentRecipients() async {
+    final response = await apiClient.get(
+      '/payment-recipients/',
+      requiresAuth: true,
+    );
+    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+    final List<dynamic> results = decoded is Map<String, dynamic>
+        ? (decoded['results'] as List<dynamic>? ?? <dynamic>[])
+        : decoded as List<dynamic>;
+    return results
+        .map(
+          (item) =>
+              PaymentRecipientModel.fromJson(item as Map<String, dynamic>),
+        )
+        .toList();
+  }
+
+  /// Sends a resident-selected transfer reference for manual barangay verification.
   Future<DocumentRequestModel> submitPaymentReference({
     required int requestId,
+    required int paymentRecipientId,
     required String paymentReference,
   }) async {
     final response = await apiClient.post(
       '/document-requests/$requestId/payment-reference/',
-      body: {'payment_reference': paymentReference.trim()},
+      body: {
+        'payment_recipient_id': paymentRecipientId,
+        'payment_reference': paymentReference.trim(),
+      },
       requiresAuth: true,
     );
     final data =

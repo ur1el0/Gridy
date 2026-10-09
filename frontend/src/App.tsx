@@ -3,6 +3,7 @@ import { AuthProvider } from "./context/AuthContext";
 import { useAuth } from "./context/auth-context";
 import { Login } from "./pages/auth/Login";
 import { Register } from "./pages/auth/Register";
+import { BarangayApplication } from "./pages/auth/BarangayApplication";
 import { Dashboard } from "./pages/admin/Dashboard";
 import { ProtectedRoute } from "./components/core/ProtectedRoute";
 import { AdminLayout } from "./components/layout/AdminLayout";
@@ -20,6 +21,7 @@ import { Notifications } from "./pages/community/Notifications";
 import { Faqs } from "./pages/community/Faqs";
 import { DILGDashboard } from "./pages/admin/DILGDashboard";
 import { BarangaySettings } from "./pages/admin/BarangaySettings";
+import { BarangayApplications } from "./pages/admin/BarangayApplications";
 import { ErrorBoundary } from "./components/core/ErrorBoundary";
 import { ForgotPassword } from "./pages/auth/ForgotPassword";
 import { ResetPassword } from "./pages/auth/ResetPassword";
@@ -51,6 +53,7 @@ export function App() {
                         {/* Public Auth Routes */}
                         <Route path="/login" element={<Login />} />
                         <Route path="/register" element={<Register />} />
+                        <Route path="/register/barangay" element={<BarangayApplication />} />
                         <Route path="/forgot-password" element={<ForgotPassword />} />
                         <Route path="/reset-password" element={<ResetPassword />} />
                         <Route path="/public/queue/:barangayId" element={<PublicQueueDisplay />} />
@@ -61,6 +64,9 @@ export function App() {
                             <Route element={<AdminLayout />}>
                                 <Route path="/dashboard" element={<Dashboard />} />
                                 <Route path="/dilg-analytics" element={<DILGDashboard />} />
+                                <Route element={<ProtectedRoute allowedRoles={['DILG_ADMIN']} />}>
+                                    <Route path="/dilg-applications" element={<BarangayApplications />} />
+                                </Route>
                                 <Route path="/queue" element={<LiveQueue />} />
                                 <Route path="/documents" element={<DocumentRequests />} />
                                 <Route path="/settings" element={<Settings />} />

@@ -13,7 +13,7 @@ from gridy_auth.permissions import (
     IsResident,
     IsResidentOrBarangayOfficial,
 )
-from gridy_services.models import DocumentRequest
+from gridy_services.models import DocumentRequest, PaymentRecipient
 from gridy_services.serializers import (
     DocumentRequestSerializer,
     DocumentRequestReviewSerializer,
@@ -188,6 +188,10 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
                     DocumentRequest.PaymentStatus.NOT_REQUIRED
                 )
                 document_request.payment_review_note = ""
+                document_request.payment_recipient = None
+                document_request.payment_recipient_name_snapshot = ""
+                document_request.payment_recipient_identifier_snapshot = ""
+                document_request.payment_instructions_snapshot = ""
             elif document_request.payment_status == (
                 DocumentRequest.PaymentStatus.NOT_REQUIRED
             ):
@@ -203,34 +207,37 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
                         )
                     })
                 if document_request.fee_amount > 0:
-                    if document_request.payment_method == (
-                        DocumentRequest.PaymentMethod.CASH
-                    ):
-                        document_request.payment_status = (
-                            DocumentRequest.PaymentStatus.VERIFIED
-                        )
-                    elif document_request.payment_method == (
-                        DocumentRequest.PaymentMethod.GCASH
-                    ):
-                        if document_request.payment_status != (
-                            DocumentRequest.PaymentStatus.VERIFIED
-                        ):
+                    if document_request.payment_method == DocumentRequest.PaymentMethod.CASH:
+                        document_request.payment_status = DocumentRequest.PaymentStatus.VERIFIED
+                        document_request.payment_recipient = None
+                        document_request.payment_recipient_name_snapshot = ""
+                        document_request.payment_recipient_identifier_snapshot = ""
+                        document_request.payment_instructions_snapshot = ""
+                        document_request.payment_reference = ""
+                    elif document_request.payment_method in {
+                        DocumentRequest.PaymentMethod.GCASH,
+                        DocumentRequest.PaymentMethod.MAYA,
+                        DocumentRequest.PaymentMethod.BANK,
+                        DocumentRequest.PaymentMethod.OTHER,
+                    }:
+                        if document_request.payment_status != DocumentRequest.PaymentStatus.VERIFIED:
                             raise ValidationError({
                                 "payment_status": (
-                                    "Verify the GCash transfer before releasing "
-                                    "this document."
+                                    "Verify the transfer before releasing this document."
                                 )
                             })
                     else:
                         raise ValidationError({
-                            "payment_method": (
-                                "Record whether payment was made by cash or GCash."
-                            )
+                            "payment_method": "Record cash or a verified electronic transfer."
                         })
 
             document_request.save(
                 update_fields=[
                     "payment_method",
+                    "payment_recipient",
+                    "payment_recipient_name_snapshot",
+                    "payment_recipient_identifier_snapshot",
+                    "payment_instructions_snapshot",
                     "payment_reference",
                     "payment_status",
                     "payment_review_note",
@@ -301,7 +308,21 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
                     "detail": "This payment is already awaiting review or verified."
                 })
 
-            document_request.payment_method = DocumentRequest.PaymentMethod.GCASH
+            recipient = PaymentRecipient.objects.filter(
+                pk=serializer.validated_data["payment_recipient_id"],
+                barangay_id=document_request.barangay_id,
+                is_active=True,
+            ).first()
+            if recipient is None:
+                raise ValidationError({
+                    "payment_recipient_id": "Select an active payment recipient configured by your barangay."
+                })
+
+            document_request.payment_method = recipient.provider
+            document_request.payment_recipient = recipient
+            document_request.payment_recipient_name_snapshot = recipient.recipient_name
+            document_request.payment_recipient_identifier_snapshot = recipient.recipient_identifier
+            document_request.payment_instructions_snapshot = recipient.instructions
             document_request.payment_reference = serializer.validated_data[
                 "payment_reference"
             ]
@@ -312,6 +333,10 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
             document_request.save(
                 update_fields=[
                     "payment_method",
+                    "payment_recipient",
+                    "payment_recipient_name_snapshot",
+                    "payment_recipient_identifier_snapshot",
+                    "payment_instructions_snapshot",
                     "payment_reference",
                     "payment_status",
                     "payment_review_note",
@@ -322,8 +347,8 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
                 user=request.user,
                 action_type=AuditLog.ActionType.DOCUMENT_ACTION,
                 description=(
-                    f"Resident submitted a GCash reference for document request "
-                    f"#{document_request.id}."
+                    f"Resident submitted a {document_request.get_payment_method_display()} "
+                    f"reference for document request #{document_request.id}."
                 ),
                 request=request,
             )
@@ -347,12 +372,17 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
                 pk=self.get_object().pk
             )
             if (
-                document_request.payment_method != DocumentRequest.PaymentMethod.GCASH
+                document_request.payment_method not in {
+                    DocumentRequest.PaymentMethod.GCASH,
+                    DocumentRequest.PaymentMethod.MAYA,
+                    DocumentRequest.PaymentMethod.BANK,
+                    DocumentRequest.PaymentMethod.OTHER,
+                }
                 or document_request.payment_status
                 != DocumentRequest.PaymentStatus.PENDING_VERIFICATION
             ):
                 raise ValidationError({
-                    "detail": "Only pending GCash references can be reviewed."
+                    "detail": "Only pending electronic transfer references can be reviewed."
                 })
 
             payment_status = serializer.validated_data["status"]
@@ -370,8 +400,8 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
                 user=request.user,
                 action_type=AuditLog.ActionType.DOCUMENT_ACTION,
                 description=(
-                    f"Official {request.user.username} marked GCash payment for "
-                    f"document request #{document_request.id} as {payment_status}."
+                    f"Official {request.user.username} marked {document_request.get_payment_method_display()} "
+                    f"payment for document request #{document_request.id} as {payment_status}."
                     + (f" Note: {note}" if note else "")
                 ),
                 request=request,

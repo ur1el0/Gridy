@@ -26,14 +26,17 @@ class BarangaySerializer(serializers.ModelSerializer):
     class Meta:
         model = Barangay
         fields = [
-            'id', 
-            'name', 
-            'logo', 
+            'id',
+            'name',
+            'municipality',
+            'province',
+            'logo',
             'city_seal', 
             'captain_name', 
             'office_contact',
             'primary_color',
         ]
+        read_only_fields = ['id', 'name', 'municipality', 'province']
 
 class ResidentSerializer(serializers.ModelSerializer):
     username = serializers.CharField(source='user.username', read_only=True, default='')

@@ -1,8 +1,14 @@
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
-import { afterEach, describe, it, expect, vi } from 'vitest';
+import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { axiosPublic } from '../../api/axios';
 import { Register } from './Register';
+
+beforeEach(() => {
+    vi.spyOn(axiosPublic, 'get').mockResolvedValue({
+        data: [{ id: 2, name: 'Barangay Ibabang Dupay', municipality: 'Lucena City', province: 'Quezon' }],
+    } as never);
+});
 
 afterEach(() => {
     vi.restoreAllMocks();
@@ -61,6 +67,19 @@ describe('Register Component (Dual-Mode)', () => {
         expect(screen.getByRole('combobox')).toBeInTheDocument();
         expect(screen.getByLabelText(/I affirm that I am an authorized barangay official or personnel/i)).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /create admin account/i })).toBeInTheDocument();
+    });
+
+    it('blocks registration when the approved barangay directory is unavailable', async () => {
+        vi.mocked(axiosPublic.get).mockRejectedValueOnce(new Error('offline'));
+        render(
+            <BrowserRouter>
+                <Register />
+            </BrowserRouter>
+        );
+
+        expect(await screen.findByRole('alert')).toHaveTextContent('Approved barangays could not be loaded');
+        fireEvent.click(screen.getByRole('checkbox'));
+        expect(screen.getByRole('button', { name: /create resident account/i })).toBeDisabled();
     });
 
     it('validates password mismatch before submission', async () => {
@@ -139,6 +158,10 @@ describe('Register Component (Dual-Mode)', () => {
         fireEvent.change(screen.getByPlaceholderText('juan@example.com'), {
             target: { value: 'juan@example.com' },
         });
+        await screen.findByRole('option', { name: /Barangay Ibabang Dupay/ });
+        fireEvent.change(screen.getByRole('combobox'), {
+            target: { value: '2' },
+        });
 
         const [passwordInput, confirmPasswordInput] =
             screen.getAllByPlaceholderText('••••••••');
@@ -174,5 +197,6 @@ describe('Register Component (Dual-Mode)', () => {
         const formData = payload as FormData;
         expect(formData.get('privacy_consent')).toBe('true');
         expect(formData.get('privacy_consent_version')).toBe('resident-v1');
+        expect(formData.get('barangay_id')).toBe('2');
     });
 });
