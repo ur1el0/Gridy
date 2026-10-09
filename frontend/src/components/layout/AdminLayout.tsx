@@ -41,7 +41,7 @@ export const AdminLayout: React.FC = () => {
                             {isMobileNavigationOpen ? <X className="h-5 w-5" aria-hidden="true" /> : <Menu className="h-5 w-5" aria-hidden="true" />}
                         </button>
                         <span className="truncate text-sm font-semibold text-slate-700 sm:text-base">
-                            {user?.role === 'DILG_ADMIN' ? 'DILG oversight' : 'Gridy administration'}
+                            {user?.role === 'DILG_ADMIN' ? 'DILG oversight' : 'KapitBayan administration'}
                         </span>
                     </div>
 
@@ -80,7 +80,7 @@ export const AdminLayout: React.FC = () => {
 
                     {/* Footer */}
                     <footer className="pt-8 text-xs text-slate-400 font-medium">
-                        © 2026 Gridy Admin
+                        © 2026 KapitBayan Admin
                     </footer>
                 </main>
             </div>

@@ -73,7 +73,7 @@ export const Announcements: React.FC = () => {
             return;
         }
         const url = `${window.location.origin}/public/announcements/${barangayId}`;
-        const shareText = `${announcement.title}\n\n${announcement.content}\n\nRead the official post and complete any transaction in Gridy: ${url}`;
+        const shareText = `${announcement.title}\n\n${announcement.content}\n\nRead the official post and complete any transaction in KapitBayan: ${url}`;
 
         try {
             if (navigator.share) {
@@ -81,7 +81,7 @@ export const Announcements: React.FC = () => {
                 return;
             }
             await navigator.clipboard.writeText(shareText);
-            toast.success('Announcement text and Gridy link copied. Paste them into the official social page.');
+            toast.success('Announcement text and KapitBayan link copied. Paste them into the official social page.');
         } catch (error) {
             if (error instanceof DOMException && error.name === 'AbortError') return;
             toast.error('Could not share this announcement.');
@@ -169,7 +169,7 @@ export const Announcements: React.FC = () => {
                     <div>
                         <span className="font-semibold text-sm">Active Broadcasts</span>
                         <p className="mt-1 max-w-2xl text-xs font-normal text-slate-500">
-                            Gridy cannot manage replies on external social pages. Apply that platform’s comment settings when posting and direct residents to complete requests in Gridy.
+                            KapitBayan cannot manage replies on external social pages. Apply that platform’s comment settings when posting and direct residents to complete requests in KapitBayan.
                         </p>
                     </div>
                 </div>

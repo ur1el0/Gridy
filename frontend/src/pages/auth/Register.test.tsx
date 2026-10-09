@@ -23,7 +23,7 @@ describe('Register Component (Dual-Mode)', () => {
         );
 
         // Branding & Citizen Badges
-        expect(screen.getByText('GRIDY')).toBeInTheDocument();
+        expect(screen.getByText('KapitBayan')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /resident registration/i })).toBeInTheDocument();
         expect(screen.getByText('OFFICIAL CLEARANCES ACCESS')).toBeInTheDocument();
         expect(screen.getByText('REAL-TIME QUEUE TICKETING')).toBeInTheDocument();

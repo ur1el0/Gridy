@@ -113,7 +113,7 @@ export const Faqs: React.FC = () => {
                         <HelpCircle className="w-8 h-8 mb-4 text-blue-200" />
                         <h3 className="text-lg font-bold mb-2">Still need help?</h3>
                         <p className="text-blue-100 text-sm mb-6 leading-relaxed">
-                            Our technical support team is available 24/7 to assist barangay administrators with the Gridy platform.
+                            Our technical support team is available 24/7 to assist barangay administrators with the KapitBayan platform.
                         </p>
                     </div>
 

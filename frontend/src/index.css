@@ -11,43 +11,43 @@
     --brand-primary-foreground: #FFFFFF;
     --brand-primary-text: #082B66;
 
-    --gridy-color-brand-admin: #091B35;
-    --gridy-color-brand-admin-rgb: 9 27 53;
-    --gridy-color-brand-admin-hover: #0F2D59;
-    --gridy-color-brand-accent: #0284C7;
-    --gridy-color-brand-accent-rgb: 2 132 199;
-    --gridy-color-brand-accent-hover: #0369A1;
+    --kapitbayan-color-brand-admin: #091B35;
+    --kapitbayan-color-brand-admin-rgb: 9 27 53;
+    --kapitbayan-color-brand-admin-hover: #0F2D59;
+    --kapitbayan-color-brand-accent: #0284C7;
+    --kapitbayan-color-brand-accent-rgb: 2 132 199;
+    --kapitbayan-color-brand-accent-hover: #0369A1;
 
-    --gridy-color-canvas-rgb: 248 250 252;
-    --gridy-color-surface: #FFFFFF;
-    --gridy-color-surface-subtle: #F1F5F9;
-    --gridy-color-surface-input: #EEF2F6;
-    --gridy-color-surface-form-rgb: 238 242 255;
-    --gridy-color-surface-table-rgb: 237 243 250;
-    --gridy-color-surface-queue: #F0F4FA;
-    --gridy-color-surface-waiting: #EDF2F7;
-    --gridy-color-surface-success: #E8F8EE;
-    --gridy-color-surface-success-pale: #ECFDF5;
-    --gridy-color-surface-warning: #FEF3C7;
-    --gridy-color-surface-danger: #FEECE8;
-    --gridy-color-border-rgb: 226 232 240;
-    --gridy-color-border-strong: #CBD5E1;
-    --gridy-color-text-primary: #0F172A;
-    --gridy-color-text-secondary: #475569;
-    --gridy-color-text-secondary-strong: #334155;
-    --gridy-color-text-muted: #64748B;
-    --gridy-color-text-hint: #94A3B8;
+    --kapitbayan-color-canvas-rgb: 248 250 252;
+    --kapitbayan-color-surface: #FFFFFF;
+    --kapitbayan-color-surface-subtle: #F1F5F9;
+    --kapitbayan-color-surface-input: #EEF2F6;
+    --kapitbayan-color-surface-form-rgb: 238 242 255;
+    --kapitbayan-color-surface-table-rgb: 237 243 250;
+    --kapitbayan-color-surface-queue: #F0F4FA;
+    --kapitbayan-color-surface-waiting: #EDF2F7;
+    --kapitbayan-color-surface-success: #E8F8EE;
+    --kapitbayan-color-surface-success-pale: #ECFDF5;
+    --kapitbayan-color-surface-warning: #FEF3C7;
+    --kapitbayan-color-surface-danger: #FEECE8;
+    --kapitbayan-color-border-rgb: 226 232 240;
+    --kapitbayan-color-border-strong: #CBD5E1;
+    --kapitbayan-color-text-primary: #0F172A;
+    --kapitbayan-color-text-secondary: #475569;
+    --kapitbayan-color-text-secondary-strong: #334155;
+    --kapitbayan-color-text-muted: #64748B;
+    --kapitbayan-color-text-hint: #94A3B8;
 
-    --gridy-color-success-strong: #16A34A;
-    --gridy-color-success-deep: #059669;
-    --gridy-color-warning: #D97706;
-    --gridy-color-danger: #EF4444;
-    --gridy-color-danger-text-strong: #E05638;
+    --kapitbayan-color-success-strong: #16A34A;
+    --kapitbayan-color-success-deep: #059669;
+    --kapitbayan-color-warning: #D97706;
+    --kapitbayan-color-danger: #EF4444;
+    --kapitbayan-color-danger-text-strong: #E05638;
 
-    --gridy-radius-small: 0.5rem;
-    --gridy-radius-medium: 0.75rem;
-    --gridy-radius-large: 1rem;
-    --gridy-radius-pill: 9999px;
+    --kapitbayan-radius-small: 0.5rem;
+    --kapitbayan-radius-medium: 0.75rem;
+    --kapitbayan-radius-large: 1rem;
+    --kapitbayan-radius-pill: 9999px;
 }
 
 @layer base {

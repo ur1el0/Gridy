@@ -29,8 +29,8 @@ export const RegisterHeroBanner: React.FC<RegisterHeroBannerProps> = ({
 
             {/* Top Logo & Mode Switch Pill */}
             <div className="relative z-10 flex items-center justify-between">
-                <span className="font-black text-2xl tracking-wider text-white uppercase">
-                    GRIDY
+                <span className="font-bold text-lg tracking-tight text-white sm:text-2xl">
+                    KapitBayan
                 </span>
                 <button
                     type="button"
@@ -66,7 +66,7 @@ export const RegisterHeroBanner: React.FC<RegisterHeroBannerProps> = ({
                 </h1>
                 <p className="text-blue-100/75 text-sm lg:text-base font-normal max-w-sm mb-10 leading-relaxed">
                     {isAdminMode
-                        ? 'Create your administrative credentials to manage the Gridy Barangay System. Access is restricted to authorized barangay personnel.'
+                        ? 'Create your administrative credentials to manage the KapitBayan Barangay System. Access is restricted to authorized barangay personnel.'
                         : 'Register your resident account to request clearances, access community services, and track lobby queues.'}
                 </p>
 

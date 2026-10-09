@@ -10,7 +10,7 @@ import {
     Building2,
     HandHeart,
 } from 'lucide-react';
-import mainLogoSvg from '../../assets/MainLogo.svg';
+import kapitBayanSymbol from '../../assets/kapitbayan/symbol.png';
 
 export const CitizenLayout: React.FC = () => {
     const { user, logout } = useAuth();
@@ -40,12 +40,12 @@ export const CitizenLayout: React.FC = () => {
                         {/* Left: Brand & Barangay Badge */}
                         <div className="flex items-center gap-4">
                             <div className="w-10 h-10 rounded-xl bg-white/10 border border-white/15 flex items-center justify-center p-2 shadow-inner shrink-0">
-                                <img src={mainLogoSvg} alt="Gridy Logo" className="w-full h-full object-contain" />
+                                <img src={kapitBayanSymbol} alt="" className="w-full h-full object-contain" />
                             </div>
                             <div>
                                 <div className="flex items-center gap-2">
                                     <span className="text-xl font-bold tracking-tight text-primary-foreground leading-none">
-                                        Gridy
+                                        KapitBayan
                                     </span>
                                     <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-primary-foreground text-primary">
                                         Resident Portal
@@ -137,7 +137,7 @@ export const CitizenLayout: React.FC = () => {
 
             {/* Footer */}
             <footer className="border-t border-slate-200 bg-white/60 py-4 text-center text-xs text-slate-500">
-                Republic of the Philippines • Barangay Information and Service Management System • Gridy
+                Republic of the Philippines • Barangay Information and Service Management System • KapitBayan
             </footer>
         </div>
     );

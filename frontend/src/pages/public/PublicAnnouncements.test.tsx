@@ -11,7 +11,7 @@ vi.mock('../../api/axios', () => ({
 describe('PublicAnnouncements', () => {
     beforeEach(() => vi.clearAllMocks());
 
-    it('shows public post details and directs transactions back to Gridy', async () => {
+    it('shows public post details and directs transactions back to KapitBayan', async () => {
         vi.mocked(axiosPublic.get).mockResolvedValue({
             data: [{
                 id: 3,
@@ -32,7 +32,7 @@ describe('PublicAnnouncements', () => {
 
         expect(await screen.findByRole('heading', { name: 'Barangay hall schedule' })).toBeInTheDocument();
         expect(screen.getByText('The office opens at 8 AM on Monday.')).toBeInTheDocument();
-        expect(screen.getByRole('link', { name: 'Sign in to Gridy' })).toHaveAttribute('href', '/login');
+        expect(screen.getByRole('link', { name: 'Sign in to KapitBayan' })).toHaveAttribute('href', '/login');
         expect(axiosPublic.get).toHaveBeenCalledWith('/public/barangays/12/announcements/');
     });
 });

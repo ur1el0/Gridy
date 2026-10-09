@@ -30,7 +30,7 @@ export function BarangayApplication() {
     return (
         <main className="min-h-screen bg-slate-50 px-4 py-10 sm:px-6">
             <section className="mx-auto max-w-2xl rounded-2xl border border-slate-200 bg-white p-6 shadow-sm sm:p-8">
-                <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary-text">Gridy barangay onboarding</p>
+                <p className="text-xs font-bold uppercase tracking-[0.16em] text-primary-text">KapitBayan barangay onboarding</p>
                 <h1 className="mt-2 text-2xl font-extrabold text-slate-900">Apply to register your barangay</h1>
                 <p className="mt-2 text-sm leading-6 text-slate-600">
                     DILG reviews the barangay and official contact details before creating a tenant or staff account. This form does not activate an account immediately.
@@ -38,7 +38,7 @@ export function BarangayApplication() {
 
                 {submitted ? (
                     <div role="status" className="mt-6 rounded-xl border border-emerald-200 bg-emerald-50 p-4 text-sm text-emerald-900">
-                        Application received. DILG must verify your details. If approved, Gridy will email instructions for setting your first official account password.
+                        Application received. DILG must verify your details. If approved, KapitBayan will email instructions for setting your first official account password.
                     </div>
                 ) : (
                     <form onSubmit={handleSubmit} className="mt-6 space-y-5">

@@ -154,7 +154,7 @@ export const ReviewDocumentModal = ({
                                                 <option value="BANK">Bank transfer</option>
                                                 <option value="OTHER">Other e-payment</option>
                                             </select>
-                                            <p className="mt-1 text-xs text-slate-600">Cash remains available. Every electronic transfer reference is checked manually by barangay staff; Gridy does not process money.</p>
+                                            <p className="mt-1 text-xs text-slate-600">Cash remains available. Every electronic transfer reference is checked manually by barangay staff; KapitBayan does not process money.</p>
                                         </div>
                                     )}
                                 </div>

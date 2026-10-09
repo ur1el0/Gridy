@@ -280,11 +280,11 @@ export const Dashboard: React.FC = () => {
                     <div className="h-[250px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={scenarioData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--gridy-color-border)" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--gridy-color-text-muted)' }} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--gridy-color-text-muted)' }} />
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--kapitbayan-color-border)" />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--kapitbayan-color-text-muted)' }} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--kapitbayan-color-text-muted)' }} />
                                 <Tooltip cursor={{fill: 'rgba(239,68,68,0.05)'}} />
-                                <Bar dataKey="count" fill="var(--gridy-color-danger)" radius={[4, 4, 0, 0]} maxBarSize={40} />
+                                <Bar dataKey="count" fill="var(--kapitbayan-color-danger)" radius={[4, 4, 0, 0]} maxBarSize={40} />
                             </BarChart>
                         </ResponsiveContainer>
                     </div>
@@ -324,9 +324,9 @@ export const Dashboard: React.FC = () => {
                     <div className="h-[250px] w-full">
                         <ResponsiveContainer width="100%" height="100%">
                             <BarChart data={ageData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--gridy-color-border)" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--gridy-color-text-muted)' }} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--gridy-color-text-muted)' }} />
+                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--kapitbayan-color-border)" />
+                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--kapitbayan-color-text-muted)' }} />
+                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--kapitbayan-color-text-muted)' }} />
                                 <Tooltip cursor={{fill: 'rgba(0,71,186,0.05)'}} />
                                 <Bar dataKey="count" fill="var(--brand-primary)" radius={[4, 4, 0, 0]} maxBarSize={40} />
                             </BarChart>
