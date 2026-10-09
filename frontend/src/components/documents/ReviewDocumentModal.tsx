@@ -150,8 +150,11 @@ export const ReviewDocumentModal = ({
                                                 <option value="">Select when paid</option>
                                                 <option value="CASH">Cash at barangay hall</option>
                                                 <option value="GCASH">GCash transfer</option>
+                                                <option value="MAYA">Maya transfer</option>
+                                                <option value="BANK">Bank transfer</option>
+                                                <option value="OTHER">Other e-payment</option>
                                             </select>
-                                            <p className="mt-1 text-xs text-slate-600">Cash remains available. GCash references are checked manually by barangay staff; Gridy does not process transfers.</p>
+                                            <p className="mt-1 text-xs text-slate-600">Cash remains available. Every electronic transfer reference is checked manually by barangay staff; Gridy does not process money.</p>
                                         </div>
                                     )}
                                 </div>
@@ -159,8 +162,10 @@ export const ReviewDocumentModal = ({
 
                             {selectedRequest.payment_reference && (
                                 <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-2">
-                                    <h4 className="text-xs font-extrabold uppercase tracking-wider text-amber-900">GCash transfer reference</h4>
+                                    <h4 className="text-xs font-extrabold uppercase tracking-wider text-amber-900">{selectedRequest.payment_method || 'Electronic'} transfer reference</h4>
                                     <p className="font-mono text-sm text-slate-900">{selectedRequest.payment_reference}</p>
+                                    {selectedRequest.payment_recipient_name_snapshot && <p className="text-sm text-slate-700">Recipient: {selectedRequest.payment_recipient_name_snapshot} · {selectedRequest.payment_recipient_identifier_snapshot}</p>}
+                                    {selectedRequest.payment_instructions_snapshot && <p className="text-xs text-slate-600">{selectedRequest.payment_instructions_snapshot}</p>}
                                     <p className="text-xs text-slate-600">Payment status: {(selectedRequest.payment_status || '').replace(/_/g, ' ').toLowerCase()}</p>
                                     {selectedRequest.payment_review_note && <p className="text-sm text-rose-800">Staff note: {selectedRequest.payment_review_note}</p>}
                                     {selectedRequest.payment_status === 'PENDING_VERIFICATION' && (

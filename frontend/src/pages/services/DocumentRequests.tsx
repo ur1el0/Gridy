@@ -21,6 +21,10 @@ export interface DocumentRequest {
     or_number?: string;
     fee_amount?: number | string;
     payment_method?: string;
+    payment_recipient?: number | null;
+    payment_recipient_name_snapshot?: string | null;
+    payment_recipient_identifier_snapshot?: string | null;
+    payment_instructions_snapshot?: string | null;
     payment_reference?: string;
     payment_status?: string;
     payment_review_note?: string;
@@ -150,9 +154,9 @@ export const DocumentRequests: React.FC = () => {
                 request.id === selectedRequest.id ? { ...request, ...response.data } : request,
             ));
             setSelectedRequest((current) => current ? { ...current, ...response.data } : current);
-            toast.success(paymentStatus === 'VERIFIED' ? 'GCash payment verified.' : 'GCash reference rejected with a reason.');
+            toast.success(paymentStatus === 'VERIFIED' ? 'Electronic transfer verified.' : 'Transfer reference rejected with a reason.');
         } catch (err: any) {
-            toast.error(err.response?.data?.note?.[0] || err.response?.data?.detail || 'Could not review this GCash payment.');
+            toast.error(err.response?.data?.note?.[0] || err.response?.data?.detail || 'Could not review this electronic payment.');
         } finally {
             setIsUpdating(false);
         }
