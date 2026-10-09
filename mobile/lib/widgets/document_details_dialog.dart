@@ -6,6 +6,7 @@ import 'package:path_provider/path_provider.dart';
 
 import '../core/theme/app_colors.dart';
 import '../models/document_request_model.dart';
+import '../models/payment_recipient_model.dart';
 import '../services/document_service.dart';
 
 /// Modal dialog showing complete document request lifecycle details and PDF download
@@ -28,6 +29,10 @@ class DocumentDetailsDialog extends StatefulWidget {
 class _DocumentDetailsDialogState extends State<DocumentDetailsDialog> {
   bool _isDownloading = false;
   bool _isSubmittingPayment = false;
+  bool _isLoadingPaymentRecipients = false;
+  String? _paymentRecipientError;
+  List<PaymentRecipientModel> _paymentRecipients = const [];
+  int? _selectedRecipientId;
   final TextEditingController _paymentReferenceController =
       TextEditingController();
   late String _paymentStatus;
@@ -40,6 +45,36 @@ class _DocumentDetailsDialogState extends State<DocumentDetailsDialog> {
     _paymentStatus = widget.request.paymentStatus;
     _paymentMethod = widget.request.paymentMethod;
     _paymentReviewNote = widget.request.paymentReviewNote;
+    _selectedRecipientId = widget.request.paymentRecipientId;
+    if (widget.request.isReadyForPickup &&
+        (widget.request.feeAmount ?? 0) > 0 &&
+        widget.documentService != null) {
+      _loadPaymentRecipients();
+    }
+  }
+
+  Future<void> _loadPaymentRecipients() async {
+    setState(() => _isLoadingPaymentRecipients = true);
+    try {
+      final recipients = await widget.documentService!.fetchPaymentRecipients();
+      if (!mounted) return;
+      setState(() {
+        _paymentRecipients = recipients;
+        if (!recipients.any((item) => item.id == _selectedRecipientId)) {
+          _selectedRecipientId = recipients.isEmpty
+              ? null
+              : recipients.first.id;
+        }
+      });
+    } catch (_) {
+      if (!mounted) return;
+      setState(
+        () => _paymentRecipientError =
+            'Could not load your barangay payment recipients.',
+      );
+    } finally {
+      if (mounted) setState(() => _isLoadingPaymentRecipients = false);
+    }
   }
 
   @override
@@ -51,12 +86,18 @@ class _DocumentDetailsDialogState extends State<DocumentDetailsDialog> {
   Future<void> _handleSubmitPaymentReference() async {
     final service = widget.documentService;
     final reference = _paymentReferenceController.text.trim();
-    if (service == null || reference.isEmpty || _isSubmittingPayment) return;
+    if (service == null ||
+        reference.isEmpty ||
+        _selectedRecipientId == null ||
+        _isSubmittingPayment) {
+      return;
+    }
 
     setState(() => _isSubmittingPayment = true);
     try {
       final updated = await service.submitPaymentReference(
         requestId: widget.request.id,
+        paymentRecipientId: _selectedRecipientId!,
         paymentReference: reference,
       );
       if (!mounted) return;
@@ -147,7 +188,7 @@ class _DocumentDetailsDialogState extends State<DocumentDetailsDialog> {
     final req = widget.request;
     final canDownload = req.isReadyForPickup || req.isReleased;
 
-    final canSubmitGcashReference =
+    final canSubmitElectronicPayment =
         req.isReadyForPickup &&
         (req.feeAmount ?? 0) > 0 &&
         _paymentMethod != 'CASH' &&
@@ -343,7 +384,7 @@ class _DocumentDetailsDialogState extends State<DocumentDetailsDialog> {
                 ),
               ],
 
-              if (canSubmitGcashReference) ...[
+              if (canSubmitElectronicPayment) ...[
                 const SizedBox(height: 16),
                 Container(
                   width: double.infinity,
@@ -357,7 +398,7 @@ class _DocumentDetailsDialogState extends State<DocumentDetailsDialog> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Confirm the recipient using your barangay’s official announcement or posted instructions before transferring. Enter the transfer reference below; staff will verify it manually.',
+                        'Choose the official recipient configured by your barangay. Staff will verify the transfer reference manually before release.',
                         style: TextStyle(
                           fontSize: 12,
                           height: 1.4,
@@ -365,29 +406,92 @@ class _DocumentDetailsDialogState extends State<DocumentDetailsDialog> {
                         ),
                       ),
                       const SizedBox(height: 10),
-                      TextField(
-                        controller: _paymentReferenceController,
-                        maxLength: 100,
-                        decoration: const InputDecoration(
-                          labelText: 'GCash transaction reference',
-                          border: OutlineInputBorder(),
-                          counterText: '',
+                      if (_isLoadingPaymentRecipients)
+                        const LinearProgressIndicator(),
+                      if (_paymentRecipientError != null)
+                        Text(
+                          _paymentRecipientError!,
+                          style: const TextStyle(color: Colors.red),
                         ),
-                      ),
-                      const SizedBox(height: 8),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          onPressed: _isSubmittingPayment
-                              ? null
-                              : _handleSubmitPaymentReference,
-                          child: Text(
-                            _isSubmittingPayment
-                                ? 'Submitting…'
-                                : 'Submit reference',
+                      if (!_isLoadingPaymentRecipients &&
+                          _paymentRecipientError == null &&
+                          _paymentRecipients.isEmpty)
+                        const Text(
+                          'Your barangay has no e-payment recipient configured. Contact the barangay hall or pay in person.',
+                        ),
+                      if (_paymentRecipients.isNotEmpty) ...[
+                        DropdownButtonFormField<int>(
+                          initialValue:
+                              _paymentRecipients.any(
+                                (item) => item.id == _selectedRecipientId,
+                              )
+                              ? _selectedRecipientId
+                              : null,
+                          isExpanded: true,
+                          decoration: const InputDecoration(
+                            labelText: 'Payment recipient',
+                            border: OutlineInputBorder(),
+                          ),
+                          items: _paymentRecipients
+                              .map(
+                                (recipient) => DropdownMenuItem<int>(
+                                  value: recipient.id,
+                                  child: Text(
+                                    '${recipient.displayName} · ${recipient.providerLabel}',
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) =>
+                              setState(() => _selectedRecipientId = value),
+                        ),
+                        if (_selectedRecipientId != null)
+                          Builder(
+                            builder: (context) {
+                              final recipient = _paymentRecipients.firstWhere(
+                                (item) => item.id == _selectedRecipientId,
+                              );
+                              return Padding(
+                                padding: const EdgeInsets.only(top: 8),
+                                child: Text(
+                                  '${recipient.recipientName} · ${recipient.recipientIdentifier}'
+                                  '${recipient.instructions.isEmpty ? '' : '\n${recipient.instructions}'}',
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    height: 1.4,
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                        const SizedBox(height: 10),
+                        TextField(
+                          controller: _paymentReferenceController,
+                          maxLength: 100,
+                          decoration: const InputDecoration(
+                            labelText: 'Transfer reference',
+                            border: OutlineInputBorder(),
+                            counterText: '',
                           ),
                         ),
-                      ),
+                        const SizedBox(height: 8),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton(
+                            onPressed:
+                                _isSubmittingPayment ||
+                                    _selectedRecipientId == null
+                                ? null
+                                : _handleSubmitPaymentReference,
+                            child: Text(
+                              _isSubmittingPayment
+                                  ? 'Submitting…'
+                                  : 'Submit transfer reference',
+                            ),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),
