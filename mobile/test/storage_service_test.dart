@@ -120,6 +120,23 @@ void main() {
     },
   );
 
+  test('retains legacy preferences when a destination write fails', () async {
+    final prefs = _FailingWriteSharedPreferences({
+      legacyCachedUserKey: '{"cached":"user"}',
+      legacyRememberMeKey: true,
+      legacySavedUsernameKey: 'resident.user',
+    });
+
+    await StorageService.init(preferences: prefs);
+
+    expect(prefs.getString(legacyCachedUserKey), '{"cached":"user"}');
+    expect(prefs.getBool(legacyRememberMeKey), isTrue);
+    expect(prefs.getString(legacySavedUsernameKey), 'resident.user');
+    expect(prefs.containsKey(cachedUserKey), isFalse);
+    expect(prefs.containsKey(rememberMeKey), isFalse);
+    expect(prefs.containsKey(savedUsernameKey), isFalse);
+  });
+
   test('saves new keys and clears only active session data', () async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(cachedUserKey, '{"cached":"user"}');
@@ -179,4 +196,34 @@ void main() {
     expect(prefs.getBool(rememberMeKey), isNull);
     expect(prefs.getString(savedUsernameKey), isNull);
   });
+}
+
+class _FailingWriteSharedPreferences implements SharedPreferences {
+  _FailingWriteSharedPreferences(this.values);
+
+  final Map<String, Object> values;
+
+  @override
+  bool containsKey(String key) => values.containsKey(key);
+
+  @override
+  bool? getBool(String key) => values[key] as bool?;
+
+  @override
+  String? getString(String key) => values[key] as String?;
+
+  @override
+  Future<bool> remove(String key) async {
+    values.remove(key);
+    return true;
+  }
+
+  @override
+  Future<bool> setBool(String key, bool value) async => false;
+
+  @override
+  Future<bool> setString(String key, String value) async => false;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }

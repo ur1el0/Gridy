@@ -32,8 +32,9 @@ class StorageService {
   /// Initializes preferences and loads tokens before the app uses this service.
   static Future<StorageService> init({
     FlutterSecureStorage? secureStorage,
+    SharedPreferences? preferences,
   }) async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = preferences ?? await SharedPreferences.getInstance();
     final secureStore = secureStorage ?? FlutterSecureStorage();
     final storage = StorageService(prefs, secureStorage: secureStore);
 
@@ -100,7 +101,8 @@ class StorageService {
     if (!_prefs.containsKey(key)) {
       final legacyValue = _prefs.getString(legacyKey);
       if (legacyValue != null) {
-        await _prefs.setString(key, legacyValue);
+        final saved = await _prefs.setString(key, legacyValue);
+        if (!saved) return;
       }
     }
     await _prefs.remove(legacyKey);
@@ -110,7 +112,8 @@ class StorageService {
     if (!_prefs.containsKey(key)) {
       final legacyValue = _prefs.getBool(legacyKey);
       if (legacyValue != null) {
-        await _prefs.setBool(key, legacyValue);
+        final saved = await _prefs.setBool(key, legacyValue);
+        if (!saved) return;
       }
     }
     await _prefs.remove(legacyKey);
