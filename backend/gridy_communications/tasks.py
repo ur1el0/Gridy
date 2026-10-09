@@ -12,8 +12,8 @@ def async_send_fcm_topic_notification(topic, title, body, data=None):
     try:
         response = send_fcm_topic_notification(topic, title, body, data)
         return {"status": "success", "response": str(response)}
-    except Exception:
-        logger.exception("Background topic notification failed.")
+    except Exception as exc:
+        logger.error("Background topic notification failed (%s).", type(exc).__name__)
         return {"status": "error", "error": "Notification delivery failed"}
 
 @async_task
@@ -29,6 +29,6 @@ def send_notification_to_user_task(user_id, title, body, data=None):
     except User.DoesNotExist:
         logger.warning("Push notification recipient no longer exists.")
         return {"status": "error", "error": "User not found"}
-    except Exception:
-        logger.exception("Background user notification failed.")
+    except Exception as exc:
+        logger.error("Background user notification failed (%s).", type(exc).__name__)
         return {"status": "error", "error": "Notification delivery failed"}

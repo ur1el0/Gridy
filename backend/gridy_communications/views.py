@@ -98,7 +98,11 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
                 data={"announcement_id": str(instance.id)}
             )
         except Exception as e:
-            logger.error(f"Failed to send FCM notification for Announcement {instance.id}: {e}")
+            logger.error(
+                "Announcement FCM notification failed for record %s (%s).",
+                instance.id,
+                type(e).__name__,
+            )
 
 class FCMDeviceViewSet(viewsets.ModelViewSet):
     serializer_class = FCMDeviceSerializer

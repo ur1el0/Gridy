@@ -23,7 +23,10 @@ class GridyCommunicationsConfig(AppConfig):
             try:
                 firebase_admin.initialize_app(credentials.Certificate(key_path))
             except Exception as exc:
-                logger.exception("Firebase Admin SDK initialization failed.")
+                logger.error(
+                    "Firebase Admin SDK initialization failed (%s).",
+                    type(exc).__name__,
+                )
                 if not settings.DEBUG and not settings.IS_TESTING:
                     raise ImproperlyConfigured(
                         'Production push notifications require valid '
