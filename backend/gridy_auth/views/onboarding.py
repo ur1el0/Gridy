@@ -89,7 +89,7 @@ class BarangayApplicationViewSet(
 
         with transaction.atomic():
             application = get_object_or_404(
-                self.get_queryset().select_for_update(),
+                self.get_queryset().select_for_update(of=("self",)),
                 pk=pk,
             )
             if application.status != BarangayApplication.Status.PENDING:
