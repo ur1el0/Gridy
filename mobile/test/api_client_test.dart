@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
 import 'package:mobile/core/network/api_client.dart';
+import 'package:mobile/core/network/api_exception.dart';
 
 void main() {
   test(
@@ -84,5 +85,52 @@ void main() {
     expect(await apiClient.refreshAccessToken(), isFalse);
     expect(apiClient.accessToken, 'old-access-token');
     expect(apiClient.cookieHeader, 'refresh_token=old-refresh-token');
+  });
+
+  test('does not expose unexpected exception details in API errors', () async {
+    final mockClient = MockClient(
+      (_) async => throw StateError('private server path and credentials'),
+    );
+    addTearDown(mockClient.close);
+
+    final apiClient = ApiClient(
+      client: mockClient,
+      baseUrl: 'https://example.test',
+    );
+
+    await expectLater(
+      apiClient.get('/health/', requiresAuth: false),
+      throwsA(
+        isA<ApiException>().having(
+          (error) => error.message,
+          'message',
+          'The request failed. Please try again.',
+        ),
+      ),
+    );
+  });
+
+  test('does not return server exception details in API errors', () async {
+    final mockClient = MockClient(
+      (_) async =>
+          http.Response('{"detail":"private traceback and credentials"}', 500),
+    );
+    addTearDown(mockClient.close);
+
+    final apiClient = ApiClient(
+      client: mockClient,
+      baseUrl: 'https://example.test',
+    );
+
+    await expectLater(
+      apiClient.get('/health/', requiresAuth: false),
+      throwsA(
+        isA<ApiException>().having(
+          (error) => error.message,
+          'message',
+          'The service could not complete this request. Please try again.',
+        ),
+      ),
+    );
   });
 }
