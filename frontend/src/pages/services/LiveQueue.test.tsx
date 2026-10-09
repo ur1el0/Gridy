@@ -137,6 +137,39 @@ describe('LiveQueue Component', () => {
         expect(screen.queryByRole('button', { name: /call q-001/i })).not.toBeInTheDocument();
     });
 
+    it('shows priority and regular tickets in separate waiting lanes', async () => {
+        vi.mocked(axiosPrivate.get).mockResolvedValueOnce({
+            data: {
+                results: [
+                    ...mockTickets,
+                    {
+                        ticket_id: 3,
+                        ticket_number: 'Q-003',
+                        service_type: 'Residency Certificate',
+                        resident_name: 'Priority Resident',
+                        status: 'WAITING',
+                        is_priority: true,
+                        created_at: '2026-08-14T08:10:00Z',
+                    },
+                ],
+            },
+        } as never);
+
+        renderQueue();
+
+        await screen.findByText('Priority Resident');
+        const priorityLane = screen.getByText('Priority Queue').closest('tbody');
+        const regularLane = screen.getByText('Regular Queue').closest('tbody');
+        const priorityResident = screen.getByText('Priority Resident').closest('tr');
+        const regularResident = screen.getByText('Resident One').closest('tr');
+
+        expect(priorityLane).not.toBeNull();
+        expect(regularLane).not.toBeNull();
+        expect(priorityLane).toContainElement(priorityResident);
+        expect(regularLane).toContainElement(regularResident);
+        expect(priorityLane!.compareDocumentPosition(regularLane!) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    });
+
     it('requires an admin-entered reason and uses the audited priority endpoint', async () => {
         renderQueue('ADMIN');
 

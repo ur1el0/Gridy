@@ -68,5 +68,23 @@ Architectural guarantee ensuring data belonging to Barangay A (residents, cleara
 ### Live Queue Ticker
 Hybrid physical-digital lobby system coordinating paper ticket slips with real-time mobile push and desktop web displays to prevent hall congestion.
 
+### Priority Queue Rotation
+The `Next Ticket` policy that serves up to two waiting priority tickets for each regular ticket while both groups are waiting. If one group is empty, staff serve the other group. The quota restarts at Manila midnight.
+
+### Assistance Request
+A resident-submitted request for barangay aid or allowance. Barangay officials review and record the decision; Gridy does not automate eligibility or promise funds.
+
+### Payment Verification
+The manual check by barangay staff that a GCash transfer reference matches an actual received transfer. A reference entered by a resident alone does not authorize document release; staff must verify the payment and record the official receipt.
+
+### Public Announcement Page
+A read-only, publicly accessible Gridy page that displays a barangay's announcements. Requests and other transactions remain inside the authenticated Gridy portal. Gridy does not control replies on external social platforms.
+
+### After-Hours Incident Report
+A resident-submitted safety report that field officials triage through the existing incident-report workflow when live chat is unavailable. Immediate danger requires contacting the appropriate emergency service or barangay hotline.
+
+### Presentation Data
+Clearly labeled synthetic records used for local demonstrations and analytics. Demo seed commands are restricted to an explicitly confirmed local database and are never part of production startup.
+
 ### Incident Triage
 Four-tier categorization (`MINOR`, `MODERATE`, `HAZARD`, `EMERGENCY`) determining priority response workflows and Tanod field dispatches for reported community hazards.

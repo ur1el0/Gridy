@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../core/theme/app_colors.dart';
 
 /// Quick services section providing immediate access to common resident actions
@@ -7,6 +8,7 @@ class QuickServicesSection extends StatelessWidget {
   final VoidCallback? onReportIssue;
   final VoidCallback? onBarangayHotline;
   final VoidCallback? onMyReports;
+  final VoidCallback? onRequestAid;
 
   const QuickServicesSection({
     super.key,
@@ -14,6 +16,7 @@ class QuickServicesSection extends StatelessWidget {
     this.onReportIssue,
     this.onBarangayHotline,
     this.onMyReports,
+    this.onRequestAid,
   });
 
   @override
@@ -50,6 +53,20 @@ class QuickServicesSection extends StatelessWidget {
                 onTap: onReportIssue,
               ),
             ),
+          ],
+        ),
+        const SizedBox(height: 12),
+        Row(
+          children: [
+            Expanded(
+              child: _QuickServiceCard(
+                icon: Icons.volunteer_activism_outlined,
+                title: 'Request Assistance',
+                onTap: onRequestAid,
+              ),
+            ),
+            const SizedBox(width: 14),
+            const Expanded(child: SizedBox.shrink()),
           ],
         ),
         const SizedBox(height: 12),
@@ -104,10 +121,7 @@ class _QuickServiceCard extends StatelessWidget {
             offset: const Offset(0, 3),
           ),
         ],
-        border: Border.all(
-          color: const Color(0xFFF1F5F9),
-          width: 1.2,
-        ),
+        border: Border.all(color: const Color(0xFFF1F5F9), width: 1.2),
       ),
       child: Material(
         color: Colors.transparent,
@@ -116,7 +130,10 @@ class _QuickServiceCard extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(16),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 12.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 14.0,
+              vertical: 12.0,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -127,11 +144,7 @@ class _QuickServiceCard extends StatelessWidget {
                     color: const Color(0xFFEFF6FF),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(
-                    icon,
-                    color: AppColors.primaryNavy,
-                    size: 18,
-                  ),
+                  child: Icon(icon, color: AppColors.primaryNavy, size: 18),
                 ),
                 Text(
                   title,

@@ -1,16 +1,25 @@
 from datetime import date, timedelta
 from django.core.management.base import BaseCommand
 from django.utils import timezone
+from gridy_auth.management.commands.demo_seed_safety import require_local_demo_database
 from gridy_auth.models import User, Barangay, Resident
-from gridy_communications.models import Announcement, ActivitySchedule, EmergencyHotline
+from gridy_communications.models import Announcement, ActivitySchedule
 from gridy_services.models import DocumentRequest, QueueTicket
 
 
 class Command(BaseCommand):
-    help = "Seed approved partner barangays (Ibabang Dupay & Daungan) with authentic users, announcements, and services."
+    help = "Seed local synthetic barangay accounts and starter records for development."
+
+    def add_arguments(self, parser):
+        parser.add_argument(
+            "--confirm-demo-only",
+            action="store_true",
+            help="Confirm that this is a local development or presentation database.",
+        )
 
     def handle(self, *args, **options):
-        self.stdout.write(self.style.NOTICE("Seeding approved partner barangays..."))
+        require_local_demo_database(confirmed=options["confirm_demo_only"])
+        self.stdout.write(self.style.NOTICE("Seeding local synthetic barangay fixtures..."))
 
         # ---------------------------------------------------------------------
         # 1. Partner Barangays Provisioning
@@ -18,8 +27,8 @@ class Command(BaseCommand):
         dupay, _ = Barangay.objects.get_or_create(
             name="Barangay Ibabang Dupay",
             defaults={
-                "captain_name": "Hon. Alberto M. Rodil",
-                "office_contact": "Ibabang Dupay Barangay Hall, Lucena City | (042) 710-2345",
+                "captain_name": "Synthetic demo record — not a real official",
+                "office_contact": "Demo data only; confirm official contact information separately.",
             }
         )
         self.stdout.write(self.style.SUCCESS(f"Provisioned: {dupay.name}"))
@@ -27,8 +36,8 @@ class Command(BaseCommand):
         daungan, _ = Barangay.objects.get_or_create(
             name="Barangay Daungan",
             defaults={
-                "captain_name": "Hon. Bernardo C. Portes",
-                "office_contact": "Daungan Barangay Hall, Pagbilao, Quezon | (042) 731-1234",
+                "captain_name": "Synthetic demo record — not a real official",
+                "office_contact": "Demo data only; confirm official contact information separately.",
             }
         )
         self.stdout.write(self.style.SUCCESS(f"Provisioned: {daungan.name}"))
@@ -48,52 +57,52 @@ class Command(BaseCommand):
         admin_dupay, created = User.objects.get_or_create(
             username="admin_dupay",
             defaults={
-                "email": "captain.dupay@gridy.local",
-                "first_name": "Alberto",
-                "last_name": "Rodil",
+                "email": "admin.dupay@example.invalid",
+                "first_name": "Demo",
+                "last_name": "Official Dupay",
                 "role": User.Role.ADMIN,
                 "barangay": dupay,
                 "is_staff": True,
             }
         )
         if created:
-            admin_dupay.set_password("Password123!")
+            admin_dupay.set_unusable_password()
             admin_dupay.save()
 
         tanod_dupay, created = User.objects.get_or_create(
             username="tanod_dupay",
             defaults={
-                "email": "tanod.dupay@gridy.local",
-                "first_name": "Rogelio",
-                "last_name": "Alcala",
+                "email": "field.dupay@example.invalid",
+                "first_name": "Demo",
+                "last_name": "Field Officer Dupay",
                 "role": User.Role.FIELD_OFFICIAL,
                 "barangay": dupay,
             }
         )
         if created:
-            tanod_dupay.set_password("Password123!")
+            tanod_dupay.set_unusable_password()
             tanod_dupay.save()
 
         resident_dupay, created = User.objects.get_or_create(
             username="resident_dupay",
             defaults={
-                "email": "resident.dupay@gridy.local",
-                "first_name": "Maria",
-                "last_name": "Santos",
+                "email": "resident.dupay@example.invalid",
+                "first_name": "Demo",
+                "last_name": "Resident Dupay",
                 "role": User.Role.RESIDENT,
                 "barangay": dupay,
             }
         )
         if created:
-            resident_dupay.set_password("Password123!")
+            resident_dupay.set_unusable_password()
             resident_dupay.save()
             Resident.objects.get_or_create(
                 user=resident_dupay,
                 defaults={
-                    "full_name": "Maria Santos",
+                    "full_name": "Demo Resident Dupay",
                     "birth_date": date(1996, 4, 18),
                     "voter_status": True,
-                    "contact_number": "09181234567",
+                    "contact_number": "",
                     "purok": "Purok 3 - Sampaguita",
                     "is_verified": True,
                 }
@@ -103,38 +112,38 @@ class Command(BaseCommand):
         admin_daungan, created = User.objects.get_or_create(
             username="admin_daungan",
             defaults={
-                "email": "captain.daungan@gridy.local",
-                "first_name": "Bernardo",
-                "last_name": "Portes",
+                "email": "admin.daungan@example.invalid",
+                "first_name": "Demo",
+                "last_name": "Official Daungan",
                 "role": User.Role.ADMIN,
                 "barangay": daungan,
                 "is_staff": True,
             }
         )
         if created:
-            admin_daungan.set_password("Password123!")
+            admin_daungan.set_unusable_password()
             admin_daungan.save()
 
         resident_daungan, created = User.objects.get_or_create(
             username="resident_daungan",
             defaults={
-                "email": "resident.daungan@gridy.local",
-                "first_name": "Danilo",
-                "last_name": "Villanueva",
+                "email": "resident.daungan@example.invalid",
+                "first_name": "Demo",
+                "last_name": "Resident Daungan",
                 "role": User.Role.RESIDENT,
                 "barangay": daungan,
             }
         )
         if created:
-            resident_daungan.set_password("Password123!")
+            resident_daungan.set_unusable_password()
             resident_daungan.save()
             Resident.objects.get_or_create(
                 user=resident_daungan,
                 defaults={
-                    "full_name": "Danilo Villanueva",
+                    "full_name": "Demo Resident Daungan",
                     "birth_date": date(1988, 11, 24),
                     "voter_status": True,
-                    "contact_number": "09209876543",
+                    "contact_number": "",
                     "purok": "Purok Baybayin",
                     "is_verified": True,
                 }
@@ -223,18 +232,18 @@ class Command(BaseCommand):
         # 3. Community Announcements
         # ---------------------------------------------------------------------
         Announcement.objects.get_or_create(
-            title="Annual Barangay Assembly & Financial Transparency Report",
+            title="DEMO: Community Assembly and Financial Report",
             defaults={
-                "content": "Notice is hereby given to all residents of Barangay Ibabang Dupay for the First Semester General Assembly. Financial reports and upcoming infrastructure projects will be presented.",
+                "content": "Synthetic presentation announcement. Replace with a verified barangay notice before publication.",
                 "is_pinned": True,
                 "created_by": admin_dupay,
             }
         )
 
         Announcement.objects.get_or_create(
-            title="Fisherfolk Registration & Coastal Welfare Drive",
+            title="DEMO: Coastal Community Services Notice",
             defaults={
-                "content": "Barangay Daungan, in coordination with the Pagbilao Municipal Agriculture Office, invites all local fishermen for the annual registration and banca safety tagging.",
+                "content": "Synthetic presentation announcement. Replace with a verified barangay notice before publication.",
                 "is_pinned": True,
                 "created_by": admin_daungan,
             }
@@ -244,9 +253,9 @@ class Command(BaseCommand):
         # 4. Activity Schedules
         # ---------------------------------------------------------------------
         ActivitySchedule.objects.get_or_create(
-            title="Free Anti-Rabies Vaccination for Domestic Pets",
+            title="DEMO: Community Pet Health Activity",
             defaults={
-                "description": "Lucena City Veterinary Office will conduct a mass rabies vaccination drive at the Ibabang Dupay Covered Court.",
+                "description": "Synthetic presentation activity. Confirm the schedule and service provider before publication.",
                 "event_datetime": timezone.now() + timedelta(days=5),
                 "location": "Ibabang Dupay Multi-Purpose Covered Court",
                 "created_by": admin_dupay,
@@ -254,9 +263,9 @@ class Command(BaseCommand):
         )
 
         ActivitySchedule.objects.get_or_create(
-            title="Coastal Resource Management & Mangrove Planting",
+            title="DEMO: Community Coastal Activity",
             defaults={
-                "description": "Join the youth council and volunteer fisherfolk in planting 500 mangrove saplings along the coastal shoreline.",
+                "description": "Synthetic presentation activity. Confirm the schedule and partners before publication.",
                 "event_datetime": timezone.now() + timedelta(days=7),
                 "location": "Daungan Coastal Shoreline Zone",
                 "created_by": admin_daungan,
@@ -264,19 +273,19 @@ class Command(BaseCommand):
         )
 
         # ---------------------------------------------------------------------
-        # 5. Authentic Document Requests (with LGU statutory fees)
+        # 5. Synthetic Document Requests
         # ---------------------------------------------------------------------
         DocumentRequest.objects.get_or_create(
             user=resident_dupay,
             document_type="Barangay Clearance",
             defaults={
                 "barangay": dupay,
-                "purpose": "Local Employment Requirement",
+                "purpose": "Synthetic demonstration request",
                 "urgency_tag": DocumentRequest.UrgencyTag.REGULAR,
                 "status": DocumentRequest.Status.READY_FOR_PICKUP,
                 "fee_amount": 50.00,
-                "or_number": "OR-2026-0891",
-                "admin_notes": "Requirements verified; applicant is a bona fide resident.",
+                "or_number": "DEMO-OR-001",
+                "admin_notes": "Synthetic presentation record; not an official receipt.",
             }
         )
 
@@ -285,12 +294,12 @@ class Command(BaseCommand):
             document_type="Certificate of Indigency",
             defaults={
                 "barangay": daungan,
-                "purpose": "Hospital Medical Assistance",
+                "purpose": "Synthetic demonstration request",
                 "urgency_tag": DocumentRequest.UrgencyTag.URGENT,
                 "status": DocumentRequest.Status.RELEASED,
                 "fee_amount": 0.00,
                 "or_number": "EXEMPT",
-                "admin_notes": "Verified indigent household by Barangay Social Worker.",
+                "admin_notes": "Synthetic presentation record; not an eligibility decision.",
             }
         )
 
@@ -299,7 +308,7 @@ class Command(BaseCommand):
             document_type="Certificate of Indigency",
             defaults={
                 "barangay": cotta,
-                "purpose": "Phase 48 seed fixture",
+                "purpose": "Synthetic presentation record",
                 "urgency_tag": DocumentRequest.UrgencyTag.REGULAR,
                 "status": DocumentRequest.Status.PENDING,
                 "fee_amount": 0.00,
@@ -312,7 +321,7 @@ class Command(BaseCommand):
             document_type="Barangay Clearance",
             defaults={
                 "barangay": cotta,
-                "purpose": "Phase 48 seed fixture; local fee not verified",
+                "purpose": "Synthetic presentation record; local fee not verified",
                 "urgency_tag": DocumentRequest.UrgencyTag.REGULAR,
                 "status": DocumentRequest.Status.PENDING,
                 "fee_amount": 0.00,
@@ -368,4 +377,4 @@ class Command(BaseCommand):
             }
         )
         
-        self.stdout.write(self.style.SUCCESS("Successfully seeded all partner barangays and services."))
+        self.stdout.write(self.style.SUCCESS("Successfully seeded local synthetic barangay fixtures."))

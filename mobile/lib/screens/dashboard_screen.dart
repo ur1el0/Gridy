@@ -1,8 +1,10 @@
 import 'hotlines_screen.dart';
 import 'report_issue_screen.dart';
 import '../services/push_notification_service.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+
 import '../core/network/api_client.dart';
 import '../core/theme/app_colors.dart';
 import '../models/user_model.dart';
@@ -22,16 +24,13 @@ import '../services/storage_service.dart';
 import 'profile_screen.dart';
 import 'my_issues_screen.dart';
 import 'announcements_screen.dart';
+import 'aid_requests_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final DashboardService? dashboardService;
   final AuthService? authService;
 
-  const DashboardScreen({
-    super.key,
-    this.dashboardService,
-    this.authService,
-  });
+  const DashboardScreen({super.key, this.dashboardService, this.authService});
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -120,7 +119,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
         preferredSize: const Size.fromHeight(64),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20.0,
+              vertical: 8.0,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
@@ -184,8 +186,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         user != null && user.fullName.isNotEmpty
                             ? user.fullName[0].toUpperCase()
                             : (user != null && user.username.isNotEmpty
-                                ? user.username[0].toUpperCase()
-                                : 'C'),
+                                  ? user.username[0].toUpperCase()
+                                  : 'C'),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w700,
@@ -203,7 +205,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryNavy),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  AppColors.primaryNavy,
+                ),
               ),
             )
           : RefreshIndicator(
@@ -211,7 +215,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
               color: AppColors.primaryNavy,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20.0,
+                  vertical: 12.0,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -231,13 +238,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       onAnnouncementsTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const AnnouncementsScreen()),
+                          MaterialPageRoute(
+                            builder: (_) => const AnnouncementsScreen(),
+                          ),
                         );
                       },
                       onPendingRequestsTap: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const DocumentsScreen()),
+                          MaterialPageRoute(
+                            builder: (_) => const DocumentsScreen(),
+                          ),
                         );
                       },
                     ),
@@ -256,19 +267,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       onReportIssue: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const ReportIssueScreen()),
+                          MaterialPageRoute(
+                            builder: (_) => const ReportIssueScreen(),
+                          ),
                         );
                       },
                       onBarangayHotline: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const HotlinesScreen()),
+                          MaterialPageRoute(
+                            builder: (_) => const HotlinesScreen(),
+                          ),
                         );
                       },
                       onMyReports: () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const MyIssuesScreen()),
+                          MaterialPageRoute(
+                            builder: (_) => const MyIssuesScreen(),
+                          ),
+                        );
+                      },
+                      onRequestAid: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const AidRequestsScreen(),
+                          ),
                         );
                       },
                     ),
@@ -278,7 +303,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     RecentNotificationsSection(
                       notifications: _data.notifications,
                       onViewAll: () => _showNotificationModalSheet(context),
-                      onNotificationTap: (item) => _showNotificationDetailModal(context, item),
+                      onNotificationTap: (item) =>
+                          _showNotificationDetailModal(context, item),
                     ),
 
                     const SizedBox(height: 24),
@@ -295,12 +321,18 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               mainAxisSize: MainAxisSize.min,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text('Location: ${activity.location}',
-                                    style: const TextStyle(fontWeight: FontWeight.bold)),
+                                Text(
+                                  'Location: ${activity.location}',
+                                  style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                                 const SizedBox(height: 8),
-                                Text(activity.description.isNotEmpty
-                                    ? activity.description
-                                    : 'No additional details provided.'),
+                                Text(
+                                  activity.description.isNotEmpty
+                                      ? activity.description
+                                      : 'No additional details provided.',
+                                ),
                               ],
                             ),
                             actions: [
@@ -383,7 +415,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: AppColors.primaryNavy.withValues(alpha: 0.1),
                           borderRadius: BorderRadius.circular(12),
@@ -411,7 +446,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         : ListView.separated(
                             controller: scrollController,
                             itemCount: notifications.length,
-                            separatorBuilder: (_, _) => const Divider(height: 20),
+                            separatorBuilder: (_, _) =>
+                                const Divider(height: 20),
                             itemBuilder: (context, index) {
                               final item = notifications[index];
                               return Row(
@@ -420,7 +456,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   Container(
                                     padding: const EdgeInsets.all(8),
                                     decoration: BoxDecoration(
-                                      color: item.type == NotificationType.approved
+                                      color:
+                                          item.type == NotificationType.approved
                                           ? const Color(0xFFDCFCE7)
                                           : const Color(0xFFFEF3C7),
                                       shape: BoxShape.circle,
@@ -429,7 +466,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       item.type == NotificationType.approved
                                           ? Icons.check_circle_rounded
                                           : Icons.info_rounded,
-                                      color: item.type == NotificationType.approved
+                                      color:
+                                          item.type == NotificationType.approved
                                           ? const Color(0xFF15803D)
                                           : const Color(0xFFB45309),
                                       size: 20,
@@ -438,7 +476,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   const SizedBox(width: 12),
                                   Expanded(
                                     child: Column(
-                                      crossAxisAlignment: CrossAxisAlignment.start,
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
                                         Text(
                                           item.title,
@@ -473,7 +512,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
     );
   }
 
-  void _showNotificationDetailModal(BuildContext context, NotificationItemModel item) {
+  void _showNotificationDetailModal(
+    BuildContext context,
+    NotificationItemModel item,
+  ) {
     showModalBottomSheet(
       context: context,
       backgroundColor: Colors.white,

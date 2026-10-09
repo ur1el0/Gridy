@@ -1,6 +1,7 @@
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
+from django.db import transaction
 from django.db.models import Q
 from django.template.loader import get_template
 from django.http import HttpResponse
@@ -9,10 +10,16 @@ from xhtml2pdf import pisa
 from gridy_auth.models import User
 from gridy_auth.permissions import (
     IsBarangayOfficial,
+    IsResident,
     IsResidentOrBarangayOfficial,
 )
 from gridy_services.models import DocumentRequest
-from gridy_services.serializers import DocumentRequestSerializer, DocumentRequestReviewSerializer
+from gridy_services.serializers import (
+    DocumentRequestSerializer,
+    DocumentRequestReviewSerializer,
+    PaymentReferenceSerializer,
+    PaymentReviewSerializer,
+)
 from gridy_communications.tasks import send_notification_to_user_task
 from gridy_audit.services import log_action
 from gridy_audit.models import AuditLog
@@ -25,8 +32,11 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
         # Authenticated users can list, view, and download their own approved PDFs
         if self.action in ['list', 'retrieve', 'generate_pdf']:
             return [permissions.IsAuthenticated()]
-        
-        if self.action == 'create':
+
+        if self.action == "submit_payment_reference":
+            return [permissions.IsAuthenticated(), IsResident()]
+
+        if self.action == "create":
             return [
                 permissions.IsAuthenticated(),
                 IsResidentOrBarangayOfficial(),
@@ -160,31 +170,89 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
 
     @action(detail=True, methods=['patch'], permission_classes=[IsBarangayOfficial])
     def validate(self, request, pk=None):
-        document_request = self.get_object()
-        serializer = DocumentRequestReviewSerializer(
-            document_request,
-            data=request.data,
-            partial=True,
-        )
-        serializer.is_valid(raise_exception=True)
-        document_request = serializer.save()
+        with transaction.atomic():
+            document_request = DocumentRequest.objects.select_for_update().get(
+                pk=self.get_object().pk
+            )
+            serializer = DocumentRequestReviewSerializer(
+                document_request,
+                data=request.data,
+                partial=True,
+            )
+            serializer.is_valid(raise_exception=True)
+            document_request = serializer.save()
+            if document_request.fee_amount <= 0:
+                document_request.payment_method = ""
+                document_request.payment_reference = ""
+                document_request.payment_status = (
+                    DocumentRequest.PaymentStatus.NOT_REQUIRED
+                )
+                document_request.payment_review_note = ""
+            elif document_request.payment_status == (
+                DocumentRequest.PaymentStatus.NOT_REQUIRED
+            ):
+                document_request.payment_status = (
+                    DocumentRequest.PaymentStatus.UNPAID
+                )
 
-        recipient_desc = (
-            document_request.user.username
-            if document_request.user
-            else document_request.walkin_name
-        )
+            if document_request.status == DocumentRequest.Status.RELEASED:
+                if document_request.fee_amount > 0 and not document_request.or_number:
+                    raise ValidationError({
+                        "or_number": (
+                            "An official receipt number is required before release."
+                        )
+                    })
+                if document_request.fee_amount > 0:
+                    if document_request.payment_method == (
+                        DocumentRequest.PaymentMethod.CASH
+                    ):
+                        document_request.payment_status = (
+                            DocumentRequest.PaymentStatus.VERIFIED
+                        )
+                    elif document_request.payment_method == (
+                        DocumentRequest.PaymentMethod.GCASH
+                    ):
+                        if document_request.payment_status != (
+                            DocumentRequest.PaymentStatus.VERIFIED
+                        ):
+                            raise ValidationError({
+                                "payment_status": (
+                                    "Verify the GCash transfer before releasing "
+                                    "this document."
+                                )
+                            })
+                    else:
+                        raise ValidationError({
+                            "payment_method": (
+                                "Record whether payment was made by cash or GCash."
+                            )
+                        })
 
-        log_action(
-            user=request.user,
-            action_type=AuditLog.ActionType.DOCUMENT_ACTION,
-            description=(
-                f"Validated document request #{document_request.id} "
-                f"({document_request.document_type}) for {recipient_desc} "
-                f"as {document_request.get_status_display()}."
-            ),
-            request=request
-        )
+            document_request.save(
+                update_fields=[
+                    "payment_method",
+                    "payment_reference",
+                    "payment_status",
+                    "payment_review_note",
+                    "updated_at",
+                ]
+            )
+            recipient_desc = (
+                document_request.user.username
+                if document_request.user
+                else document_request.walkin_name
+            )
+
+            log_action(
+                user=request.user,
+                action_type=AuditLog.ActionType.DOCUMENT_ACTION,
+                description=(
+                    f"Validated document request #{document_request.id} "
+                    f"({document_request.document_type}) for {recipient_desc} "
+                    f"as {document_request.get_status_display()}."
+                ),
+                request=request
+            )
 
         if document_request.user:
             send_notification_to_user_task.delay(
@@ -197,6 +265,117 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
                 data={"request_id": str(document_request.id)},
             )
 
+        return Response(
+            DocumentRequestSerializer(document_request).data,
+            status=status.HTTP_200_OK,
+        )
+
+    @action(
+        detail=True,
+        methods=["post"],
+        permission_classes=[IsResident],
+        url_path="payment-reference",
+        url_name="payment-reference",
+    )
+    def submit_payment_reference(self, request, pk=None):
+        serializer = PaymentReferenceSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        with transaction.atomic():
+            document_request = DocumentRequest.objects.select_for_update().get(
+                pk=self.get_object().pk,
+                user_id=request.user.id,
+            )
+            if document_request.status != DocumentRequest.Status.READY_FOR_PICKUP:
+                raise ValidationError({
+                    "detail": "Payment details can be submitted after the document is ready."
+                })
+            if document_request.fee_amount <= 0:
+                raise ValidationError({
+                    "detail": "This request does not require a payment."
+                })
+            if document_request.payment_status not in {
+                DocumentRequest.PaymentStatus.UNPAID,
+                DocumentRequest.PaymentStatus.REJECTED,
+            }:
+                raise ValidationError({
+                    "detail": "This payment is already awaiting review or verified."
+                })
+
+            document_request.payment_method = DocumentRequest.PaymentMethod.GCASH
+            document_request.payment_reference = serializer.validated_data[
+                "payment_reference"
+            ]
+            document_request.payment_status = (
+                DocumentRequest.PaymentStatus.PENDING_VERIFICATION
+            )
+            document_request.payment_review_note = ""
+            document_request.save(
+                update_fields=[
+                    "payment_method",
+                    "payment_reference",
+                    "payment_status",
+                    "payment_review_note",
+                    "updated_at",
+                ]
+            )
+            log_action(
+                user=request.user,
+                action_type=AuditLog.ActionType.DOCUMENT_ACTION,
+                description=(
+                    f"Resident submitted a GCash reference for document request "
+                    f"#{document_request.id}."
+                ),
+                request=request,
+            )
+        return Response(
+            DocumentRequestSerializer(document_request).data,
+            status=status.HTTP_200_OK,
+        )
+
+    @action(
+        detail=True,
+        methods=["patch"],
+        permission_classes=[IsBarangayOfficial],
+        url_path="payment-review",
+        url_name="payment-review",
+    )
+    def review_payment(self, request, pk=None):
+        serializer = PaymentReviewSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        with transaction.atomic():
+            document_request = DocumentRequest.objects.select_for_update().get(
+                pk=self.get_object().pk
+            )
+            if (
+                document_request.payment_method != DocumentRequest.PaymentMethod.GCASH
+                or document_request.payment_status
+                != DocumentRequest.PaymentStatus.PENDING_VERIFICATION
+            ):
+                raise ValidationError({
+                    "detail": "Only pending GCash references can be reviewed."
+                })
+
+            payment_status = serializer.validated_data["status"]
+            note = serializer.validated_data.get("note", "").strip()
+            document_request.payment_status = payment_status
+            document_request.payment_review_note = note
+            document_request.save(
+                update_fields=[
+                    "payment_status",
+                    "payment_review_note",
+                    "updated_at",
+                ]
+            )
+            log_action(
+                user=request.user,
+                action_type=AuditLog.ActionType.DOCUMENT_ACTION,
+                description=(
+                    f"Official {request.user.username} marked GCash payment for "
+                    f"document request #{document_request.id} as {payment_status}."
+                    + (f" Note: {note}" if note else "")
+                ),
+                request=request,
+            )
         return Response(
             DocumentRequestSerializer(document_request).data,
             status=status.HTTP_200_OK,

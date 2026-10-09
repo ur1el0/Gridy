@@ -25,6 +25,8 @@ import { ForgotPassword } from "./pages/auth/ForgotPassword";
 import { ResetPassword } from "./pages/auth/ResetPassword";
 import { ResidentsHub } from "./pages/community/ResidentsHub";
 import { PublicQueueDisplay } from "./pages/public/PublicQueueDisplay";
+import { PublicAnnouncements } from "./pages/public/PublicAnnouncements";
+import { AidRequests } from "./pages/citizen/AidRequests";
 
 function RootRedirect() {
     const { isAuthenticated, user } = useAuth();
@@ -52,6 +54,7 @@ export function App() {
                         <Route path="/forgot-password" element={<ForgotPassword />} />
                         <Route path="/reset-password" element={<ResetPassword />} />
                         <Route path="/public/queue/:barangayId" element={<PublicQueueDisplay />} />
+                        <Route path="/public/announcements/:barangayId" element={<PublicAnnouncements />} />
 
                         {/* Admin & Official Workstation (Tier 1 & Tier 2) */}
                         <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'DILG_ADMIN']} />}>
@@ -68,6 +71,9 @@ export function App() {
                                 <Route path="/residents" element={<ResidentsHub />} />
                                 <Route path="/verifications" element={<Navigate to="/residents?tab=verifications" replace />} />    
                                 <Route path="/reports" element={<IssueReports />} />
+                                <Route element={<ProtectedRoute allowedRoles={['ADMIN']} />}>
+                                    <Route path="/aid-requests" element={<AidRequests />} />
+                                </Route>
                                 <Route path="/profile" element={<AdminProfile />} />
                             </Route>
                         </Route>
@@ -79,6 +85,7 @@ export function App() {
                                 <Route path="/portal/documents" element={<CitizenDocuments />} />
                                 <Route path="/portal/queue" element={<CitizenQueue />} />
                                 <Route path="/portal/bulletin" element={<CitizenBulletin />} />
+                                <Route path="/portal/aid" element={<AidRequests />} />
                             </Route>
                         </Route>
 

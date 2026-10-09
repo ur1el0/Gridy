@@ -19,7 +19,7 @@ We decommissioned Celery, Redis, Channels, and Daphne across the entire codebase
    - `gridy_db` (PostgreSQL 15)
    - `gridy_backend` (Django DRF)
    - `gridy_frontend` (Vite + Nginx)
-4. **Partner Beneficiary Seeding:** Provisioned authentic local entities, puroks, and statutory clearance fees for **Barangay Ibabang Dupay (Lucena City)** and **Barangay Daungan (Pagbilao, Quezon)** via `seed_barangays.py`.
+4. **Presentation Fixtures:** `seed_barangays` and `seed_demo_analytics` create clearly labeled synthetic records for local development and presentations. Demo-only accounts have unusable passwords; the seed commands require an explicit flag, `DEBUG=True`, and a local database host. Production builds only migrate the schema and never create fixture users or records.
 
 ## Consequences
 - **Positive:** System memory footprint reduced by over 60%; eliminated container migration races and port conflicts; 100% test suite pass rate (40/40 backend, 10/10 frontend); flawless alignment with the defended Capstone 1 manuscript.

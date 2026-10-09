@@ -2,7 +2,7 @@
 
 Gridy is a web and mobile barangay information and service management system developed for local government operations. The repository contains a Django REST Framework API, a React Single Page Application (providing administrative desk operations and citizen self-service kiosk mode), and a Flutter mobile application for residents and field personnel.
 
-> **Operational Scope Note:** Gridy is evaluated as a local development prototype for municipal operations. Requisition revenue is audited through municipal Treasury Official Receipts (O.R.) and statutory fee schedules rather than commercial payment gateways. Mobile and web notifications are delivered through Firebase Cloud Messaging and SMTP email. Both web and mobile applications operate as connected REST clients requiring active network connectivity to the Django API.
+> **Operational Scope Note:** Gridy supports cash collection recorded with a municipal Treasury Official Receipt and resident-submitted GCash transfer references that barangay staff verify manually. It does not process or settle payments through a payment gateway. Assistance requests are reviewed by barangay officials without automated eligibility decisions. Public announcements can be shared outward, while applications and follow-up transactions remain in Gridy. After-hours safety concerns use the incident-reporting workflow for field staff triage.
 
 ## Database Baseline & Multi-Tenancy
 
@@ -32,6 +32,9 @@ The Django REST Framework backend exposes the following contract-driven endpoint
 - `POST /api/v1/auth/login/` & `POST /api/v1/auth/token/refresh/`: JWT authentication with rotating `HttpOnly` cookie session tracking;
 - `POST /api/v1/auth/logout/` & `GET /api/v1/auth/me/`: Session invalidation and authenticated profile resolution;
 - `/api/v1/document-requests/`: Requisition lifecycle, fee assessment, municipal O.R. assignment, and authenticated PDF certificate generation;
+- `/api/v1/aid-requests/`: Resident assistance requests and barangay-scoped manual review;
+- `/api/v1/document-requests/<id>/payment-reference/` and `/payment-review/`: GCash transfer reference submission and staff verification;
+- `/api/v1/public/barangays/<id>/announcements/`: Read-only announcement content suitable for sharing outside the authenticated portal;
 - `/api/v1/tickets/`: Daily sequential ticket issuance, desk status progression (`WAITING` -> `SERVING` -> `COMPLETED`), and public lobby display;
 - `/api/v1/reports/`: Citizen hazard reporting with multipart image streaming to Cloudinary storage;
 - `/api/v1/announcements/` & `/api/v1/activities/`: Community bulletins and youth/barangay calendar schedules;
@@ -63,8 +66,12 @@ cd Gridy
 # Boot the 3-Tier Stack
 docker compose up -d --build
 
-# Seed Initial Evaluation Data
-docker compose exec backend python manage.py seed_barangays
+# Seed local-only synthetic starter accounts and records. These accounts have no
+# usable passwords; register real presentation staff through the normal flow.
+docker compose exec backend python manage.py seed_barangays --confirm-demo-only
+
+# Add synthetic history for charts and dashboards on a local demo database.
+docker compose exec backend python manage.py seed_demo_analytics --confirm-demo-only
 ```
 
 - **Web Portal:** [http://localhost:8080/](http://localhost:8080/)
@@ -82,7 +89,9 @@ source venv/bin/activate
 pip install -r backend/requirements.txt
 
 python backend/manage.py migrate
-python backend/manage.py seed_barangays
+python backend/manage.py seed_barangays --confirm-demo-only
+# Optional, local presentation data only; never run against a deployed database.
+python backend/manage.py seed_demo_analytics --confirm-demo-only
 python backend/manage.py runserver
 ```
 
@@ -109,13 +118,13 @@ flutter run
 The repository includes automated regression test suites covering authorization boundaries, serializers, transactions, and UI workflows across all three architectural tiers:
 
 ```bash
-# Run Backend Test Suite (40 unit & integration tests)
+# Run Backend Test Suite
 ./venv/bin/pytest backend
 
-# Run Frontend Test Suite (11 tests across 5 suites)
+# Run Frontend Test Suite
 npm --prefix frontend test -- --run
 
-# Run Mobile Test Suite (42 unit & widget tests)
+# Run Mobile Test Suite
 cd mobile && flutter test
 
 # Run Django System Sanity Check

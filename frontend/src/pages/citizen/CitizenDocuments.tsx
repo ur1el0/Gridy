@@ -19,6 +19,11 @@ interface DocumentRequest {
     document_type: string;
     purpose: string;
     status: string;
+    fee_amount?: number | string | null;
+    payment_method?: string;
+    payment_reference?: string;
+    payment_status?: string;
+    payment_review_note?: string;
     admin_notes?: string;
     created_at: string;
 }
@@ -37,6 +42,8 @@ export const CitizenDocuments: React.FC = () => {
     const [submitting, setSubmitting] = useState(false);
     const [downloadingId, setDownloadingId] = useState<number | null>(null);
     const [cancellingId, setCancellingId] = useState<number | null>(null);
+    const [paymentReference, setPaymentReference] = useState<Record<number, string>>({});
+    const [submittingPaymentId, setSubmittingPaymentId] = useState<number | null>(null);
 
     // Form State
     const [documentType, setDocumentType] = useState(DOCUMENT_TYPES[0]);
@@ -122,6 +129,31 @@ export const CitizenDocuments: React.FC = () => {
             toast.error('Could not generate PDF. Please contact the barangay hall.');
         } finally {
             setDownloadingId(null);
+        }
+    };
+
+    const handleSubmitPaymentReference = async (id: number) => {
+        const reference = paymentReference[id]?.trim();
+        if (!reference) {
+            toast.error('Enter the GCash transaction reference.');
+            return;
+        }
+
+        setSubmittingPaymentId(id);
+        try {
+            const response = await axiosPrivate.post(
+                `/document-requests/${id}/payment-reference/`,
+                { payment_reference: reference },
+            );
+            setRequests((current) => current.map((request) =>
+                request.id === id ? { ...request, ...response.data } : request,
+            ));
+            setPaymentReference((current) => ({ ...current, [id]: '' }));
+            toast.success('Reference sent to barangay staff for manual verification.');
+        } catch (err: any) {
+            toast.error(err.response?.data?.detail || 'Could not submit the payment reference.');
+        } finally {
+            setSubmittingPaymentId(null);
         }
     };
 
@@ -238,6 +270,42 @@ export const CitizenDocuments: React.FC = () => {
                                             </td>
                                             <td className="py-4 px-6">
                                                 {getStatusBadge(req.status)}
+                                                {Number(req.fee_amount ?? 0) > 0 && (
+                                                    <div className="mt-2 space-y-1 text-xs text-slate-600">
+                                                        <p>Assessment: ₱{Number(req.fee_amount).toFixed(2)}</p>
+                                                        <p>Payment: {(req.payment_status || 'UNPAID').replace(/_/g, ' ').toLowerCase()}</p>
+                                                        {req.payment_review_note && <p className="text-rose-700">Staff note: {req.payment_review_note}</p>}
+                                                        {req.status.toUpperCase() === 'READY_FOR_PICKUP' &&
+                                                            req.payment_method !== 'CASH' &&
+                                                            ['UNPAID', 'REJECTED'].includes(req.payment_status || 'UNPAID') && (
+                                                                <form
+                                                                    className="mt-2 space-y-2"
+                                                                    onSubmit={(event) => {
+                                                                        event.preventDefault();
+                                                                        void handleSubmitPaymentReference(req.id);
+                                                                    }}
+                                                                >
+                                                                    <p>Confirm the recipient using your barangay’s official announcement or posted instructions before transferring. Submit the transaction reference for staff verification.</p>
+                                                                    <input
+                                                                        required
+                                                                        maxLength={100}
+                                                                        aria-label={`GCash reference for request ${req.id}`}
+                                                                        value={paymentReference[req.id] ?? ''}
+                                                                        onChange={(event) => setPaymentReference((current) => ({ ...current, [req.id]: event.target.value }))}
+                                                                        placeholder="GCash transaction reference"
+                                                                        className="w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs"
+                                                                    />
+                                                                    <button
+                                                                        type="submit"
+                                                                        disabled={submittingPaymentId === req.id}
+                                                                        className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50"
+                                                                    >
+                                                                        {submittingPaymentId === req.id ? 'Submitting…' : 'Submit GCash reference'}
+                                                                    </button>
+                                                                </form>
+                                                            )}
+                                                    </div>
+                                                )}
                                                 {req.admin_notes && (
                                                     <p className="text-[11px] text-slate-500 mt-1 italic">
                                                         Note: {req.admin_notes}
@@ -246,6 +314,11 @@ export const CitizenDocuments: React.FC = () => {
                                             </td>
                                             <td className="py-4 px-6 text-right">
                                                 {isAvailableForDownload ? (
+                                                    <div className="flex flex-col items-end gap-2">
+                                                        {req.status.toUpperCase() === 'READY_FOR_PICKUP' &&
+                                                            req.payment_status === 'PENDING_VERIFICATION' && (
+                                                                <span className="text-xs font-medium text-amber-700">Waiting for payment verification</span>
+                                                            )}
                                                     <button
                                                         onClick={() => handleDownloadPdf(req.id, req.document_type)}
                                                         disabled={downloadingId === req.id}
@@ -258,6 +331,7 @@ export const CitizenDocuments: React.FC = () => {
                                                         )}
                                                         <span>Download PDF</span>
                                                     </button>
+                                                    </div>
                                                 ) : req.status.toUpperCase() === 'PENDING' ? (
                                                     <button
                                                         onClick={() => handleCancelRequest(req.id)}

@@ -85,10 +85,16 @@ python backend/manage.py makemigrations
 python backend/manage.py migrate
 ```
 
-Seed the default barangay administrative entities, fee schedules, and initial fixtures:
+For a local development database only, seed synthetic barangays and starter records. The created accounts have unusable passwords; create staff login accounts through Gridy's normal registration process.
 ```bash
-python backend/manage.py seed_barangays
+python backend/manage.py seed_barangays --confirm-demo-only
 ```
+
+To populate dashboards with dated synthetic records for a local presentation, run:
+```bash
+python backend/manage.py seed_demo_analytics --confirm-demo-only
+```
+Both commands refuse to run with `DEBUG=False` or a non-local database host. Never seed a deployed database.
 
 Create a superuser account to access the Django administration console:
 ```bash
