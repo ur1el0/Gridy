@@ -56,14 +56,21 @@ Authentication implements a dual-token strategy designed to protect against XSS 
 
 ### 1. Docker Compose (Recommended)
 
-The 3-tier web stack is fully containerized:
+The 3-tier web stack is containerized for local development and demos. This Compose setup runs Django's development server and is not a production deployment configuration.
 
 ```bash
 # Clone the repository
 git clone https://github.com/ur1el0/Gridy.git
 cd Gridy
 
-# Boot the 3-Tier Stack
+# Configure local Compose and Django settings
+cp .env.example .env
+cp backend/.env.example backend/.env
+# Set POSTGRES_PASSWORD and DATABASE_URL in .env using the same local database
+# credentials. Use host `db`, database `gridy_db`, and port `5432` in the URL.
+# ADMIN_REGISTRATION_PASSKEY in backend/.env to a unique secret.
+
+# Boot the local 3-Tier Stack
 docker compose up -d --build
 
 # Seed local-only synthetic starter accounts and records. These accounts have no
@@ -78,6 +85,8 @@ docker compose exec backend python manage.py seed_demo_analytics --confirm-demo-
 - **REST API Root:** [http://localhost:8000/api/v1/](http://localhost:8000/api/v1/)
 - **OpenAPI Documentation:** [http://localhost:8000/api/schema/swagger-ui/](http://localhost:8000/api/schema/swagger-ui/)
 - **Telemetry Health Check:** [http://localhost:8000/api/v1/health/](http://localhost:8000/api/v1/health/)
+
+The local PostgreSQL port is bound to `127.0.0.1:5433`. Production deployments must use their deployment platform's service configuration and provide valid SMTP credentials plus a Firebase service-account key path; see [deployment and observability](docs/walkthrough/deployment_observability.md).
 
 ### 2. Local Setup (Without Docker)
 
