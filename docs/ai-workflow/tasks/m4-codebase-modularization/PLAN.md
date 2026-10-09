@@ -26,7 +26,7 @@
 - **Validation:**
   ```bash
   venv/bin/pytest backend --collect-only -q
-  DEBUG=True venv/bin/python backend/manage.py test --verbosity 1
+  DEBUG=True venv/bin/python backend/manage.py test gridy_auth gridy_services gridy_communications gridy_reports --verbosity 1
   ```
 - **Expected outcome:** A clean M4 implementation base, a source/test mapping, and a baseline count. If the base is not isolated, stop with no source changes.
 
@@ -114,7 +114,7 @@
 - **Validation:**
   ```bash
   venv/bin/pytest backend
-  DEBUG=True venv/bin/python backend/manage.py test --verbosity 1
+  DEBUG=True venv/bin/python backend/manage.py test gridy_auth gridy_services gridy_communications gridy_reports --verbosity 1
   DEBUG=True venv/bin/python backend/manage.py check
   DEBUG=True venv/bin/python backend/manage.py makemigrations --check --dry-run
   npm --prefix frontend run lint
