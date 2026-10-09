@@ -57,6 +57,17 @@ jobs:
           DJANGO_SETTINGS_MODULE=config.settings python -c "import django; django.setup(); from django.db import connection; assert connection.vendor == 'postgresql', connection.vendor"
           python -m pytest --cov=. --cov-fail-under=75
 
+  backend-image:
+    needs: backend-tests
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Build Backend Docker Image
+        run: docker build --tag gridy-backend:ci ./backend
+
   frontend-tests:
     runs-on: ubuntu-latest
     steps:
