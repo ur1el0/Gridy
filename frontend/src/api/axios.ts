@@ -2,15 +2,18 @@ import axios from 'axios';
 
 // Get the base URL from Vite environment variables, default to local Django server
 const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://127.0.0.1:8000/api/v1';
+const REQUEST_TIMEOUT_MS = 15_000;
 
 export const axiosPrivate = axios.create({
     baseURL: BASE_URL,
+    timeout: REQUEST_TIMEOUT_MS,
     headers: { 'Content-Type': 'application/json' },
     withCredentials: true, // IMPORTANT: Allows sending HttpOnly cookies for JWT
 });
 
 export const axiosPublic = axios.create({
     baseURL: BASE_URL,
+    timeout: REQUEST_TIMEOUT_MS,
     headers: { 'Content-Type': 'application/json' },
 });
 
@@ -39,7 +42,8 @@ axiosPrivate.interceptors.response.use(
                 // Attempt to refresh the token. We use a fresh axios instance to avoid looping
                 // but ensure `withCredentials` is true to send the HttpOnly refresh token cookie.
                 const response = await axios.post(`${BASE_URL}/auth/token/refresh/`, {}, {
-                    withCredentials: true
+                    withCredentials: true,
+                    timeout: REQUEST_TIMEOUT_MS,
                 });
 
                 const { access } = response.data;

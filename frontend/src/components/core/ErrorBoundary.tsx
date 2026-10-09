@@ -38,16 +38,16 @@ export class ErrorBoundary extends Component<Props, State> {
                                 <AlertOctagon className="w-12 h-12" />
                             </div>
                         </div>
-                        <h1 className="text-2xl font-bold text-slate-900 mb-2">System Error</h1>
-                        <p className="text-slate-500 mb-8">
-                            We've encountered an unexpected issue while rendering this screen. Our IT team has been notified.
+                        <h1 className="text-2xl font-bold text-slate-900 mb-2">This screen couldn’t load</h1>
+                        <p role="alert" className="text-slate-500 mb-8">
+                            Reload the page. If the problem continues, contact your barangay administrator.
                         </p>
                         <button
                         onClick={() => window.location.reload()}
                         className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-indigo-600 text-white font-semibold rounded-lg hover:bg-indigo-700 transition-colors"
                         >
                             <RefreshCcw className="w-5 h-5" />
-                            Reload Application
+                            Reload page
                         </button>
                     </div>
                 </div>
