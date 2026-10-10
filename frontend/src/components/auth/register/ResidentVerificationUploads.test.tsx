@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen } from '@testing-library/react';
 import { describe, expect, it, vi } from 'vitest';
 import { ResidentVerificationUploads } from './ResidentVerificationUploads';
 
@@ -25,5 +25,41 @@ describe('ResidentVerificationUploads', () => {
 
         expect(screen.getByLabelText('SELECT PRIMARY RESIDENCY PROOF')).toBeInTheDocument();
         expect(screen.getByLabelText('SECONDARY ID Optional')).toBeInTheDocument();
+    });
+
+    it('exposes the collapsed and expanded states of the verification disclosure', () => {
+        const onToggleExpand = vi.fn();
+        const props = {
+            onToggleExpand,
+            philsysIdNumber: '',
+            onPhilsysIdNumberChange: vi.fn(),
+            philsysPhoto: null,
+            onPhilsysPhotoChange: vi.fn(),
+            utilityBillingType: 'Electric Bill',
+            onUtilityBillingTypeChange: vi.fn(),
+            utilityBillingPhoto: null,
+            onUtilityBillingPhotoChange: vi.fn(),
+            secondaryIdType: '',
+            onSecondaryIdTypeChange: vi.fn(),
+            secondaryIdPhoto: null,
+            onSecondaryIdPhotoChange: vi.fn(),
+        };
+        const { rerender } = render(
+            <ResidentVerificationUploads {...props} isExpanded={false} />,
+        );
+
+        const collapsedButton = screen.getByRole('button', {
+            name: /Identity & Residency Verification.*Tap to expand/i,
+        });
+        expect(collapsedButton).toHaveAttribute('aria-expanded', 'false');
+        expect(screen.queryByLabelText('SELECT PRIMARY RESIDENCY PROOF')).not.toBeInTheDocument();
+
+        fireEvent.click(collapsedButton);
+        expect(onToggleExpand).toHaveBeenCalledOnce();
+
+        rerender(<ResidentVerificationUploads {...props} isExpanded />);
+        expect(screen.getByRole('button', { name: /Tap to collapse verification documents/i }))
+            .toHaveAttribute('aria-expanded', 'true');
+        expect(screen.getByLabelText('SELECT PRIMARY RESIDENCY PROOF')).toBeVisible();
     });
 });

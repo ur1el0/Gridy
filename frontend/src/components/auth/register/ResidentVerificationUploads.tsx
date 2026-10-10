@@ -43,6 +43,7 @@ export const ResidentVerificationUploads: React.FC<ResidentVerificationUploadsPr
         <div className="border border-slate-200 rounded-xl bg-slate-50/70 overflow-hidden transition-all shadow-sm">
             <button
                 type="button"
+                aria-expanded={isExpanded}
                 onClick={onToggleExpand}
                 className="w-full flex items-center justify-between p-3.5 cursor-pointer text-left hover:bg-slate-100/70 transition-colors select-none"
             >
