@@ -1,7 +1,8 @@
 import toast from 'react-hot-toast';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useId, useState } from 'react';
 import { axiosPrivate } from '../../api/axios';
 import { getSafeApiErrorMessage } from '../../api/error-message';
+import { useModalFocus } from '../../hooks/useModalFocus';
 import { DocumentTable } from '../../components/documents/DocumentTable';
 import { ReviewDocumentModal } from '../../components/documents/ReviewDocumentModal';
 import { isFeeExemptDocumentType } from '../../utils/documentFees';
@@ -69,6 +70,11 @@ export const DocumentRequests: React.FC = () => {
     const [walkinPurok, setWalkinPurok] = useState('');
     const [newDocType, setNewDocType] = useState('Barangay Clearance');
     const [newPurpose, setNewPurpose] = useState('');
+    const walkinDialogTitleId = useId();
+    const walkinDialogRef = useModalFocus<HTMLDivElement>(
+        isCreateModalOpen,
+        () => setIsCreateModalOpen(false),
+    );
 
     const fetchRequests = async () => {
         try {
@@ -274,14 +280,23 @@ export const DocumentRequests: React.FC = () => {
             {/* Log Walk-in Clearance Modal */}
             {isCreateModalOpen && (
                 <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95">
+                    <div
+                        ref={walkinDialogRef}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby={walkinDialogTitleId}
+                        tabIndex={-1}
+                        className="bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden animate-in fade-in zoom-in-95"
+                    >
                         <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                             <div>
-                                <h3 className="text-base font-bold text-slate-900">Create Walk-in Request</h3>
+                                <h3 id={walkinDialogTitleId} className="text-base font-bold text-slate-900">Create Walk-in Request</h3>
                                 <p className="text-xs text-slate-500">Record an in-person resident's document request for staff review.</p>
                             </div>
                             <button 
                                 onClick={() => setIsCreateModalOpen(false)} 
+                                type="button"
+                                aria-label="Close walk-in request dialog"
                                 className="text-slate-400 hover:text-slate-600 rounded-lg p-1"
                             >
                                 <span className="text-2xl leading-none">&times;</span>
@@ -291,8 +306,9 @@ export const DocumentRequests: React.FC = () => {
                         <form onSubmit={handleCreateWalkinRequest} className="p-6 space-y-4 bg-white">
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">Resident Full Name *</label>
+                                    <label htmlFor="walkin-resident-name" className="block text-xs font-bold text-slate-700 mb-1">Resident Full Name *</label>
                                     <input 
+                                        id="walkin-resident-name"
                                         type="text"
                                         required
                                         value={walkinName}
@@ -302,8 +318,9 @@ export const DocumentRequests: React.FC = () => {
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-bold text-slate-700 mb-1">Purok / Zone</label>
+                                    <label htmlFor="walkin-purok" className="block text-xs font-bold text-slate-700 mb-1">Purok / Zone</label>
                                     <input 
+                                        id="walkin-purok"
                                         type="text"
                                         value={walkinPurok}
                                         onChange={(e) => setWalkinPurok(e.target.value)}
@@ -314,8 +331,9 @@ export const DocumentRequests: React.FC = () => {
                             </div>
 
                             <div>
-                                <label className="block text-xs font-bold text-slate-700 mb-1">Document Type</label>
+                                <label htmlFor="walkin-document-type" className="block text-xs font-bold text-slate-700 mb-1">Document Type</label>
                                 <select 
+                                    id="walkin-document-type"
                                     value={newDocType}
                                     onChange={(e) => setNewDocType(e.target.value)}
                                     className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary font-medium"
@@ -331,8 +349,9 @@ export const DocumentRequests: React.FC = () => {
                             </div>
                             
                             <div>
-                                <label className="block text-xs font-bold text-slate-700 mb-1">Purpose Statement *</label>
+                                <label htmlFor="walkin-purpose" className="block text-xs font-bold text-slate-700 mb-1">Purpose Statement *</label>
                                 <textarea 
+                                    id="walkin-purpose"
                                     required
                                     value={newPurpose}
                                     onChange={(e) => setNewPurpose(e.target.value)}
