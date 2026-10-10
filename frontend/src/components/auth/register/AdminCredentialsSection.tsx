@@ -32,6 +32,7 @@ export const AdminCredentialsSection: React.FC<AdminCredentialsSectionProps> = (
                 <label className="flex items-start gap-2.5 cursor-pointer">
                     <input
                         type="checkbox"
+                        required
                         checked={affirmation}
                         onChange={(e) => onAffirmationChange(e.target.checked)}
                         className="mt-0.5 w-4 h-4 text-[#091B35] rounded focus:ring-0 border-slate-300 cursor-pointer shrink-0"

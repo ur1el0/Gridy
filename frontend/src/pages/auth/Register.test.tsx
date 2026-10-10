@@ -45,12 +45,14 @@ describe('Register Component (Dual-Mode)', () => {
         expect(screen.getByRole('link', { name: /log in here/i })).toHaveAttribute('href', '/login');
     });
 
-    it('toggles to Administrative Registration when clicking the mode switch button', () => {
+    it('toggles to Administrative Registration when clicking the mode switch button', async () => {
         render(
             <BrowserRouter>
                 <Register />
             </BrowserRouter>
         );
+
+        await screen.findByRole('option', { name: /Barangay Ibabang Dupay/ });
 
         // Click the toggle button to switch to Staff/Admin mode
         const toggleButton = screen.getByTitle('Tap to switch registration type');
@@ -65,7 +67,10 @@ describe('Register Component (Dual-Mode)', () => {
         // Admin-Specific Inputs
         expect(screen.getByPlaceholderText('admin_captain')).toBeInTheDocument();
         expect(screen.getByRole('combobox')).toBeInTheDocument();
-        expect(screen.getByLabelText(/I affirm that I am an authorized barangay official or personnel/i)).toBeInTheDocument();
+        const affirmationCheckbox = screen.getByRole('checkbox', {
+            name: /I affirm that I am an authorized barangay official or personnel/i,
+        });
+        expect(affirmationCheckbox).toBeRequired();
         expect(screen.getByRole('button', { name: /create admin account/i })).toBeInTheDocument();
     });
 
