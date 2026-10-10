@@ -1,5 +1,6 @@
 import React from 'react';
 import { X, Search, ChevronsUpDown } from 'lucide-react';
+import { useModalFocus } from '../../hooks/useModalFocus';
 
 interface NewTicketModalProps {
     handleCloseManualModal: () => void;
@@ -34,9 +35,19 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
     setNotes,
     isSubmittingNew
 }) => {
+    const dialogTitleId = React.useId();
+    const dialogRef = useModalFocus<HTMLDivElement>(true, handleCloseManualModal);
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/40 backdrop-blur-xs">
-            <div className="bg-surface rounded-3xl shadow-2xl max-w-[480px] w-full p-8 relative animate-fade-in text-left">
+            <div
+                ref={dialogRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={dialogTitleId}
+                tabIndex={-1}
+                className="bg-surface rounded-3xl shadow-2xl max-w-[480px] w-full p-8 relative animate-fade-in text-left"
+            >
                 {/* Close Button */}
                 <button
                     type="button"
@@ -49,7 +60,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
 
                 {/* Header */}
                 <div className="pr-6">
-                    <h2 className="text-[22px] font-bold text-neutral-primary tracking-tight">
+                    <h2 id={dialogTitleId} className="text-[22px] font-bold text-neutral-primary tracking-tight">
                         Manual Queue Entry
                     </h2>
                     <p className="text-[13px] text-neutral-muted mt-1 leading-snug">

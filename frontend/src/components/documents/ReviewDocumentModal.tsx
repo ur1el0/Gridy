@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useId, useState, useEffect } from 'react';
 import type { DocumentRequest } from '../../pages/services/DocumentRequests';
 import { isFeeExemptDocumentType } from '../../utils/documentFees';
+import { useModalFocus } from '../../hooks/useModalFocus';
 
 interface ReviewDocumentModalProps {
     selectedRequest: DocumentRequest | null;
@@ -26,6 +27,8 @@ export const ReviewDocumentModal = ({
     const [paymentMethod, setPaymentMethod] = useState('');
     const [paymentReviewNote, setPaymentReviewNote] = useState('');
     const isFeeExempt = isFeeExemptDocumentType(selectedRequest?.document_type);
+    const dialogTitleId = useId();
+    const dialogRef = useModalFocus<HTMLDivElement>(Boolean(selectedRequest), closeModal);
 
     useEffect(() => {
         if (selectedRequest) {
@@ -57,12 +60,19 @@ export const ReviewDocumentModal = ({
                 <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-xs transition-opacity" onClick={closeModal} />
                 
                 <div className="fixed inset-y-0 right-0 max-w-lg w-full flex">
-                    <div className="w-full h-full bg-white shadow-2xl flex flex-col">
+                    <div
+                        ref={dialogRef}
+                        role="dialog"
+                        aria-modal="true"
+                        aria-labelledby={dialogTitleId}
+                        tabIndex={-1}
+                        className="w-full h-full bg-white shadow-2xl flex flex-col"
+                    >
                         
                         {/* Modal Header */}
                         <div className="px-6 py-5 border-b border-slate-200 flex justify-between items-center bg-slate-50">
                             <div className="flex items-center gap-3">
-                                <h3 className="text-lg font-bold text-slate-900">Request #{selectedRequest.id}</h3>
+                                <h3 id={dialogTitleId} className="text-lg font-bold text-slate-900">Request #{selectedRequest.id}</h3>
                                 {selectedRequest.is_walkin && (
                                     <span className="px-2.5 py-0.5 text-xs font-extrabold uppercase bg-amber-100 text-amber-800 rounded-md border border-amber-200">
                                         Walk-in Resident

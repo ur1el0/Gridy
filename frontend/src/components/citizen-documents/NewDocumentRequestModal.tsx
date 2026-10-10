@@ -1,6 +1,7 @@
 import React from 'react';
 import { Loader2, X } from 'lucide-react';
 import { DOCUMENT_TYPES } from './documentTypes';
+import { useModalFocus } from '../../hooks/useModalFocus';
 
 interface NewDocumentRequestModalProps {
     documentType: string;
@@ -20,11 +21,22 @@ export const NewDocumentRequestModal: React.FC<NewDocumentRequestModalProps> = (
     onPurposeChange,
     onClose,
     onSubmit,
-}) => (
+}) => {
+    const dialogTitleId = React.useId();
+    const dialogRef = useModalFocus<HTMLDivElement>(true, onClose);
+
+    return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-        <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
+        <div
+            ref={dialogRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={dialogTitleId}
+            tabIndex={-1}
+            className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150"
+        >
             <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-                <h3 className="text-lg font-extrabold text-slate-900">
+                <h3 id={dialogTitleId} className="text-lg font-extrabold text-slate-900">
                     Request Official Clearance
                 </h3>
                 <button
@@ -93,4 +105,5 @@ export const NewDocumentRequestModal: React.FC<NewDocumentRequestModalProps> = (
             </form>
         </div>
     </div>
-);
+    );
+};

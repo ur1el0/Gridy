@@ -36,6 +36,9 @@ export const ResidentVerificationUploads: React.FC<ResidentVerificationUploadsPr
     secondaryIdPhoto,
     onSecondaryIdPhotoChange,
 }) => {
+    const utilityBillingTypeId = React.useId();
+    const secondaryIdTypeId = React.useId();
+
     return (
         <div className="border border-slate-200 rounded-xl bg-slate-50/70 overflow-hidden transition-all shadow-sm">
             <button
@@ -92,10 +95,11 @@ export const ResidentVerificationUploads: React.FC<ResidentVerificationUploadsPr
                     {/* 2. Utility Billing Residency Proof */}
                     <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
                         <div>
-                            <label className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1">
+                            <label htmlFor={utilityBillingTypeId} className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1">
                                 SELECT PRIMARY RESIDENCY PROOF
                             </label>
                             <select
+                                id={utilityBillingTypeId}
                                 value={utilityBillingType}
                                 onChange={(e) => onUtilityBillingTypeChange(e.target.value)}
                                 className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-[#0284C7] rounded-lg text-xs font-semibold text-slate-700 outline-none transition-all cursor-pointer"
@@ -116,10 +120,11 @@ export const ResidentVerificationUploads: React.FC<ResidentVerificationUploadsPr
                     {/* 3. Secondary ID Proof */}
                     <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
                         <div>
-                            <label className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1 flex items-center gap-2">
+                            <label htmlFor={secondaryIdTypeId} className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1 flex items-center gap-2">
                                 SECONDARY ID <span className="text-[9px] font-bold text-slate-400 bg-slate-200 px-1.5 py-0.5 rounded uppercase">Optional</span>
                             </label>
                             <select
+                                id={secondaryIdTypeId}
                                 value={secondaryIdType}
                                 onChange={(e) => onSecondaryIdTypeChange(e.target.value)}
                                 className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-[#0284C7] rounded-lg text-xs font-semibold text-slate-700 outline-none transition-all cursor-pointer"
