@@ -1,96 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { NavLink, useNavigate } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { axiosPrivate } from '../../api/axios';
-import { Users, FileText, Hourglass, Banknote } from 'lucide-react';
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
-
-interface DashboardSummary {
-    total_residents: number;
-    document_requests: {
-    total: number;
-    pending: number;
-    approved: number;
-    rejected: number;
-    released: number;
-    total_revenue?: number
-    };
-    issue_reports: {
-    total: number;
-    pending: number;
-    in_progress: number;
-    resolved: number;
-    urgency_breakdown: {
-        low: number;
-        medium: number;
-        high: number;
-        urgent: number;
-    };
-    scenario_breakdown: {
-        peace_and_order: number;
-        public_health: number;
-        infrastructure: number;
-        environment: number;
-        other: number;
-    };
-        time_of_day: {
-            night_time: number;
-            day_time: number;
-        }
-    };
-        queue_activity: {
-        total_today: number;
-        serving_now: string | null;
-        waiting_count: number;
-    };
-    demographics?: {
-        purok_distribution: Record<string, number>
-        age_demographics: {
-            youth: number;
-            young_adult: number;
-            adult: number;
-            senior: number;
-        };
-    };
-}
-
-interface ActivityItem {
-    id: number;
-    title: string;
-    description: string;
-    location: string;
-    event_datetime: string;
-    created_at: string;
-}
-
-
-const COLORS = ['var(--brand-primary)', '#00C49F', '#FFBB28', '#FF8042', '#8884d8', '#82ca9d'];
-
-const MetricCardSkeleton = () => (
-    <div className="bg-surface rounded-large p-6 shadow-sm border border-border/80 flex flex-col justify-between animate-pulse">
-        <div>
-            <div className="w-10 h-10 rounded-medium bg-border"></div>
-            <div className="h-3 w-32 bg-border rounded mt-5"></div>
-            <div className="h-8 w-16 bg-border rounded mt-3"></div>
-        </div>
-    </div>
-);
-
-const ChartSkeleton = ({ title }: { title?: string }) => (
-    <div className="bg-surface rounded-large p-6 shadow-sm border border-border/80 animate-pulse">
-        <div className="h-5 w-48 bg-border rounded mb-6">
-            {title && <span className="sr-only">{title}</span>}
-        </div>
-        <div className="h-[250px] w-full bg-surface-subtle rounded-medium flex items-end justify-between px-4 pb-4">
-            <div className="w-12 h-[60%] bg-border rounded-t-sm"></div>
-            <div className="w-12 h-[80%] bg-border rounded-t-sm"></div>
-            <div className="w-12 h-[40%] bg-border rounded-t-sm"></div>
-            <div className="w-12 h-[100%] bg-border rounded-t-sm"></div>
-            <div className="w-12 h-[30%] bg-border rounded-t-sm"></div>
-        </div>
-    </div>
-);
-
 import { useAuth } from '../../context/auth-context';
+import { AppointmentsTable } from '../../components/admin-dashboard/AppointmentsTable';
+import { DemographicsCharts } from '../../components/admin-dashboard/DemographicsCharts';
+import { MetricCards } from '../../components/admin-dashboard/MetricCards';
+import { ScenarioBreakdownChart } from '../../components/admin-dashboard/ScenarioBreakdownChart';
+import type { ActivityItem, DashboardSummary } from '../../components/admin-dashboard/types';
 
 export const Dashboard: React.FC = () => {
     const { user } = useAuth();
@@ -100,7 +16,7 @@ export const Dashboard: React.FC = () => {
     const [loading, setLoading] = useState<boolean>(true);
     const [, setError] = useState<string | null>(null);
 
-     useEffect(() => {
+    useEffect(() => {
         if (user?.role === 'DILG_ADMIN') {
             navigate('/dilg-analytics', { replace: true });
         }
@@ -116,9 +32,9 @@ export const Dashboard: React.FC = () => {
             try {
                 const [summaryRes, activitiesRes] = await Promise.allSettled([
                     axiosPrivate.get('/dashboard/summary/', { signal: controller.signal }),
-                    axiosPrivate.get('/activities/', { signal: controller.signal })
+                    axiosPrivate.get('/activities/', { signal: controller.signal }),
                 ]);
-                        
+
                 if (isMounted) {
                     if (summaryRes.status === 'fulfilled') {
                         setSummaryData(summaryRes.value.data);
@@ -147,30 +63,31 @@ export const Dashboard: React.FC = () => {
         };
     }, [user?.role]);
 
-    const purokData = summaryData?.demographics?.purok_distribution 
-    ? Object.entries(summaryData.demographics.purok_distribution).map(([name, value]) => ({
-        name,
-        value
-    }))
-    : []
+    const purokData = summaryData?.demographics?.purok_distribution
+        ? Object.entries(summaryData.demographics.purok_distribution).map(([name, value]) => ({
+            name,
+            value,
+        }))
+        : [];
 
     const ageData = summaryData?.demographics?.age_demographics
-    ? [
-        { name: 'Youth (<18)', count: summaryData.demographics.age_demographics.youth },
-        { name: 'Young Adult', count: summaryData.demographics.age_demographics.young_adult },
-        { name: 'Adult', count: summaryData.demographics.age_demographics.adult },
-        { name: 'Senior (60+)', count: summaryData.demographics.age_demographics.senior },
-    ]
-    : []
+        ? [
+            { name: 'Youth (<18)', count: summaryData.demographics.age_demographics.youth },
+            { name: 'Young Adult', count: summaryData.demographics.age_demographics.young_adult },
+            { name: 'Adult', count: summaryData.demographics.age_demographics.adult },
+            { name: 'Senior (60+)', count: summaryData.demographics.age_demographics.senior },
+        ]
+        : [];
 
-    const scenarioData = summaryData?.issue_reports?.scenario_breakdown ? [
-    { name: 'Peace & Order', count: summaryData.issue_reports.scenario_breakdown.peace_and_order},
-    { name: 'Public Health', count: summaryData.issue_reports.scenario_breakdown.public_health},
-    { name: 'Infrastructure', count: summaryData.issue_reports.scenario_breakdown.infrastructure},
-    { name: 'Environment', count: summaryData.issue_reports.scenario_breakdown.environment},
-    { name: 'Other', count: summaryData.issue_reports.scenario_breakdown.other || 0 },
-    ]
-    : []
+    const scenarioData = summaryData?.issue_reports?.scenario_breakdown
+        ? [
+            { name: 'Peace & Order', count: summaryData.issue_reports.scenario_breakdown.peace_and_order },
+            { name: 'Public Health', count: summaryData.issue_reports.scenario_breakdown.public_health },
+            { name: 'Infrastructure', count: summaryData.issue_reports.scenario_breakdown.infrastructure },
+            { name: 'Environment', count: summaryData.issue_reports.scenario_breakdown.environment },
+            { name: 'Other', count: summaryData.issue_reports.scenario_breakdown.other || 0 },
+        ]
+        : [];
 
     if (user?.role === 'DILG_ADMIN') {
         return null;
@@ -178,7 +95,6 @@ export const Dashboard: React.FC = () => {
 
     return (
         <div className="space-y-6">
-            {/* Header / Title Section */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
                 <div>
                     <h1 className="text-2xl lg:text-[28px] font-extrabold text-neutral-primary tracking-tight">
@@ -188,7 +104,7 @@ export const Dashboard: React.FC = () => {
                         Real-time status of {user?.barangay?.name ? `Barangay ${user.barangay.name}` : 'your Barangay'} services and community records.
                     </p>
                 </div>
-                <button 
+                <button
                     onClick={() => navigate('/reports')}
                     className="bg-primary hover:bg-primary-hover active:bg-primary-hover text-primary-foreground px-5 py-2.5 rounded-medium text-sm font-semibold shadow-sm flex items-center gap-2 transition-all cursor-pointer w-fit shrink-0"
                 >
@@ -196,232 +112,10 @@ export const Dashboard: React.FC = () => {
                 </button>
             </div>
 
-            {/* Top Metric Cards Row (4 Cards) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-                {loading ? (
-                    <>
-                        <MetricCardSkeleton />
-                        <MetricCardSkeleton />
-                        <MetricCardSkeleton />
-                        <MetricCardSkeleton />
-                    </>
-                ) : (
-                    <>
-                        {/* Card 1: Total Registered Residents */}
-                        <div className="bg-surface rounded-large p-6 shadow-xs border border-border/80 flex flex-col justify-between hover:-translate-y-1 hover:shadow-md transition-all duration-300">
-                            <div>
-                                <div className="w-10 h-10 rounded-medium bg-primary/10 text-primary-text flex items-center justify-center">
-                                    <Users className="w-5 h-5" />
-                                </div>
-                                <h3 className="text-neutral-muted text-xs font-semibold uppercase tracking-wider mt-4">
-                                    Total Registered Residents
-                                </h3>
-                                <p className="text-3xl font-extrabold text-neutral-primary mt-1">
-                                    {summaryData?.total_residents?.toLocaleString() ?? '--'}                        
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Card 2: Pending Requests */}
-                        <div className="bg-surface rounded-large p-6 shadow-xs border border-border/80 flex flex-col justify-between hover:-translate-y-1 hover:shadow-md transition-all duration-300">
-                            <div>
-                                <div className="w-10 h-10 rounded-medium bg-feedback-danger-soft text-feedback-danger-text-strong flex items-center justify-center">
-                                    <FileText className="w-5 h-5" />
-                                </div>
-                                <h3 className="text-neutral-muted text-xs font-semibold uppercase tracking-wider mt-4">
-                                    Pending Requests
-                                </h3>
-                                <p className="text-3xl font-extrabold text-neutral-primary mt-1">
-                                    {summaryData !== null ? summaryData.document_requests.pending : '--'}
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Card 3: Active Issues */}
-                        <div className="bg-surface rounded-large p-6 shadow-xs border border-border/80 flex flex-col justify-between hover:-translate-y-1 hover:shadow-md transition-all duration-300">
-                            <div>
-                                <div className="w-10 h-10 rounded-medium bg-feedback-warning-soft text-feedback-warning flex items-center justify-center">
-                                    <Hourglass className="w-5 h-5" />
-                                </div>
-                                <h3 className="text-neutral-muted text-xs font-semibold uppercase tracking-wider mt-4">
-                                    Active Issues (In Progress)
-                                </h3>
-                                <p className="text-3xl font-extrabold text-neutral-primary mt-1">
-                                    {summaryData !== null ? summaryData.issue_reports.in_progress : '--'}
-                                </p>
-                            </div>
-                        </div>
-
-                        {/* Card 4: Clearance Collections */}
-                        <div className="bg-surface rounded-large p-6 shadow-xs border border-border/80 flex flex-col justify-between hover:-translate-y-1 hover:shadow-md transition-all duration-300">
-                            <div>
-                                <div className="w-10 h-10 rounded-medium bg-feedback-success-pale text-feedback-success-deep flex items-center justify-center">
-                                    <Banknote className="w-5 h-5" />
-                                </div>
-                                <h3 className="text-neutral-muted text-xs font-semibold uppercase tracking-wider mt-4">
-                                    Clearance Collections
-                                </h3>
-                                <p className="text-3xl font-extrabold text-neutral-primary mt-1">
-                                    ₱{summaryData?.document_requests?.total_revenue !== undefined 
-                                        ? summaryData.document_requests.total_revenue.toLocaleString('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
-                                        : '0.00'}
-                                </p>
-                            </div>
-                        </div>
-                    </>
-                )}
-            </div>
-            {/* Scenario Breakdown Row */}
-            {loading ? (
-                <ChartSkeleton title="Local Incident Scenarios" />
-            ) : (
-                <div className="bg-surface rounded-large p-6 shadow-xs border border-border/80 hover:-translate-y-1 hover:shadow-md transition-all duration-300">
-                    <h2 className="text-base font-bold text-neutral-primary mb-6">Local Incident Scenarios</h2>
-                    <div className="h-[250px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={scenarioData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--kapitbayan-color-border)" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--kapitbayan-color-text-muted)' }} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--kapitbayan-color-text-muted)' }} />
-                                <Tooltip cursor={{fill: 'rgba(239,68,68,0.05)'}} />
-                                <Bar dataKey="count" fill="var(--kapitbayan-color-danger)" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-            )}
-
-            {/* Demographics Row (2 Cards) */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Purok Distribution Pie Chart */}
-                <div className="bg-surface rounded-large p-6 shadow-xs border border-border/80">
-                    <h2 className="text-base font-bold text-neutral-primary mb-6">Purok Distribution</h2>
-                    <div className="h-[250px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <PieChart>
-                                <Pie
-                                    data={purokData}
-                                    cx="50%"
-                                    cy="50%"
-                                    innerRadius={60}
-                                    outerRadius={90}
-                                    paddingAngle={5}
-                                    dataKey="value"
-                                >
-                                    {purokData.map((_, index) => (
-                                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                    ))}
-                                </Pie>
-                                <Tooltip cursor={{fill: 'transparent'}} />
-                            </PieChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-
-                {/* Age Demographics Bar Chart */}
-                <div className="bg-surface rounded-large p-6 shadow-xs border border-border/80">
-                    <h2 className="text-base font-bold text-neutral-primary mb-6">Age Demographics</h2>
-                    <div className="h-[250px] w-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                            <BarChart data={ageData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--kapitbayan-color-border)" />
-                                <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--kapitbayan-color-text-muted)' }} />
-                                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: 'var(--kapitbayan-color-text-muted)' }} />
-                                <Tooltip cursor={{fill: 'rgba(0,71,186,0.05)'}} />
-                                <Bar dataKey="count" fill="var(--brand-primary)" radius={[4, 4, 0, 0]} maxBarSize={40} />
-                            </BarChart>
-                        </ResponsiveContainer>
-                    </div>
-                </div>
-            </div>
-
-            {/* Bottom Row: Today's Appointments Table & Hall Photo */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-                {/* Left: Today's Appointments Table Card */}
-                <div className="lg:col-span-12 bg-surface rounded-large p-6 shadow-xs border border-border/80 flex flex-col justify-between">
-                    <div>
-                        <div className="flex items-center justify-between mb-5">
-                            <h2 className="text-base lg:text-lg font-bold text-neutral-primary">
-                                Today's Appointments
-                            </h2>
-                            <NavLink 
-                                to="/communications" 
-                                className="text-xs lg:text-sm font-semibold text-primary-text hover:underline"
-                            >
-                                View All Schedule
-                            </NavLink>
-                        </div>
-
-                        <div className="overflow-x-auto">
-                            <table className="w-full text-left">
-                                <thead>
-                                    <tr className="bg-surface-table/70 text-neutral-muted text-[11px] font-bold uppercase tracking-wider">
-                                        <th className="py-2.5 px-4 rounded-l-lg">TIME / DATE</th>
-                                        <th className="py-2.5 px-4">EVENT</th>
-                                        <th className="py-2.5 px-4">LOCATION</th>
-                                        <th className="py-2.5 px-4 rounded-r-lg">STATUS</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="text-sm divide-y divide-surface-subtle">
-                                    {activities.length === 0 ? (
-                                        <tr>
-                                            <td colSpan={4} className="py-12 text-center text-sm text-neutral-hint font-medium">
-                                                No appointments or activities scheduled.
-                                            </td>
-                                        </tr>
-                                    ) : (
-                                        activities.slice(0, 5).map((act) => {
-                                            const dateObj = new Date(act.event_datetime);
-                                            const isValidDate = !isNaN(dateObj.getTime());
-                                            const timeFormatted = isValidDate
-                                                ? dateObj.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                                                : act.event_datetime;
-                                            const dateFormatted = isValidDate
-                                                ? dateObj.toLocaleDateString([], { month: 'short', day: 'numeric' })
-                                                : '';
-                                            const isUpcoming = isValidDate ? dateObj.getTime() >= Date.now() : true;
-                                            const initial = act.title ? act.title.charAt(0).toUpperCase() : 'A';
-
-                                            return (
-                                                <tr key={act.id} className="hover:bg-background/60 transition-colors">
-                                                    <td className="py-3.5 px-4 font-semibold text-neutral-primary whitespace-nowrap">
-                                                        <div>{timeFormatted}</div>
-                                                        {dateFormatted && (
-                                                            <div className="text-xs text-neutral-hint font-normal">{dateFormatted}</div>
-                                                        )}
-                                                    </td>
-                                                    <td className="py-3.5 px-4 whitespace-nowrap">
-                                                        <div className="flex items-center gap-2.5">
-                                                            <div className="w-7 h-7 rounded-pill bg-primary/15 text-primary-text font-bold text-xs flex items-center justify-center shrink-0">
-                                                                {initial}
-                                                            </div>
-                                                            <span className="font-bold text-neutral-primary">{act.title}</span>
-                                                        </div>
-                                                    </td>
-                                                    <td className="py-3.5 px-4 text-neutral-secondary font-medium whitespace-nowrap">
-                                                        {act.location || '--'}
-                                                    </td>
-                                                    <td className="py-3.5 px-4 whitespace-nowrap">
-                                                        <span
-                                                            className={`px-3 py-1 rounded-pill text-xs font-semibold inline-block ${
-                                                                isUpcoming
-                                                                    ? 'bg-primary/10 text-primary-text'
-                                                                    : 'bg-surface-waiting text-neutral-muted'
-                                                            }`}
-                                                        >
-                                                            {isUpcoming ? 'Upcoming' : 'Completed'}
-                                                        </span>
-                                                    </td>
-                                                </tr>
-                                            );
-                                        })
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-                </div>
-            </div>
+            <MetricCards loading={loading} summary={summaryData} />
+            <ScenarioBreakdownChart loading={loading} data={scenarioData} />
+            <DemographicsCharts purokData={purokData} ageData={ageData} />
+            <AppointmentsTable activities={activities} />
         </div>
-    );  
-}
+    );
+};
