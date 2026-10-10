@@ -50,3 +50,7 @@ htmlcov/
 .agents/workflows
 
 STATUS.md
+
+docs/ai-workflow
+.codex
+.aws

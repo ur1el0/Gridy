@@ -46,7 +46,7 @@ export const NewTicketModal: React.FC<NewTicketModalProps> = ({
                 aria-modal="true"
                 aria-labelledby={dialogTitleId}
                 tabIndex={-1}
-                className="bg-surface rounded-3xl shadow-2xl max-w-[480px] w-full p-8 relative animate-fade-in text-left"
+                className="bg-surface rounded-3xl shadow-2xl max-w-[480px] w-full max-h-[calc(100dvh-2rem)] overflow-y-auto overscroll-contain p-8 relative animate-fade-in text-left"
             >
                 {/* Close Button */}
                 <button
