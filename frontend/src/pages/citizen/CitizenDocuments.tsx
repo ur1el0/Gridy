@@ -5,37 +5,13 @@ import { getSafeApiErrorMessage } from '../../api/error-message';
 import { InlineErrorState } from '../../components/ui/InlineErrorState';
 import { NewDocumentRequestModal } from '../../components/citizen-documents/NewDocumentRequestModal';
 import { DOCUMENT_TYPES } from '../../components/citizen-documents/documentTypes';
-import { PaymentReferenceForm } from '../../components/citizen-documents/PaymentReferenceForm';
-import type { PaymentRecipient } from '../../components/citizen-documents/types';
+import { DocumentRequestRow } from '../../components/citizen-documents/DocumentRequestRow';
+import type { DocumentRequest, PaymentRecipient } from '../../components/citizen-documents/types';
 import {
-    FileText,
     Plus,
-    Download,
-    Clock,
-    CheckCircle2,
-    AlertCircle,
     Loader2,
     FileCheck2,
-    Trash2,
 } from 'lucide-react';
-
-interface DocumentRequest {
-    id: number;
-    document_type: string;
-    purpose: string;
-    status: string;
-    fee_amount?: number | string | null;
-    payment_method?: string;
-    payment_reference?: string;
-    payment_status?: string;
-    payment_review_note?: string;
-    payment_recipient?: number | null;
-    payment_recipient_name_snapshot?: string | null;
-    payment_recipient_identifier_snapshot?: string | null;
-    payment_instructions_snapshot?: string | null;
-    admin_notes?: string;
-    created_at: string;
-}
 
 export const CitizenDocuments: React.FC = () => {
     const [requests, setRequests] = useState<DocumentRequest[]>([]);
@@ -178,42 +154,6 @@ export const CitizenDocuments: React.FC = () => {
         }
     };
 
-    const getStatusBadge = (status: string) => {
-        switch (status.toUpperCase()) {
-            case 'PENDING':
-                return (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                        <Clock className="w-3.5 h-3.5" /> Pending Review
-                    </span>
-                );
-            case 'PROCESSING':
-                return (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Processing
-                    </span>
-                );
-            case 'READY_FOR_PICKUP':
-            case 'RELEASED':
-                return (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Ready / Released
-                    </span>
-                );
-            case 'REJECTED':
-                return (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                        <AlertCircle className="w-3.5 h-3.5" /> Rejected
-                    </span>
-                );
-            default:
-                return (
-                    <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
-                        {status}
-                    </span>
-                );
-        }
-    };
-
     return (
         <div className="space-y-6">
             {/* Header Banner */}
@@ -277,107 +217,33 @@ export const CitizenDocuments: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {requests.map((req) => {
-                                    const isAvailableForDownload = ['READY_FOR_PICKUP', 'RELEASED'].includes(req.status.toUpperCase());
-                                    return (
-                                        <tr key={req.id} className="hover:bg-slate-50/70 transition-colors">
-                                            <td className="py-4 px-6 font-semibold text-slate-900 flex items-center gap-2">
-                                                <FileText className="w-4 h-4 text-primary-text" />
-                                                {req.document_type}
-                                            </td>
-                                            <td className="py-4 px-6 text-slate-600">
-                                                {req.purpose || '—'}
-                                            </td>
-                                            <td className="py-4 px-6 text-slate-500 text-xs">
-                                                {new Date(req.created_at).toLocaleDateString(undefined, {
-                                                    year: 'numeric',
-                                                    month: 'short',
-                                                    day: 'numeric',
-                                                })}
-                                            </td>
-                                            <td className="py-4 px-6">
-                                                {getStatusBadge(req.status)}
-                                                {Number(req.fee_amount ?? 0) > 0 && (
-                                                    <div className="mt-2 space-y-1 text-xs text-slate-600">
-                                                        <p>Assessment: ₱{Number(req.fee_amount).toFixed(2)}</p>
-                                                        <p>Payment: {(req.payment_status || 'UNPAID').replace(/_/g, ' ').toLowerCase()}</p>
-                                                        {req.payment_review_note && <p className="text-rose-700">Staff note: {req.payment_review_note}</p>}
-                                                        {req.status.toUpperCase() === 'READY_FOR_PICKUP' &&
-                                                            req.payment_method !== 'CASH' &&
-                                                            ['UNPAID', 'REJECTED'].includes(req.payment_status || 'UNPAID') && (
-                                                                <PaymentReferenceForm
-                                                                    requestId={req.id}
-                                                                    recipients={paymentRecipients}
-                                                                    selectedRecipientId={selectedRecipientId[req.id] || ''}
-                                                                    paymentReference={paymentReference[req.id] ?? ''}
-                                                                    submitting={submittingPaymentId === req.id}
-                                                                    onRecipientChange={(value) =>
-                                                                        setSelectedRecipientId((current) => ({
-                                                                            ...current,
-                                                                            [req.id]: value,
-                                                                        }))
-                                                                    }
-                                                                    onPaymentReferenceChange={(value) =>
-                                                                        setPaymentReference((current) => ({
-                                                                            ...current,
-                                                                            [req.id]: value,
-                                                                        }))
-                                                                    }
-                                                                    onSubmit={(event) => {
-                                                                        event.preventDefault();
-                                                                        void handleSubmitPaymentReference(req.id);
-                                                                    }}
-                                                                />
-                                                            )}
-                                                    </div>
-                                                )}
-                                                {req.admin_notes && (
-                                                    <p className="text-[11px] text-slate-500 mt-1 italic">
-                                                        Note: {req.admin_notes}
-                                                    </p>
-                                                )}
-                                            </td>
-                                            <td className="py-4 px-6 text-right">
-                                                {isAvailableForDownload ? (
-                                                    <div className="flex flex-col items-end gap-2">
-                                                        {req.status.toUpperCase() === 'READY_FOR_PICKUP' &&
-                                                            req.payment_status === 'PENDING_VERIFICATION' && (
-                                                                <span className="text-xs font-medium text-amber-700">Waiting for payment verification</span>
-                                                            )}
-                                                    <button
-                                                        onClick={() => handleDownloadPdf(req.id, req.document_type)}
-                                                        disabled={downloadingId === req.id}
-                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-bold border border-emerald-200 transition-all cursor-pointer"
-                                                    >
-                                                        {downloadingId === req.id ? (
-                                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                                        ) : (
-                                                            <Download className="w-3.5 h-3.5" />
-                                                        )}
-                                                        <span>Download PDF</span>
-                                                    </button>
-                                                    </div>
-                                                ) : req.status.toUpperCase() === 'PENDING' ? (
-                                                    <button
-                                                        onClick={() => handleCancelRequest(req.id)}
-                                                        disabled={cancellingId === req.id}
-                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-bold border border-rose-200 transition-all cursor-pointer"
-                                                        aria-label={`Cancel clearance request #${req.id}`}
-                                                    >
-                                                        {cancellingId === req.id ? (
-                                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                                        ) : (
-                                                            <Trash2 className="w-3.5 h-3.5" />
-                                                        )}
-                                                        <span>Cancel</span>
-                                                    </button>
-                                                ) : (
-                                                    <span className="text-xs text-slate-400">Available after approval</span>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
+                                {requests.map((request) => (
+                                    <DocumentRequestRow
+                                        key={request.id}
+                                        request={request}
+                                        recipients={paymentRecipients}
+                                        selectedRecipientId={selectedRecipientId[request.id] || ''}
+                                        paymentReference={paymentReference[request.id] ?? ''}
+                                        submittingPayment={submittingPaymentId === request.id}
+                                        downloading={downloadingId === request.id}
+                                        cancelling={cancellingId === request.id}
+                                        onRecipientChange={(value) =>
+                                            setSelectedRecipientId((current) => ({
+                                                ...current,
+                                                [request.id]: value,
+                                            }))
+                                        }
+                                        onPaymentReferenceChange={(value) =>
+                                            setPaymentReference((current) => ({
+                                                ...current,
+                                                [request.id]: value,
+                                            }))
+                                        }
+                                        onSubmitPaymentReference={() => handleSubmitPaymentReference(request.id)}
+                                        onDownloadPdf={() => handleDownloadPdf(request.id, request.document_type)}
+                                        onCancel={() => handleCancelRequest(request.id)}
+                                    />
+                                ))}
                             </tbody>
                         </table>
                     </div>

@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axiosPrivate } from '../../api/axios';
 import { CitizenDocuments } from './CitizenDocuments';
 
@@ -7,7 +7,7 @@ vi.mock('../../api/axios', () => ({
     axiosPrivate: { get: vi.fn(), post: vi.fn(), delete: vi.fn() },
 }));
 
-describe('CitizenDocuments payment reference', () => {
+describe('CitizenDocuments', () => {
     beforeEach(() => {
         vi.clearAllMocks();
         vi.mocked(axiosPrivate.get).mockImplementation(async (url: string) => ({
@@ -30,6 +30,10 @@ describe('CitizenDocuments payment reference', () => {
                 created_at: '2026-10-08T00:00:00Z',
             }],
         } as never));
+    });
+
+    afterEach(() => {
+        vi.restoreAllMocks();
     });
 
     it('submits a selected barangay transfer recipient and reference for manual verification', async () => {
@@ -76,5 +80,31 @@ describe('CitizenDocuments payment reference', () => {
         await waitFor(() => expect(
             screen.queryByRole('heading', { name: 'Request Official Clearance' }),
         ).not.toBeInTheDocument());
+    });
+
+    it('confirms and cancels a pending clearance request', async () => {
+        vi.mocked(axiosPrivate.get).mockImplementation(async (url: string) => ({
+            data: url === '/payment-recipients/' ? [] : [{
+                id: 22,
+                document_type: 'Certificate of Residency',
+                purpose: 'School enrollment',
+                status: 'PENDING',
+                created_at: '2026-10-08T00:00:00Z',
+            }],
+        } as never));
+        vi.mocked(axiosPrivate.delete).mockResolvedValue({} as never);
+        const confirm = vi.spyOn(window, 'confirm').mockReturnValue(true);
+
+        render(<CitizenDocuments />);
+        fireEvent.click(await screen.findByRole('button', {
+            name: 'Cancel clearance request #22',
+        }));
+
+        expect(confirm).toHaveBeenCalledWith(
+            'Are you sure you want to cancel this pending clearance application?',
+        );
+        await waitFor(() => expect(axiosPrivate.delete).toHaveBeenCalledWith(
+            '/document-requests/22/',
+        ));
     });
 });
