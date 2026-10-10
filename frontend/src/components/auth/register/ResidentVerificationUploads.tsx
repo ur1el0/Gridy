@@ -38,6 +38,7 @@ export const ResidentVerificationUploads: React.FC<ResidentVerificationUploadsPr
 }) => {
     const utilityBillingTypeId = React.useId();
     const secondaryIdTypeId = React.useId();
+    const hasUploadedProof = Boolean(philsysPhoto || utilityBillingPhoto || secondaryIdPhoto);
 
     return (
         <div className="border border-slate-200 rounded-xl bg-slate-50/70 overflow-hidden transition-all shadow-sm">
@@ -56,14 +57,16 @@ export const ResidentVerificationUploads: React.FC<ResidentVerificationUploadsPr
                         <p className="text-[11px] text-slate-500">
                             {isExpanded
                                 ? 'Tap to collapse verification documents'
-                                : 'Tap to expand and upload PhilSys ID & residency proofs'}
+                                : hasUploadedProof
+                                    ? 'Verification document attached'
+                                    : 'Required: upload at least one ID or proof of residency'}
                         </p>
                     </div>
                 </div>
                 <div className="flex items-center gap-2 shrink-0">
-                    {(philsysPhoto || utilityBillingPhoto || secondaryIdPhoto || philsysIdNumber.trim()) && (
+                    {hasUploadedProof && (
                         <span className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">
-                            Proofs Attached
+                            Document Attached
                         </span>
                     )}
                     <ChevronDown className={"w-4 h-4 text-slate-400 transition-transform duration-200 " + (isExpanded ? "rotate-180" : "")} />
@@ -73,7 +76,7 @@ export const ResidentVerificationUploads: React.FC<ResidentVerificationUploadsPr
             {isExpanded && (
                 <div className="p-3.5 pt-3 space-y-4 border-t border-slate-200 bg-white">
                     <p className="text-[11px] text-slate-500 leading-relaxed">
-                        Provide your Philippine National ID (PhilSys) and a household utility bill to verify local residency.
+                        Upload at least one image to register: a PhilSys ID, a secondary valid ID, or proof of residency such as a utility bill or lease. A typed ID number alone does not count.
                     </p>
 
                     {/* 1. PhilSys ID Number & Photo */}

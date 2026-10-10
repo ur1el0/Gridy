@@ -214,6 +214,20 @@ class _RegisterScreenState extends State<RegisterScreen> {
       return;
     }
 
+    if (_philsysPhoto == null &&
+        _utilityBillingPhoto == null &&
+        _secondaryIdPhoto == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'Upload at least one ID or proof of residency photo to register.',
+          ),
+          backgroundColor: Colors.red,
+        ),
+      );
+      return;
+    }
+
     setState(() {
       _isLoading = true;
     });

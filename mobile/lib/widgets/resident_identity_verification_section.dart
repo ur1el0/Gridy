@@ -51,6 +51,11 @@ class ResidentIdentityVerificationSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final hasUploadedProof =
+        philsysPhoto != null ||
+        utilityBillingPhoto != null ||
+        secondaryIdPhoto != null;
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -80,26 +85,15 @@ class ResidentIdentityVerificationSection extends StatelessWidget {
                 ),
               ),
               subtitle: Text(
-                (philsysPhoto != null ||
-                        utilityBillingPhoto != null ||
-                        secondaryIdPhoto != null ||
-                        philsysIdController.text.trim().isNotEmpty)
-                    ? 'Proofs Attached (Tap to view/edit)'
-                    : 'Tap to expand and upload ID proofs',
+                hasUploadedProof
+                    ? 'Document attached (Tap to view/edit)'
+                    : 'Required: upload at least one ID or proof of residency',
                 style: TextStyle(
                   fontSize: 11,
-                  color:
-                      (philsysPhoto != null ||
-                          utilityBillingPhoto != null ||
-                          secondaryIdPhoto != null ||
-                          philsysIdController.text.trim().isNotEmpty)
+                  color: hasUploadedProof
                       ? const Color(0xFF10B981)
                       : AppColors.textSecondary,
-                  fontWeight:
-                      (philsysPhoto != null ||
-                          utilityBillingPhoto != null ||
-                          secondaryIdPhoto != null ||
-                          philsysIdController.text.trim().isNotEmpty)
+                  fontWeight: hasUploadedProof
                       ? FontWeight.w700
                       : FontWeight.w400,
                 ),
@@ -107,7 +101,7 @@ class ResidentIdentityVerificationSection extends StatelessWidget {
               childrenPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               children: [
                 const Text(
-                  'Provide your Philippine National ID (PhilSys) and a household utility bill to verify local residency.',
+                  'Upload at least one image to register: a PhilSys ID, a secondary valid ID, or proof of residency such as a utility bill or lease. A typed ID number alone does not count.',
                   style: TextStyle(
                     fontSize: 12,
                     color: AppColors.textSecondary,

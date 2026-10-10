@@ -5,6 +5,7 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.urls import reverse
 from rest_framework import status
 
+from gridy_audit.models import AuditLog
 from gridy_auth.models import Barangay, User
 from .base import IsolatedAuthAPITestCase
 
@@ -162,6 +163,78 @@ class ResidentImportAPITests(IsolatedAuthAPITestCase):
         self.assertEqual(user2.email, "")
         self.assertFalse(user2.has_usable_password())
         self.assertTrue(user2.profile.is_verified)
+
+        # Imported records do not receive fake evidence files or unsafe credentials
+        self.assertFalse(user1.profile.philsys_id_photo)
+        self.assertFalse(user1.profile.secondary_id_photo)
+        self.assertFalse(user1.profile.utility_billing_photo)
+        self.assertFalse(user2.profile.philsys_id_photo)
+        self.assertFalse(user2.profile.secondary_id_photo)
+        self.assertFalse(user2.profile.utility_billing_photo)
+
+        # Verify durable AuditLog provenance linkage for batch and residents
+        batch_logs = AuditLog.objects.filter(
+            action_by=official,
+            action_type=AuditLog.ActionType.USER_ACTION,
+            description__contains="Administrative RBI attestation batch",
+        )
+        self.assertEqual(batch_logs.count(), 1)
+        batch_log = batch_logs.first()
+        self.assertIn("imported 2 pre-verified resident(s)", batch_log.description)
+        self.assertIn("residents.csv", batch_log.description)
+        self.assertIn(f"Resident IDs: {user1.profile.id}, {user2.profile.id}", batch_log.description)
+
+        user1_logs = AuditLog.objects.filter(
+            action_by=official,
+            action_type=AuditLog.ActionType.USER_ACTION,
+            description__contains=f"(ID: {user1.profile.id}, Username: {user1.username})",
+        )
+        self.assertEqual(user1_logs.count(), 1)
+        self.assertIn("Administrative RBI attestation", user1_logs.first().description)
+
+        user2_logs = AuditLog.objects.filter(
+            action_by=official,
+            action_type=AuditLog.ActionType.USER_ACTION,
+            description__contains=f"(ID: {user2.profile.id}, Username: {user2.username})",
+        )
+        self.assertEqual(user2_logs.count(), 1)
+        self.assertIn("Administrative RBI attestation", user2_logs.first().description)
+
+    def test_import_residents_scoped_to_official_barangay(self):
+        target_barangay = Barangay.objects.create(name="Scoped Test Barangay")
+        official = User.objects.create_user(
+            username="scoped_official",
+            password="SecurePassword123!",
+            role=User.Role.ADMIN,
+            barangay=target_barangay,
+        )
+        self.client.force_login(official)
+
+        csv_data = (
+            "username,email,full_name,birth_date,contact_number,voter_status\n"
+            "scoped_resident,scoped@example.com,Scoped Resident,1992-06-12,09170000002,True\n"
+        )
+        csv_file = io.BytesIO(csv_data.encode('utf-8'))
+        csv_file.name = 'scoped_residents.csv'
+
+        url = reverse('import_residents')
+        response = self.client.post(url, {'file': csv_file}, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        resident_user = User.objects.get(username="scoped_resident")
+        self.assertEqual(resident_user.barangay, target_barangay)
+        self.assertTrue(resident_user.profile.is_verified)
+        self.assertFalse(resident_user.profile.philsys_id_photo)
+        self.assertFalse(resident_user.profile.secondary_id_photo)
+        self.assertFalse(resident_user.profile.utility_billing_photo)
+
+        batch_log = AuditLog.objects.get(
+            action_by=official,
+            description__contains=f"Barangay {target_barangay.name}",
+        )
+        self.assertIn("Administrative RBI attestation batch", batch_log.description)
+        self.assertIn("scoped_residents.csv", batch_log.description)
+        self.assertIn(f"Resident IDs: {resident_user.profile.id}", batch_log.description)
 
     def test_import_residents_rejects_case_insensitive_duplicate_email(self):
         User.objects.create_user(

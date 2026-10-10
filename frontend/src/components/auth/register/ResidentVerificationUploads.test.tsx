@@ -25,6 +25,7 @@ describe('ResidentVerificationUploads', () => {
 
         expect(screen.getByLabelText('SELECT PRIMARY RESIDENCY PROOF')).toBeInTheDocument();
         expect(screen.getByLabelText('SECONDARY ID Optional')).toBeInTheDocument();
+        expect(screen.getByText(/Upload at least one image to register/i)).toBeInTheDocument();
     });
 
     it('exposes the collapsed and expanded states of the verification disclosure', () => {
@@ -49,7 +50,7 @@ describe('ResidentVerificationUploads', () => {
         );
 
         const collapsedButton = screen.getByRole('button', {
-            name: /Identity & Residency Verification.*Tap to expand/i,
+            name: /Identity & Residency Verification.*Required: upload at least one ID or proof of residency/i,
         });
         expect(collapsedButton).toHaveAttribute('aria-expanded', 'false');
         expect(screen.queryByLabelText('SELECT PRIMARY RESIDENCY PROOF')).not.toBeInTheDocument();
