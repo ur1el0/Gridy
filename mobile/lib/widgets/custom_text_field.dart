@@ -50,38 +50,37 @@ class CustomTextField extends StatelessWidget {
             color: AppColors.inputBackground,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: TextFormField(
-            controller: controller,
-            obscureText: obscureText,
-            keyboardType: keyboardType,
-            textInputAction: textInputAction,
-            validator: validator,
-            onFieldSubmitted: onFieldSubmitted,
-            enabled: enabled,
-            style: const TextStyle(
-              fontSize: 15,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textPrimary,
-            ),
-            decoration: InputDecoration(
-              hintText: hintText,
-              hintStyle: const TextStyle(
+          child: Semantics(
+            label: label.toUpperCase(),
+            child: TextFormField(
+              controller: controller,
+              obscureText: obscureText,
+              keyboardType: keyboardType,
+              textInputAction: textInputAction,
+              validator: validator,
+              onFieldSubmitted: onFieldSubmitted,
+              enabled: enabled,
+              style: const TextStyle(
                 fontSize: 15,
-                fontWeight: FontWeight.w400,
-                color: AppColors.textHint,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textPrimary,
               ),
-              prefixIcon: prefixIcon != null
-                  ? Icon(
-                      prefixIcon,
-                      color: AppColors.textMuted,
-                      size: 20,
-                    )
-                  : null,
-              suffixIcon: suffixIcon,
-              border: InputBorder.none,
-              contentPadding: const EdgeInsets.symmetric(
-                horizontal: 16,
-                vertical: 16,
+              decoration: InputDecoration(
+                hintText: hintText,
+                hintStyle: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w400,
+                  color: AppColors.textHint,
+                ),
+                prefixIcon: prefixIcon != null
+                    ? Icon(prefixIcon, color: AppColors.textMuted, size: 20)
+                    : null,
+                suffixIcon: suffixIcon,
+                border: InputBorder.none,
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 16,
+                ),
               ),
             ),
           ),
