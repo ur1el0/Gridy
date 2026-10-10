@@ -1,5 +1,6 @@
 import React from 'react';
 import { XCircle } from 'lucide-react';
+import { useModalFocus } from '../../hooks/useModalFocus';
 import type { Resident } from './types';
 
 interface RejectionConfirmationModalProps {
@@ -19,12 +20,18 @@ export const RejectionConfirmationModal: React.FC<RejectionConfirmationModalProp
     onCancel,
     isRejecting,
 }) => {
+    const dialogRef = useModalFocus<HTMLDivElement>(true, () => {
+        if (!isRejecting) onCancel();
+    });
+
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm">
             <div
+                ref={dialogRef}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="resident-rejection-title"
+                tabIndex={-1}
                 className="bg-white rounded-2xl p-6 w-full max-w-md shadow-xl border border-border"
             >
                 <div className="flex items-center justify-center w-12 h-12 rounded-full bg-red-100 mb-4 mx-auto">
@@ -48,7 +55,6 @@ export const RejectionConfirmationModal: React.FC<RejectionConfirmationModalProp
                         maxLength={1000}
                         rows={4}
                         required
-                        autoFocus
                         aria-describedby="resident-rejection-reason-help"
                         className="w-full px-3 py-2 border border-slate-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary"
                     />

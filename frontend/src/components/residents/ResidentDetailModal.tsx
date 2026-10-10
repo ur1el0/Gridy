@@ -5,6 +5,7 @@ import {
 } from 'lucide-react';
 import type { Resident } from './types';
 import { usePrivateMediaUrl } from '../../hooks/usePrivateMediaUrl';
+import { useModalFocus } from '../../hooks/useModalFocus';
 
 interface ResidentDetailModalProps {
     resident: Resident;
@@ -28,15 +29,18 @@ export const ResidentDetailModal: React.FC<ResidentDetailModalProps> = ({
     const philsysMedia = usePrivateMediaUrl(resident.philsys_id_photo);
     const secondaryIdMedia = usePrivateMediaUrl(resident.secondary_id_photo);
     const billingMedia = usePrivateMediaUrl(resident.utility_billing_photo);
+    const dialogRef = useModalFocus<HTMLDivElement>(true, onClose);
 
     const isEmailUnchanged = emailDraft.trim().toLowerCase() === (resident.email ?? '').trim().toLowerCase();
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs animate-in fade-in duration-200">
             <div
+                ref={dialogRef}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="resident-detail-title"
+                tabIndex={-1}
                 className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]"
             >
                 {/* Modal Header */}

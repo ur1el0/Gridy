@@ -2,6 +2,7 @@ import React, { useState} from "react";
 import { X, Eye, EyeOff, CheckCircle, AlertCircle } from "lucide-react";
 import { axiosPrivate } from '../../api/axios';
 import { getSafeApiErrorMessage } from '../../api/error-message';
+import { useModalFocus } from '../../hooks/useModalFocus';
 
 
 interface Props {
@@ -20,6 +21,7 @@ export const ChangePasswordModal: React.FC<Props> = ({ isOpen, onClose, onSucces
 
         const [isLoading, setIsLoading] = useState(false)
         const [error, setError] = useState<string | null>(null)
+        const dialogRef = useModalFocus<HTMLDivElement>(isOpen, onClose)
 
         if(!isOpen) return null
 
@@ -61,10 +63,12 @@ export const ChangePasswordModal: React.FC<Props> = ({ isOpen, onClose, onSucces
 
         return (
         <div 
+                ref={dialogRef}
                 className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm"
                 role="dialog" 
                 aria-modal="true" 
                 aria-labelledby="modal-title"
+                tabIndex={-1}
         >
             <div className="bg-white rounded-2xl shadow-xl w-full max-w-md overflow-hidden">
                 <div className="flex items-center justify-between p-6 border-b border-slate-100">

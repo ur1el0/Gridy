@@ -1,5 +1,6 @@
 import React from 'react';
 import { FileSpreadsheet, X, Download } from 'lucide-react';
+import { useModalFocus } from '../../hooks/useModalFocus';
 import type { ImportSummary } from './types';
 
 interface ResidentImportModalProps {
@@ -23,18 +24,29 @@ export const ResidentImportModal: React.FC<ResidentImportModalProps> = ({
     importing,
     importSummary,
 }) => {
+    const dialogTitleId = React.useId();
+    const dialogRef = useModalFocus<HTMLDivElement>(isOpen, onClose);
+
     if (!isOpen) return null;
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-xs">
-            <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full overflow-hidden animate-in fade-in zoom-in-95">
+            <div
+                ref={dialogRef}
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby={dialogTitleId}
+                tabIndex={-1}
+                className="bg-white rounded-2xl shadow-2xl max-w-lg w-full max-h-[calc(100dvh-2rem)] overflow-x-hidden overflow-y-auto overscroll-contain animate-in fade-in zoom-in-95"
+            >
                 <div className="px-6 py-5 border-b border-slate-100 flex justify-between items-center bg-slate-50">
                     <div className="flex items-center gap-2.5">
                         <FileSpreadsheet className="w-5 h-5 text-primary-text" />
-                        <h3 className="text-base font-bold text-slate-900">Import Census / RBI Records</h3>
+                        <h3 id={dialogTitleId} className="text-base font-bold text-slate-900">Import Census / RBI Records</h3>
                     </div>
                     <button
                         onClick={onClose}
+                        aria-label="Close resident import dialog"
                         className="text-slate-400 hover:text-slate-600 rounded-lg p-1 transition-colors cursor-pointer"
                     >
                         <X className="w-5 h-5" />
@@ -58,10 +70,11 @@ export const ResidentImportModal: React.FC<ResidentImportModalProps> = ({
                     </div>
 
                     <div>
-                        <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                        <label htmlFor="resident-import-csv" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
                             Upload CSV File (.csv)
                         </label>
                         <input
+                            id="resident-import-csv"
                             type="file"
                             accept=".csv"
                             onChange={onFileChange}

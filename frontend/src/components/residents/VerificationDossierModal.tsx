@@ -4,6 +4,7 @@ import {
 } from 'lucide-react';
 import type { Resident } from './types';
 import { usePrivateMediaUrl } from '../../hooks/usePrivateMediaUrl';
+import { useModalFocus } from '../../hooks/useModalFocus';
 
 interface VerificationDossierModalProps {
     resident: Resident;
@@ -21,13 +22,16 @@ export const VerificationDossierModal: React.FC<VerificationDossierModalProps> =
     const philsysMedia = usePrivateMediaUrl(resident.philsys_id_photo);
     const billingMedia = usePrivateMediaUrl(resident.utility_billing_photo);
     const secondaryIdMedia = usePrivateMediaUrl(resident.secondary_id_photo);
+    const dialogRef = useModalFocus<HTMLDivElement>(true, onClose);
 
     return (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/60 backdrop-blur-sm animate-fadeIn">
             <div
+                ref={dialogRef}
                 role="dialog"
                 aria-modal="true"
                 aria-labelledby="verification-dossier-title"
+                tabIndex={-1}
                 className="bg-white rounded-2xl w-full max-w-3xl shadow-2xl border border-border flex flex-col max-h-[90vh] overflow-hidden"
             >
                 {/* Modal Header */}
