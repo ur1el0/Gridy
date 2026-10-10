@@ -1,8 +1,9 @@
 import { render, screen } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
-import { describe, it, expect } from 'vitest'
+import { beforeEach, describe, it, expect } from 'vitest'
 import { Login } from './pages/auth/Login'
 import { AuthProvider } from './context/AuthContext'
+import { App } from './App'
 
 describe('Login Component', () => {
     it('renders the login form correctly', () => {
@@ -25,5 +26,20 @@ describe('Login Component', () => {
         expect(passwordInput).toBeInTheDocument()
         expect(loginButton).toBeInTheDocument()
 
+    })
+})
+
+describe('Application routes', () => {
+    beforeEach(() => {
+        localStorage.clear()
+        window.history.replaceState({}, '', '/')
+    })
+
+    it('redirects unauthenticated root visitors to the lazy login page', async () => {
+        render(<App />)
+
+        expect(
+            await screen.findByRole('button', { name: /login to resident portal/i }),
+        ).toBeInTheDocument()
     })
 })
