@@ -59,7 +59,8 @@ class ResidentRejectionSerializer(serializers.Serializer):
     responses={
         200: ResidentImportResponseSerializer,
         207: ResidentImportResponseSerializer,
-        400: OpenApiTypes.OBJECT
+        400: OpenApiTypes.OBJECT,
+        403: OpenApiTypes.OBJECT,
     }
 )
 
@@ -68,6 +69,9 @@ class ResidentImportView(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request, *args, **kwargs):
+        if request.user.barangay_id is None:
+            raise PermissionDenied("A barangay assignment is required to import residents.")
+
         file_obj = request.FILES.get('file')
         if not file_obj:
             return Response({"detail": "No file was uploaded"}, status=status.HTTP_400_BAD_REQUEST)
@@ -153,11 +157,7 @@ class ResidentImportView(APIView):
                     imported_count += 1
 
                 if imported_records:
-                    barangay_name = (
-                        request.user.barangay.name
-                        if getattr(request.user, "barangay", None)
-                        else "Unassigned"
-                    )
+                    barangay_name = request.user.barangay.name
                     resident_ids_str = ", ".join(str(r.id) for _, r in imported_records)
                     log_action(
                         user=request.user,

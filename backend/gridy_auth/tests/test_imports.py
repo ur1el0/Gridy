@@ -6,7 +6,7 @@ from django.urls import reverse
 from rest_framework import status
 
 from gridy_audit.models import AuditLog
-from gridy_auth.models import Barangay, User
+from gridy_auth.models import Barangay, Resident, User
 from .base import IsolatedAuthAPITestCase
 
 
@@ -21,6 +21,7 @@ class ResidentImportAPITests(IsolatedAuthAPITestCase):
             email="resident@example.com",
             role=User.Role.RESIDENT,
         )
+        self.import_url = reverse("import_residents")
 
     def _authenticate_as_importing_official(self):
         barangay = Barangay.objects.create(name="Import Error Barangay")
@@ -107,11 +108,12 @@ class ResidentImportAPITests(IsolatedAuthAPITestCase):
         self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
 
     def test_import_residents_success(self):
-        # Create an official (admin)
+        # Create an official (admin) assigned to a barangay
         official = User.objects.create_user(
             username="official_test_import",
             password="SecurePassword123!",
-            role=User.Role.ADMIN
+            role=User.Role.ADMIN,
+            barangay=self.barangay,
         )
         self.client.force_login(official)
 
@@ -182,6 +184,7 @@ class ResidentImportAPITests(IsolatedAuthAPITestCase):
         batch_log = batch_logs.first()
         self.assertIn("imported 2 pre-verified resident(s)", batch_log.description)
         self.assertIn("residents.csv", batch_log.description)
+        self.assertIn(f"Barangay {self.barangay.name}", batch_log.description)
         self.assertIn(f"Resident IDs: {user1.profile.id}, {user2.profile.id}", batch_log.description)
 
         user1_logs = AuditLog.objects.filter(
@@ -269,7 +272,8 @@ class ResidentImportAPITests(IsolatedAuthAPITestCase):
         official = User.objects.create_user(
             username="official_test_import_err",
             password="SecurePassword123!",
-            role=User.Role.ADMIN
+            role=User.Role.ADMIN,
+            barangay=self.barangay,
         )
         self.client.force_login(official)
 
@@ -292,3 +296,35 @@ class ResidentImportAPITests(IsolatedAuthAPITestCase):
         self.assertEqual(response.data['imported'], 3)
         self.assertEqual(len(response.data['errors']), 2)
         self.assertTrue(User.objects.filter(username="imported3").exists())
+
+    def test_import_residents_rejects_unassigned_official(self):
+        unassigned_official = User.objects.create_user(
+            username="unassigned_official",
+            password="SecurePassword123!",
+            role=User.Role.ADMIN,
+            barangay=None,
+        )
+        self.client.force_login(unassigned_official)
+
+        csv_data = (
+            "username,email,full_name,birth_date,contact_number,voter_status\n"
+            "unassigned_resident,unassigned@example.com,Unassigned Resident,1990-01-01,09170000099,True\n"
+        )
+        csv_file = io.BytesIO(csv_data.encode('utf-8'))
+        csv_file.name = 'unassigned_residents.csv'
+
+        initial_user_count = User.objects.count()
+        initial_resident_count = Resident.objects.count()
+        initial_audit_count = AuditLog.objects.count()
+
+        url = reverse('import_residents')
+        response = self.client.post(url, {'file': csv_file}, format='multipart')
+
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(
+            response.data.get("detail"),
+            "A barangay assignment is required to import residents.",
+        )
+        self.assertEqual(User.objects.count(), initial_user_count)
+        self.assertEqual(Resident.objects.count(), initial_resident_count)
+        self.assertEqual(AuditLog.objects.count(), initial_audit_count)
