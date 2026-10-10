@@ -55,4 +55,26 @@ describe('CitizenDocuments payment reference', () => {
             { payment_recipient_id: 7, payment_reference: 'GC-REF-5512' },
         ));
     });
+
+    it('submits a new clearance request from the request modal', async () => {
+        vi.mocked(axiosPrivate.post).mockResolvedValue({ data: {} } as never);
+
+        render(<CitizenDocuments />);
+        fireEvent.click(screen.getByRole('button', { name: 'Request New Clearance' }));
+        fireEvent.change(await screen.findByLabelText('Document Type'), {
+            target: { value: 'Certificate of Residency' },
+        });
+        fireEvent.change(screen.getByLabelText('Purpose Statement'), {
+            target: { value: '  Postal ID  ' },
+        });
+        fireEvent.click(screen.getByRole('button', { name: 'Submit Application' }));
+
+        await waitFor(() => expect(axiosPrivate.post).toHaveBeenCalledWith(
+            '/document-requests/',
+            { document_type: 'Certificate of Residency', purpose: 'Postal ID' },
+        ));
+        await waitFor(() => expect(
+            screen.queryByRole('heading', { name: 'Request Official Clearance' }),
+        ).not.toBeInTheDocument());
+    });
 });
