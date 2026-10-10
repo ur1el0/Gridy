@@ -25,13 +25,19 @@ export const BarangaySelectField: React.FC<BarangaySelectFieldProps> = ({
     barangayDirectoryError,
     isAdminMode,
 }) => {
+    const barangayIdFieldId = React.useId();
+
     return (
         <div>
             <div>
-                <label className="block text-[11px] font-bold tracking-wider text-slate-500 uppercase mb-1.5">
+                <label
+                    htmlFor={barangayIdFieldId}
+                    className="block text-[11px] font-bold tracking-wider text-slate-500 uppercase mb-1.5"
+                >
                     LOCAL BARANGAY JURISDICTION
                 </label>
                 <select
+                    id={barangayIdFieldId}
                     required
                     value={barangayId}
                     disabled={loadingBarangays || barangays.length === 0}
