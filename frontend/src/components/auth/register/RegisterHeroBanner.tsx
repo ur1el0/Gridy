@@ -34,6 +34,9 @@ export const RegisterHeroBanner: React.FC<RegisterHeroBannerProps> = ({
                 </span>
                 <button
                     type="button"
+                    aria-label={isAdminMode
+                        ? 'Staff Registration, switch to resident registration'
+                        : 'Resident Registration, switch to official registration'}
                     onClick={onToggleMode}
                     className={`px-3 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider cursor-pointer flex items-center gap-1.5 transition-all active:scale-95 select-none ${
                         isAdminMode

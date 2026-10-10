@@ -54,12 +54,19 @@ describe('Register Component (Dual-Mode)', () => {
 
         await screen.findByRole('option', { name: /Barangay Ibabang Dupay/ });
 
-        // Click the toggle button to switch to Staff/Admin mode
-        const toggleButton = screen.getByTitle('Tap to switch registration type');
+        // Use the header switch's full visible-mode and destination name.
+        const toggleButton = screen.getByRole('button', {
+            name: 'Resident Registration, switch to official registration',
+        });
+        expect(toggleButton).toHaveTextContent('Resident Registration');
         fireEvent.click(toggleButton);
 
         // Verify Admin Headings and Features
         expect(screen.getByRole('heading', { level: 2, name: 'Administrative Registration' })).toBeInTheDocument();
+        const switchToResidentButton = screen.getByRole('button', {
+            name: 'Staff Registration, switch to resident registration',
+        });
+        expect(switchToResidentButton).toHaveTextContent('Staff Registration');
         expect(screen.getByText('CREDENTIALS VERIFICATION')).toBeInTheDocument();
         expect(screen.getByText('ADMIN ACCESS TIERS')).toBeInTheDocument();
         expect(screen.getByText('SECURITY AUDIT COMPLIANCE')).toBeInTheDocument();
