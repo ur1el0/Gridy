@@ -92,18 +92,25 @@ docker network disconnect "$NETWORK_NAME" "$primary_id"
 docker network connect --ip "$FAILOVER_IP" --alias db "$NETWORK_NAME" "$failover_id"
 sleep 1
 
-interrupted_response="$(probe_request)" \
-  || fail "probe client could not reach the persistent Django server after the database switch"
-interrupted_status="$(probe_status "$interrupted_response")"
-[[ "$interrupted_status" == "503" ]] \
-  || fail "first probe after interruption returned HTTP $interrupted_status instead of 503"
-printf 'Interrupted database connection returned HTTP 503 as expected.\n'
-
 reconnected_response=""
+reported_unavailable=0
 for _ in $(seq 1 30); do
-  if reconnected_response="$(probe_request 2>/dev/null)" \
-    && [[ "$(probe_status "$reconnected_response")" == "200" ]]; then
-    break
+  response=""
+  if response="$(probe_request 2>/dev/null)"; then
+    response_status="$(probe_status "$response")"
+    if [[ "$response_status" == "200" ]]; then
+      response_address="$(probe_address "$response")"
+      [[ "$response_address" == "$FAILOVER_IP" ]] \
+        || fail "post-switch probe reached $response_address instead of failover $FAILOVER_IP"
+      reconnected_response="$response"
+      break
+    fi
+    [[ "$response_status" == "503" ]] \
+      || fail "post-switch probe returned unexpected HTTP $response_status"
+    if (( ! reported_unavailable )); then
+      printf 'Probe reported the database temporarily unavailable while reconnecting.\n'
+      reported_unavailable=1
+    fi
   fi
   sleep 1
 done

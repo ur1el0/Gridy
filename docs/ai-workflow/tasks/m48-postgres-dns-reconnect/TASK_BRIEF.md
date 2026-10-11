@@ -39,15 +39,15 @@ Add an isolated GitHub Actions smoke test showing that one long-lived Django pro
 - Use unique Compose project/network names, no fixed container_name, no published host ports, and ephemeral database storage only.
 - Do not touch the repository's root .env or backend/.env; this smoke must not require creating either file.
 - Keep one Django probe server process alive across the database switch. A fresh process for each connection would not verify same-process reconnection behavior.
-- Do not report a successful retry of the failed HTTP request. The acceptance behavior is: the active connection is interrupted, one probe reports unavailable and closes the unusable Django connection, and a subsequent probe reconnects to the new DNS target.
+- Do not report a successful retry of a failed HTTP request. Because `CONN_HEALTH_CHECKS=True` may reconnect before the first database query, the first probe after the DNS switch may already return HTTP 200 from the new server. A transient HTTP 503 is acceptable while the target is unavailable, but is not required; a bounded sequence of probes must reach the failover address in the same long-lived process.
 - Keep CI permissions at repository read-only and preserve the all-branches PR trigger.
 - Label credentials as disposable test-only values and avoid printing database URLs or exception details.
 
 ## 5. Observable Acceptance Criteria
 
 1. [ ] The smoke starts two isolated PostgreSQL containers on different IPs and one persistent Django probe process, with no database volume or host port publication.
-2. [ ] The first probe returns the primary database address from inet_server_addr().
-3. [ ] After the primary is terminated and detached from the test network, the db alias is assigned to the failover container; the active probe returns HTTP 503 once, then the next probe succeeds from the failover container's distinct IP.
+2. [ ] The first probe returns the primary database host address from `host(inet_server_addr())`.
+3. [ ] After the primary is terminated and detached from the test network, the db alias is assigned to the failover container; within a bounded number of probes, the same Django process returns HTTP 200 from the failover container's distinct IP. A transient 503 may occur, but direct health-check reconnection on the first request is also valid.
 4. [ ] The smoke script uses unique project names, refuses unsafe repository environment-file collisions if relevant, and cleans only its project containers/networks on success or failure.
 5. [ ] CI runs the smoke on branch and PR pushes without adding write permissions or new package dependencies.
 6. [ ] Documentation says this validates disposable Docker DNS plus Django reconnection only; actual provider DNS failover and production readiness remain unverified.
@@ -65,7 +65,7 @@ Add an isolated GitHub Actions smoke test showing that one long-lived Django pro
 
 ## 7. Risks and Mitigations
 
-- **Risk:** The first post-failover request is mistaken for a transparent retry. **Mitigation:** test and document the expected single 503 followed by recovery on a later request.
+- **Risk:** The smoke incorrectly requires a 503 even though Django's configured connection health check can reconnect before the first query. **Mitigation:** allow direct recovery or transient 503 responses, and make the final returned PostgreSQL host address the acceptance assertion.
 - **Risk:** The test alias maps to the same database IP or the old alias remains resolvable. **Mitigation:** reserve distinct static IPs, detach the primary endpoint, and assert the returned server address changes.
 - **Risk:** Cleanup affects a developer's Compose stack. **Mitigation:** unique project name, no fixed names/ports/volumes, no environment-file writes, and cleanup scoped to the test project.
 - **Residual risk:** Docker's embedded DNS test does not model Azure PostgreSQL DNS, TLS, existing connection draining, or provider failover timing. Preserve the non-production provider rehearsal gate.

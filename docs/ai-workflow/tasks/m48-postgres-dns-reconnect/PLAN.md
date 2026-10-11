@@ -26,7 +26,7 @@
 1. Run a minimal HTTP probe in one backend image container, import Django settings, and query `host(inet_server_addr())` through Django's normal connection wrapper so the returned address omits the CIDR prefix length.
    - When invoking the probe file directly, explicitly put the backend project root on `sys.path` so `config.settings` and the Django apps resolve from `/app/tests` as well as from `manage.py` entry points.
 2. Start a primary database and a standby database with distinct static IPs on separate test networks. Only the primary initially owns DNS alias db; both stores are ephemeral.
-3. Verify the initial address, terminate/detach the primary, attach the standby to the shared network with alias db, and verify the active connection fails once before a subsequent request reconnects to the new server address.
+3. Verify the initial address, terminate/detach the primary, attach the standby to the shared network with alias `db`, and verify that a bounded sequence of requests reaches the new server address in the same Django process. Permit an initial 503 while the new target becomes available, but do not require one: because `CONN_HEALTH_CHECKS=True`, Django can detect the stale connection and reconnect before executing the query in the first post-switch request.
 4. Use a unique Compose project, no host ports/fixed names/persistent volumes, no env-file writes, and an EXIT cleanup trap scoped to that project.
 5. Run local shell syntax, Compose config rendering, workflow parsing, and helper compilation checks. If local Docker daemon access is unavailable, do not start containers; require hosted CI for runtime evidence.
 
@@ -62,7 +62,7 @@ If the local Docker daemon is available and the smoke's refusal/cleanup guards p
 
 ## 3. Completion Checklist
 
-- [ ] Probe server remains one process across the target change and demonstrates primary → one failure → failover recovery.
+- [ ] Probe server remains one process across the target change and a bounded sequence demonstrates primary → failover recovery; a transient failure is permitted but not required.
 - [x] Compose stack has no host ports, fixed names, persistent volumes, or environment file writes.
 - [ ] Local static/config checks pass; hosted CI executes the actual container switch.
 - [x] Deployment docs distinguish Docker test evidence from provider failover evidence.
@@ -74,3 +74,7 @@ If the local Docker daemon is available and the smoke's refusal/cleanup guards p
 - The disposable stack has a deterministic cleanup trap and is project-scoped; no production or developer data is mounted.
 - CI-only failure is addressed by refining the smoke harness. A local inability to access Docker is an environment limitation, not a reason to omit hosted integration evidence.
 - No database or application rollback is required; revert the smoke/docs commit if CI cannot run reliably.
+
+## Plan Amendments
+
+- **M48 hosted-run adjustment:** The original contract required exactly one 503 before recovery. GitHub Actions run #384 showed the first post-switch query already returned HTTP 200, after reaching the primary before the switch. `backend/config/settings.py` enables `CONN_HEALTH_CHECKS=True`; Django 6.0 documentation states that the failed health check reestablishes the connection without failing the request when the database server is available. Updated the acceptance criterion to require a bounded same-process connection to the failover address, allowing direct recovery or transient 503 while DNS/service becomes available. This tests the configured reliability behavior instead of requiring an artificial outage response. References: [Django database connection management](https://docs.djangoproject.com/en/6.0/ref/databases/) and [Django `CONN_HEALTH_CHECKS`](https://docs.djangoproject.com/en/6.0/ref/settings/#conn-health-checks).
