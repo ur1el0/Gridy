@@ -2,42 +2,54 @@
 
 This resource-group-scoped Bicep template defines a candidate Azure foundation for a future non-production KapitBayan pilot:
 
-- One virtual network with dedicated Container Apps and PostgreSQL Flexible Server subnets.
-- A PostgreSQL private DNS zone linked to the virtual network.
+- One virtual network with dedicated Container Apps, PostgreSQL Flexible Server, and private endpoint subnets.
+- PostgreSQL, Azure Container Registry, and Key Vault private DNS zones linked to the virtual network.
 - A Log Analytics workspace with explicit SKU and retention inputs.
 - A Container Apps managed environment with log forwarding and VNet integration.
 - A PostgreSQL Flexible Server configured for private VNet integration.
+- A Premium Azure Container Registry with public access disabled and a private endpoint.
+- An empty RBAC-enabled Key Vault with public access disabled and a private endpoint.
 
-The template creates **no Container Apps**, images, application ingress, ACR, Key Vault, custom domains, DNS cutover, or database. The empty managed environment uses the external environment mode from M42's candidate topology, so a future frontend can provide the same-origin public edge; no application endpoint is created in M49. Reassess that exposure before deployment. The PostgreSQL resource has no public-network setting: it uses delegated-subnet/private-DNS integration.
+The template creates **no Container Apps, application ingress, custom domains, DNS cutover, database migrations, managed identities, role assignments, registry images, or Key Vault secrets**. The empty managed environment uses the external environment mode from M42's candidate topology, so a future frontend can provide the same-origin public edge; no application endpoint is created. Reassess that exposure before deployment. The PostgreSQL resource has no public database endpoint: it uses delegated-subnet/private-DNS integration.
 
 ## Required inputs
 
-There is deliberately no `.bicepparam` example and no deployment defaults. Select all values only after reviewing the target subscription and completing the M42 decision gates. Required input groups are:
+There is deliberately no .bicepparam example and no deployment defaults. Select all values only after reviewing the target subscription and completing the M42 decision gates. Required input groups are:
 
-- Azure region and resource names.
-- VNet and dedicated subnet CIDRs. Subnets must not overlap one another, connected networks, or any ACA reserved infrastructure range.
-- Container Apps environment zone-redundancy setting and workload profiles. The external environment mode follows M42's candidate same-origin frontend design; moving to a private-only environment needs an additional reviewed routing design.
+- Azure region and resource names, including globally unique ACR and Key Vault names.
+- VNet and dedicated subnet CIDRs for Container Apps, PostgreSQL, and private endpoints. Subnets must not overlap one another, connected networks, or any ACA reserved infrastructure range.
+- Container Apps environment zone-redundancy setting and workload profiles.
 - Log Analytics SKU and retention period.
 - PostgreSQL major version, compute SKU/tier, storage size/auto-grow, backup policy, HA mode/standby zone, administrator login, and secure password.
+- Key Vault tenant ID and soft-delete retention period (7–90 days).
 - Organization-required resource tags, including owner and cost-center values.
 
-This template supports a workload-profile Container Apps environment. Microsoft documents a dedicated subnet of at least `/27`, delegated to `Microsoft.App/environments`; the exact selected profile, headroom, and region support must be checked before deployment. Consumption-only environments have a different `/23`, non-delegated subnet contract and are intentionally outside this template.
+This template supports a workload-profile Container Apps environment. Microsoft documents a dedicated subnet of at least /27, delegated to Microsoft.App/environments; the exact selected profile, headroom, and region support must be checked before deployment. Consumption-only environments have a different /23, non-delegated subnet contract and are intentionally outside this template.
 
-The PostgreSQL subnet is delegated only to `Microsoft.DBforPostgreSQL/flexibleServers`; Microsoft documents `/28` as the minimum, with larger allocation needed for HA and future capacity. The template appends `.postgres.database.azure.com` to the required DNS-zone prefix, then links the zone to the VNet. Do not make the prefix equal to the PostgreSQL server name. Subnet sizes cannot be changed after the Container Apps environment is created, so have a network owner review the CIDRs before any deployment.
+The PostgreSQL subnet is delegated only to Microsoft.DBforPostgreSQL/flexibleServers; Microsoft documents /28 as the minimum, with larger allocation needed for HA and future capacity. The template appends .postgres.database.azure.com to the required DNS-zone prefix, then links the zone to the VNet. Do not make the prefix equal to the PostgreSQL server name. Subnet sizes cannot be changed after the Container Apps environment is created, so have a network owner review the CIDRs before any deployment.
+
+The private-endpoint subnet is separate from both delegated subnets, has no service delegation, and disables private-endpoint network policies as required for this template's network contract. Two endpoints are created, one for the ACR registry subresource and one for the Key Vault vault subresource. Their private DNS zone groups associate the endpoints with the linked privatelink.azurecr.io and privatelink.vaultcore.azure.net zones.
+
+## Registry and secret-store controls
+
+- ACR Private Link is available only on the **Premium** registry tier. The template constrains the SKU parameter to Premium, disables the registry admin account and anonymous pull, disables trusted-service network bypass, and disables public network access. Premium registry and private-endpoint charges require a budget review before deployment.
+- Key Vault uses Standard SKU because this foundation stores application secrets, not HSM-backed keys. Data access uses Azure RBAC; soft delete and purge protection are enabled, and retention is required as an explicit bounded input. Purge protection is an irreversible setting after a vault is deployed.
+- The Key Vault is empty in this milestone: no secrets, certificates, keys, application identity, or role assignment is created. Public network access is disabled. Microsoft documents that trusted Azure services may remain an exception to the private-endpoint traffic rule; no secret data is present here, and any later data-plane use requires a separate access review.
+- A public GitHub-hosted Actions runner has no private network path to this ACR. This task does not push images. Before a future image publication milestone, choose and review a private self-hosted runner or an approved private build service with network line of sight to the endpoint. Azure DevOps hosted agents also do not support private-endpoint ACR access without a self-hosted agent, per Microsoft documentation.
 
 ## Compile-only validation
 
-Install the pinned Bicep compiler `v0.47.16` using Azure CLI and compile without connecting to Azure:
+Install the pinned Bicep compiler v0.47.16 using Azure CLI and compile without connecting to Azure:
 
-```bash
+~~~bash
 az bicep install --version v0.47.16
 az bicep version
 az bicep build --file infra/azure/pilot-foundation/main.bicep --stdout
-```
+~~~
 
-The CI job performs this compile and checks the generated ARM template contract. It does not run `az login`, query a subscription, or invoke deployment, provider validation, or `what-if` commands. Compilation confirms Bicep syntax and resource type shapes against the compiler's type metadata only. It does not establish that a region/SKU is available, address ranges are valid/non-overlapping, subscription policy permits deployment, quotas exist, prices are acceptable, or services can communicate after deployment.
+The CI job performs this compile and checks the generated ARM template contract. It does not run az login, query a subscription, or invoke deployment, provider validation, or what-if commands. Compilation checks Bicep syntax and resource type shapes against compiler metadata only. It does not establish region/SKU availability, address-range overlap, subscription policy, quota, cost, data residency, private DNS resolution, endpoint approval, trusted-service behavior, or deployed access.
 
-The secure PostgreSQL administrator password is a required `@secure()` parameter. Supply it only through an approved secret channel in a later deployment task; do not place a real value in GitHub Actions, a parameter file, or logs. The workspace shared key is resolved from the workspace resource during deployment and is passed directly to ACA's logging configuration. The template emits no outputs.
+The secure PostgreSQL administrator password remains a required secure parameter. Supply it only through an approved secret channel in a later deployment task; do not place a real value in GitHub Actions, a parameter file, or logs. The workspace shared key is resolved from the workspace resource during deployment and passed directly to the Container Apps logging configuration. No secret values are created in Key Vault. The template emits no outputs.
 
 ## Gates before any deployment
 
@@ -48,17 +60,23 @@ M42's outstanding gates remain open:
 3. Workload sizing and provider/SKU/region/quota availability review.
 4. Agreed and funded backup retention, HA choice, RPO, and RTO.
 5. Review of non-overlapping network ranges, immutable subnet sizing, private DNS, ingress exposure, and outbound access to Cloudinary, Firebase, and SMTP.
-6. A separately reviewed deployment and parity plan covering the frontend reverse proxy, internal API routing, health probes, migration gate, secrets, private media access, authentication cookies, and mobile API hostname.
+6. A separately reviewed deployment and parity plan covering the frontend reverse proxy, internal API routing, health probes, migration gate, managed identities and least-privilege Key Vault access, private image publication/pull, private media access, authentication cookies, and mobile API hostname.
 
-This template is not a production-ready deployment or a substitute for a provider-side validation and non-production rehearsal. Do not deploy it until the approval gates are complete and a separate task explicitly authorizes the Azure resource operation.
+This template is not a production-ready deployment or a substitute for provider-side validation and a non-production rehearsal. Do not deploy it until the approval gates are complete and a separate task explicitly authorizes the Azure resource operation.
 
 ## Microsoft references
 
 References reviewed 2026-10-11:
 
 - [Container Apps VNet integration](https://learn.microsoft.com/en-us/azure/container-apps/custom-virtual-networks) — separate workload-profile and consumption-only subnet requirements.
-- [PostgreSQL Flexible Server private networking](https://learn.microsoft.com/en-us/azure/postgresql/network/concepts-networking-private) — delegated subnet, minimum `/28`, DNS-zone suffix, and VNet link requirements.
-- [Container Apps managed environment Bicep resource](https://learn.microsoft.com/en-us/azure/templates/microsoft.app/2025-07-01/managedenvironments) — resource API shape and Log Analytics configuration.
-- [PostgreSQL Flexible Server Bicep resource](https://learn.microsoft.com/en-us/azure/templates/microsoft.dbforpostgresql/2025-08-01/flexibleservers) — private network, backup, HA, storage, SKU, and secure administrator-password properties.
+- [PostgreSQL Flexible Server private networking](https://learn.microsoft.com/en-us/azure/postgresql/network/concepts-networking-private) — delegated subnet, minimum /28, DNS-zone suffix, and VNet link requirements.
+- [ACR Private Link](https://learn.microsoft.com/en-us/azure/container-registry/container-registry-private-link) — Premium-tier requirement, private DNS zone, endpoint subresource, public-access behavior, and hosted-agent constraints.
+- [Key Vault Private Link](https://learn.microsoft.com/en-us/azure/key-vault/general/private-link-service) — private DNS zone and private endpoint configuration.
+- [Key Vault network security](https://learn.microsoft.com/en-us/azure/key-vault/general/how-to-azure-key-vault-network-security) — public-access-disabled behavior and trusted-service exception.
+- [Container Registry Bicep resource](https://learn.microsoft.com/en-us/azure/templates/microsoft.containerregistry/2025-04-01/registries) — supported SKU and network properties.
+- [Key Vault Bicep resource](https://learn.microsoft.com/en-us/azure/templates/microsoft.keyvault/vaults) — RBAC, soft delete, purge protection, and network properties.
+- [Private Endpoints Bicep resource](https://learn.microsoft.com/en-us/azure/templates/microsoft.network/privateendpoints) — private-link connection and subnet resource shape.
+- [Private DNS zone groups Bicep resource](https://learn.microsoft.com/en-us/azure/templates/microsoft.network/2024-05-01/privateendpoints/privatednszonegroups) — private zone association shape.
+- [Private Endpoint network policies](https://learn.microsoft.com/en-us/azure/private-link/disable-private-endpoint-network-policy) — subnet policy settings.
 - [Bicep compile command](https://learn.microsoft.com/en-us/cli/azure/bicep#az-bicep-build) — compile source to ARM JSON.
 - [Bicep secret handling](https://learn.microsoft.com/en-us/azure/azure-resource-manager/bicep/scenarios-secrets) — secure parameters and secret handling guidance.

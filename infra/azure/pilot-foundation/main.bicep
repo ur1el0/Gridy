@@ -21,6 +21,12 @@ param postgresSubnetName string
 @description('CIDR for the dedicated PostgreSQL subnet. Azure documentation states /28 is the minimum; allow headroom for HA and future servers.')
 param postgresSubnetAddressPrefix string
 
+@description('Name of the dedicated subnet for private endpoints. It has no service delegation.')
+param privateEndpointSubnetName string
+
+@description('CIDR for the dedicated private endpoint subnet, sized for the registry and Key Vault endpoints plus planned private endpoints.')
+param privateEndpointSubnetAddressPrefix string
+
 type ContainerAppsWorkloadProfile = {
   name: string
   workloadProfileType: string
@@ -99,6 +105,42 @@ param postgresStorageAutoGrow string
 @description('Resource tags required by the organization, including applicable owner and cost-center values.')
 param tags object
 
+@minLength(5)
+@maxLength(50)
+@description('Globally unique Azure Container Registry name. Select a valid lowercase alphanumeric name before deployment.')
+param acrRegistryName string
+
+@allowed([
+  'Premium'
+])
+@description('Premium is required for Azure Container Registry Private Link. This tier has cost implications that must be reviewed before deployment.')
+param acrSkuName string
+
+@description('Name of the ACR private endpoint.')
+param acrPrivateEndpointName string
+
+@description('Name of the ACR private DNS VNet link.')
+param acrPrivateDnsLinkName string
+
+@minLength(3)
+@maxLength(24)
+@description('Globally unique Key Vault name. Select an available valid name before deployment.')
+param keyVaultName string
+
+@description('Microsoft Entra tenant GUID that owns the Key Vault. Supply explicitly during a future approved deployment.')
+param keyVaultTenantId string
+
+@description('Name of the Key Vault private endpoint.')
+param keyVaultPrivateEndpointName string
+
+@description('Name of the Key Vault private DNS VNet link.')
+param keyVaultPrivateDnsLinkName string
+
+@minValue(7)
+@maxValue(90)
+@description('Key Vault soft-delete retention in days. Confirm the required retention and applicable policy before deployment.')
+param keyVaultSoftDeleteRetentionInDays int
+
 resource virtualNetwork 'Microsoft.Network/virtualNetworks@2024-05-01' = {
   name: virtualNetworkName
   location: location
@@ -141,6 +183,16 @@ resource postgresSubnet 'Microsoft.Network/virtualNetworks/subnets@2024-05-01' =
         }
       }
     ]
+  }
+}
+
+resource privateEndpointSubnet 'Microsoft.Network/virtualNetworks/subnets@2024-05-01' = {
+  parent: virtualNetwork
+  name: privateEndpointSubnetName
+  properties: {
+    addressPrefix: privateEndpointSubnetAddressPrefix
+    delegations: []
+    privateEndpointNetworkPolicies: 'Disabled'
   }
 }
 
@@ -222,5 +274,148 @@ resource postgresServer 'Microsoft.DBforPostgreSQL/flexibleServers@2025-08-01' =
       storageSizeGB: postgresStorageSizeGb
     }
     version: postgresVersion
+  }
+}
+
+resource acrRegistry 'Microsoft.ContainerRegistry/registries@2025-04-01' = {
+  name: acrRegistryName
+  location: location
+  tags: tags
+  sku: {
+    name: acrSkuName
+  }
+  properties: {
+    adminUserEnabled: false
+    anonymousPullEnabled: false
+    networkRuleBypassOptions: 'None'
+    publicNetworkAccess: 'Disabled'
+  }
+}
+
+resource acrPrivateDnsZone 'Microsoft.Network/privateDnsZones@2024-06-01' = {
+  name: 'privatelink.azurecr.io'
+  location: 'global'
+  tags: tags
+}
+
+resource acrPrivateDnsLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2024-06-01' = {
+  parent: acrPrivateDnsZone
+  name: acrPrivateDnsLinkName
+  location: 'global'
+  properties: {
+    registrationEnabled: false
+    virtualNetwork: {
+      id: virtualNetwork.id
+    }
+  }
+}
+
+resource acrPrivateEndpoint 'Microsoft.Network/privateEndpoints@2024-05-01' = {
+  name: acrPrivateEndpointName
+  location: location
+  tags: tags
+  properties: {
+    privateLinkServiceConnections: [
+      {
+        name: 'acr-private-link'
+        properties: {
+          privateLinkServiceId: acrRegistry.id
+          groupIds: [
+            'registry'
+          ]
+        }
+      }
+    ]
+    subnet: {
+      id: privateEndpointSubnet.id
+    }
+  }
+}
+
+resource acrPrivateDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2024-05-01' = {
+  parent: acrPrivateEndpoint
+  name: 'default'
+  properties: {
+    privateDnsZoneConfigs: [
+      {
+        name: 'acr-private-dns'
+        properties: {
+          privateDnsZoneId: acrPrivateDnsZone.id
+        }
+      }
+    ]
+  }
+}
+
+resource keyVault 'Microsoft.KeyVault/vaults@2025-05-01' = {
+  name: keyVaultName
+  location: location
+  tags: tags
+  properties: {
+    tenantId: keyVaultTenantId
+    sku: {
+      family: 'A'
+      name: 'standard'
+    }
+    enableRbacAuthorization: true
+    enableSoftDelete: true
+    enablePurgeProtection: true
+    softDeleteRetentionInDays: keyVaultSoftDeleteRetentionInDays
+    publicNetworkAccess: 'Disabled'
+  }
+}
+
+resource keyVaultPrivateDnsZone 'Microsoft.Network/privateDnsZones@2024-06-01' = {
+  name: 'privatelink.vaultcore.azure.net'
+  location: 'global'
+  tags: tags
+}
+
+resource keyVaultPrivateDnsLink 'Microsoft.Network/privateDnsZones/virtualNetworkLinks@2024-06-01' = {
+  parent: keyVaultPrivateDnsZone
+  name: keyVaultPrivateDnsLinkName
+  location: 'global'
+  properties: {
+    registrationEnabled: false
+    virtualNetwork: {
+      id: virtualNetwork.id
+    }
+  }
+}
+
+resource keyVaultPrivateEndpoint 'Microsoft.Network/privateEndpoints@2024-05-01' = {
+  name: keyVaultPrivateEndpointName
+  location: location
+  tags: tags
+  properties: {
+    privateLinkServiceConnections: [
+      {
+        name: 'key-vault-private-link'
+        properties: {
+          privateLinkServiceId: keyVault.id
+          groupIds: [
+            'vault'
+          ]
+        }
+      }
+    ]
+    subnet: {
+      id: privateEndpointSubnet.id
+    }
+  }
+}
+
+resource keyVaultPrivateDnsZoneGroup 'Microsoft.Network/privateEndpoints/privateDnsZoneGroups@2024-05-01' = {
+  parent: keyVaultPrivateEndpoint
+  name: 'default'
+  properties: {
+    privateDnsZoneConfigs: [
+      {
+        name: 'key-vault-private-dns'
+        properties: {
+          privateDnsZoneId: keyVaultPrivateDnsZone.id
+        }
+      }
+    ]
   }
 }
