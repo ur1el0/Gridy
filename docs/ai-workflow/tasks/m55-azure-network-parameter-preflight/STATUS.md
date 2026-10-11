@@ -3,8 +3,8 @@
 ## 1. Executive Summary
 
 - **Task ID:** `m55-azure-network-parameter-preflight`
-- **State:** Local implementation and verification complete; hosted CI and delivery pending
-- **Current milestone:** M1–M3 complete; M4 in progress
+- **State:** Complete — offline network preflight implemented, verified, and published in an open stacked PR
+- **Current milestone:** M1–M4 complete
 - **Branch:** `infra/m55-azure-network-parameter-preflight`
 - **Worktree:** `/tmp/gridy-m55-azure-network-parameter-preflight`
 - **PR base:** `infra/m54-acr-repository-preflight` (PR #185, open and unmerged)
@@ -18,7 +18,7 @@
 | M1 — Baseline and network contract | Complete | M54 helper, four Bicep network inputs, M42 limits, and current Microsoft networking constraints reviewed. |
 | M2 — Offline validator and tests | Complete | Added a CIDR/network validator that reuses M54's duplicate-safe JSON and repository-name helpers; covers all four network rules and value-safe errors. |
 | M3 — CI and README | Complete | Added 14 stdlib tests to the unprivileged Python 3.12 preflight job and documented the combined command, source-based constraints, and limits. |
-| M4 — Review and delivery | In progress | Local review and checks are complete; commit, remote branch, stacked PR, and hosted verification pending. |
+| M4 — Review and delivery | Complete | Local and hosted verification passed; matching remote content tree published, and PR #186 is open, unmerged, and mergeable against M54. |
 
 ## 3. Baseline Decisions
 
@@ -47,6 +47,12 @@
 | Tracked diff hygiene | `git diff --check` | PASS: exit 0, no output. |
 | Scoped whitespace scan | Python scan of both validator scripts, new tests, workflow, README, and all three M55 task files | PASS: `PASS: no trailing whitespace`. |
 | Scope and safety inspection | `git status --short`, `git diff --name-only`, and review of the scoped diff | PASS: only planned workflow, README, shared preflight helper, and two new scripts are changed; no Azure action, migration, or dependency change. |
+| Local implementation commit/tree | Commit `4dc4f2bc29258c32fbf19375d4862c846e9c07e2`; tree `b04376334f1c770a17e756d60bf17f783c5a6a2f` | PASS: eight scoped files committed; worktree clean after commit. |
+| Remote parent and tree | Remote M54 checkpoint `068bbc175c3459e8b3e7f363097040c5a050bf73` (tree `0d8eb69566dac4bfe77e5acbdfd433c6765c299b`); M55 remote commit `96e87bd1a403e5a595f63a1703cbb5403521789b` | PASS: remote M55 commit is parented on M54 and has the same content tree `b04376334f1c770a17e756d60bf17f783c5a6a2f` as the local implementation commit. |
+| Hosted GitHub Actions | [Run #435](https://github.com/ur1el0/KapitBayan/actions/runs/38150884566) on remote commit `96e87bd1a403e5a595f63a1703cbb5403521789b` | PASS: all nine jobs succeeded, including the Azure pilot parameter preflight tests, Bicep compile, backend, frontend, mobile, container image, Compose migration gate, and PostgreSQL DNS reconnect jobs. |
+| Vercel preview | PR #186 status check | PASS: Vercel status succeeded. This is a preview check, not a production deployment. |
+| Stacked pull request | [PR #186](https://github.com/ur1el0/KapitBayan/pull/186) | PASS: open, unmerged, mergeable, eight changed files, targeting `infra/m54-acr-repository-preflight` (PR #185 remains open and unmerged). |
+| Primary checkout boundary | `git -C /home/dokja/vsc-fedora/all/Projects/django-projects/Gridy status --short --branch` | PASS: no tracked changes; pre-existing untracked `.agents/` content and logo JPEGs remain present. The M55 commands did not edit those paths. |
 
 ## 5. Planned Files
 
@@ -62,5 +68,16 @@
 - [x] Add and run the test-first network preflight suite.
 - [x] Implement strict offline IPv4/CIDR validation and value-safe diagnostics.
 - [x] Add the unprivileged Python CI job and document usage/limits.
-- [ ] Commit and publish the stacked PR, then inspect hosted checks.
+- [x] Commit and publish the stacked PR, then inspect hosted checks.
 - [x] Preserve M42 gates, untracked environment/logo files, and the primary checkout.
+
+## 7. Delivery Checkpoint
+
+- **Local implementation commit:** `4dc4f2bc29258c32fbf19375d4862c846e9c07e2`.
+- **Remote implementation commit:** `96e87bd1a403e5a595f63a1703cbb5403521789b`.
+- **Implementation content tree:** `b04376334f1c770a17e756d60bf17f783c5a6a2f` locally and remotely.
+- **Remote parent:** M54 checkpoint `068bbc175c3459e8b3e7f363097040c5a050bf73`, tree `0d8eb69566dac4bfe77e5acbdfd433c6765c299b`.
+- **PR:** [#186](https://github.com/ur1el0/KapitBayan/pull/186), open, unmerged, and mergeable; base is `infra/m54-acr-repository-preflight`.
+- **Hosted CI:** [Run #435](https://github.com/ur1el0/KapitBayan/actions/runs/38150884566) passed all nine jobs.
+- **Vercel:** Preview status passed; no production deployment occurred.
+- **Safety:** No Azure authentication, account/resource query, network provisioning, deployment, database/schema change, or dependency change occurred. M42 approvals and actual CIDR selection remain open.
