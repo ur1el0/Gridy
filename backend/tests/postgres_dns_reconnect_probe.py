@@ -4,8 +4,15 @@ import json
 import os
 import sys
 from http.server import BaseHTTPRequestHandler, HTTPServer
+from pathlib import Path
 from urllib.error import HTTPError, URLError
 from urllib.request import urlopen
+
+# Executing this file by path puts backend/tests on sys.path, not backend/.
+# Add the project root so Django can import config.settings and its app packages.
+BACKEND_DIR = str(Path(__file__).resolve().parents[1])
+if BACKEND_DIR not in sys.path:
+    sys.path.insert(0, BACKEND_DIR)
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "config.settings")
 
