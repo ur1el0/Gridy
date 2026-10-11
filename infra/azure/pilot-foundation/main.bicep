@@ -81,7 +81,7 @@ param postgresBackup PostgreSqlBackupSettings
 
 type PostgreSqlHighAvailabilitySettings = {
   mode: 'Disabled' | 'SameZone' | 'ZoneRedundant'
-  standbyAvailabilityZone?: string
+  standbyAvailabilityZone: string?
 }
 @description('Explicit PostgreSQL HA mode and optional standby zone. Confirm SKU, region availability, cost, and RPO/RTO requirements before deployment.')
 param postgresHighAvailability PostgreSqlHighAvailabilitySettings
