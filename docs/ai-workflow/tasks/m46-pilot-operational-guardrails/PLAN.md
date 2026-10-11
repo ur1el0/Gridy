@@ -48,7 +48,7 @@ git diff --cached --name-only
 - [x] Deployment guide explains per-process throttle limits and best-effort notification semantics.
 - [x] `git diff --check` passes and only the scoped documentation/task-packet files are changed.
 - [x] No staged unrelated files, source changes, migrations, dependencies, container changes, or cloud operations.
-- [ ] Commit and open a stacked PR targeting M45 PR #176; do not merge or deploy.
+- [x] Commit and open stacked PR #177 targeting M45 PR #176; do not merge or deploy.
 
 ## 4. Risks and Rollback
 

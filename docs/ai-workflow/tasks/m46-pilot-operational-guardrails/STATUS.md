@@ -3,7 +3,7 @@
 ## 1. Executive Summary
 
 - **Task ID:** `m46-pilot-operational-guardrails`
-- **State:** Implementation and local verification complete; publication pending
+- **State:** PR #177 open; hosted checks pending
 - **Current milestone:** M1 — record and publish the pilot guardrails
 - **Branch:** `docs/m46-pilot-operational-guardrails`
 - **Worktree:** `/tmp/gridy-m46-pilot-operational-guardrails`
@@ -14,7 +14,7 @@
 
 | Milestone | State | Notes |
 | --- | --- | --- |
-| M1 — Record and publish the pilot guardrails | Complete locally | ADR and deployment documentation align on best-effort delivery, per-process throttles, and outstanding owner/scale gates. |
+| M1 — Record and publish the pilot guardrails | Published; hosted checks pending | ADR and deployment documentation align on best-effort delivery, per-process throttles, and outstanding owner/scale gates. PR #177 is open and unmerged. |
 
 ## 3. Baseline and Decisions
 
@@ -48,6 +48,8 @@ The task packet is ignored by the broad `docs/ai-workflow` rule and must be forc
 | Diff scope | `git diff --name-only` and `git status --short --branch` | Only the two deployment documents are tracked modifications; ADR 013 is the sole new architecture document. The task packet is under the ignored `docs/ai-workflow` tree and will be explicitly force-added. |
 | Staged state | `git diff --cached --name-only` | Empty; no files staged. |
 | Runtime/schema/dependency boundary | `git status --short --branch`, `git diff --name-only`, and read-only check of changed paths | No application source, migrations, dependency files, Docker/Compose, CI, environment, or cloud configuration changes. No tests were run because the milestone changes documentation only. |
+| M45 base CI | GitHub Actions runs #368 and #370; combined Vercel status for M45 head | PASS: both Actions runs completed successfully, including backend, frontend, image, mobile, and Compose jobs; M45 Vercel Preview status is success. |
+| M46 hosted checks | GitHub Actions run #372 and combined status for M46 head `fae1ee97dd8eee926b983805b6767778e03e6ec2` | Vercel Preview status is success. Actions run #372 is in progress; no failed jobs were reported at the last check. |
 
 ## 6. Review Notes
 
@@ -56,11 +58,18 @@ The task packet is ignored by the broad `docs/ai-workflow` rule and must be forc
 - The existing `LocMemCache` throttle counters remain approximate per-process budgets; a single replica still has separate counters in its three Gunicorn workers.
 - No application behavior, schema, dependency, cloud, or deployment state changed.
 
-## 7. Remaining Work
+## 7. Delivery Checkpoint
+
+- **Local commit:** `a658853926d3e1c414b5a85213569074312901bd`, tree `8e4305987f0acd641e1e52c7f794d83b8214166e`.
+- **Remote commit:** `fae1ee97dd8eee926b983805b6767778e03e6ec2`, parent M45 PR head `ff1492a1770c1c6d59172fbc84c8248c93206703`; tree matches the local commit.
+- **PR:** [#177](https://github.com/ur1el0/KapitBayan/pull/177), open and unmerged, based on M45 PR #176. GitHub reports it mergeable.
+- No merge, production deployment, cloud configuration, or infrastructure changes occurred.
+
+## 8. Remaining Work
 
 - [x] Write ADR 013 with alternatives, consequences, and bounded pilot scope.
 - [x] Align architecture and observability documentation.
 - [x] Run documentation consistency and diff-hygiene checks.
 - [x] Review scope and preserve zero runtime, cloud, schema, and dependency changes.
-- [ ] Commit the scoped documents and task packet.
-- [ ] Publish the milestone branch and open a stacked PR against M45 PR #176; do not merge or deploy.
+- [x] Commit and publish the scoped documents and task packet.
+- [ ] Recheck M46 hosted Actions and Vercel Preview results; do not merge or deploy.
