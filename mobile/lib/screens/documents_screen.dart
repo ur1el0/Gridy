@@ -10,6 +10,7 @@ import '../services/storage_service.dart';
 import '../widgets/custom_bottom_nav.dart';
 import '../widgets/document_details_dialog.dart';
 import '../widgets/document_request_card.dart';
+import '../widgets/document_requests_error_state.dart';
 import '../widgets/document_search_field.dart';
 import '../widgets/empty_document_requests.dart';
 import '../widgets/request_document_dialog.dart';
@@ -36,6 +37,9 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
   UserModel? _currentUser;
   List<DocumentRequestModel> _requests = [];
   bool _isLoading = true;
+  bool _hasLoadedDocuments = false;
+  bool _isRetrying = false;
+  String? _loadErrorMessage;
   final int _selectedNavIndex = 2;
 
   final TextEditingController _searchController = TextEditingController();
@@ -73,18 +77,29 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
   Future<void> _loadDocumentsData() async {
     if (_documentService == null) return;
 
+    if (_loadErrorMessage != null && mounted) {
+      setState(() => _isRetrying = true);
+    }
+
     try {
       final fetchedRequests = await _documentService!.fetchDocumentRequests();
       if (mounted) {
         setState(() {
           _requests = fetchedRequests;
+          _hasLoadedDocuments = true;
+          _loadErrorMessage = null;
           _isLoading = false;
+          _isRetrying = false;
         });
       }
     } catch (_) {
       if (mounted) {
         setState(() {
+          _loadErrorMessage = _hasLoadedDocuments
+              ? "We couldn't refresh your document requests."
+              : "We couldn't load your document requests.";
           _isLoading = false;
+          _isRetrying = false;
         });
       }
     }
@@ -293,10 +308,17 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
                     ),
                     const SizedBox(height: 14),
 
-                    // List of Requests
-                    if (filteredRequests.isEmpty)
+                    if (_loadErrorMessage != null)
+                      DocumentRequestsErrorState(
+                        message: _loadErrorMessage!,
+                        onRetry: _loadDocumentsData,
+                        retrying: _isRetrying,
+                      ),
+
+                    // A failed first load is distinct from a successful empty result.
+                    if (_hasLoadedDocuments && filteredRequests.isEmpty)
                       EmptyDocumentRequests(searchQuery: _searchQuery)
-                    else
+                    else if (_hasLoadedDocuments)
                       ListView.builder(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
