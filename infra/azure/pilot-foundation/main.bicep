@@ -128,6 +128,19 @@ param acrPrivateDnsLinkName string
 param acrImagePullIdentityName string
 
 @minLength(3)
+@maxLength(128)
+@description('Name of the separate user-assigned identity reserved for trusted private image publishing.')
+param acrImagePublisherIdentityName string
+
+@minLength(1)
+@description('Approved ACR repository name for the backend image. Required explicitly; no repository value is selected by this template.')
+param acrBackendImageRepositoryName string
+
+@minLength(1)
+@description('Approved ACR repository name for the frontend image. Required explicitly; no repository value is selected by this template.')
+param acrFrontendImageRepositoryName string
+
+@minLength(3)
 @maxLength(24)
 @description('Globally unique Key Vault name. Select an available valid name before deployment.')
 param keyVaultName string
@@ -309,6 +322,12 @@ resource acrImagePullIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@
   tags: tags
 }
 
+resource acrImagePublisherIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
+  name: acrImagePublisherIdentityName
+  location: location
+  tags: tags
+}
+
 resource acrPrivateDnsZone 'Microsoft.Network/privateDnsZones@2024-06-01' = {
   name: 'privatelink.azurecr.io'
   location: 'global'
@@ -445,7 +464,14 @@ resource keyVaultPrivateDnsZoneGroup 'Microsoft.Network/privateEndpoints/private
 
 // ABAC-compatible data-plane reader; no repository catalog or write permission.
 var acrRepositoryReaderRoleDefinitionId = 'b93aa761-3e63-49ed-ac28-beffa264f7ac'
+var acrRepositoryWriterRoleDefinitionId = '2a1e307c-b015-4ebd-883e-5b7698a07328'
 var keyVaultSecretsUserRoleDefinitionId = '4633458b-17de-408a-b874-0445c86b69e6'
+
+// The Writer role has four data actions. Each condition scopes all of them to
+// one exact, operator-approved repository name. Keep these conditions in sync
+// with the compiled ARM checker and the official built-in role definition.
+var acrBackendWriterCondition = $'''((!(ActionMatches{'Microsoft.ContainerRegistry/registries/repositories/metadata/read'}) AND !(ActionMatches{'Microsoft.ContainerRegistry/registries/repositories/content/read'}) AND !(ActionMatches{'Microsoft.ContainerRegistry/registries/repositories/metadata/write'}) AND !(ActionMatches{'Microsoft.ContainerRegistry/registries/repositories/content/write'})) OR (@Request[Microsoft.ContainerRegistry/registries/repositories:name] StringEqualsIgnoreCase '${acrBackendImageRepositoryName}'))'''
+var acrFrontendWriterCondition = $'''((!(ActionMatches{'Microsoft.ContainerRegistry/registries/repositories/metadata/read'}) AND !(ActionMatches{'Microsoft.ContainerRegistry/registries/repositories/content/read'}) AND !(ActionMatches{'Microsoft.ContainerRegistry/registries/repositories/metadata/write'}) AND !(ActionMatches{'Microsoft.ContainerRegistry/registries/repositories/content/write'})) OR (@Request[Microsoft.ContainerRegistry/registries/repositories:name] StringEqualsIgnoreCase '${acrFrontendImageRepositoryName}'))'''
 
 resource acrImagePullRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
   name: guid(acrRegistry.id, acrImagePullIdentity.id, acrRepositoryReaderRoleDefinitionId)
@@ -454,6 +480,30 @@ resource acrImagePullRoleAssignment 'Microsoft.Authorization/roleAssignments@202
     roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', acrRepositoryReaderRoleDefinitionId)
     principalId: acrImagePullIdentity.properties.principalId
     principalType: 'ServicePrincipal'
+  }
+}
+
+resource acrBackendImagePublisherRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(acrRegistry.id, acrImagePublisherIdentity.id, acrRepositoryWriterRoleDefinitionId, 'backend-image-repository')
+  scope: acrRegistry
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', acrRepositoryWriterRoleDefinitionId)
+    principalId: acrImagePublisherIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+    condition: acrBackendWriterCondition
+    conditionVersion: '2.0'
+  }
+}
+
+resource acrFrontendImagePublisherRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(acrRegistry.id, acrImagePublisherIdentity.id, acrRepositoryWriterRoleDefinitionId, 'frontend-image-repository')
+  scope: acrRegistry
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', acrRepositoryWriterRoleDefinitionId)
+    principalId: acrImagePublisherIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+    condition: acrFrontendWriterCondition
+    conditionVersion: '2.0'
   }
 }
 

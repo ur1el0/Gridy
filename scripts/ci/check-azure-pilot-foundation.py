@@ -2,6 +2,7 @@
 """Check the compiled Azure pilot ARM template's safety and scope contract."""
 
 import json
+import re
 import sys
 from collections import Counter
 from pathlib import Path
@@ -50,6 +51,82 @@ def expand_variables(value: Any, variables: Any) -> str:
     return expression
 
 
+def validate_writer_condition(
+    condition: Any,
+    condition_version: Any,
+    variables: Any,
+    repository_parameter: str,
+) -> None:
+    if condition_version != "2.0":
+        fail(f"ACR Repository Writer condition version must be '2.0', got {condition_version!r}")
+
+    expression = expand_variables(condition, variables).casefold()
+    if not expression:
+        fail("ACR Repository Writer assignment must have a non-empty ABAC condition")
+
+    # Bicep emits an ARM format expression for an interpolated condition.
+    # Normalize its escaped literal braces/quotes while retaining ARM parameter
+    # references so this check validates the compiled deployment contract.
+    normalized = re.sub(r"\s+", "", expression).replace("{{", "{").replace("}}", "}")
+    normalized = normalized.replace("''", "'")
+    if normalized.count("format(") != 1:
+        fail("ACR Repository Writer condition must compile from one interpolated exact-name expression")
+    if "@request[microsoft.containerregistry/registries/repositories:name]" not in normalized:
+        fail("ACR Repository Writer condition must use the ACR repository-name request attribute")
+    if "stringequalsignorecase" not in normalized:
+        fail("ACR Repository Writer condition must use exact StringEqualsIgnoreCase matching")
+    if any(operator in normalized for operator in ("stringstartswith", "stringcontains", "stringmatches", "*")):
+        fail("ACR Repository Writer condition must not use prefix, pattern, or wildcard matching")
+    if f"parameters('{repository_parameter.casefold()}')" not in normalized:
+        fail(
+            "ACR Repository Writer condition must compare against required parameter "
+            f"{repository_parameter}"
+        )
+    if normalized.count(f"parameters('{repository_parameter.casefold()}')") != 1:
+        fail("ACR Repository Writer condition must reference its repository parameter exactly once")
+    if normalized.count("'{0}'") != 1:
+        fail("ACR Repository Writer condition must interpolate the repository parameter as one exact value")
+    if normalized.count("@request[microsoft.containerregistry/registries/repositories:name]") != 1:
+        fail("ACR Repository Writer condition must contain exactly one repository-name comparison")
+    if normalized.count("stringequalsignorecase") != 1:
+        fail("ACR Repository Writer condition must contain exactly one exact-name operator")
+    if len(re.findall(r"\bor\b", normalized)) != 1:
+        fail("ACR Repository Writer condition must contain exactly one action/repository OR")
+    if len(re.findall(r"\band\b", normalized)) != 3:
+        fail("ACR Repository Writer condition must contain exactly three action-gate AND operators")
+
+    expected_actions = (
+        "microsoft.containerregistry/registries/repositories/metadata/read",
+        "microsoft.containerregistry/registries/repositories/content/read",
+        "microsoft.containerregistry/registries/repositories/metadata/write",
+        "microsoft.containerregistry/registries/repositories/content/write",
+    )
+    try:
+        action_gate, repository_gate = re.split(r"\bor\b", normalized, maxsplit=1)
+    except ValueError:
+        fail("ACR Repository Writer condition must separate action and repository gates with OR")
+
+    for action in expected_actions:
+        negated_match = f"!(actionmatches{{'{action}'}})"
+        if action_gate.count(negated_match) != 1:
+            fail(
+                "ACR Repository Writer condition must negate each allowed data action exactly once: "
+                f"{action}"
+            )
+    if action_gate.count("actionmatches{") != len(expected_actions):
+        fail("ACR Repository Writer condition contains an unexpected or duplicate action match")
+    if normalized.count("actionmatches{") != len(expected_actions) or normalized.count("!(") != len(expected_actions):
+        fail("ACR Repository Writer condition must contain exactly four negated action matches")
+    if action_gate.count("and") != len(expected_actions) - 1:
+        fail("ACR Repository Writer condition must AND all four action gates")
+    if "@request[microsoft.containerregistry/registries/repositories:name]" not in repository_gate:
+        fail("ACR Repository Writer repository equality must be on the repository-name side of OR")
+    if "stringequalsignorecase" not in repository_gate or (
+        f"parameters('{repository_parameter.casefold()}')" not in repository_gate
+    ):
+        fail("ACR Repository Writer repository side must compare the exact required parameter")
+
+
 def main() -> None:
     if len(sys.argv) != 2:
         fail("usage: check-azure-pilot-foundation.py COMPILED_TEMPLATE.json")
@@ -95,6 +172,9 @@ def main() -> None:
         "acrPrivateEndpointName",
         "acrPrivateDnsLinkName",
         "acrImagePullIdentityName",
+        "acrImagePublisherIdentityName",
+        "acrBackendImageRepositoryName",
+        "acrFrontendImageRepositoryName",
         "keyVaultName",
         "keyVaultTenantId",
         "keyVaultPrivateEndpointName",
@@ -123,6 +203,17 @@ def main() -> None:
         fail(f"PostgreSQL administrator password must be secureString, got {password_type!r}")
     if parameters["acrSkuName"].get("allowedValues") != ["Premium"]:
         fail("ACR SKU parameter must be constrained to Premium for Private Link")
+    for name in (
+        "acrBackendImageRepositoryName",
+        "acrFrontendImageRepositoryName",
+    ):
+        parameter = parameters[name]
+        parameter_type = parameter.get("type")
+        if not isinstance(parameter_type, str) or parameter_type.casefold() != "string":
+            fail(f"{name} must be a required string parameter")
+        minimum_length = parameter.get("minLength")
+        if not isinstance(minimum_length, int) or minimum_length < 1:
+            fail(f"{name} must reject an empty repository name")
     retention = parameters["keyVaultSoftDeleteRetentionInDays"]
     if retention.get("minValue") != 7 or retention.get("maxValue") != 90:
         fail("Key Vault soft-delete retention parameter must be constrained to 7–90 days")
@@ -146,8 +237,8 @@ def main() -> None:
             "microsoft.dbforpostgresql/flexibleservers": 1,
             "microsoft.containerregistry/registries": 1,
             "microsoft.keyvault/vaults": 1,
-            "microsoft.managedidentity/userassignedidentities": 2,
-            "microsoft.authorization/roleassignments": 2,
+            "microsoft.managedidentity/userassignedidentities": 3,
+            "microsoft.authorization/roleassignments": 4,
         }
     )
     if type_counts != expected_counts:
@@ -290,6 +381,7 @@ def main() -> None:
     identities = by_type["microsoft.managedidentity/userassignedidentities"]
     expected_identities = {
         "acrImagePullIdentityName",
+        "acrImagePublisherIdentityName",
         "backendRuntimeIdentityName",
     }
     observed_identity_parameters: set[str] = set()
@@ -316,23 +408,36 @@ def main() -> None:
             "scope_type": "microsoft.containerregistry/registries",
             "scope_parameter": "acrRegistryName",
             "identity_symbol": "acrImagePullIdentity",
+            "expected_count": 1,
+            "condition": None,
         },
         "4633458b-17de-408a-b874-0445c86b69e6": {
             "scope_type": "microsoft.keyvault/vaults",
             "scope_parameter": "keyVaultName",
             "identity_symbol": "backendRuntimeIdentity",
+            "expected_count": 1,
+            "condition": None,
+        },
+        "2a1e307c-b015-4ebd-883e-5b7698a07328": {
+            "scope_type": "microsoft.containerregistry/registries",
+            "scope_parameter": "acrRegistryName",
+            "identity_symbol": "acrImagePublisherIdentity",
+            "expected_count": 2,
+            "condition": "repository-specific",
         },
     }
-    observed_roles: set[str] = set()
+    observed_roles: Counter[str] = Counter()
+    observed_writer_repository_parameters: set[str] = set()
+    writer_assignment_names: set[str] = set()
     for assignment in by_type["microsoft.authorization/roleassignments"]:
         properties = assignment.get("properties", {})
         role_definition = expand_variables(
             properties.get("roleDefinitionId"), variables
         ).casefold()
         role_id = next((role for role in role_contracts if role in role_definition), None)
-        if role_id is None or role_id in observed_roles:
-            fail(f"role assignment has an unexpected or duplicate built-in role: {role_definition!r}")
-        observed_roles.add(role_id)
+        if role_id is None:
+            fail(f"role assignment has an unexpected built-in role: {role_definition!r}")
+        observed_roles[role_id] += 1
         contract = role_contracts[role_id]
         if properties.get("principalType") != "ServicePrincipal":
             fail(f"role {role_id} must be assigned to a managed-identity service principal")
@@ -350,10 +455,52 @@ def main() -> None:
             fail(f"role {role_id} must be scoped to {contract['scope_type']} resource")
         if "guid(" not in arm_expression(assignment.get("name")).casefold():
             fail(f"role {role_id} assignment name must be deterministic")
-        if "condition" in properties or "delegatedManagedIdentityResourceId" in properties:
-            fail(f"role {role_id} contains an unreviewed condition or delegation")
-    if observed_roles != set(role_contracts):
-        fail(f"role assignment coverage mismatch: {sorted(observed_roles)}")
+        if "delegatedManagedIdentityResourceId" in properties:
+            fail(f"role {role_id} contains an unreviewed delegation")
+
+        if contract["condition"] == "repository-specific":
+            repository_parameter = next(
+                (
+                    parameter
+                    for parameter in (
+                        "acrBackendImageRepositoryName",
+                        "acrFrontendImageRepositoryName",
+                    )
+                    if f"parameters('{parameter.casefold()}')" in expand_variables(
+                        properties.get("condition"), variables
+                    ).casefold()
+                ),
+                None,
+            )
+            if repository_parameter is None or repository_parameter in observed_writer_repository_parameters:
+                fail("each ACR Repository Writer assignment must target one distinct repository parameter")
+            observed_writer_repository_parameters.add(repository_parameter)
+            validate_writer_condition(
+                properties.get("condition"),
+                properties.get("conditionVersion"),
+                variables,
+                repository_parameter,
+            )
+            assignment_name = arm_expression(assignment.get("name")).casefold()
+            if assignment_name in writer_assignment_names:
+                fail("ACR Repository Writer assignment names must be deterministic and distinct")
+            writer_assignment_names.add(assignment_name)
+        elif "condition" in properties or "conditionVersion" in properties:
+            fail(f"role {role_id} contains an unreviewed condition")
+
+    expected_role_counts = {
+        role_id: contract["expected_count"] for role_id, contract in role_contracts.items()
+    }
+    if observed_roles != Counter(expected_role_counts):
+        fail(
+            "role assignment coverage mismatch; "
+            f"expected={expected_role_counts}, observed={dict(observed_roles)}"
+        )
+    if observed_writer_repository_parameters != {
+        "acrBackendImageRepositoryName",
+        "acrFrontendImageRepositoryName",
+    }:
+        fail("ACR Repository Writer assignments must cover both required repository parameters")
 
     endpoint_contracts = {
         "microsoft.containerregistry/registries": (
@@ -432,9 +579,9 @@ def main() -> None:
     if forbidden_types.intersection(type_counts):
         fail(f"out-of-scope resources found: {sorted(forbidden_types.intersection(type_counts))}")
     print(
-        "PASS: required parameters, private ACR/Key Vault, separate managed identities, "
-        "exactly scoped read roles, private endpoints/DNS, and no-app/no-secret/no-output "
-        "boundary verified."
+        "PASS: required parameters, private ACR/Key Vault, separate runtime and publisher "
+        "identities, exact repository-conditioned writer roles, scoped runtime read roles, "
+        "private endpoints/DNS, and no-app/no-secret/no-output boundary verified."
     )
 
 
