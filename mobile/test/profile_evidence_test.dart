@@ -1,7 +1,9 @@
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
+import 'package:image_picker/image_picker.dart';
 import 'package:mobile/core/config/app_config.dart';
 import 'package:mobile/core/network/api_client.dart';
 import 'package:mobile/core/network/api_exception.dart';
@@ -169,6 +171,59 @@ void main() {
 
       final cachedUser = storage.getUser();
       expect(cachedUser?.fullName, 'Updated Name');
+    });
+
+    test('sends multipart request when uploading/replacing evidence files and updates local storage', () async {
+      apiClient.mockStatusCode = 200;
+      apiClient.mockResponseBody = {
+        'id': 1,
+        'username': 'resident',
+        'email': 'res@example.com',
+        'role': 'RESIDENT',
+        'full_name': 'Juan Upload Test',
+        'profile': {
+          'id': 10,
+          'full_name': 'Juan Upload Test',
+          'philsys_id_number': '1234-5678-9012-3456',
+          'philsys_id_photo': 'auth/resident/10/media/philsys_id_photo/',
+          'secondary_id_type': 'Passport',
+          'secondary_id_photo': 'auth/resident/10/media/secondary_id_photo/',
+        },
+      };
+
+      final photoBytes = Uint8List.fromList(utf8.encode('fake_image_bytes'));
+      final testFile = XFile.fromData(
+        photoBytes,
+        name: 'replacement_philsys.jpg',
+        path: 'replacement_philsys.jpg',
+      );
+
+      final updated = await authService.updateProfile(
+        fullName: 'Juan Upload Test',
+        philsysIdNumber: '1234-5678-9012-3456',
+        philsysPhoto: testFile,
+        secondaryIdType: 'Passport',
+      );
+
+      // Verify multipart files sent
+      expect(apiClient.lastMultipartFiles, isNotNull);
+      expect(apiClient.lastMultipartFiles!.length, 1);
+      expect(apiClient.lastMultipartFiles!.first.field, 'philsys_id_photo');
+      expect(apiClient.lastMultipartFiles!.first.filename, 'replacement_philsys.jpg');
+
+      // Verify multipart fields sent
+      expect(apiClient.lastMultipartFields, isNotNull);
+      expect(apiClient.lastMultipartFields!['full_name'], 'Juan Upload Test');
+      expect(apiClient.lastMultipartFields!['philsys_id_number'], '1234-5678-9012-3456');
+      expect(apiClient.lastMultipartFields!['secondary_id_type'], 'Passport');
+
+      // Verify updated user and storage persistence
+      expect(updated.fullName, 'Juan Upload Test');
+      expect(updated.philsysIdNumber, '1234-5678-9012-3456');
+      final cachedUser = storage.getUser();
+      expect(cachedUser?.fullName, 'Juan Upload Test');
+      expect(cachedUser?.philsysIdNumber, '1234-5678-9012-3456');
+      expect(cachedUser?.hasPhilsysPhoto, isTrue);
     });
 
     test('extracts verification_documents error message on 400 rejection', () async {
@@ -358,6 +413,63 @@ void main() {
       // Verify view mode restored with original name
       expect(find.text('Maria Santos'), findsOneWidget);
       expect(find.text('Changed Temporary Name'), findsNothing);
+    });
+
+    testWidgets('cancelling edit mode after staging evidence changes restores original state', (tester) async {
+      tester.view.physicalSize = const Size(1080, 2400);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      await tester.pumpWidget(createProfileWidget(userWithTwoProofs));
+      await tester.pumpAndSettle();
+
+      // Enter edit mode
+      await tester.tap(find.text('Edit Profile'));
+      await tester.pumpAndSettle();
+
+      // Scroll down to evidence section
+      await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -500));
+      await tester.pumpAndSettle();
+
+      // Stage an evidence change: modify PhilSys ID Number in controller
+      final philsysField = find.widgetWithText(TextField, '1111-2222-3333-4444');
+      expect(philsysField, findsOneWidget);
+      await tester.enterText(philsysField, '9999-8888-7777-6666');
+
+      // Stage an evidence removal on Utility Billing (userWithTwoProofs has 2 proofs, so canRemove is true)
+      final removeButtons = find.byTooltip('Remove document');
+      expect(removeButtons, findsNWidgets(2));
+      await tester.tap(removeButtons.last);
+      await tester.pumpAndSettle();
+
+      // Verify staged removal state is displayed
+      expect(find.text('Marked for removal'), findsOneWidget);
+      expect(find.text('UNDO'), findsOneWidget);
+
+      // Scroll to Cancel and tap
+      await tester.drag(find.byType(SingleChildScrollView), const Offset(0, 500));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      // Verify view mode restored with original PhilSys ID and Utility on file
+      expect(find.text('ID No: 1111-2222-3333-4444'), findsOneWidget);
+      expect(find.text('ID No: 9999-8888-7777-6666'), findsNothing);
+      expect(find.text('Electric / Meralco (On file)'), findsOneWidget);
+
+      // Re-enter edit mode to verify staged removal was cleared
+      await tester.tap(find.text('Edit Profile'));
+      await tester.pumpAndSettle();
+
+      await tester.drag(find.byType(SingleChildScrollView), const Offset(0, -500));
+      await tester.pumpAndSettle();
+
+      expect(find.text('Marked for removal'), findsNothing);
+      expect(find.widgetWithText(TextField, '1111-2222-3333-4444'), findsOneWidget);
     });
 
     testWidgets('shows backend error snackbar when update fails', (tester) async {

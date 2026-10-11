@@ -179,6 +179,7 @@ class ProfileEvidenceAPITests(IsolatedAuthAPITestCase):
                 "profile": {
                     "full_name": "Updated RBI Name",
                     "contact_number": "09222222222",
+                    "birth_date": "1990-10-10",
                     "voter_status": True,
                 }
             },
@@ -189,6 +190,7 @@ class ProfileEvidenceAPITests(IsolatedAuthAPITestCase):
         rbi_profile.refresh_from_db()
         self.assertEqual(rbi_profile.full_name, "Updated RBI Name")
         self.assertEqual(rbi_profile.contact_number, "09222222222")
+        self.assertEqual(str(rbi_profile.birth_date), "1990-10-10")
         self.assertTrue(rbi_profile.voter_status)
         self.assertFalse(bool(rbi_profile.philsys_id_photo))
 
@@ -288,4 +290,3 @@ class ProfileEvidenceAPITests(IsolatedAuthAPITestCase):
 
         self.resident.refresh_from_db()
         self.assertEqual(self.resident.full_name, "Malicious Modification")
-
