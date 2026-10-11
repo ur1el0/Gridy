@@ -64,6 +64,8 @@ The M43 one-shot migration job and M44 CI smoke establish migration ordering and
 
 A code rollback is safe only when the current schema remains compatible with the prior revision. Do not assume migrations can be reversed; choose a tested forward repair or an explicitly approved backup restore with its data-loss window recorded. M43's removal of startup-time `hostaddr` pinning does not prove reconnect after a live PostgreSQL DNS change. A controlled DNS failover/reconnect rehearsal remains a separate non-production pilot gate.
 
+The CI DNS-reconnect smoke uses disposable PostgreSQL containers and Docker's embedded DNS to verify that a persistent Django probe process can recover on a subsequent request after its original connection is interrupted and the service alias moves to another container. It does not model Azure PostgreSQL failover, provider DNS propagation, TLS, or managed-service recovery timing; those remain unverified pilot checks.
+
 ---
 
 ## 4. Mobile Distribution

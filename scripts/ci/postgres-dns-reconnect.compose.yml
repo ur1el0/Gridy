@@ -1,0 +1,61 @@
+services:
+  db_primary:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: m48_probe
+      POSTGRES_USER: m48_probe
+      POSTGRES_PASSWORD: disposable-m48-password
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U m48_probe -d m48_probe"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    networks:
+      dns:
+        ipv4_address: 10.253.240.10
+        aliases:
+          - db
+
+  db_failover:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: m48_probe
+      POSTGRES_USER: m48_probe
+      POSTGRES_PASSWORD: disposable-m48-password
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U m48_probe -d m48_probe"]
+      interval: 2s
+      timeout: 2s
+      retries: 30
+    networks:
+      staging: {}
+
+  probe:
+    build:
+      context: ../../backend
+    command: ["python", "tests/postgres_dns_reconnect_probe.py", "serve"]
+    environment:
+      SECRET_KEY: m48-disposable-test-key
+      DEBUG: "True"
+      ADMIN_REGISTRATION_PASSKEY: m48-disposable-test-passkey
+      DATABASE_URL: postgres://m48_probe:disposable-m48-password@db:5432/m48_probe
+    depends_on:
+      db_primary:
+        condition: service_healthy
+    healthcheck:
+      disable: true
+    restart: "no"
+    networks:
+      dns:
+        ipv4_address: 10.253.240.12
+
+networks:
+  dns:
+    ipam:
+      config:
+        - subnet: 10.253.240.0/24
+  staging: {}

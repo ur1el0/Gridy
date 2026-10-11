@@ -81,6 +81,18 @@ jobs:
       - name: Exercise Compose migration success and failure gates
         run: bash scripts/ci/compose-migration-gate-smoke.sh
 
+  postgres-dns-reconnect-smoke:
+    name: PostgreSQL DNS reconnect smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Exercise Django reconnect after database DNS reassignment
+        run: bash scripts/ci/postgres-dns-reconnect-smoke.sh
+
   frontend-tests:
     runs-on: ubuntu-latest
     steps:
