@@ -40,6 +40,16 @@ def arm_expression(value: Any) -> str:
     return value if isinstance(value, str) else ""
 
 
+def expand_variables(value: Any, variables: Any) -> str:
+    expression = arm_expression(value)
+    if not isinstance(variables, dict):
+        return expression
+    for name, variable_value in variables.items():
+        if isinstance(name, str) and isinstance(variable_value, str):
+            expression = expression.replace(f"variables('{name}')", variable_value)
+    return expression
+
+
 def main() -> None:
     if len(sys.argv) != 2:
         fail("usage: check-azure-pilot-foundation.py COMPILED_TEMPLATE.json")
@@ -118,6 +128,8 @@ def main() -> None:
         fail("Key Vault soft-delete retention parameter must be constrained to 7–90 days")
     if template.get("outputs"):
         fail("foundation template must not emit output values")
+
+    variables = template.get("variables", {})
 
     resources = walk_resources(template.get("resources", []))
     type_counts = Counter(normalized_type(resource) for resource in resources)
@@ -314,7 +326,9 @@ def main() -> None:
     observed_roles: set[str] = set()
     for assignment in by_type["microsoft.authorization/roleassignments"]:
         properties = assignment.get("properties", {})
-        role_definition = arm_expression(properties.get("roleDefinitionId")).casefold()
+        role_definition = expand_variables(
+            properties.get("roleDefinitionId"), variables
+        ).casefold()
         role_id = next((role for role in role_contracts if role in role_definition), None)
         if role_id is None or role_id in observed_roles:
             fail(f"role assignment has an unexpected or duplicate built-in role: {role_definition!r}")

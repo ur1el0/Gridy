@@ -287,7 +287,7 @@ resource postgresServer 'Microsoft.DBforPostgreSQL/flexibleServers@2025-08-01' =
   }
 }
 
-resource acrRegistry 'Microsoft.ContainerRegistry/registries@2025-04-01' = {
+resource acrRegistry 'Microsoft.ContainerRegistry/registries@2025-11-01' = {
   name: acrRegistryName
   location: location
   tags: tags

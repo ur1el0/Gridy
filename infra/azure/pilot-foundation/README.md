@@ -82,7 +82,7 @@ References reviewed 2026-10-11:
 - [ACR role assignment overview](https://learn.microsoft.com/en-us/azure/container-registry/container-registry-rbac-built-in-roles-overview) — recommended roles for container orchestrators.
 - [Key Vault security built-in roles](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/security) — Key Vault Secrets User scope and permissions.
 - [User-assigned identity Bicep resource](https://learn.microsoft.com/en-us/azure/templates/microsoft.managedidentity/userassignedidentities) and [Azure role assignments](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments) — resource and assignment contract.
-- [Container Registry Bicep resource](https://learn.microsoft.com/en-us/azure/templates/microsoft.containerregistry/2025-04-01/registries) — supported SKU and network properties.
+- [Container Registry Bicep resource](https://learn.microsoft.com/en-us/azure/templates/microsoft.containerregistry/2025-11-01/registries) — supported role-assignment mode, SKU, and network properties.
 - [Key Vault Bicep resource](https://learn.microsoft.com/en-us/azure/templates/microsoft.keyvault/vaults) — RBAC, soft delete, purge protection, and network properties.
 - [Private Endpoints Bicep resource](https://learn.microsoft.com/en-us/azure/templates/microsoft.network/privateendpoints) — private-link connection and subnet resource shape.
 - [Private DNS zone groups Bicep resource](https://learn.microsoft.com/en-us/azure/templates/microsoft.network/2024-05-01/privateendpoints/privatednszonegroups) — private zone association shape.
