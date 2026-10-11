@@ -111,7 +111,7 @@ def main() -> None:
         fail(f"expected two dedicated subnets, found {len(subnet_resources)}")
     subnet_delegations = [
         {
-            delegation.get("properties", {}).get("serviceName")
+            str(delegation.get("properties", {}).get("serviceName", "")).casefold()
             for delegation in resource.get("properties", {}).get("delegations", [])
         }
         for resource in subnet_resources
