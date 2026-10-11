@@ -122,7 +122,7 @@ jobs:
             python3 scripts/ci/check-azure-pilot-foundation.py "$template_json"
 
   acr-repository-parameter-tests:
-    name: ACR repository parameter preflight tests
+    name: Azure pilot parameter preflight tests
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Code
@@ -135,6 +135,9 @@ jobs:
 
       - name: Test offline ACR repository parameter validation
         run: python -m unittest discover -s scripts/ci -p 'test_acr_repository_parameters.py'
+
+      - name: Test offline Azure pilot network parameter validation
+        run: python -m unittest discover -s scripts/ci -p 'test_azure_pilot_parameters.py'
 
   frontend-tests:
     runs-on: ubuntu-latest

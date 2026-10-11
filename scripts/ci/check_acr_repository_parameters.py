@@ -65,7 +65,7 @@ def validate_repository_name(value: object, parameter_name: str) -> str:
     return value
 
 
-def _read_parameter_document(path: Path) -> dict[str, Any]:
+def read_parameter_document(path: Path) -> dict[str, Any]:
     try:
         text = path.read_text(encoding="utf-8")
     except (OSError, UnicodeError) as error:
@@ -87,7 +87,8 @@ def _read_parameter_document(path: Path) -> dict[str, Any]:
     return document
 
 
-def _get_literal_parameter(parameters: dict[str, Any], parameter_name: str) -> str:
+def get_literal_string_parameter(parameters: dict[str, Any], parameter_name: str) -> str:
+    """Read one explicitly supplied, literal string parameter safely."""
     if parameter_name not in parameters:
         raise PreflightError(f"Parameter file is missing {parameter_name}")
 
@@ -95,23 +96,38 @@ def _get_literal_parameter(parameters: dict[str, Any], parameter_name: str) -> s
     if not isinstance(entry, dict) or set(entry) != {"value"}:
         raise PreflightError(f"{parameter_name} must use a literal string value")
 
-    return validate_repository_name(entry["value"], parameter_name)
+    value = entry["value"]
+    if not isinstance(value, str):
+        raise PreflightError(f"{parameter_name} must use a literal string value")
+    return value
 
 
-def load_repository_parameters(path: Path) -> tuple[str, str]:
-    """Load and validate both required repository parameters from JSON."""
-    document = _read_parameter_document(path)
+def validate_repository_parameters(document: dict[str, Any]) -> tuple[str, str]:
+    """Validate the two required ACR repository parameters in a parsed file."""
+    if not isinstance(document, dict):
+        raise PreflightError("Parameter file must contain a top-level JSON object")
+
     parameters = document.get("parameters")
     if not isinstance(parameters, dict):
         raise PreflightError("Parameter file must contain a parameters object")
 
-    backend_name = _get_literal_parameter(parameters, BACKEND_PARAMETER)
-    frontend_name = _get_literal_parameter(parameters, FRONTEND_PARAMETER)
+    backend_name = validate_repository_name(
+        get_literal_string_parameter(parameters, BACKEND_PARAMETER), BACKEND_PARAMETER
+    )
+    frontend_name = validate_repository_name(
+        get_literal_string_parameter(parameters, FRONTEND_PARAMETER), FRONTEND_PARAMETER
+    )
     if backend_name == frontend_name:
         raise PreflightError(
             f"{BACKEND_PARAMETER} and {FRONTEND_PARAMETER} must be distinct"
         )
     return backend_name, frontend_name
+
+
+def load_repository_parameters(path: Path) -> tuple[str, str]:
+    """Load and validate both required repository parameters from JSON."""
+    document = read_parameter_document(path)
+    return validate_repository_parameters(document)
 
 
 def main(argv: list[str] | None = None) -> int:
