@@ -47,15 +47,31 @@ Per **ADR 002 (HttpOnly Cookie Authentication)**, refresh tokens are never retur
 *   **Response Headers:**
     `Set-Cookie: refresh_token=eyJhbGciOi...; HttpOnly; Path=/api/v1/auth/; SameSite=Strict`
 
-#### POST `/api/v1/auth/import-residents/`
-*   **Description:** Bulk imports residents from a Registry of Barangay Inhabitants (RBI) CSV file (Barangay Official only). Auto-assigns residents to the official's barangay and sets `is_verified=True`.
+#### POST `/api/v1/auth/register/`
+*   **Description:** Self-service registration endpoint for residents. Mandates uploading at least one valid image of an accepted proof document: PhilSys ID (`philsys_id_photo`), secondary government ID (`secondary_id_photo`), or utility billing proof (`utility_billing_photo`). A typed PhilSys ID number alone is rejected with HTTP 400. Created accounts start in a pending verification state (`is_verified=False`).
 *   **Payload (Multipart Form):**
-    *   `file`: CSV file containing columns `full_name`, `birth_date`, `purok`, `contact_number`, `voter_status`.
-*   **Response (201 Created):**
+    *   `username`: string (required)
+    *   `password`: string (required)
+    *   `email`: string (required)
+    *   `full_name`: string (required)
+    *   `birth_date`: date (YYYY-MM-DD, required)
+    *   `barangay_id`: integer (required)
+    *   `privacy_consent`: boolean (`true`, required)
+    *   `privacy_consent_version`: string (required)
+    *   `philsys_id_photo`: image file (optional, satisfies proof requirement)
+    *   `secondary_id_photo`: image file (optional, satisfies proof requirement)
+    *   `utility_billing_photo`: image file (optional, satisfies proof requirement)
+*   **Response (201 Created):** `User` instance.
+
+#### POST `/api/v1/auth/import-residents/`
+*   **Description:** Bulk imports residents from a Registry of Barangay Inhabitants (RBI) CSV file (Barangay Official only). Unlike self-service registration, historical census records do not require uploaded proof images; the authorized official's import serves as an administrative residency attestation. Auto-assigns residents strictly to the official's barangay, sets `is_verified=True`, provisions unusable passwords (`password=None`), and durably logs audit provenance to `AuditLog` with batch and resident-level linkages.
+*   **Payload (Multipart Form):**
+    *   `file`: CSV file containing columns `username`, `email`, `full_name`, `birth_date`, `purok`, `contact_number`, `voter_status`.
+*   **Response (200 OK / 207 Multi-Status):**
     ```json
     {
-      "imported_count": 28,
-      "skipped_count": 0,
+      "imported": 28,
+      "skipped_due_to_duplicate": 0,
       "errors": []
     }
     ```

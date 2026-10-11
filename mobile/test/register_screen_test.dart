@@ -1,7 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
+import 'package:mobile/core/network/api_client.dart';
 import 'package:mobile/core/theme/app_theme.dart';
 import 'package:mobile/screens/register_screen.dart';
+import 'package:mobile/services/auth_service.dart';
+import 'package:mobile/services/storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -51,6 +55,7 @@ void main() {
 
     // Verify verification dossier header
     expect(find.text('IDENTITY & RESIDENCY VERIFICATION', skipOffstage: false), findsOneWidget);
+    expect(find.text('Required: upload at least one ID or proof of residency', skipOffstage: false), findsOneWidget);
 
     // Expand the verification accordion to reveal inner dossier fields
     await tester.ensureVisible(find.text('IDENTITY & RESIDENCY VERIFICATION'));
@@ -109,6 +114,64 @@ void main() {
     expect(find.text('Please enter your email address', skipOffstage: false), findsOneWidget);
     expect(find.text('Please enter a password', skipOffstage: false), findsOneWidget);
     expect(find.text('Please confirm your password', skipOffstage: false), findsOneWidget);
+  });
+
+  testWidgets('requires an ID or residency proof before sending registration', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+    final apiClient = RegistrationGuardApiClient();
+    final authService = AuthService(
+      apiClient: apiClient,
+      storageService: StorageService(preferences),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.lightTheme,
+        home: RegisterScreen(authService: authService),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final textFields = find.byType(TextFormField);
+    await tester.enterText(textFields.at(0), 'Test Resident');
+    await tester.enterText(textFields.at(1), 'test_resident');
+    await tester.enterText(textFields.at(2), 'test@example.com');
+    await tester.enterText(textFields.at(3), 'Password123!');
+    await tester.enterText(textFields.at(4), 'Password123!');
+
+    final barangayDropdown = find.byType(DropdownButtonFormField<int>);
+    await tester.ensureVisible(barangayDropdown);
+    await tester.tap(barangayDropdown);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Test Barangay (Lucena City, Quezon)').last);
+    await tester.pumpAndSettle();
+
+    final verificationHeader = find.text('IDENTITY & RESIDENCY VERIFICATION');
+    await tester.ensureVisible(verificationHeader);
+    await tester.tap(verificationHeader);
+    await tester.pumpAndSettle();
+    final privacyConsent = find.byType(CheckboxListTile);
+    await tester.ensureVisible(privacyConsent);
+    await tester.tap(privacyConsent);
+    await tester.pumpAndSettle();
+
+    final registerButton = find.text('Register Account');
+    await tester.ensureVisible(registerButton);
+    await tester.tap(registerButton);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Upload at least one ID or proof of residency photo to register.'),
+      findsOneWidget,
+    );
+    expect(apiClient.registrationRequestCount, 0);
   });
 
   testWidgets('Validates email formatting correctly', (WidgetTester tester) async {
@@ -200,4 +263,35 @@ void main() {
     expect(find.byIcon(Icons.visibility_off_outlined, skipOffstage: false), findsOneWidget);
     expect(find.byIcon(Icons.visibility_outlined, skipOffstage: false), findsOneWidget);
   });
+}
+
+class RegistrationGuardApiClient extends ApiClient {
+  int registrationRequestCount = 0;
+
+  RegistrationGuardApiClient() : super(baseUrl: 'https://kapitbayan.test');
+
+  @override
+  Future<http.Response> get(
+    String endpoint, {
+    Map<String, String>? queryParams,
+    Map<String, String>? headers,
+    bool requiresAuth = true,
+  }) async {
+    return http.Response(
+      '[{"id":1,"name":"Test Barangay","municipality":"Lucena City","province":"Quezon"}]',
+      200,
+      headers: {'content-type': 'application/json'},
+    );
+  }
+
+  @override
+  Future<http.Response> postMultipart(
+    String endpoint, {
+    Map<String, String>? fields,
+    List<http.MultipartFile>? files,
+    bool requiresAuth = true,
+  }) async {
+    registrationRequestCount++;
+    return http.Response('{}', 201, headers: {'content-type': 'application/json'});
+  }
 }

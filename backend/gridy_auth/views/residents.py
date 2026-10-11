@@ -1,6 +1,7 @@
 import csv
 import io
 import logging
+import uuid
 from datetime import datetime
 from django.db import transaction
 from django.shortcuts import get_object_or_404
@@ -43,13 +44,23 @@ class ResidentRejectionSerializer(serializers.Serializer):
 
 @extend_schema(
     summary="Bulk Import Residents from CSV",
+    description=(
+        "Bulk imports residents from a historical Registry of Barangay Inhabitants (RBI) "
+        "CSV file (Barangay Official only). Unlike resident self-service registration, "
+        "historical RBI records do not require uploaded proof images; the authorized official's "
+        "import serves as an administrative residency attestation. Imported resident accounts "
+        "are assigned to the official's barangay, marked as pre-verified (is_verified=True), "
+        "and provisioned without usable passwords. Durably logs audit provenance linked to the "
+        "importing official, the CSV file, and the imported resident records."
+    ),
     request={
         'multipart/form-data': FileUploadSerializer
     },
     responses={
         200: ResidentImportResponseSerializer,
         207: ResidentImportResponseSerializer,
-        400: OpenApiTypes.OBJECT
+        400: OpenApiTypes.OBJECT,
+        403: OpenApiTypes.OBJECT,
     }
 )
 
@@ -58,6 +69,9 @@ class ResidentImportView(APIView):
     parser_classes = [MultiPartParser, FormParser]
 
     def post(self, request, *args, **kwargs):
+        if request.user.barangay_id is None:
+            raise PermissionDenied("A barangay assignment is required to import residents.")
+
         file_obj = request.FILES.get('file')
         if not file_obj:
             return Response({"detail": "No file was uploaded"}, status=status.HTTP_400_BAD_REQUEST)
@@ -78,6 +92,8 @@ class ResidentImportView(APIView):
         imported_count = 0
         skipped_count = 0
         errors = []
+        imported_records = []
+        batch_id = str(uuid.uuid4())
 
         try:
             with transaction.atomic():
@@ -128,7 +144,7 @@ class ResidentImportView(APIView):
                     )
 
                     # 2. Create Resident Profile pre-verified from official Census / RBI records
-                    Resident.objects.create(
+                    resident = Resident.objects.create(
                         user=user, 
                         full_name=full_name, 
                         birth_date=birth_date,
@@ -137,7 +153,34 @@ class ResidentImportView(APIView):
                         purok=purok if purok else None,
                         is_verified=True
                     )
+                    imported_records.append((user, resident))
                     imported_count += 1
+
+                if imported_records:
+                    barangay_name = request.user.barangay.name
+                    barangay_id = request.user.barangay_id
+                    resident_ids_str = ", ".join(str(r.id) for _, r in imported_records)
+                    log_action(
+                        user=request.user,
+                        action_type=AuditLog.ActionType.USER_ACTION,
+                        description=(
+                            f"Administrative RBI attestation batch {batch_id}: imported {len(imported_records)} "
+                            f"pre-verified resident(s) from CSV '{file_obj.name}' into Barangay {barangay_name} "
+                            f"(ID: {barangay_id}). Resident IDs: {resident_ids_str}."
+                        ),
+                        request=request,
+                    )
+                    for u, r in imported_records:
+                        log_action(
+                            user=request.user,
+                            action_type=AuditLog.ActionType.USER_ACTION,
+                            description=(
+                                f"Administrative RBI attestation: imported and verified resident account "
+                                f"for {r.full_name} (ID: {r.id}, Username: {u.username}) in Barangay {barangay_name} "
+                                f"(ID: {barangay_id}) from CSV '{file_obj.name}' (Batch: {batch_id})."
+                            ),
+                            request=request,
+                        )
         except Exception:
             logger.exception("Resident CSV import transaction failed.")
             return Response(

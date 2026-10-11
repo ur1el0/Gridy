@@ -67,6 +67,18 @@ class RegisterSerializer(serializers.ModelSerializer):
                 )
             })
 
+        verification_image_fields = (
+            'philsys_id_photo',
+            'secondary_id_photo',
+            'utility_billing_photo',
+        )
+        if not any(attrs.get(field) for field in verification_image_fields):
+            raise serializers.ValidationError({
+                'verification_documents': (
+                    'Upload at least one ID or proof of residency photo to register.'
+                )
+            })
+
         birth_date = attrs.get('birth_date')
         guardian_id = attrs.get('guardian_id')
 

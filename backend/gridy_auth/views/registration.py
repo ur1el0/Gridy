@@ -15,7 +15,18 @@ class RegisterView(APIView):
     permission_classes = [permissions.AllowAny]
     throttle_scope = 'auth_register'
 
-    @extend_schema(request=RegisterSerializer, responses={201: UserSerializer})
+    @extend_schema(
+        request=RegisterSerializer,
+        responses={201: UserSerializer},
+        description=(
+            "Resident registration requires at least one valid uploaded image: "
+            "a PhilSys ID photo, a secondary ID photo, or a utility/residency "
+            "proof photo. A typed PhilSys ID number alone does not satisfy this "
+            "requirement. For historical administrative bulk ingestion without "
+            "digital proof images, authorized barangay officials must use the "
+            "RBI CSV import endpoint (/api/v1/auth/import-residents/)."
+        ),
+    )
     def post(self, request):
         serializer = RegisterSerializer(data=request.data)
         if serializer.is_valid():

@@ -96,6 +96,17 @@ export const Register: React.FC = () => {
             return;
         }
 
+        if (
+            !isAdminMode &&
+            !philsysPhoto &&
+            !utilityBillingPhoto &&
+            !secondaryIdPhoto
+        ) {
+            setError('Upload at least one ID or proof of residency photo to register.');
+            setIsVerificationExpanded(true);
+            return;
+        }
+
         setLoading(true);
 
         try {

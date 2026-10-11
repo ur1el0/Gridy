@@ -191,6 +191,12 @@ describe('Register Component (Dual-Mode)', () => {
             target: { value: '1990-01-01' },
         });
 
+        fireEvent.click(screen.getByRole('button', { name: /identity & residency verification/i }));
+        const idPhoto = new File(['resident id'], 'resident-id.png', { type: 'image/png' });
+        const fileInput = document.querySelector<HTMLInputElement>('input[type="file"]');
+        expect(fileInput).not.toBeNull();
+        fireEvent.change(fileInput!, { target: { files: [idPhoto] } });
+
         fireEvent.click(screen.getByRole('checkbox'));
         fireEvent.submit(
             screen
@@ -210,5 +216,39 @@ describe('Register Component (Dual-Mode)', () => {
         expect(formData.get('privacy_consent')).toBe('true');
         expect(formData.get('privacy_consent_version')).toBe('resident-v1');
         expect(formData.get('barangay_id')).toBe('2');
+        expect(formData.get('philsys_id_photo')).toBe(idPhoto);
+    });
+
+    it('requires an ID or residency proof upload before resident registration', async () => {
+        const postSpy = vi
+            .spyOn(axiosPublic, 'post')
+            .mockResolvedValue({ data: {} } as never);
+
+        render(
+            <BrowserRouter>
+                <Register />
+            </BrowserRouter>
+        );
+
+        const [passwordInput, confirmPasswordInput] =
+            screen.getAllByPlaceholderText('••••••••');
+        fireEvent.change(passwordInput, { target: { value: 'Password123!' } });
+        fireEvent.change(confirmPasswordInput, { target: { value: 'Password123!' } });
+        await screen.findByRole('option', { name: /Barangay Ibabang Dupay/ });
+        fireEvent.click(screen.getByRole('checkbox'));
+
+        fireEvent.submit(
+            screen
+                .getByRole('button', { name: /create resident account/i })
+                .closest('form')!
+        );
+
+        expect(
+            await screen.findByText('Upload at least one ID or proof of residency photo to register.')
+        ).toBeInTheDocument();
+        expect(
+            screen.getByRole('button', { name: /identity & residency verification/i })
+        ).toHaveAttribute('aria-expanded', 'true');
+        expect(postSpy).not.toHaveBeenCalled();
     });
 });
