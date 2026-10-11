@@ -338,7 +338,10 @@ def main() -> None:
             fail(f"role {role_id} must be assigned to a managed-identity service principal")
         principal = arm_expression(properties.get("principalId")).casefold()
         if contract["identity_parameter"].casefold() not in principal or ".principalid" not in principal:
-            fail(f"role {role_id} principal must resolve from {contract['identity_parameter']}")
+            fail(
+                f"role {role_id} principal must resolve from "
+                f"{contract['identity_parameter']}; got {principal!r}"
+            )
         scope = arm_expression(assignment.get("scope")).casefold()
         if contract["scope_type"] not in scope or contract["scope_parameter"].casefold() not in scope:
             fail(f"role {role_id} must be scoped to {contract['scope_type']} resource")

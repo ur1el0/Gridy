@@ -56,6 +56,7 @@ No CI workflow authentication, application, schema, or dependency source files h
 | Bicep source contract | Python assertions over `main.bicep` | PASS: 23 declarations (M50's 19 plus two identities and two role assignments), explicit ACR ABAC mode, and exact role IDs. |
 | Checker syntax | `python3 -m py_compile scripts/ci/check-azure-pilot-foundation.py` | PASS. |
 | First hosted M51 compile/check | GitHub Actions run `38145007304`, Azure foundation Bicep compile job | FAIL: compiler warned that ACR API `2025-04-01` did not model `roleAssignmentMode`; ARM checker did not expand Bicep variables containing the role GUIDs. Updated the ACR API to the documented `2025-11-01` schema and added safe variable expansion to the checker; rerun required. |
+| Second hosted M51 compile/check | GitHub Actions run `38145171147`, Azure foundation Bicep compile job | FAIL: Bicep compiled cleanly with ACR API `2025-11-01`, but the checker rejected the compiled identity-principal expression. Added the expression to the diagnostic so the next compile run reveals the exact emitted form; hosted rerun required. |
 | Diff hygiene | `git diff --check && git diff --cached --check` | PASS at the implementation checkpoint; no trailing whitespace found. |
 | Primary checkout | Read-only tracked status inspection | PASS: no tracked changes caused by M51 setup. Existing untracked agent/environment and logo assets are preserved. |
 | Scope review | Git staged and unstaged path inspection | PASS: only the three M51 task documents, pilot Bicep/README, and ARM checker are changed. |
