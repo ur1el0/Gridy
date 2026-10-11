@@ -58,6 +58,12 @@ DRF scoped throttles use Django's default `LocMemCache`. Each of the three Gunic
 
 These constraints document current behavior and future decision gates; they do not configure Azure resources, select a shared service, or record production-owner acceptance.
 
+### Rolling schema changes and rollback
+
+The M43 one-shot migration job and M44 CI smoke establish migration ordering and failure blocking. They do not prove that an older API revision can use the schema after a newer release migrates it. For schema changes that may overlap application revisions, follow the expand/backfill/switch/contract sequence in [ADR 014](decisions/014-safe-schema-rollout-compatibility.md) and test the specific prior and new application versions against disposable PostgreSQL before rollout. Delay destructive schema operations until older revisions are stopped and the rollback window has closed.
+
+A code rollback is safe only when the current schema remains compatible with the prior revision. Do not assume migrations can be reversed; choose a tested forward repair or an explicitly approved backup restore with its data-loss window recorded. M43's removal of startup-time `hostaddr` pinning does not prove reconnect after a live PostgreSQL DNS change. A controlled DNS failover/reconnect rehearsal remains a separate non-production pilot gate.
+
 ---
 
 ## 4. Mobile Distribution
