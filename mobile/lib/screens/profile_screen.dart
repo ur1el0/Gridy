@@ -1,11 +1,16 @@
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
+import '../core/network/api_exception.dart';
 import '../core/theme/app_colors.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
 import '../widgets/kapitbayan_logo.dart';
+import '../widgets/resident_evidence_edit_section.dart';
+import '../widgets/resident_evidence_view_section.dart';
+import '../widgets/resident_evidence_viewer_dialog.dart';
 import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -32,12 +37,47 @@ class _ProfileScreenState extends State<ProfileScreen> {
   DateTime? _birthDate;
   bool _voterStatus = false;
 
+  late TextEditingController _philsysIdController;
+  XFile? _newPhilsysPhoto;
+  bool _removePhilsysPhoto = false;
+
+  String _secondaryIdType = 'Passport';
+  XFile? _newSecondaryIdPhoto;
+  bool _removeSecondaryIdPhoto = false;
+
+  String _utilityBillingType = 'Electric / Meralco';
+  XFile? _newUtilityBillingPhoto;
+  bool _removeUtilityBillingPhoto = false;
+
+  final ImagePicker _imagePicker = ImagePicker();
+
+  static const List<String> _secondaryIdTypes = [
+    'Passport',
+    "Driver's License",
+    'UMID',
+    'Postal ID',
+    "Voter's ID",
+    'PRC ID',
+    'Senior Citizen ID',
+    'PWD ID',
+    'Other Valid ID',
+  ];
+
+  static const List<String> _billingTypes = [
+    'Electric / Meralco',
+    'Water Utility',
+    'Internet / Telecom',
+    'Barangay Certification',
+    'Lease Contract',
+  ];
+
   @override
   void initState() {
     super.initState();
     _currentUser = widget.user;
     _fullNameController = TextEditingController();
     _contactNumberController = TextEditingController();
+    _philsysIdController = TextEditingController();
     _resetFieldsFromUser();
   }
 
@@ -49,13 +89,93 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _currentUser.birthDate == null || _currentUser.birthDate!.isEmpty
         ? null
         : DateTime.tryParse(_currentUser.birthDate!);
+
+    _philsysIdController.text = _currentUser.philsysIdNumber ?? '';
+    _newPhilsysPhoto = null;
+    _removePhilsysPhoto = false;
+
+    _secondaryIdType = _currentUser.secondaryIdType ?? 'Passport';
+    if (!_secondaryIdTypes.contains(_secondaryIdType)) {
+      _secondaryIdType = 'Passport';
+    }
+    _newSecondaryIdPhoto = null;
+    _removeSecondaryIdPhoto = false;
+
+    _utilityBillingType = _currentUser.utilityBillingType ?? 'Electric / Meralco';
+    if (!_billingTypes.contains(_utilityBillingType)) {
+      _utilityBillingType = 'Electric / Meralco';
+    }
+    _newUtilityBillingPhoto = null;
+    _removeUtilityBillingPhoto = false;
   }
 
   @override
   void dispose() {
     _fullNameController.dispose();
     _contactNumberController.dispose();
+    _philsysIdController.dispose();
     super.dispose();
+  }
+
+  int _calculateEffectiveProofCount() {
+    int count = 0;
+    if (_newPhilsysPhoto != null) {
+      count++;
+    } else if (_currentUser.hasPhilsysPhoto && !_removePhilsysPhoto) {
+      count++;
+    }
+
+    if (_newSecondaryIdPhoto != null) {
+      count++;
+    } else if (_currentUser.hasSecondaryIdPhoto && !_removeSecondaryIdPhoto) {
+      count++;
+    }
+
+    if (_newUtilityBillingPhoto != null) {
+      count++;
+    } else if (_currentUser.hasUtilityBillingPhoto && !_removeUtilityBillingPhoto) {
+      count++;
+    }
+    return count;
+  }
+
+  Future<void> _pickImage(void Function(XFile file) onSelected) async {
+    try {
+      final XFile? picked = await _imagePicker.pickImage(
+        source: ImageSource.gallery,
+        maxWidth: 1600,
+        maxHeight: 1600,
+        imageQuality: 85,
+      );
+      if (picked != null) {
+        setState(() {
+          onSelected(picked);
+        });
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to select image: $e'),
+          backgroundColor: AppColors.error,
+        ),
+      );
+    }
+  }
+
+  void _showDocumentViewer({
+    required String title,
+    required String relativeUrl,
+  }) {
+    final mediaUrl = widget.authService.getAuthenticatedMediaUrl(relativeUrl);
+    final token = widget.authService.storageService.getAccessToken();
+
+    ResidentEvidenceViewerDialog.show(
+      context,
+      title: title,
+      mediaUrl: mediaUrl,
+      token: token,
+    );
   }
 
   Future<void> _selectBirthDate(BuildContext context) async {
@@ -86,6 +206,15 @@ class _ProfileScreenState extends State<ProfileScreen> {
         contactNumber: _contactNumberController.text.trim(),
         birthDate: _birthDate != null ? _formatDate(_birthDate) : null,
         voterStatus: _voterStatus,
+        philsysIdNumber: _philsysIdController.text.trim(),
+        philsysPhoto: _newPhilsysPhoto,
+        removePhilsysPhoto: _removePhilsysPhoto,
+        secondaryIdType: _secondaryIdType,
+        secondaryIdPhoto: _newSecondaryIdPhoto,
+        removeSecondaryIdPhoto: _removeSecondaryIdPhoto,
+        utilityBillingType: _utilityBillingType,
+        utilityBillingPhoto: _newUtilityBillingPhoto,
+        removeUtilityBillingPhoto: _removeUtilityBillingPhoto,
       );
 
       if (!mounted) return;
@@ -94,6 +223,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
         _currentUser = updatedUser;
         _isEditing = false;
         _isSaving = false;
+        _resetFieldsFromUser();
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -106,9 +236,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
       if (!mounted) return;
       setState(() => _isSaving = false);
 
+      final errorMessage =
+          e is ApiException ? e.message : 'Failed to update profile: $e';
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('Failed to update profile: $e'),
+          content: Text(errorMessage),
           backgroundColor: Colors.red,
         ),
       );
@@ -127,6 +260,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final effectiveProofCount = _calculateEffectiveProofCount();
+    final bool canRemoveProof = effectiveProofCount > 1;
+
     return Scaffold(
       backgroundColor: AppColors.background,
       body: SafeArea(
@@ -177,8 +313,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
               const SizedBox(height: 8),
               Text(
                 _isEditing
-                    ? 'Update your resident information below.'
-                    : 'Review your resident information and account details.',
+                    ? 'Update your resident information and verification documents below.'
+                    : 'Review your resident information, verification documents, and account details.',
                 textAlign: TextAlign.center,
                 style: const TextStyle(
                   fontSize: 14.5,
@@ -267,7 +403,44 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ? null
                       : (value) => setState(() => _voterStatus = value),
                 ),
-                const SizedBox(height: 20),
+                if (_currentUser.isResident) ...[
+                  const SizedBox(height: 24),
+                  ResidentEvidenceEditSection(
+                    user: _currentUser,
+                    philsysIdController: _philsysIdController,
+                    newPhilsysPhoto: _newPhilsysPhoto,
+                    removePhilsysPhoto: _removePhilsysPhoto,
+                    onPickPhilsysPhoto: () => _pickImage((f) => _newPhilsysPhoto = f),
+                    onRemovePhilsysPhoto: () => setState(() => _removePhilsysPhoto = true),
+                    onUndoPhilsysRemoval: () => setState(() => _removePhilsysPhoto = false),
+                    onClearPhilsysFile: () => setState(() => _newPhilsysPhoto = null),
+                    secondaryIdType: _secondaryIdType,
+                    secondaryIdTypes: _secondaryIdTypes,
+                    onSecondaryIdTypeChanged: (val) {
+                      if (val != null) setState(() => _secondaryIdType = val);
+                    },
+                    newSecondaryIdPhoto: _newSecondaryIdPhoto,
+                    removeSecondaryIdPhoto: _removeSecondaryIdPhoto,
+                    onPickSecondaryPhoto: () => _pickImage((f) => _newSecondaryIdPhoto = f),
+                    onRemoveSecondaryPhoto: () => setState(() => _removeSecondaryIdPhoto = true),
+                    onUndoSecondaryRemoval: () => setState(() => _removeSecondaryIdPhoto = false),
+                    onClearSecondaryFile: () => setState(() => _newSecondaryIdPhoto = null),
+                    utilityBillingType: _utilityBillingType,
+                    utilityBillingTypes: _billingTypes,
+                    onUtilityBillingTypeChanged: (val) {
+                      if (val != null) setState(() => _utilityBillingType = val);
+                    },
+                    newUtilityBillingPhoto: _newUtilityBillingPhoto,
+                    removeUtilityBillingPhoto: _removeUtilityBillingPhoto,
+                    onPickUtilityPhoto: () => _pickImage((f) => _newUtilityBillingPhoto = f),
+                    onRemoveUtilityPhoto: () => setState(() => _removeUtilityBillingPhoto = true),
+                    onUndoUtilityRemoval: () => setState(() => _removeUtilityBillingPhoto = false),
+                    onClearUtilityFile: () => setState(() => _newUtilityBillingPhoto = null),
+                    canRemoveProof: canRemoveProof,
+                    isSaving: _isSaving,
+                  ),
+                ],
+                const SizedBox(height: 24),
                 CustomButton(
                   text: 'Save Changes',
                   icon: Icons.check_rounded,
@@ -292,6 +465,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       ? 'Registered Voter'
                       : 'Not Registered',
                 ),
+                if (_currentUser.isResident) ...[
+                  const SizedBox(height: 8),
+                  ResidentEvidenceViewSection(
+                    user: _currentUser,
+                    onViewDocument: (title, relativeUrl) => _showDocumentViewer(
+                      title: title,
+                      relativeUrl: relativeUrl,
+                    ),
+                  ),
+                ],
               ],
               const SizedBox(height: 36),
               SizedBox(

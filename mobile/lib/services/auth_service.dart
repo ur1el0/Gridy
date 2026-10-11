@@ -193,37 +193,158 @@ class AuthService {
     }
   }
 
-  /// Fetch currently authenticated resident profile `/api/v1/auth/me/`
+  /// Update currently authenticated resident profile `/api/v1/auth/me/`
   Future<UserModel> updateProfile({
     String? fullName,
     String? contactNumber,
     String? birthDate,
     bool? voterStatus,
+    String? philsysIdNumber,
+    XFile? philsysPhoto,
+    bool removePhilsysPhoto = false,
+    String? secondaryIdType,
+    XFile? secondaryIdPhoto,
+    bool removeSecondaryIdPhoto = false,
+    String? utilityBillingType,
+    XFile? utilityBillingPhoto,
+    bool removeUtilityBillingPhoto = false,
   }) async {
-    final Map<String, dynamic> profileData = {};
-    if (fullName != null) profileData['full_name'] = fullName;
-    if (contactNumber != null) profileData['contact_number'] = contactNumber;
-    if (birthDate != null) profileData['birth_date'] = birthDate;
-    if (voterStatus != null) profileData['voter_status'] = voterStatus;
-    final response = await apiClient.patch(
-      AppConfig.userProfileEndpoint,
-      body: {'profile': profileData},
-      requiresAuth: true,
-    );
+    final bool hasFiles = philsysPhoto != null ||
+        secondaryIdPhoto != null ||
+        utilityBillingPhoto != null;
+
+    final http.Response response;
+
+    if (hasFiles) {
+      final Map<String, String> fields = {};
+      if (fullName != null) fields['full_name'] = fullName.trim();
+      if (contactNumber != null) fields['contact_number'] = contactNumber.trim();
+      if (birthDate != null) fields['birth_date'] = birthDate;
+      if (voterStatus != null) fields['voter_status'] = voterStatus.toString();
+      if (philsysIdNumber != null) fields['philsys_id_number'] = philsysIdNumber.trim();
+      if (removePhilsysPhoto) fields['remove_philsys_id_photo'] = 'true';
+      if (secondaryIdType != null) fields['secondary_id_type'] = secondaryIdType.trim();
+      if (removeSecondaryIdPhoto) fields['remove_secondary_id_photo'] = 'true';
+      if (utilityBillingType != null) fields['utility_billing_type'] = utilityBillingType.trim();
+      if (removeUtilityBillingPhoto) fields['remove_utility_billing_photo'] = 'true';
+
+      final List<http.MultipartFile> files = [];
+
+      if (philsysPhoto != null) {
+        final bytes = await philsysPhoto.readAsBytes();
+        files.add(
+          http.MultipartFile.fromBytes(
+            'philsys_id_photo',
+            bytes,
+            filename: philsysPhoto.name.isNotEmpty
+                ? philsysPhoto.name
+                : 'philsys_id.jpg',
+          ),
+        );
+      }
+
+      if (secondaryIdPhoto != null) {
+        final bytes = await secondaryIdPhoto.readAsBytes();
+        files.add(
+          http.MultipartFile.fromBytes(
+            'secondary_id_photo',
+            bytes,
+            filename: secondaryIdPhoto.name.isNotEmpty
+                ? secondaryIdPhoto.name
+                : 'secondary_id.jpg',
+          ),
+        );
+      }
+
+      if (utilityBillingPhoto != null) {
+        final bytes = await utilityBillingPhoto.readAsBytes();
+        files.add(
+          http.MultipartFile.fromBytes(
+            'utility_billing_photo',
+            bytes,
+            filename: utilityBillingPhoto.name.isNotEmpty
+                ? utilityBillingPhoto.name
+                : 'utility_bill.jpg',
+          ),
+        );
+      }
+
+      response = await apiClient.patchMultipart(
+        AppConfig.userProfileEndpoint,
+        fields: fields,
+        files: files.isNotEmpty ? files : null,
+        requiresAuth: true,
+      );
+    } else {
+      final Map<String, dynamic> profileData = {};
+      if (fullName != null) profileData['full_name'] = fullName.trim();
+      if (contactNumber != null) profileData['contact_number'] = contactNumber.trim();
+      if (birthDate != null) profileData['birth_date'] = birthDate;
+      if (voterStatus != null) profileData['voter_status'] = voterStatus;
+      if (philsysIdNumber != null) profileData['philsys_id_number'] = philsysIdNumber.trim();
+      if (removePhilsysPhoto) profileData['remove_philsys_id_photo'] = true;
+      if (secondaryIdType != null) profileData['secondary_id_type'] = secondaryIdType.trim();
+      if (removeSecondaryIdPhoto) profileData['remove_secondary_id_photo'] = true;
+      if (utilityBillingType != null) profileData['utility_billing_type'] = utilityBillingType.trim();
+      if (removeUtilityBillingPhoto) profileData['remove_utility_billing_photo'] = true;
+
+      response = await apiClient.patch(
+        AppConfig.userProfileEndpoint,
+        body: {'profile': profileData},
+        requiresAuth: true,
+      );
+    }
+
     final Map<String, dynamic> responseData = jsonDecode(
       utf8.decode(response.bodyBytes),
     );
+
     if (response.statusCode >= 200 && response.statusCode < 300) {
       final updatedUser = UserModel.fromJson(responseData);
       await storageService.saveUser(updatedUser);
       return updatedUser;
     } else {
       throw ApiException(
-        'Failed to update profile',
+        _extractErrorMessage(responseData, 'Failed to update profile'),
         statusCode: response.statusCode,
         details: responseData,
       );
     }
+  }
+
+  /// Extracts readable error message from DRF validation responses
+  String _extractErrorMessage(Map<String, dynamic> details, String fallback) {
+    if (details.containsKey('verification_documents')) {
+      final v = details['verification_documents'];
+      if (v is List && v.isNotEmpty) return v.first.toString();
+      if (v is String) return v;
+    }
+    if (details.containsKey('profile') && details['profile'] is Map) {
+      final p = details['profile'] as Map<String, dynamic>;
+      if (p.containsKey('verification_documents')) {
+        final v = p['verification_documents'];
+        if (v is List && v.isNotEmpty) return v.first.toString();
+        if (v is String) return v;
+      }
+      for (final val in p.values) {
+        if (val is List && val.isNotEmpty) return val.first.toString();
+        if (val is String) return val;
+      }
+    }
+    if (details.containsKey('detail')) return details['detail'].toString();
+    if (details.containsKey('error')) return details['error'].toString();
+    for (final val in details.values) {
+      if (val is List && val.isNotEmpty) return val.first.toString();
+      if (val is String) return val;
+    }
+    return fallback;
+  }
+
+  /// Construct an absolute media URL for private resident media
+  String getAuthenticatedMediaUrl(String relativePath) {
+    final cleanBase = AppConfig.baseUrl.replaceAll(RegExp(r'/+$'), '');
+    final cleanPath = relativePath.replaceAll(RegExp(r'^/+'), '');
+    return '$cleanBase/$cleanPath';
   }
 
   /// Renew expired JWT access token using the backend refresh endpoint

@@ -154,6 +154,33 @@ class ApiClient {
     });
   }
 
+  /// Perform a PATCH request with multipart/form-data (for file uploads and updates)
+  Future<http.Response> patchMultipart(
+    String endpoint, {
+    Map<String, String>? fields,
+    List<http.MultipartFile>? files,
+    bool requiresAuth = true,
+  }) async {
+    final request = http.MultipartRequest('PATCH', _buildUri(endpoint));
+
+    final headers = _buildHeaders(null, requiresAuth: requiresAuth);
+    headers.remove('Content-Type');
+    request.headers.addAll(headers);
+
+    if (fields != null) {
+      request.fields.addAll(fields);
+    }
+
+    if (files != null) {
+      request.files.addAll(files);
+    }
+
+    return _sendRequest(() async {
+      final streamedResponse = await request.send();
+      return await http.Response.fromStream(streamedResponse);
+    });
+  }
+
   /// Perform a GET request
   Future<http.Response> get(
     String endpoint, {
