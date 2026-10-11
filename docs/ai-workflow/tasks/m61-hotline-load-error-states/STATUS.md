@@ -3,7 +3,7 @@
 ## 1. Executive Summary
 
 - **Task ID:** `m61-hotline-load-error-states`
-- **State:** In Progress
+- **State:** Completed
 - **Current milestone:** M3 — Full verification and delivery
 - **Branch:** `fix/m61-hotline-load-error-states-delivery`
 - **Worktree:** `/tmp/gridy-m61-hotline-load-error-states`
@@ -25,7 +25,7 @@
 | --- | --- | --- |
 | M1 — Regression tests | Complete | Added four focused cases; the expected pre-implementation failures reproduce the absent retryable error UI. |
 | M2 — Retryable error UI | Complete | Added retryable accessible load-error state; header/add action remains available and list behavior is unchanged on success. |
-| M3 — Verification and delivery | In progress | Local frontend checks and scope review passed; finish branch push, PR, and hosted checks. |
+| M3 — Verification and delivery | Complete | Local and hosted checks passed; delivery branch is pushed and PR #192 is open, mergeable, and unmerged. |
 
 ## 4. Files in Scope
 
@@ -80,6 +80,10 @@ The test run demonstrates the original behavior: after the GET rejection, the pa
 
 M1 is checkpointed in commit `553b72805293c37e565579ee85e71e424b7c584e` on `test/m61-hotline-load-errors`. M2 is checkpointed in commit `fea7a34b79b14803884cbecc642ad8a6ff8f010f` on `fix/m61-hotline-load-error-states`. M3 is being delivered from `fix/m61-hotline-load-error-states-delivery`.
 
-- **PR base status:** Checked GitHub PR #191 with the repository connector; it is open, not merged, and mergeable. The M61 PR will target `fix/m60-aid-request-load-error-states-delivery` and remain open/unmerged.
-- **Push and PR:** Pending local delivery commit.
-- **Hosted CI and preview:** Pending push.
+- **Commit stack:** M1 test checkpoint `553b72805293c37e565579ee85e71e424b7c584e`; M2 implementation checkpoint `fea7a34b79b14803884cbecc642ad8a6ff8f010f`; M3 local verification record `b8233af604e28892d04e048aac6dcec709c525fb`. M1/M2 were checkpointed locally; only the delivery branch is pushed.
+- **Push:** `fix/m61-hotline-load-error-states-delivery` was pushed to `https://github.com/ur1el0/KapitBayan.git` without force-pushing or rewriting history.
+- **Pull request:** [#192](https://github.com/ur1el0/KapitBayan/pull/192), open, mergeable, and unmerged. Base is `fix/m60-aid-request-load-error-states-delivery` at `2a2f2e06ddd5566c364c435d4bef55462aa480e7` (M60 PR #191); head is `fix/m61-hotline-load-error-states-delivery` at `b8233af604e28892d04e048aac6dcec709c525fb`.
+- **GitHub Actions:** [Run #460](https://github.com/ur1el0/KapitBayan/actions/runs/38160530250) completed successfully; all 9 jobs passed, including frontend, backend, mobile, both image builds, PostgreSQL reconnect, Compose migration gate, Azure parameter preflight, and Bicep compilation.
+- **Vercel preview:** Ready at `https://gridy-git-fix-m61-hotline-load-error-st-13a463-ur1el0s-projects.vercel.app`.
+- **Stack state:** M60 PR #191 remains open and unmerged. Leave both PRs open until the stack is reviewed and integrated.
+- **Safety:** Tests used mocked APIs; no production service, data, deployment, schema, or Azure resource was accessed or changed. Azure pilot remains NO-GO.
