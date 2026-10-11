@@ -6,7 +6,7 @@
 - **Type:** Bug fix
 - **Target:** Frontend citizen/staff aid request page
 - **Implementer:** Codex (user-directed sole-agent mode)
-- **Branch:** `fix/m60-aid-request-load-error-states`
+- **Delivery branch:** `fix/m60-aid-request-load-error-states-delivery`
 - **Base:** M59 delivery commit `f157770617edc67973ca8cd499ab80a4f0ba8b71`
 
 ## Goal and Scope
@@ -34,13 +34,13 @@ Non-goals: API or payload changes; resident ownership or barangay scoping change
 
 ## Acceptance Criteria
 
-1. [ ] A failed initial aid request fetch renders an accessible error and retry control, not the successful-empty message.
-2. [ ] Retrying calls the same GET endpoint; a second failure keeps the error retryable and a successful response renders records and clears the error.
-3. [ ] A successful empty response still renders “No assistance requests have been submitted.”
-4. [ ] The retry button is disabled while GET is pending and retrying does not call POST or PATCH.
-5. [ ] Resident submission form remains available during a list-load error; staff review controls and existing behavior remain unchanged after successful load.
-6. [ ] No API, schema, dependency, tenant/RBAC, or Azure changes are introduced.
-7. [ ] Focused tests, frontend lint, full frontend tests, production build, and diff hygiene pass and actual results are recorded in `STATUS.md`.
+1. [x] A failed initial aid request fetch renders an accessible error and retry control, not the successful-empty message.
+2. [x] Retrying calls the same GET endpoint; a second failure keeps the error retryable and a successful response renders records and clears the error.
+3. [x] A successful empty response still renders “No assistance requests have been submitted.”
+4. [x] The retry button is disabled while GET is pending and retrying does not call POST or PATCH.
+5. [x] Resident submission form remains available during a list-load error; staff review controls and existing behavior remain unchanged after successful load.
+6. [x] No API, schema, dependency, tenant/RBAC, or Azure changes are introduced.
+7. [x] Focused tests, frontend lint, full frontend tests, production build, and diff hygiene pass and actual results are recorded in `STATUS.md`.
 
 ## Safety
 

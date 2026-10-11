@@ -3,7 +3,7 @@
 ## Overview
 
 - **Brief:** [TASK_BRIEF.md](TASK_BRIEF.md)
-- **Branch:** `fix/m60-aid-request-load-error-states`
+- **Delivery branch:** `fix/m60-aid-request-load-error-states-delivery`
 - **Base:** M59 branch `fix/m59-resident-load-error-states`, commit `f157770617edc67973ca8cd499ab80a4f0ba8b71` (PR #190)
 - **Complexity:** Low
 - **Boundary:** One page, its tests, and the task packet.
@@ -38,7 +38,7 @@ npm --prefix frontend run test -- src/pages/citizen/AidRequests.test.tsx
 1. Run focused tests, full frontend tests, lint, and production build.
 2. Inspect the diff for preserved form and staff actions; confirm no backend/API/schema/dependency/tenant/RBAC/Azure changes; run `git diff --check`.
 3. Record actual results and delivery metadata in `STATUS.md`.
-4. Commit and push only the scoped page, tests, and task packet; open a PR against `fix/m59-resident-load-error-states` (M59 PR #190), leaving it open and unmerged.
+4. Commit and push only the scoped page, tests, and task packet from `fix/m60-aid-request-load-error-states-delivery`; open a PR against `fix/m59-resident-load-error-states` (M59 PR #190), leaving it open and unmerged.
 
 **Validation:**
 
