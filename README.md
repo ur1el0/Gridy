@@ -78,7 +78,7 @@ cp backend/.env.example backend/.env
 docker compose up -d --build
 
 # Seed local development accounts across all roles (Officials, Field, Residents, DILG)
-# with ready-to-use development credentials:
+# with ready-to-use development credentials (local presentation/development only; requires --confirm-demo-only):
 docker compose exec backend python manage.py seed_users --confirm-demo-only
 
 # Seed local synthetic starter barangay records (documents, announcements, queues).
@@ -105,6 +105,7 @@ source venv/bin/activate
 pip install -r backend/requirements.txt
 
 python backend/manage.py migrate
+# Seed local development accounts across all roles (local presentation/development only; requires --confirm-demo-only):
 python backend/manage.py seed_users --confirm-demo-only
 python backend/manage.py seed_barangays --confirm-demo-only
 # Optional, local presentation data only; never run against a deployed database.
