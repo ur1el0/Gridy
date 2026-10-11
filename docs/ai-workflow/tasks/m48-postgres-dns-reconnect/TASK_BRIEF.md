@@ -45,13 +45,13 @@ Add an isolated GitHub Actions smoke test showing that one long-lived Django pro
 
 ## 5. Observable Acceptance Criteria
 
-1. [ ] The smoke starts two isolated PostgreSQL containers on different IPs and one persistent Django probe process, with no database volume or host port publication.
-2. [ ] The first probe returns the primary database host address from `host(inet_server_addr())`.
-3. [ ] After the primary is terminated and detached from the test network, the db alias is assigned to the failover container; within a bounded number of probes, the same Django process returns HTTP 200 from the failover container's distinct IP. A transient 503 may occur, but direct health-check reconnection on the first request is also valid.
-4. [ ] The smoke script uses unique project names, refuses unsafe repository environment-file collisions if relevant, and cleans only its project containers/networks on success or failure.
-5. [ ] CI runs the smoke on branch and PR pushes without adding write permissions or new package dependencies.
-6. [ ] Documentation says this validates disposable Docker DNS plus Django reconnection only; actual provider DNS failover and production readiness remain unverified.
-7. [ ] No schema, production behavior, dependency, persistent data, or cloud infrastructure changes are introduced; actual checks and limitations are recorded in STATUS.md.
+1. [x] The smoke starts two isolated PostgreSQL containers on different IPs and one persistent Django probe process, with no database volume or host port publication.
+2. [x] The first probe returns the primary database host address from `host(inet_server_addr())`.
+3. [x] After the primary is terminated and detached from the test network, the db alias is assigned to the failover container; within a bounded number of probes, the same Django process returns HTTP 200 from the failover container's distinct IP. A transient 503 may occur, but direct health-check reconnection on the first request is also valid.
+4. [x] The smoke script uses unique project names, refuses unsafe repository environment-file collisions if relevant, and cleans only its project containers/networks on success or failure.
+5. [x] CI runs the smoke on branch and PR pushes without adding write permissions or new package dependencies.
+6. [x] Documentation says this validates disposable Docker DNS plus Django reconnection only; actual provider DNS failover and production readiness remain unverified.
+7. [x] No schema, production behavior, dependency, persistent data, or cloud infrastructure changes are introduced; actual checks and limitations are recorded in STATUS.md.
 
 ## 6. Relevant Files
 

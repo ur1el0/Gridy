@@ -3,8 +3,8 @@
 ## 1. Executive Summary
 
 - **Task ID:** m48-postgres-dns-reconnect
-- **State:** Hosted runtime follow-up in progress; CI confirmed startup and address normalization, and exposed a mismatch with Django's configured transparent connection health check
-- **Current milestone:** Align the probe assertion with observed `CONN_HEALTH_CHECKS=True` reconnection behavior and re-run hosted verification
+- **State:** Completed; PR #179 is open and unmerged
+- **Current milestone:** Delivery complete; no merge or deployment performed
 - **Branch:** test/m48-postgres-dns-reconnect
 - **Worktree:** /tmp/gridy-m48-postgres-dns-reconnect
 - **Base:** M47 local checkpoint 29f04cc702003bdbec1d2c17a55471c26fc560a9, tree dab1c9920e11c3894d1a52a8f4eb50b21b83b094; equivalent remote tree on PR #178.
@@ -16,9 +16,9 @@
 | --- | --- | --- |
 | M1 — Build the disposable DNS-switch harness | Complete locally | Added the probe, isolated two-network Compose stack, and project-scoped smoke runner. Local runtime could not start Docker because the daemon socket denied access. |
 | M2 — Integrate CI and document evidence boundary | Complete locally | Added an independent read-only CI job and documented that provider failover remains unverified. |
-| M2 follow-up — Correct probe startup path | Fixed locally; hosted confirmation pending | The first hosted run failed because direct execution of `tests/postgres_dns_reconnect_probe.py` did not place `/app` on `sys.path`, so Django could not import `config.settings`. The probe now adds its backend root before `django.setup()`. |
-| M2 follow-up — Normalize PostgreSQL address output | Fixed locally; hosted confirmation pending | The next hosted run successfully served the initial probe, then failed because `inet_server_addr()::text` returned `10.253.240.10/32`. The SQL now uses `host(inet_server_addr())` to compare the host address without the prefix length. |
-| M2 follow-up — Match Django's connection health check contract | Plan amended; script update in progress | Run #384 confirmed the initial request reached primary `10.253.240.10`; the first request after target reassignment returned HTTP 200 rather than 503. The source config sets `CONN_HEALTH_CHECKS=True`, and Django 6.0 documents that it reestablishes a failed persistent connection before the query without failing the request when the new database is available. The test now accepts immediate recovery or a transient 503 but still requires a bounded same-process response from the failover IP. |
+| M2 follow-up — Correct probe startup path | Complete; hosted verified | The first hosted run exposed that direct execution did not place `/app` on `sys.path`; the probe now adds its backend root before `django.setup()`. The final hosted run passed. |
+| M2 follow-up — Normalize PostgreSQL address output | Complete; hosted verified | PostgreSQL initially returned `10.253.240.10/32`; the probe now uses `host(inet_server_addr())`. The final hosted run confirmed the primary and failover host addresses. |
+| M2 follow-up — Match Django's connection health check contract | Complete; hosted verified | Run #384 showed Django's configured `CONN_HEALTH_CHECKS=True` can reconnect before executing the query and return HTTP 200 immediately. The plan and smoke now permit immediate recovery or transient 503 while requiring failover IP `10.253.240.11` within a bounded sequence. Run #388 passed this criterion. |
 
 ## 3. Baseline and Decisions
 
@@ -61,12 +61,17 @@ Read-only references: M47 task status and ADR 014.
 | Import-path correction | Added the resolved backend directory to `sys.path` before setting up Django in `backend/tests/postgres_dns_reconnect_probe.py` | Follow-up startup reached the socket bind after Django setup, but the local sandbox denied listening sockets (`PermissionError: [Errno 1] Operation not permitted`). This does not verify the local HTTP or PostgreSQL runtime. |
 | Django setup after correction | `SECRET_KEY=m48-local-repro-key ADMIN_REGISTRATION_PASSKEY=m48-local-repro-passkey DATABASE_URL=sqlite:///:memory: DEBUG=True python tests/postgres_dns_reconnect_probe.py invalid` from `backend/` | PASS for this narrow check: Django setup completed and the script returned its expected `Use the serve or request mode.` usage message for the intentionally invalid mode; no `ModuleNotFoundError` remained. |
 | Local listener attempt | `SECRET_KEY=m48-local-repro-key ADMIN_REGISTRATION_PASSKEY=m48-local-repro-passkey DATABASE_URL=sqlite:///:memory: DEBUG=True timeout 2 /home/dokja/vsc-fedora/all/Projects/django-projects/Gridy/venv/bin/python tests/postgres_dns_reconnect_probe.py serve` from `backend/` | BLOCKED by the local sandbox: Django setup completed, then binding port 8000 failed with `PermissionError: [Errno 1] Operation not permitted`. |
-| PostgreSQL address normalization | Changed the probe query to `SELECT host(inet_server_addr())` | Expected result is a host-only address string. The disposable PostgreSQL runtime assertion must be rechecked by hosted CI because Docker is unavailable locally. |
+| PostgreSQL address normalization | Changed the probe query to `SELECT host(inet_server_addr())` | The final hosted CI run confirmed host-only addresses for both primary and failover servers. |
 | Django connection-health behavior reference | Read `backend/config/settings.py` and Django 6.0 database docs | `CONN_HEALTH_CHECKS=True` is configured; Django documents that a failed health check reestablishes a connection before query execution without failing the request if the database is available. The M48 acceptance assertion and plan were amended to allow direct recovery or a transient 503 while requiring the failover address within a bounded set of probes. |
 | Health-check-aware script and plan static verification | `bash -n scripts/ci/postgres-dns-reconnect-smoke.sh`; `python -m py_compile backend/tests/postgres_dns_reconnect_probe.py`; `DOCKER_CONFIG=/tmp/m48-docker-config docker compose --file scripts/ci/postgres-dns-reconnect.compose.yml config --format json` with service/ports/volume assertions; PyYAML `BaseLoader` workflow assertions; `git diff --check`; Markdown whitespace scan | PASS: shell syntax, Python compilation, Compose rendering and isolation assertions, workflow trigger/timeout/permission assertions, diff hygiene, and whitespace checks all passed. These static checks do not prove the live container switch. |
+| Final hosted PR verification | GitHub Actions run #388 (`38140902396`) on PR #179 merge ref `fdccdb41f09b8ee7c76cf8e6d7eee42b650fda5f` | PASS: all seven jobs completed successfully: frontend tests, backend tests, mobile tests, PostgreSQL DNS reconnect smoke, Compose migration gate smoke, frontend image, and backend image. The DNS job log reports primary `10.253.240.10` and subsequent same-process recovery to failover `10.253.240.11` through the reassigned `db` alias. Vercel status on PR head `ff39acdd782200558c2cef6f94a4c4175e270ce4` was success. |
 
-## 6. Remaining Work
+## 6. Delivery Checkpoint
 
 - [x] Implement and statically verify the disposable smoke harness.
 - [x] Add the CI job and accurately scoped deployment documentation.
-- [ ] Re-run PR CI after the health-check-aware assertion change, record the DNS-switch smoke plus all other job results, and keep the PR unmerged without deploying.
+- [x] Re-run PR CI after the health-check-aware assertion change; all seven jobs and the DNS-switch smoke passed.
+- **Local content head:** `fbbe20b9db32f01454f38c6418cc510e7b5e8cee`, tree `17cb328c0cfda530381571710b63f570be54d327`.
+- **Remote PR head before this status update:** `ff39acdd782200558c2cef6f94a4c4175e270ce4`; its tree matches the local content head.
+- **PR:** [#179](https://github.com/ur1el0/KapitBayan/pull/179), open, unmerged, and targeting M47 PR #178. No merge or deployment occurred.
+- **Evidence boundary:** The CI proves Docker embedded DNS alias reassignment and reconnection in this disposable harness only; managed-provider/Azure DNS, TLS, and failover timing remain unverified.

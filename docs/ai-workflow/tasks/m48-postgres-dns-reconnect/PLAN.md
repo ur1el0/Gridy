@@ -62,12 +62,19 @@ If the local Docker daemon is available and the smoke's refusal/cleanup guards p
 
 ## 3. Completion Checklist
 
-- [ ] Probe server remains one process across the target change and a bounded sequence demonstrates primary → failover recovery; a transient failure is permitted but not required.
+- [x] Probe server remains one process across the target change and a bounded sequence demonstrates primary → failover recovery; a transient failure is permitted but not required.
 - [x] Compose stack has no host ports, fixed names, persistent volumes, or environment file writes.
-- [ ] Local static/config checks pass; hosted CI executes the actual container switch.
+- [x] Local static/config checks pass; hosted CI executes the actual container switch.
 - [x] Deployment docs distinguish Docker test evidence from provider failover evidence.
 - [x] No runtime, schema, dependency, cloud, or production state changes occur.
-- [ ] Commit and open a stacked PR against M47 PR #178; do not merge or deploy.
+- [x] Commit and open a stacked PR against M47 PR #178; do not merge or deploy.
+
+## Delivery Evidence
+
+- GitHub Actions PR run #388 (`38140902396`) passed all seven jobs. The DNS smoke log confirmed the persistent Django probe first reached `10.253.240.10`, then reached `10.253.240.11` after reassignment of the Docker `db` alias.
+- Vercel Preview status on PR head `ff39acdd782200558c2cef6f94a4c4175e270ce4` was success.
+- PR #179 is open and unmerged; no deployment or cloud resource operation occurred.
+- The CI harness validates Docker embedded DNS behavior only. Azure/provider failover DNS, TLS, and managed-service recovery timing remain unverified.
 
 ## 4. Risks and Rollback
 
