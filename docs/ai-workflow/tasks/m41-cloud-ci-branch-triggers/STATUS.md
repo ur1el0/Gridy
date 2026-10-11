@@ -3,8 +3,8 @@
 ## 1. Executive Summary
 
 - **Task ID:** `m41-cloud-ci-branch-triggers`
-- **State:** In Progress
-- **Current Milestone:** Milestone 3 — Verification and Delivery
+- **State:** Complete
+- **Current Milestone:** All milestones complete
 - **Implementer / Verifier:** Codex
 - **Branch:** `chore/m41-cloud-ci-branch-triggers`
 - **Base commit:** `84e94348a9503a22418afb3ba8b93298c0814cba` (M40 pushed head)
@@ -19,7 +19,7 @@ The task contract and plan are recorded before workflow implementation. The isol
 | --- | --- | --- |
 | M1: Baseline and Task Contract | COMPLETE | Recorded existing triggers, job inventory, base, acceptance criteria, and risks before editing workflow code. |
 | M2: Workflow Trigger Configuration | COMPLETE | Set `push.branches` to `"**"` and added `workflow_dispatch`; preserved main-targeted PR checks, permissions, and job definitions. |
-| M3: Verification and Delivery | IN PROGRESS | YAML structure validation and diff checks passed; preparing scoped commit and branch delivery. |
+| M3: Verification and Delivery | COMPLETE | Local validation passed; commit `1cb45e86e2afd508faee6b2947d1c6a9b3d5cabd` was pushed and its GitHub Actions run passed all five jobs. |
 
 ## 3. Files in Scope
 
@@ -80,10 +80,19 @@ The task contract and plan are recorded before workflow implementation. The isol
 - **Result:** `2  1  .github/workflows/ci.yml` (two added trigger lines, one replaced branch line).
 - **Outcome:** PASS; workflow change is limited to triggers.
 
-- **Cloud Actions run:** Pending branch delivery. The local shell could not resolve `github.com` during `git fetch`; remote delivery and Actions result are not yet verified.
+### GitHub Actions cloud run
+
+- **Commit:** `1cb45e86e2afd508faee6b2947d1c6a9b3d5cabd`
+- **Event / branch:** `push` / `chore/m41-cloud-ci-branch-triggers`
+- **Run:** [38127471847](https://github.com/ur1el0/KapitBayan/actions/runs/38127471847)
+- **Result:** Overall `completed / success`; `backend-tests`, `backend-image`, `frontend-tests`, `frontend-image`, and `mobile-tests` each completed with `success`.
+- **Outcome:** PASS; the new branch push trigger executed the existing full CI matrix in GitHub-hosted runners.
 
 ## 6. Delivery State
 
-- **Workflow change:** Implemented in `.github/workflows/ci.yml`; local structural validation and `git diff --check` pass.
-- **Commit / push / PR / deployment:** Not yet completed; no PR or deployment is planned for this milestone.
+- **Workflow change:** Implemented in `.github/workflows/ci.yml`; local structural validation, diff checks, and the cloud workflow run pass.
+- **Implementation commit:** `1cb45e86e2afd508faee6b2947d1c6a9b3d5cabd` on `chore/m41-cloud-ci-branch-triggers`.
+- **Push:** Confirmed to `origin/chore/m41-cloud-ci-branch-triggers`; GitHub Actions run `38127471847` succeeded.
+- **PR / deployment:** None created; no deployment performed.
+- **Manual dispatch note:** GitHub only exposes `workflow_dispatch` after the workflow file is present on the default branch; it will become manually runnable after this workflow change is merged to `main`.
 - **Primary checkout:** `.agents/`, `.codex/`, `.aws/`, and logo assets remain outside this isolated worktree and untouched.
