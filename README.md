@@ -77,10 +77,12 @@ cp backend/.env.example backend/.env
 # Boot the local 3-Tier Stack
 docker compose up -d --build
 
-# Seed local-only synthetic starter accounts and records. Seeded accounts have no
-# usable passwords. Set a local DILG demo password interactively if needed.
+# Seed local development accounts across all roles (Officials, Field, Residents, DILG)
+# with ready-to-use development credentials:
+docker compose exec backend python manage.py seed_users --confirm-demo-only
+
+# Seed local synthetic starter barangay records (documents, announcements, queues).
 docker compose exec backend python manage.py seed_barangays --confirm-demo-only
-docker compose exec backend python manage.py changepassword dilg_admin
 
 # Add synthetic history for charts and dashboards on a local demo database.
 docker compose exec backend python manage.py seed_demo_analytics --confirm-demo-only
@@ -103,6 +105,7 @@ source venv/bin/activate
 pip install -r backend/requirements.txt
 
 python backend/manage.py migrate
+python backend/manage.py seed_users --confirm-demo-only
 python backend/manage.py seed_barangays --confirm-demo-only
 # Optional, local presentation data only; never run against a deployed database.
 python backend/manage.py seed_demo_analytics --confirm-demo-only

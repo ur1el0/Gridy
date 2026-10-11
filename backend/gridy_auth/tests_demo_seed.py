@@ -9,6 +9,7 @@ from django.core.management import call_command, CommandError
 from django.test import TestCase, override_settings
 
 from gridy_auth.models import Barangay, Resident, User
+from gridy_auth.management.commands.seed_users import DEFAULT_SEED_PASSWORD
 from gridy_services.models import AidRequest, DocumentRequest, QueueTicket
 
 
@@ -116,3 +117,52 @@ class LegacyDemoCredentialMigrationTests(TestCase):
         self.assertTrue(same_username_user.has_usable_password())
         self.assertTrue(same_email_user.has_usable_password())
         self.assertTrue(ordinary_user.has_usable_password())
+
+
+class SeedUsersCommandTests(TestCase):
+    @override_settings(DEBUG=True)
+    def test_seed_users_provisions_all_four_roles_with_default_password(self):
+        call_command("seed_users", confirm_demo_only=True, stdout=StringIO())
+
+        self.assertEqual(User.objects.filter(role=User.Role.ADMIN).count(), 3)
+        self.assertEqual(User.objects.filter(role=User.Role.FIELD_OFFICIAL).count(), 2)
+        self.assertEqual(User.objects.filter(role=User.Role.RESIDENT).count(), 4)
+        self.assertEqual(User.objects.filter(role=User.Role.DILG_ADMIN).count(), 1)
+
+        self.assertTrue(User.objects.get(username="admin_dupay").check_password(DEFAULT_SEED_PASSWORD))
+        self.assertTrue(User.objects.get(username="tanod_dupay").check_password(DEFAULT_SEED_PASSWORD))
+        self.assertTrue(User.objects.get(username="resident_dupay").check_password(DEFAULT_SEED_PASSWORD))
+        self.assertTrue(User.objects.get(username="dilg_admin").check_password(DEFAULT_SEED_PASSWORD))
+
+        resident = Resident.objects.get(user__username="resident_dupay")
+        self.assertTrue(resident.is_verified)
+        self.assertEqual(resident.purok, "Purok 3 - Sampaguita")
+
+    @override_settings(DEBUG=True)
+    def test_seed_users_supports_custom_password_and_is_idempotent(self):
+        custom_password = "".join(["Dev", "Custom", "Pass", "2026", "!"])
+        call_command("seed_users", confirm_demo_only=True, password=custom_password, stdout=StringIO())
+        first_count = User.objects.count()
+
+        call_command("seed_users", confirm_demo_only=True, password=custom_password, stdout=StringIO())
+        self.assertEqual(User.objects.count(), first_count)
+        self.assertTrue(User.objects.get(username="admin_dupay").check_password(custom_password))
+        self.assertTrue(User.objects.get(username="dilg_admin").check_password(custom_password))
+
+    @override_settings(DEBUG=False)
+    def test_seed_users_refuses_when_debug_is_disabled(self):
+        with self.assertRaises(CommandError):
+            call_command("seed_users", confirm_demo_only=True, stdout=StringIO())
+
+    @override_settings(DEBUG=True)
+    def test_seed_users_requires_explicit_confirmation(self):
+        with self.assertRaises(CommandError):
+            call_command("seed_users", stdout=StringIO())
+
+    @override_settings(DEBUG=True)
+    def test_seed_users_refuses_remote_database_hosts(self):
+        with patch(
+            "gridy_auth.management.commands.demo_seed_safety.connection.settings_dict",
+            {"HOST": "ep-demo.ap-southeast-1.aws.neon.tech"},
+        ), self.assertRaises(CommandError):
+            call_command("seed_users", confirm_demo_only=True, stdout=StringIO())
