@@ -50,6 +50,7 @@ M42 gates remain open: Azure subscription and billing owner; budget ceiling; per
 | Scoped file review | `git diff --cached --name-only` before the implementation commit; GitHub commit file list after push | PASS: exactly ADR 015 and the M52 TASK_BRIEF.md, PLAN.md, and STATUS.md. |
 | Local/remote implementation tree | Local commit `c17f9e1de3890e9c183aafb4764d4ed192f57a34` and GitHub commit `f9ae35e6d8cdce7322f55a62aa566c3b9442447e` | PASS: both have content tree `563b49f9b1ecb8157ce6a66904e3d0e767f4293f`; remote commit is parented on M51 head `30c3dc3a1708edfeaad1d547abc8bc153f5ec43e`. |
 | M52 hosted CI | GitHub Actions run [#421](https://github.com/ur1el0/KapitBayan/actions/runs/38146327551) on implementation commit `f9ae35e6d8cdce7322f55a62aa566c3b9442447e` | PASS: all eight jobs succeeded — backend tests, frontend tests, mobile tests, frontend image, backend image, Compose migration gate smoke, PostgreSQL DNS reconnect smoke, and Azure foundation Bicep compile/ARM contract. |
+| Status-checkpoint hosted CI | GitHub Actions run [#423](https://github.com/ur1el0/KapitBayan/actions/runs/38146710264) on docs-only checkpoint `3ee34a655baba6f7cfe2ec956b842e0ef6373863` | PASS: all eight jobs succeeded. The checkpoint changed only M52 STATUS.md. |
 | Pull request | GitHub PR [#183](https://github.com/ur1el0/KapitBayan/pull/183) | PASS: open, unmerged, and targeted at `infra/m51-managed-identity-rbac`. |
 | Primary checkout | `git -C /home/dokja/vsc-fedora/all/Projects/django-projects/Gridy status --short --untracked-files=no` | PASS: no tracked changes. Existing untracked agent/environment and logo assets were not modified. |
 
@@ -75,5 +76,5 @@ No application, workflow, Bicep, database, dependency, or production configurati
 - **Implementation commit:** local `c17f9e1de3890e9c183aafb4764d4ed192f57a34`; remote `f9ae35e6d8cdce7322f55a62aa566c3b9442447e`.
 - **Implementation tree:** `563b49f9b1ecb8157ce6a66904e3d0e767f4293f` locally and remotely.
 - **PR:** [#183](https://github.com/ur1el0/KapitBayan/pull/183), open and unmerged, targeting `infra/m51-managed-identity-rbac`.
-- **Hosted CI:** run [#421](https://github.com/ur1el0/KapitBayan/actions/runs/38146327551) passed all eight jobs on the M52 implementation commit before this documentation-only status checkpoint.
+- **Hosted CI:** runs [#421](https://github.com/ur1el0/KapitBayan/actions/runs/38146327551) and [#423](https://github.com/ur1el0/KapitBayan/actions/runs/38146710264) both passed all eight jobs; #423 ran on the docs-only status checkpoint.
 - **Scope:** no Azure login, subscription/provider validation, `what-if`, deployment, image publication, secret writes, merge, or production change.
