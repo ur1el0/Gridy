@@ -40,7 +40,9 @@ In place of heavy external scraping daemons, KapitBayan exposes a lightweight, e
   * **Cache / Memory Status**: Verifies local caching responsiveness.
   * **Service Readiness**: Reports overall HTTP 200 operational readiness without Celery or Redis dependencies.
 
-The backend image runs as an unprivileged user and uses this endpoint as its Docker health check. Docker Compose waits for PostgreSQL readiness before starting backend migrations, then waits for the backend health check before starting the frontend. The database port is bound to localhost for local use.
+The backend image runs as an unprivileged user and uses this endpoint as its Docker health check. Docker Compose waits for PostgreSQL readiness, runs migrations in the one-shot `migrate` service, and starts the backend only after that service completes successfully. The frontend then waits for the backend health check. A failed migration keeps the Compose backend from starting. The database port is bound to localhost for local use.
+
+For a deployment platform that does not use Compose, run `python manage.py migrate --noinput` exactly once as a serialized pre-release step and allow the new API revision to start only after it succeeds. Keep migration execution out of image builds and API container startup. This repository documents that requirement but does not configure or verify a live provider release command.
 
 ## 4. Production notification configuration
 

@@ -13,6 +13,14 @@ KapitBayan is configured for an intended **Same-Origin Reverse Proxy Architectur
     *   Containerized Stack (`frontend/nginx.conf`): Nginx reverse proxies `/api/` traffic directly to `http://backend:8000`.
     *   Client URL Resolution (`frontend/src/api/axios.ts`): Resolves `VITE_API_BASE_URL` to relative `/api/v1` in production when unset. Any configured environment variable overrides this fallback.
 
+### Release migration gate
+
+Docker Compose runs database migrations in its one-shot `migrate` service after PostgreSQL is healthy; the API service waits for that service to exit successfully. The API entrypoint itself only starts the requested server process.
+
+For deployments outside Compose, configure one serialized pre-release process using the backend image and `python manage.py migrate --noinput`, and block the new API revision until it succeeds. Do not run migrations in the image build or independently in every API replica. This repository documents the release contract; it does not configure or verify a live Render release command or Azure migration job.
+
+Database settings keep the PostgreSQL hostname and omit a startup-resolved `hostaddr`. When `hostaddr` is absent, libpq resolves the hostname for a connection and tries the returned addresses in order until one succeeds; this lets future connections use updated DNS answers while preserving address-family fallback. Existing Django connections still follow the configured connection lifetime and health checks. See the [PostgreSQL 15 libpq connection documentation](https://www.postgresql.org/docs/15/libpq-connect.html).
+
 ---
 
 ## 2. Security Boundaries & Cookie Policy

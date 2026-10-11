@@ -19,6 +19,19 @@ services:
       retries: 5
       start_period: 10s
 
+  migrate:
+    build: ./backend
+    command: python manage.py migrate --noinput
+    restart: "no"
+    volumes:
+      - ./backend:/app
+    env_file:
+      - ./backend/.env
+      - ./.env
+    depends_on:
+      db:
+        condition: service_healthy
+
   backend:
     build: ./backend
     container_name: gridy_backend
@@ -35,6 +48,8 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
 
   frontend:
     build:

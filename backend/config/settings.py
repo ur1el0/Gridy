@@ -172,8 +172,6 @@ if IS_TESTING:
     }
 
 
-import socket 
-
 # Database
 # https://docs.djangoproject.com/en/6.0/ref/settings/#databases
 
@@ -181,19 +179,12 @@ DATABASES = {
     'default': env.db('DATABASE_URL', default='sqlite:///db.sqlite3')
 }
 
-
-
-# 1. Connection pooling for serverless PostgreSQL (drops idle re-negotiation)
+# Reuse healthy connections for a bounded period while allowing reconnects to use
+# the database hostname's current DNS result.
 DATABASES['default']['CONN_MAX_AGE'] = 60
 DATABASES['default']['CONN_HEALTH_CHECKS'] = True
 
-# 2. Force IPv4 connection to prevent Linux 'Network is unreachable' on IPv6
-db_host = DATABASES['default'].get('HOST')
-if db_host and not db_host.startswith('/') and db_host != 'localhost':
-    try:
-        DATABASES['default'].setdefault('OPTIONS', {})['hostaddr'] = socket.gethostbyname(db_host)
-    except Exception:
-        pass
+
 # Password validation
 # https://docs.djangoproject.com/en/6.0/ref/settings/#auth-password-validators
 
