@@ -37,7 +37,10 @@ services:
         condition: service_healthy
 
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      args:
+        VITE_API_BASE_URL: /api/v1
     container_name: gridy_frontend
     restart: always
     ports:

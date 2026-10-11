@@ -22,8 +22,11 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copy the rest of our Django project
 COPY --chown=app:app . .
 
-# Ensure entrypoint is executable
-RUN chmod +x entrypoint.sh && mkdir -p /app/media && chown app:app /app/media
+# Ensure entrypoint is executable and directories exist
+RUN chmod +x entrypoint.sh && mkdir -p /app/media /app/staticfiles && chown -R app:app /app/media /app/staticfiles
+
+# Collect static files for production WhiteNoise serving
+RUN SECRET_KEY="build-time-secret" DEBUG=True ADMIN_REGISTRATION_PASSKEY="build-time-passkey" python manage.py collectstatic --noinput
 
 USER app
 

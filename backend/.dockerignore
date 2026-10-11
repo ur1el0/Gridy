@@ -2,4 +2,6 @@ venv/
 __pycache__/
 *.pyc
 .env
+firebase-*.json
+media/
 db.sqlite3

@@ -7,6 +7,10 @@ WORKDIR /app
 COPY package*.json ./
 RUN npm install
 
+# Accept build arguments for environment variables (defaults to same-origin reverse proxy)
+ARG VITE_API_BASE_URL=/api/v1
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+
 # Copy source code and build the Vite/React app
 COPY . .
 RUN npm run build

@@ -5,7 +5,7 @@ All protected endpoints enforce authorization using short-lived JWT Bearer token
 
 `Authorization: Bearer <access_token>`
 
-Per **ADR 002 (HttpOnly Cookie Authentication)**, refresh tokens are never returned in response payloads or stored in JavaScript memory (`localStorage`/`sessionStorage`). They are set and rotated within secure, server-managed `HttpOnly; SameSite=Lax` cookies.
+Per **ADR 002 (HttpOnly Cookie Authentication)**, refresh tokens are never returned in response payloads or stored in JavaScript memory (`localStorage`/`sessionStorage`). They are set and rotated within secure, server-managed `HttpOnly; SameSite=Strict` cookies by default for same-origin or reverse-proxy deployments. The policy is configurable via `REFRESH_COOKIE_SAMESITE`; if direct cross-origin API access without a reverse proxy is deployed, `SameSite=None` and `Secure=True` are required alongside strict `CORS_ALLOWED_ORIGINS` and `CSRF_TRUSTED_ORIGINS`.
 
 ---
 
@@ -33,7 +33,7 @@ Per **ADR 002 (HttpOnly Cookie Authentication)**, refresh tokens are never retur
     }
     ```
 *   **Response Headers:**
-    `Set-Cookie: refresh_token=eyJhbGciOi...; HttpOnly; Path=/api/v1/auth/; SameSite=Lax`
+    `Set-Cookie: refresh_token=eyJhbGciOi...; HttpOnly; Path=/api/v1/auth/; SameSite=Strict`
 
 #### POST `/api/v1/auth/token/refresh/`
 *   **Description:** Obtains a fresh access token using the rotating cookie-backed refresh session.
@@ -44,6 +44,8 @@ Per **ADR 002 (HttpOnly Cookie Authentication)**, refresh tokens are never retur
       "access": "eyJhbGciOi..."
     }
     ```
+*   **Response Headers:**
+    `Set-Cookie: refresh_token=eyJhbGciOi...; HttpOnly; Path=/api/v1/auth/; SameSite=Strict`
 
 #### POST `/api/v1/auth/import-residents/`
 *   **Description:** Bulk imports residents from a Registry of Barangay Inhabitants (RBI) CSV file (Barangay Official only). Auto-assigns residents to the official's barangay and sets `is_verified=True`.
