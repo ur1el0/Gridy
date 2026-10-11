@@ -34,13 +34,13 @@
 
 ## 5. Observable Acceptance Criteria
 
-1. [ ] **AC-1:** A failed resident-directory load displays an accessible error and retry action instead of “No verified residents found.”
-2. [ ] **AC-2:** Retrying the directory calls the same endpoint; successful data clears the error and renders residents, while a successful empty response retains the current empty state.
-3. [ ] **AC-3:** A failed pending-verification load displays an accessible error and retry action instead of a zero-result count/table empty state.
-4. [ ] **AC-4:** Retrying verification calls the same endpoint; successful data clears the error and renders the existing queue, while a successful empty response retains the current empty state.
-5. [ ] **AC-5:** The retry control is disabled while its request is pending and does not trigger approval, rejection, import, or other mutation handlers.
-6. [ ] **AC-6:** Existing populated-list behavior and staff actions remain unchanged; no API, schema, dependency, tenant, RBAC, or Azure changes are introduced.
-7. [ ] **AC-7:** Focused tests, frontend lint, full frontend tests, production build, and diff hygiene pass and actual results are recorded in `STATUS.md`.
+1. [x] **AC-1:** A failed resident-directory load displays an accessible error and retry action instead of “No verified residents found.”
+2. [x] **AC-2:** Retrying the directory calls the same endpoint; successful data clears the error and renders residents, while a successful empty response retains the current empty state.
+3. [x] **AC-3:** A failed pending-verification load displays an accessible error and retry action instead of a zero-result count/table empty state.
+4. [x] **AC-4:** Retrying verification calls the same endpoint; successful data clears the error and renders the existing queue, while a successful empty response retains the current empty state.
+5. [x] **AC-5:** The retry control is disabled while its request is pending and does not trigger approval, rejection, import, or other mutation handlers.
+6. [x] **AC-6:** Existing populated-list behavior and staff actions remain unchanged; no API, schema, dependency, tenant, RBAC, or Azure changes are introduced.
+7. [x] **AC-7:** Focused tests, frontend lint, full frontend tests, production build, and diff hygiene pass and actual results are recorded in `STATUS.md`.
 
 ## 6. Relevant Files & Affected Areas
 
