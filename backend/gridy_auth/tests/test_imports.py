@@ -1,4 +1,6 @@
 import io
+import re
+import uuid
 from unittest.mock import patch
 
 from django.core.files.uploadedfile import SimpleUploadedFile
@@ -185,7 +187,17 @@ class ResidentImportAPITests(IsolatedAuthAPITestCase):
         self.assertIn("imported 2 pre-verified resident(s)", batch_log.description)
         self.assertIn("residents.csv", batch_log.description)
         self.assertIn(f"Barangay {self.barangay.name}", batch_log.description)
+        self.assertIn(f"(ID: {self.barangay.id})", batch_log.description)
         self.assertIn(f"Resident IDs: {user1.profile.id}, {user2.profile.id}", batch_log.description)
+
+        # Validate that batch correlation identifier is a full UUID
+        batch_uuid_match = re.search(
+            r"Administrative RBI attestation batch ([0-9a-fA-F-]{36}):",
+            batch_log.description,
+        )
+        self.assertIsNotNone(batch_uuid_match)
+        batch_uuid = batch_uuid_match.group(1)
+        self.assertEqual(str(uuid.UUID(batch_uuid)), batch_uuid)
 
         user1_logs = AuditLog.objects.filter(
             action_by=official,
@@ -193,7 +205,11 @@ class ResidentImportAPITests(IsolatedAuthAPITestCase):
             description__contains=f"(ID: {user1.profile.id}, Username: {user1.username})",
         )
         self.assertEqual(user1_logs.count(), 1)
-        self.assertIn("Administrative RBI attestation", user1_logs.first().description)
+        user1_desc = user1_logs.first().description
+        self.assertIn("Administrative RBI attestation", user1_desc)
+        self.assertIn(f"Barangay {self.barangay.name}", user1_desc)
+        self.assertIn(f"(ID: {self.barangay.id})", user1_desc)
+        self.assertIn(f"(Batch: {batch_uuid})", user1_desc)
 
         user2_logs = AuditLog.objects.filter(
             action_by=official,
@@ -201,7 +217,11 @@ class ResidentImportAPITests(IsolatedAuthAPITestCase):
             description__contains=f"(ID: {user2.profile.id}, Username: {user2.username})",
         )
         self.assertEqual(user2_logs.count(), 1)
-        self.assertIn("Administrative RBI attestation", user2_logs.first().description)
+        user2_desc = user2_logs.first().description
+        self.assertIn("Administrative RBI attestation", user2_desc)
+        self.assertIn(f"Barangay {self.barangay.name}", user2_desc)
+        self.assertIn(f"(ID: {self.barangay.id})", user2_desc)
+        self.assertIn(f"(Batch: {batch_uuid})", user2_desc)
 
     def test_import_residents_scoped_to_official_barangay(self):
         target_barangay = Barangay.objects.create(name="Scoped Test Barangay")
@@ -233,11 +253,28 @@ class ResidentImportAPITests(IsolatedAuthAPITestCase):
 
         batch_log = AuditLog.objects.get(
             action_by=official,
-            description__contains=f"Barangay {target_barangay.name}",
+            description__contains="Administrative RBI attestation batch",
         )
-        self.assertIn("Administrative RBI attestation batch", batch_log.description)
+        self.assertIn(f"Barangay {target_barangay.name}", batch_log.description)
         self.assertIn("scoped_residents.csv", batch_log.description)
+        self.assertIn(f"(ID: {target_barangay.id})", batch_log.description)
         self.assertIn(f"Resident IDs: {resident_user.profile.id}", batch_log.description)
+
+        scoped_batch_uuid_match = re.search(
+            r"Administrative RBI attestation batch ([0-9a-fA-F-]{36}):",
+            batch_log.description,
+        )
+        self.assertIsNotNone(scoped_batch_uuid_match)
+        scoped_batch_uuid = scoped_batch_uuid_match.group(1)
+        self.assertEqual(str(uuid.UUID(scoped_batch_uuid)), scoped_batch_uuid)
+
+        resident_log = AuditLog.objects.get(
+            action_by=official,
+            description__contains=f"(ID: {resident_user.profile.id}, Username: {resident_user.username})",
+        )
+        self.assertIn(f"Barangay {target_barangay.name}", resident_log.description)
+        self.assertIn(f"(ID: {target_barangay.id})", resident_log.description)
+        self.assertIn(f"(Batch: {scoped_batch_uuid})", resident_log.description)
 
     def test_import_residents_rejects_case_insensitive_duplicate_email(self):
         User.objects.create_user(

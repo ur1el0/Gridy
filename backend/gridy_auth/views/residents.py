@@ -93,7 +93,7 @@ class ResidentImportView(APIView):
         skipped_count = 0
         errors = []
         imported_records = []
-        batch_id = uuid.uuid4().hex[:8]
+        batch_id = str(uuid.uuid4())
 
         try:
             with transaction.atomic():
@@ -158,14 +158,15 @@ class ResidentImportView(APIView):
 
                 if imported_records:
                     barangay_name = request.user.barangay.name
+                    barangay_id = request.user.barangay_id
                     resident_ids_str = ", ".join(str(r.id) for _, r in imported_records)
                     log_action(
                         user=request.user,
                         action_type=AuditLog.ActionType.USER_ACTION,
                         description=(
                             f"Administrative RBI attestation batch {batch_id}: imported {len(imported_records)} "
-                            f"pre-verified resident(s) from CSV '{file_obj.name}' into Barangay {barangay_name}. "
-                            f"Resident IDs: {resident_ids_str}."
+                            f"pre-verified resident(s) from CSV '{file_obj.name}' into Barangay {barangay_name} "
+                            f"(ID: {barangay_id}). Resident IDs: {resident_ids_str}."
                         ),
                         request=request,
                     )
@@ -175,8 +176,8 @@ class ResidentImportView(APIView):
                             action_type=AuditLog.ActionType.USER_ACTION,
                             description=(
                                 f"Administrative RBI attestation: imported and verified resident account "
-                                f"for {r.full_name} (ID: {r.id}, Username: {u.username}) from CSV '{file_obj.name}' "
-                                f"(Batch: {batch_id})."
+                                f"for {r.full_name} (ID: {r.id}, Username: {u.username}) in Barangay {barangay_name} "
+                                f"(ID: {barangay_id}) from CSV '{file_obj.name}' (Batch: {batch_id})."
                             ),
                             request=request,
                         )
