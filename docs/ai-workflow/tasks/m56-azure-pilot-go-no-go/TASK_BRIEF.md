@@ -57,7 +57,7 @@ Turn the unresolved M42 Azure pilot business, data, network, cost, and operation
 6. [x] The worksheet contains no credentials, resident data, real deployment parameters, or actual unapproved cloud values.
 7. [x] The change is documentation-only; no Azure/provider operation, source/config/schema/dependency change, or protected-primary-checkout modification occurs.
 8. [x] `git diff --check` and a scoped Markdown whitespace/link/path review pass; actual outcomes are recorded in STATUS.md.
-9. [ ] The scoped branch is pushed and a PR is opened against M55's branch; leave the PR open and unmerged.
+9. [x] The scoped branch is pushed and a PR is opened against M55's branch; leave the PR open and unmerged.
 
 ## 6. Relevant Files
 
