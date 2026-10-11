@@ -315,12 +315,12 @@ def main() -> None:
         "b93aa761-3e63-49ed-ac28-beffa264f7ac": {
             "scope_type": "microsoft.containerregistry/registries",
             "scope_parameter": "acrRegistryName",
-            "identity_parameter": "acrImagePullIdentityName",
+            "identity_symbol": "acrImagePullIdentity",
         },
         "4633458b-17de-408a-b874-0445c86b69e6": {
             "scope_type": "microsoft.keyvault/vaults",
             "scope_parameter": "keyVaultName",
-            "identity_parameter": "backendRuntimeIdentityName",
+            "identity_symbol": "backendRuntimeIdentity",
         },
     }
     observed_roles: set[str] = set()
@@ -337,10 +337,13 @@ def main() -> None:
         if properties.get("principalType") != "ServicePrincipal":
             fail(f"role {role_id} must be assigned to a managed-identity service principal")
         principal = arm_expression(properties.get("principalId")).casefold()
-        if contract["identity_parameter"].casefold() not in principal or ".principalid" not in principal:
+        expected_principal = (
+            f"[reference('{contract['identity_symbol']}').principalId]".casefold()
+        )
+        if principal != expected_principal:
             fail(
                 f"role {role_id} principal must resolve from "
-                f"{contract['identity_parameter']}; got {principal!r}"
+                f"{contract['identity_symbol']}; got {principal!r}"
             )
         scope = arm_expression(assignment.get("scope")).casefold()
         if contract["scope_type"] not in scope or contract["scope_parameter"].casefold() not in scope:
