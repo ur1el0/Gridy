@@ -5,7 +5,7 @@ import '../models/user_model.dart';
 import '../services/auth_service.dart';
 import '../widgets/custom_button.dart';
 import '../widgets/custom_text_field.dart';
-import '../widgets/gridy_logo.dart';
+import '../widgets/kapitbayan_logo.dart';
 import 'login_screen.dart';
 
 class ProfileScreen extends StatefulWidget {
@@ -162,7 +162,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 ],
               ),
               const SizedBox(height: 8),
-              const Center(child: GridyLogo(iconSize: 64, textSize: 24)),
+              const Center(child: KapitBayanLogo(iconSize: 64, textSize: 24)),
               const SizedBox(height: 32),
               const Text(
                 'My Profile',

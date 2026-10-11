@@ -1,6 +1,6 @@
 # Production Web Server Architecture (Nginx & Multi-Stage Docker)
 
-This guide details the Nginx web server deployment and multi-stage containerization pipeline used to serve the Gridy React frontend application.
+This guide details the Nginx web server deployment and multi-stage containerization pipeline used to serve the KapitBayan React frontend application.
 
 ---
 
@@ -17,7 +17,7 @@ In local development, the frontend runs using Vite's internal Node.js developmen
 
 ## 2. Multi-Stage Docker Pipeline (`frontend/Dockerfile`)
 
-To keep the production container ultra-lightweight and secure, Gridy utilizes a **multi-stage build**:
+To keep the production container ultra-lightweight and secure, KapitBayan utilizes a **multi-stage build**:
 
 ```dockerfile
 # Stage 1: Compilation Engine
@@ -47,7 +47,7 @@ CMD ["nginx", "-g", "daemon off;"]
 
 In a Single Page Application (SPA), React Router handles navigation entirely client-side using the HTML5 History API (`pushState`).
 
-If a barangay official navigates to `https://gridy.app/admin/clearances` and refreshes their browser:
+If a barangay official navigates to `https://app.example.test/admin/clearances` and refreshes their browser:
 1. The browser requests `/admin/clearances` directly from Nginx.
 2. Because `/admin/clearances` does not exist as a physical file on the server, Nginx would return a `404 Not Found` by default.
 3. To resolve this, Nginx is configured with the `try_files` fallback directive in `frontend/nginx.conf`:

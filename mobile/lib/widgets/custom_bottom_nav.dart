@@ -89,9 +89,12 @@ class _NavItem extends StatelessWidget {
   Widget build(BuildContext context) {
     final bool isSelected = index == selectedIndex;
 
+    final Widget visualItem;
+
     if (isSelected) {
       // Active tab: Solid dark navy capsule pill
-      return GestureDetector(
+      visualItem = GestureDetector(
+        excludeFromSemantics: true,
         onTap: onTap,
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -102,11 +105,7 @@ class _NavItem extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(
-                icon,
-                color: Colors.white,
-                size: 20,
-              ),
+              Icon(icon, color: Colors.white, size: 20),
               const SizedBox(height: 3),
               Text(
                 label,
@@ -121,35 +120,41 @@ class _NavItem extends StatelessWidget {
           ),
         ),
       );
+    } else {
+      // Inactive tab: Vertical Icon + Label in muted slate
+      visualItem = GestureDetector(
+        excludeFromSemantics: true,
+        onTap: onTap,
+        behavior: HitTestBehavior.opaque,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(icon, color: AppColors.textMuted, size: 20),
+              const SizedBox(height: 3),
+              Text(
+                label,
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w700,
+                  letterSpacing: 0.5,
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
     }
 
-    // Inactive tab: Vertical Icon + Label in muted slate
-    return GestureDetector(
+    return Semantics(
+      container: true,
+      label: label,
+      button: true,
+      selected: isSelected,
       onTap: onTap,
-      behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              icon,
-              color: const Color(0xFF94A3B8),
-              size: 20,
-            ),
-            const SizedBox(height: 3),
-            Text(
-              label,
-              style: const TextStyle(
-                color: Color(0xFF94A3B8),
-                fontSize: 10,
-                fontWeight: FontWeight.w700,
-                letterSpacing: 0.5,
-              ),
-            ),
-          ],
-        ),
-      ),
+      child: ExcludeSemantics(child: visualItem),
     );
   }
 }

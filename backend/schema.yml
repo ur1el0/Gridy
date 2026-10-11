@@ -1,8 +1,8 @@
 openapi: 3.0.3
 info:
-  title: Gridy API
+  title: KapitBayan API
   version: 1.0.0
-  description: Barangay Information and Service Management System API
+  description: KapitBayan Barangay Information and Service Management System API
 paths:
   /api/v1/activities/:
     get:

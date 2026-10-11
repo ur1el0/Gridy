@@ -1,5 +1,5 @@
 from django.apps import AppConfig
 
 
-class GridyAuditConfig(AppConfig):
+class KapitBayanAuditConfig(AppConfig):
     name = 'gridy_audit'

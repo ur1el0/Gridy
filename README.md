@@ -1,12 +1,16 @@
-# Gridy - Barangay Information and Service Management System
+<p align="center">
+  <img src="frontend/src/assets/kapitbayan/wordmark.png" alt="KapitBayan" width="240" />
+</p>
 
-Gridy is a web and mobile barangay information and service management system developed for local government operations. The repository contains a Django REST Framework API, a React Single Page Application (providing administrative desk operations and citizen self-service kiosk mode), and a Flutter mobile application for residents and field personnel.
+# KapitBayan - Barangay Information and Service Management System
 
-> **Operational Scope Note:** Gridy supports cash collection recorded with a municipal Treasury Official Receipt and resident-submitted GCash transfer references that barangay staff verify manually. It does not process or settle payments through a payment gateway. Assistance requests are reviewed by barangay officials without automated eligibility decisions. Public announcements can be shared outward, while applications and follow-up transactions remain in Gridy. After-hours safety concerns use the incident-reporting workflow for field staff triage.
+KapitBayan is a web and mobile barangay information and service management system developed for local government operations. The repository contains a Django REST Framework API, a React Single Page Application (providing administrative desk operations and citizen self-service kiosk mode), and a Flutter mobile application for residents and field personnel.
+
+> **Operational Scope Note:** KapitBayan supports cash collection recorded with a municipal Treasury Official Receipt and resident-submitted GCash transfer references that barangay staff verify manually. It does not process or settle payments through a payment gateway. Assistance requests are reviewed by barangay officials without automated eligibility decisions. Public announcements can be shared outward, while applications and follow-up transactions remain in KapitBayan. After-hours safety concerns use the incident-reporting workflow for field staff triage.
 
 ## Database Baseline & Multi-Tenancy
 
-Gridy requires PostgreSQL 15 or higher. The relational schema enforces multi-tenant boundary isolation across local government jurisdictions:
+KapitBayan requires PostgreSQL 15 or higher. The relational schema enforces multi-tenant boundary isolation across local government jurisdictions:
 
 - **Tenant Scoping:** Operational domain models (`DocumentRequest`, `QueueTicket`, `Announcement`, `Activity`) link directly to a `Barangay` foreign key; citizen hazard reports (`IssueReport`) resolve tenant context through the reporter's registered profile.
 - **Composite Indexing:** Targeted composite indices are enforced on high-throughput query boundaries, including `['barangay', 'status']` for document review filtering, `['status', 'created_at']` for lobby queue dispatch, and `['user', 'is_read', '-created_at']` for citizen notifications.
@@ -14,7 +18,7 @@ Gridy requires PostgreSQL 15 or higher. The relational schema enforces multi-ten
 
 ## System Architecture
 
-Gridy implements a decoupled 3-tier client-server architecture containerized via Docker Compose:
+KapitBayan implements a decoupled 3-tier client-server architecture containerized via Docker Compose:
 
 - **Backend API (Django & DRF):** Powers the core REST API (Python 3.12, Django 6.0). Handles relational transactions, OpenAPI schema generation (`drf-spectacular`), and JWT authentication.
 - **Frontend Web Application (React & Vite):** Single Page Application (SPA) in TypeScript providing responsive Tailwind-styled interfaces for administrative desk staff and citizen self-service kiosks.

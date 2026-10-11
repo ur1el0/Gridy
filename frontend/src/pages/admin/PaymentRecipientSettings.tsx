@@ -81,7 +81,7 @@ export function PaymentRecipientSettings() {
     return (
         <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
             <h2 className="text-xl font-bold text-slate-900">Electronic payment recipients</h2>
-            <p className="mt-1 text-sm leading-6 text-slate-600">Enter only the official recipient name, account or wallet identifier, and transfer instructions. Gridy does not store passwords or PINs and staff verify every reference manually.</p>
+            <p className="mt-1 text-sm leading-6 text-slate-600">Enter only the official recipient name, account or wallet identifier, and transfer instructions. KapitBayan does not store passwords or PINs and staff verify every reference manually.</p>
             {message && <p role="status" className="mt-4 rounded-lg bg-slate-50 p-3 text-sm text-slate-700">{message}</p>}
             <form onSubmit={submit} className="mt-5 grid gap-4 sm:grid-cols-2">
                 <label className="text-sm font-medium text-slate-700">Provider

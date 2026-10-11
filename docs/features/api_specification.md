@@ -1,4 +1,4 @@
-# Gridy API Endpoint Specification
+# KapitBayan API Endpoint Specification
 
 This document provides detailed request/response payloads and routing instructions for frontend (React) and mobile (Flutter) developers integration.
 

@@ -82,8 +82,8 @@ export const Login: React.FC = () => {
 
                 {/* Top Logo & Interactive Touch Mode Badge */}
                 <div className="relative z-10 flex items-center justify-between">
-                    <span className="font-black text-2xl tracking-wider text-white uppercase">
-                        GRIDY
+                    <span className="font-bold text-lg tracking-tight text-white sm:text-2xl">
+                        KapitBayan
                     </span>
                     <button
                         type="button"

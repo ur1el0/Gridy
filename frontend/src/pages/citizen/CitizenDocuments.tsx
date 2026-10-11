@@ -3,53 +3,15 @@ import toast from 'react-hot-toast';
 import { axiosPrivate } from '../../api/axios';
 import { getSafeApiErrorMessage } from '../../api/error-message';
 import { InlineErrorState } from '../../components/ui/InlineErrorState';
-import { 
-    FileText, 
-    Plus, 
-    Download, 
-    Clock, 
-    CheckCircle2, 
-    AlertCircle, 
-    X, 
+import { NewDocumentRequestModal } from '../../components/citizen-documents/NewDocumentRequestModal';
+import { DOCUMENT_TYPES } from '../../components/citizen-documents/documentTypes';
+import { DocumentRequestRow } from '../../components/citizen-documents/DocumentRequestRow';
+import type { DocumentRequest, PaymentRecipient } from '../../components/citizen-documents/types';
+import {
+    Plus,
     Loader2,
     FileCheck2,
-    Trash2,
 } from 'lucide-react';
-
-interface DocumentRequest {
-    id: number;
-    document_type: string;
-    purpose: string;
-    status: string;
-    fee_amount?: number | string | null;
-    payment_method?: string;
-    payment_reference?: string;
-    payment_status?: string;
-    payment_review_note?: string;
-    payment_recipient?: number | null;
-    payment_recipient_name_snapshot?: string | null;
-    payment_recipient_identifier_snapshot?: string | null;
-    payment_instructions_snapshot?: string | null;
-    admin_notes?: string;
-    created_at: string;
-}
-
-interface PaymentRecipient {
-    id: number;
-    provider: string;
-    provider_label: string;
-    display_name: string;
-    recipient_name: string;
-    recipient_identifier: string;
-    instructions: string;
-}
-
-const DOCUMENT_TYPES = [
-    'Barangay Clearance',
-    'Certificate of Indigency',
-    'Certificate of Residency',
-    'Barangay Business Clearance',
-];
 
 export const CitizenDocuments: React.FC = () => {
     const [requests, setRequests] = useState<DocumentRequest[]>([]);
@@ -192,42 +154,6 @@ export const CitizenDocuments: React.FC = () => {
         }
     };
 
-    const getStatusBadge = (status: string) => {
-        switch (status.toUpperCase()) {
-            case 'PENDING':
-                return (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-amber-50 text-amber-700 border border-amber-200">
-                        <Clock className="w-3.5 h-3.5" /> Pending Review
-                    </span>
-                );
-            case 'PROCESSING':
-                return (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" /> Processing
-                    </span>
-                );
-            case 'READY_FOR_PICKUP':
-            case 'RELEASED':
-                return (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                        <CheckCircle2 className="w-3.5 h-3.5" /> Ready / Released
-                    </span>
-                );
-            case 'REJECTED':
-                return (
-                    <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-rose-50 text-rose-700 border border-rose-200">
-                        <AlertCircle className="w-3.5 h-3.5" /> Rejected
-                    </span>
-                );
-            default:
-                return (
-                    <span className="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-700">
-                        {status}
-                    </span>
-                );
-        }
-    };
-
     return (
         <div className="space-y-6">
             {/* Header Banner */}
@@ -291,191 +217,49 @@ export const CitizenDocuments: React.FC = () => {
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-slate-100">
-                                {requests.map((req) => {
-                                    const isAvailableForDownload = ['READY_FOR_PICKUP', 'RELEASED'].includes(req.status.toUpperCase());
-                                    return (
-                                        <tr key={req.id} className="hover:bg-slate-50/70 transition-colors">
-                                            <td className="py-4 px-6 font-semibold text-slate-900 flex items-center gap-2">
-                                                <FileText className="w-4 h-4 text-primary-text" />
-                                                {req.document_type}
-                                            </td>
-                                            <td className="py-4 px-6 text-slate-600">
-                                                {req.purpose || '—'}
-                                            </td>
-                                            <td className="py-4 px-6 text-slate-500 text-xs">
-                                                {new Date(req.created_at).toLocaleDateString(undefined, {
-                                                    year: 'numeric',
-                                                    month: 'short',
-                                                    day: 'numeric',
-                                                })}
-                                            </td>
-                                            <td className="py-4 px-6">
-                                                {getStatusBadge(req.status)}
-                                                {Number(req.fee_amount ?? 0) > 0 && (
-                                                    <div className="mt-2 space-y-1 text-xs text-slate-600">
-                                                        <p>Assessment: ₱{Number(req.fee_amount).toFixed(2)}</p>
-                                                        <p>Payment: {(req.payment_status || 'UNPAID').replace(/_/g, ' ').toLowerCase()}</p>
-                                                        {req.payment_review_note && <p className="text-rose-700">Staff note: {req.payment_review_note}</p>}
-                                                        {req.status.toUpperCase() === 'READY_FOR_PICKUP' &&
-                                                            req.payment_method !== 'CASH' &&
-                                                            ['UNPAID', 'REJECTED'].includes(req.payment_status || 'UNPAID') && (
-                                                                <form
-                                                                    className="mt-2 space-y-2"
-                                                                    onSubmit={(event) => {
-                                                                        event.preventDefault();
-                                                                        void handleSubmitPaymentReference(req.id);
-                                                                    }}
-                                                                >
-                                                                    <p>Select an official recipient configured by your barangay, follow its instructions, and enter your transfer reference. Staff verify the transfer manually.</p>
-                                                                    {paymentRecipients.length === 0 ? (
-                                                                        <p role="status" className="rounded-lg bg-amber-50 p-3 text-xs text-amber-900">Your barangay has not configured an e-payment recipient. Contact the barangay hall or pay in person.</p>
-                                                                    ) : (
-                                                                        <>
-                                                                            <label className="block text-xs font-semibold text-slate-700">
-                                                                                Payment recipient
-                                                                                <select required aria-label={`Payment recipient for request ${req.id}`} value={selectedRecipientId[req.id] || ''} onChange={(event) => setSelectedRecipientId((current) => ({ ...current, [req.id]: event.target.value }))} className="mt-1 w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs">
-                                                                                    <option value="">Select a recipient</option>
-                                                                                    {paymentRecipients.map((recipient) => <option key={recipient.id} value={recipient.id}>{recipient.display_name} · {recipient.provider_label}</option>)}
-                                                                                </select>
-                                                                            </label>
-                                                                            {(() => {
-                                                                                const recipient = paymentRecipients.find((item) => item.id === Number(selectedRecipientId[req.id]));
-                                                                                return recipient ? <div className="rounded-lg bg-white p-3 text-xs text-slate-700"><p className="font-bold">{recipient.recipient_name}</p><p>{recipient.recipient_identifier}</p>{recipient.instructions && <p className="mt-1">{recipient.instructions}</p>}</div> : null;
-                                                                            })()}
-                                                                            <input required maxLength={100} aria-label={`Transfer reference for request ${req.id}`} value={paymentReference[req.id] ?? ''} onChange={(event) => setPaymentReference((current) => ({ ...current, [req.id]: event.target.value }))} placeholder="Transfer reference" className="w-full rounded-lg border border-slate-300 px-2.5 py-2 text-xs" />
-                                                                            <button type="submit" disabled={submittingPaymentId === req.id} className="rounded-lg bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground disabled:opacity-50">
-                                                                                {submittingPaymentId === req.id ? 'Submitting…' : 'Submit transfer reference'}
-                                                                            </button>
-                                                                        </>
-                                                                    )}
-                                                                </form>
-                                                            )}
-                                                    </div>
-                                                )}
-                                                {req.admin_notes && (
-                                                    <p className="text-[11px] text-slate-500 mt-1 italic">
-                                                        Note: {req.admin_notes}
-                                                    </p>
-                                                )}
-                                            </td>
-                                            <td className="py-4 px-6 text-right">
-                                                {isAvailableForDownload ? (
-                                                    <div className="flex flex-col items-end gap-2">
-                                                        {req.status.toUpperCase() === 'READY_FOR_PICKUP' &&
-                                                            req.payment_status === 'PENDING_VERIFICATION' && (
-                                                                <span className="text-xs font-medium text-amber-700">Waiting for payment verification</span>
-                                                            )}
-                                                    <button
-                                                        onClick={() => handleDownloadPdf(req.id, req.document_type)}
-                                                        disabled={downloadingId === req.id}
-                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-bold border border-emerald-200 transition-all cursor-pointer"
-                                                    >
-                                                        {downloadingId === req.id ? (
-                                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                                        ) : (
-                                                            <Download className="w-3.5 h-3.5" />
-                                                        )}
-                                                        <span>Download PDF</span>
-                                                    </button>
-                                                    </div>
-                                                ) : req.status.toUpperCase() === 'PENDING' ? (
-                                                    <button
-                                                        onClick={() => handleCancelRequest(req.id)}
-                                                        disabled={cancellingId === req.id}
-                                                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-bold border border-rose-200 transition-all cursor-pointer"
-                                                        aria-label={`Cancel clearance request #${req.id}`}
-                                                    >
-                                                        {cancellingId === req.id ? (
-                                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                                        ) : (
-                                                            <Trash2 className="w-3.5 h-3.5" />
-                                                        )}
-                                                        <span>Cancel</span>
-                                                    </button>
-                                                ) : (
-                                                    <span className="text-xs text-slate-400">Available after approval</span>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
+                                {requests.map((request) => (
+                                    <DocumentRequestRow
+                                        key={request.id}
+                                        request={request}
+                                        recipients={paymentRecipients}
+                                        selectedRecipientId={selectedRecipientId[request.id] || ''}
+                                        paymentReference={paymentReference[request.id] ?? ''}
+                                        submittingPayment={submittingPaymentId === request.id}
+                                        downloading={downloadingId === request.id}
+                                        cancelling={cancellingId === request.id}
+                                        onRecipientChange={(value) =>
+                                            setSelectedRecipientId((current) => ({
+                                                ...current,
+                                                [request.id]: value,
+                                            }))
+                                        }
+                                        onPaymentReferenceChange={(value) =>
+                                            setPaymentReference((current) => ({
+                                                ...current,
+                                                [request.id]: value,
+                                            }))
+                                        }
+                                        onSubmitPaymentReference={() => handleSubmitPaymentReference(request.id)}
+                                        onDownloadPdf={() => handleDownloadPdf(request.id, request.document_type)}
+                                        onCancel={() => handleCancelRequest(request.id)}
+                                    />
+                                ))}
                             </tbody>
                         </table>
                     </div>
                 </div>
             )}
 
-            {/* New Request Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-                    <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
-                        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-                            <h3 className="text-lg font-extrabold text-slate-900">
-                                Request Official Clearance
-                            </h3>
-                            <button
-                                onClick={() => setIsModalOpen(false)}
-                                className="text-slate-400 hover:text-slate-600 rounded-lg p-1"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleCreateRequest} className="mt-4 space-y-4">
-                            <div>
-                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                                    Document Type
-                                </label>
-                                <select
-                                    value={documentType}
-                                    onChange={(e) => setDocumentType(e.target.value)}
-                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#F8FAFD] text-sm text-slate-800 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                >
-                                    {DOCUMENT_TYPES.map((type) => (
-                                        <option key={type} value={type}>
-                                            {type}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                                    Purpose Statement
-                                </label>
-                                <input
-                                    type="text"
-                                    required
-                                    placeholder="e.g. Local Employment, Scholarship, Postal ID"
-                                    value={purpose}
-                                    onChange={(e) => setPurpose(e.target.value)}
-                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#F8FAFD] text-sm text-slate-800 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                />
-                                <p className="text-[11px] text-slate-500 mt-1">
-                                    Required by law. This will be printed on your official barangay certificate.
-                                </p>
-                            </div>
-
-                            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsModalOpen(false)}
-                                    className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={submitting}
-                                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-bold shadow-xs transition-all cursor-pointer disabled:opacity-50"
-                                >
-                                    {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                                    <span>{submitting ? 'Submitting...' : 'Submit Application'}</span>
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                <NewDocumentRequestModal
+                    documentType={documentType}
+                    purpose={purpose}
+                    submitting={submitting}
+                    onDocumentTypeChange={setDocumentType}
+                    onPurposeChange={setPurpose}
+                    onClose={() => setIsModalOpen(false)}
+                    onSubmit={handleCreateRequest}
+                />
             )}
         </div>
     );

@@ -27,7 +27,7 @@ void main() {
       final service = AuthService(
         apiClient: ApiClient(
           client: mockClient,
-          baseUrl: 'https://gridy.test/api/v1',
+          baseUrl: 'https://kapitbayan.test/api/v1',
         ),
         storageService: StorageService(preferences),
       );
@@ -75,7 +75,7 @@ void main() {
 }
 
 class RecordingApiClient extends ApiClient {
-  RecordingApiClient() : super(baseUrl: 'https://gridy.test');
+  RecordingApiClient() : super(baseUrl: 'https://kapitbayan.test');
 
   Map<String, String>? capturedFields;
   bool? capturedRequiresAuth;

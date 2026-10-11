@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_svg/flutter_svg.dart';
 import '../core/network/api_client.dart';
 import '../core/theme/app_colors.dart';
 import '../models/activity_schedule_model.dart';
@@ -12,6 +11,7 @@ import '../widgets/appointment_schedule_card.dart';
 import '../widgets/calendar_day_strip.dart';
 import '../widgets/custom_bottom_nav.dart';
 import '../widgets/schedule_event_card.dart';
+import '../widgets/schedule_detail_dialogs.dart';
 import 'dashboard_screen.dart';
 import 'documents_screen.dart';
 import 'queue_screen.dart';
@@ -22,11 +22,7 @@ class ScheduleScreen extends StatefulWidget {
   final ScheduleService? scheduleService;
   final AuthService? authService;
 
-  const ScheduleScreen({
-    super.key,
-    this.scheduleService,
-    this.authService,
-  });
+  const ScheduleScreen({super.key, this.scheduleService, this.authService});
 
   @override
   State<ScheduleScreen> createState() => _ScheduleScreenState();
@@ -93,10 +89,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(
-        builder: (_) => ProfileScreen(
-          user: user,
-          authService: _authService!,
-        ),
+        builder: (_) => ProfileScreen(user: user, authService: _authService!),
       ),
     );
   }
@@ -106,7 +99,11 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 20),
+            const Icon(
+              Icons.check_circle_rounded,
+              color: Colors.white,
+              size: 20,
+            ),
             const SizedBox(width: 10),
             Expanded(
               child: Text(
@@ -127,65 +124,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   void _showEventDetails(ActivityScheduleModel activity) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          activity.title,
-          style: const TextStyle(
-            fontWeight: FontWeight.w900,
-            color: AppColors.primaryNavy,
-            fontSize: 18,
-          ),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.calendar_today_outlined, size: 16, color: AppColors.accentBlue),
-                const SizedBox(width: 8),
-                Text(
-                  activity.formattedEventDateTime,
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                ),
-              ],
-            ),
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                const Icon(Icons.location_on_outlined, size: 16, color: AppColors.accentBlue),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: Text(
-                    activity.location,
-                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13),
-                  ),
-                ),
-              ],
-            ),
-            if (activity.description.isNotEmpty) ...[
-              const SizedBox(height: 14),
-              Text(
-                activity.description,
-                style: const TextStyle(fontSize: 13.5, color: Color(0xFF475569), height: 1.4),
-              ),
-            ],
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () {
-              Navigator.pop(ctx);
-              _onAddToCalendar(activity);
-            },
-            child: const Text('Add to Calendar', style: TextStyle(fontWeight: FontWeight.bold)),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Close'),
-          ),
-        ],
+      builder: (_) => ActivityDetailsDialog(
+        activity: activity,
+        onAddToCalendar: () => _onAddToCalendar(activity),
       ),
     );
   }
@@ -193,35 +134,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
   void _showAppointmentDetails(DocumentRequestModel request) {
     showDialog(
       context: context,
-      builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        title: Text(
-          request.documentType,
-          style: const TextStyle(fontWeight: FontWeight.w900, color: AppColors.primaryNavy),
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('Tracking ID: ${request.formattedTrackingId}',
-                style: const TextStyle(fontWeight: FontWeight.w700)),
-            const SizedBox(height: 8),
-            Text('Status: ${request.statusDisplay}'),
-            const SizedBox(height: 8),
-            Text('Requested: ${request.formattedRequestedDate}'),
-            if (request.adminNotes != null && request.adminNotes!.isNotEmpty) ...[
-              const SizedBox(height: 8),
-              Text('Official Notes: ${request.adminNotes}'),
-            ],
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('Close'),
-          ),
-        ],
-      ),
+      builder: (_) => AppointmentDetailsDialog(request: request),
     );
   }
 
@@ -247,29 +160,25 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
         preferredSize: const Size.fromHeight(64),
         child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 20.0,
+              vertical: 8.0,
+            ),
             child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 // Brand Logo & Title Header
                 Row(
                   children: [
-                    Container(
+                    Image.asset(
+                      'assets/images/kapitbayan_symbol.png',
                       width: 38,
                       height: 38,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF091B35),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      padding: const EdgeInsets.all(7),
-                      child: SvgPicture.asset(
-                        'assets/images/MainLogo.svg',
-                        fit: BoxFit.contain,
-                      ),
+                      fit: BoxFit.contain,
                     ),
                     const SizedBox(width: 10),
                     const Text(
-                      'Gridy',
+                      'KapitBayan',
                       style: TextStyle(
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
@@ -299,8 +208,8 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                         user != null && user.fullName.isNotEmpty
                             ? user.fullName[0].toUpperCase()
                             : (user != null && user.username.isNotEmpty
-                                ? user.username[0].toUpperCase()
-                                : 'C'),
+                                  ? user.username[0].toUpperCase()
+                                  : 'C'),
                         style: const TextStyle(
                           fontSize: 16,
                           fontWeight: FontWeight.w800,
@@ -318,7 +227,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
       body: _isLoading
           ? const Center(
               child: CircularProgressIndicator(
-                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryNavy),
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  AppColors.primaryNavy,
+                ),
               ),
             )
           : RefreshIndicator(
@@ -326,7 +237,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
               color: AppColors.primaryNavy,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20.0,
+                  vertical: 12.0,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -360,7 +274,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     if (appointments.isEmpty)
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 24,
+                          horizontal: 16,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(20),
@@ -374,7 +291,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                             Icon(
                               Icons.event_busy_rounded,
                               size: 32,
-                              color: const Color(0xFF94A3B8).withValues(alpha: 0.8),
+                              color: const Color(
+                                0xFF94A3B8,
+                              ).withValues(alpha: 0.8),
                             ),
                             const SizedBox(height: 8),
                             const Text(
@@ -392,7 +311,9 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                       ListView.separated(
                         shrinkWrap: true,
                         physics: const NeverScrollableScrollPhysics(),
-                        itemCount: appointments.length > 2 ? 2 : appointments.length,
+                        itemCount: appointments.length > 2
+                            ? 2
+                            : appointments.length,
                         separatorBuilder: (_, _) => const SizedBox(height: 12),
                         itemBuilder: (context, index) {
                           final req = appointments[index];
@@ -442,7 +363,10 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                     if (displayedActivities.isEmpty)
                       Container(
                         width: double.infinity,
-                        padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
+                        padding: const EdgeInsets.symmetric(
+                          vertical: 28,
+                          horizontal: 16,
+                        ),
                         decoration: BoxDecoration(
                           color: const Color(0xFFF8FAFC),
                           borderRadius: BorderRadius.circular(20),

@@ -1,6 +1,6 @@
 # Adviser-Approved Service Workflows
 
-This page records the confirmed, intentionally manual service policies for Gridy.
+This page records the confirmed, intentionally manual service policies for KapitBayan.
 
 ## Queue fairness
 
@@ -8,21 +8,21 @@ Regular and priority tickets remain separate classifications. The caller uses a 
 
 ## Assistance requests
 
-Residents submit an assistance type and a short explanation. A barangay official reviews each request and records the decision. Gridy does not determine eligibility, promise funding, or automatically approve an application. A decline requires a reason, and officials can only review requests belonging to their barangay.
+Residents submit an assistance type and a short explanation. A barangay official reviews each request and records the decision. KapitBayan does not determine eligibility, promise funding, or automatically approve an application. A decline requires a reason, and officials can only review requests belonging to their barangay.
 
 ## Document payment
 
 Residents may submit a GCash transfer reference after the document is ready for pickup. Before transferring, residents confirm the payment recipient using an official barangay announcement or posted instructions; staff compare the reference with the actual GCash transaction and mark it verified or rejected. Rejection requires a note. A paid document cannot be released until the GCash reference is verified and the official receipt number is recorded. Cash collection remains supported and is recorded with its receipt number. Exempt document fees remain zero.
 
-Gridy does not connect to GCash, move money, or claim that a reference proves settlement by itself. The staff verification step is the control that protects document release.
+KapitBayan does not connect to GCash, move money, or claim that a reference proves settlement by itself. The staff verification step is the control that protects document release.
 
 ## Announcements
 
-Officials publish notices in Gridy and can share the public announcement link through an external social platform. The Gridy page is read-only and contains no transaction action or comments. Gridy cannot manage comments on external social pages; officials use that platform's own controls when available and direct residents to Gridy for requests and transactions.
+Officials publish notices in KapitBayan and can share the public announcement link through an external social platform. The KapitBayan page is read-only and contains no transaction action or comments. KapitBayan cannot manage comments on external social pages; officials use that platform's own controls when available and direct residents to KapitBayan for requests and transactions.
 
 ## After-hours safety reports
 
-Gridy does not provide live chat after office hours. A resident files an incident report with the details and location; field staff use the existing incident-report queue to triage and update the report. For immediate danger, residents should contact the appropriate emergency service or the barangay hotline.
+KapitBayan does not provide live chat after office hours. A resident files an incident report with the details and location; field staff use the existing incident-report queue to triage and update the report. For immediate danger, residents should contact the appropriate emergency service or the barangay hotline.
 
 ## Presentation data
 

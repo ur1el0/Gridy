@@ -1,26 +1,30 @@
-from .authentication import (
-    CustomTokenObtainPairView, SessionViewSet,
+from .token import (
+    CustomTokenObtainPairView,
     CustomTokenRefreshView,
-    LogoutView,
-    PasswordResetRequestView,
-    PasswordResetConfirmView
 )
-
+from .sessions import (
+    SessionViewSet,
+)
+from .logout import (
+    LogoutView,
+)
+from .password_reset import (
+    PasswordResetRequestView,
+    PasswordResetConfirmView,
+)
 from .registration import (
     RegisterView,
-    AdminRegisterView
+    AdminRegisterView,
 )
-
 from .profile import (
     UserProfileView,
-    BarangayViewSet
+    BarangayViewSet,
 )
-
 from .residents import (
     ResidentImportView,
     PendingResidentsView,
     VerifyResidentView,
     RejectResidentView,
-    ResidentViewSet
+    ResidentViewSet,
 )
 from .onboarding import BarangayApplicationViewSet, PublicBarangayDirectoryView

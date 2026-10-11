@@ -1,6 +1,7 @@
 from django.apps import AppConfig
 
-class GridyReportsConfig(AppConfig):
+
+class KapitBayanReportsConfig(AppConfig):
     name = 'gridy_reports'
 
     def ready(self):

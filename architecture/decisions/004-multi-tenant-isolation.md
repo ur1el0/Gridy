@@ -4,7 +4,7 @@
 Accepted
 
 ## Context
-Gridy is designed to operate as a centralized platform for multiple Local Government Units (LGUs). A Barangay Official from Barangay A must never be able to view, edit, or interact with citizens, documents, or issue reports belonging to Barangay B. Standard Django REST Framework (DRF) patterns default to `Model.objects.all()`, which exposes the entire database to anyone with a valid authentication token.
+KapitBayan is designed to operate as a centralized platform for multiple Local Government Units (LGUs). A Barangay Official from Barangay A must never be able to view, edit, or interact with citizens, documents, or issue reports belonging to Barangay B. Standard Django REST Framework (DRF) patterns default to `Model.objects.all()`, which exposes the entire database to anyone with a valid authentication token.
 
 ## Decision
 We will reject the use of unfiltered querysets in all endpoint definitions. 

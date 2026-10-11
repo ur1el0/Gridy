@@ -2,17 +2,16 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { axiosPublic } from '../../api/axios';
 import { getSafeApiErrorMessage } from '../../api/error-message';
-import { Shield, FileCheck2, Clock, Users, KeyRound, IdCard, ChevronDown } from 'lucide-react';
+import { Shield } from 'lucide-react';
 import { TextField } from '../../components/ui/TextField';
-import { FileUploadZone } from '../../components/ui/FileUploadZone';
 import { Button } from '../../components/ui/Button';
-
-interface PublicBarangay {
-    id: number;
-    name: string;
-    municipality: string;
-    province: string;
-}
+import {
+    RegisterHeroBanner,
+    ResidentVerificationUploads,
+    BarangaySelectField,
+    AdminCredentialsSection,
+    type PublicBarangay,
+} from '../../components/auth/register';
 
 export const Register: React.FC = () => {
     const [isAdminMode, setIsAdminMode] = useState(false);
@@ -46,7 +45,6 @@ export const Register: React.FC = () => {
     const [affirmation, setAffirmation] = useState(false);
     const [dataPrivacyConsent, setDataPrivacyConsent] = useState(false);
     const [passkey, setPasskey] = useState('');
-
 
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
@@ -224,128 +222,14 @@ export const Register: React.FC = () => {
     return (
         <div className="min-h-screen flex flex-col md:flex-row bg-[#F6F8FC] font-sans">
             {/* Left Sidebar Banner */}
-            <div
-                className={`w-full md:w-5/12 lg:w-[40%] text-white p-5 md:p-8 lg:p-14 flex flex-col justify-between relative overflow-hidden md:min-h-screen transition-all duration-500 ${
-                    isAdminMode
-                        ? 'bg-gradient-to-b from-[#091B35] via-[#0F2D59] to-[#001128]'
-                        : 'bg-gradient-to-b from-[#0284C7] via-[#0369A1] to-[#075985]'
-                }`}
-            >
-                {/* Decorative Wave Pattern */}
-                <div className="absolute inset-0 opacity-10 pointer-events-none overflow-hidden">
-                    <svg className="w-full h-full" viewBox="0 0 500 800" fill="none" xmlns="http://www.w3.org/2000/svg">
-                        <path d="M-100 200 C 100 400, 300 100, 600 300 C 900 500, 700 800, 1000 700" stroke="white" strokeWidth="2" fill="none" />
-                        <path d="M-50 400 C 150 600, 350 300, 650 500 C 950 700, 750 1000, 1050 900" stroke="white" strokeWidth="2" fill="none" />
-                        <path d="M-150 0 C 50 200, 250 -100, 550 100 C 850 300, 650 600, 950 500" stroke="white" strokeWidth="2" fill="none" />
-                    </svg>
-                </div>
-
-                {/* Top Logo & Mode Switch Pill */}
-                <div className="relative z-10 flex items-center justify-between">
-                    <span className="font-black text-2xl tracking-wider text-white uppercase">
-                        GRIDY
-                    </span>
-                    <button
-                        type="button"
-                        onClick={() => {
-                            setError('');
-                            setSuccess('');
-                            setIsAdminMode((prev) => !prev);
-                        }}
-                        className={`px-3 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider cursor-pointer flex items-center gap-1.5 transition-all active:scale-95 select-none ${
-                            isAdminMode
-                                ? 'bg-amber-400 text-slate-900 shadow-sm hover:bg-amber-300'
-                                : 'bg-white/20 text-white hover:bg-white/30 backdrop-blur-sm'
-                        }`}
-                        title="Tap to switch registration type"
-                    >
-                        <span>{isAdminMode ? 'Staff Registration' : 'Resident Registration'}</span>
-                        <span className="text-[11px] opacity-75 font-bold">⇄</span>
-                    </button>
-                </div>
-
-                {/* Middle Content (Hidden on mobile, visible on desktop) */}
-                <div className="relative z-10 mt-10 md:mt-14 mb-auto hidden md:block">
-                    <h1 className="text-4xl lg:text-[2.75rem] font-extrabold text-white tracking-tight leading-[1.15] mb-4">
-                        {isAdminMode ? (
-                            <>
-                                Register as<br />
-                                Authorized<br />
-                                Personnel
-                            </>
-                        ) : (
-                            <>
-                                Resident<br />
-                                Account<br />
-                                Registration
-                            </>
-                        )}
-                    </h1>
-                    <p className="text-blue-100/75 text-sm lg:text-base font-normal max-w-sm mb-10 leading-relaxed">
-                        {isAdminMode
-                            ? 'Create your administrative credentials to manage the Gridy Barangay System. Access is restricted to authorized barangay personnel.'
-                            : 'Register your resident account to request clearances, access community services, and track lobby queues.'}
-                    </p>
-
-                    <div className="space-y-4">
-                        {isAdminMode ? (
-                            <>
-                                <div className="flex items-center gap-3.5">
-                                    <div className="w-9 h-9 rounded-lg bg-white/10 backdrop-blur-sm border border-white/10 flex items-center justify-center text-white shrink-0">
-                                        <Shield className="w-5 h-5 text-amber-300" />
-                                    </div>
-                                    <span className="text-[11px] lg:text-xs font-semibold tracking-wider text-blue-100/90 uppercase">
-                                        CREDENTIALS VERIFICATION
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-3.5">
-                                    <div className="w-9 h-9 rounded-lg bg-white/10 backdrop-blur-sm border border-white/10 flex items-center justify-center text-white shrink-0">
-                                        <KeyRound className="w-5 h-5 text-amber-300" />
-                                    </div>
-                                    <span className="text-[11px] lg:text-xs font-semibold tracking-wider text-blue-100/90 uppercase">
-                                        ADMIN ACCESS TIERS
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-3.5">
-                                    <div className="w-9 h-9 rounded-lg bg-white/10 backdrop-blur-sm border border-white/10 flex items-center justify-center text-white shrink-0">
-                                        <FileCheck2 className="w-5 h-5 text-amber-300" />
-                                    </div>
-                                    <span className="text-[11px] lg:text-xs font-semibold tracking-wider text-blue-100/90 uppercase">
-                                        SECURITY AUDIT COMPLIANCE
-                                    </span>
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                <div className="flex items-center gap-3.5">
-                                    <div className="w-9 h-9 rounded-lg bg-white/10 backdrop-blur-sm border border-white/10 flex items-center justify-center text-white shrink-0">
-                                        <FileCheck2 className="w-5 h-5 text-sky-200" />
-                                    </div>
-                                    <span className="text-[11px] lg:text-xs font-semibold tracking-wider text-blue-100/90 uppercase">
-                                        OFFICIAL CLEARANCES ACCESS
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-3.5">
-                                    <div className="w-9 h-9 rounded-lg bg-white/10 backdrop-blur-sm border border-white/10 flex items-center justify-center text-white shrink-0">
-                                        <Clock className="w-5 h-5 text-sky-200" />
-                                    </div>
-                                    <span className="text-[11px] lg:text-xs font-semibold tracking-wider text-blue-100/90 uppercase">
-                                        REAL-TIME QUEUE TICKETING
-                                    </span>
-                                </div>
-                                <div className="flex items-center gap-3.5">
-                                    <div className="w-9 h-9 rounded-lg bg-white/10 backdrop-blur-sm border border-white/10 flex items-center justify-center text-white shrink-0">
-                                        <Users className="w-5 h-5 text-sky-200" />
-                                    </div>
-                                    <span className="text-[11px] lg:text-xs font-semibold tracking-wider text-blue-100/90 uppercase">
-                                        COMMUNITY PROGRAM UPDATES
-                                    </span>
-                                </div>
-                            </>
-                        )}
-                    </div>
-                </div>
-            </div>
+            <RegisterHeroBanner
+                isAdminMode={isAdminMode}
+                onToggleMode={() => {
+                    setError('');
+                    setSuccess('');
+                    setIsAdminMode((prev) => !prev);
+                }}
+            />
 
             {/* Right Registration Form */}
             <div className="w-full md:w-7/12 lg:w-[60%] flex flex-col justify-center items-center px-6 py-8 sm:p-12 lg:p-16 overflow-y-auto">
@@ -442,114 +326,25 @@ export const Register: React.FC = () => {
 
                         {/* Resident Mode: Identity & Residency Verification Proofs */}
                         {!isAdminMode && (
-                            <div className="border border-slate-200 rounded-xl bg-slate-50/70 overflow-hidden transition-all shadow-sm">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsVerificationExpanded((prev) => !prev)}
-                                    className="w-full flex items-center justify-between p-3.5 cursor-pointer text-left hover:bg-slate-100/70 transition-colors select-none"
-                                >
-                                    <div className="flex items-center gap-2.5">
-                                        <IdCard className="w-4 h-4 text-[#0284C7] shrink-0" />
-                                        <div>
-                                            <h4 className="text-xs font-bold uppercase tracking-wider text-slate-800">
-                                                Identity & Residency Verification
-                                            </h4>
-                                            <p className="text-[11px] text-slate-500">
-                                                {isVerificationExpanded
-                                                    ? 'Tap to collapse verification documents'
-                                                    : 'Tap to expand and upload PhilSys ID & residency proofs'}
-                                            </p>
-                                        </div>
-                                    </div>
-                                    <div className="flex items-center gap-2 shrink-0">
-                                        {(philsysPhoto || utilityBillingPhoto || secondaryIdPhoto || philsysIdNumber.trim()) && (
-                                            <span className="text-[10px] bg-emerald-100 text-emerald-700 font-bold px-2 py-0.5 rounded-full">
-                                                Proofs Attached
-                                            </span>
-                                        )}
-                                        <ChevronDown className={"w-4 h-4 text-slate-400 transition-transform duration-200 " + (isVerificationExpanded ? "rotate-180" : "")} />
-                                    </div>
-                                </button>
-
-                                {isVerificationExpanded && (
-                                    <div className="p-3.5 pt-3 space-y-4 border-t border-slate-200 bg-white">
-                                        <p className="text-[11px] text-slate-500 leading-relaxed">
-                                            Provide your Philippine National ID (PhilSys) and a household utility bill to verify local residency.
-                                        </p>
-
-                                        {/* 1. PhilSys ID Number & Photo */}
-                                        <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
-                                            <TextField
-                                                label="PHILSYS NATIONAL ID NUMBER"
-                                                type="text"
-                                                value={philsysIdNumber}
-                                                onChange={(e) => setPhilsysIdNumber(e.target.value)}
-                                                placeholder="e.g. 1234-5678-9012-3456"
-                                                className="font-mono"
-                                            />
-                                            <FileUploadZone
-                                                label="UPLOAD PHILSYS ID CARD PHOTO"
-                                                file={philsysPhoto}
-                                                onFileChange={setPhilsysPhoto}
-                                            />
-                                        </div>
-
-                                        {/* 2. Utility Billing Residency Proof */}
-                                        <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
-                                            <div>
-                                                <label className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1">
-                                                    SELECT PRIMARY RESIDENCY PROOF
-                                                </label>
-                                                <select
-                                                    value={utilityBillingType}
-                                                    onChange={(e) => setUtilityBillingType(e.target.value)}
-                                                    className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-[#0284C7] rounded-lg text-xs font-semibold text-slate-700 outline-none transition-all cursor-pointer"
-                                                >
-                                                    <option value="Electric Bill">Electric Bill (Meralco/Quezelco)</option>
-                                                    <option value="Water Bill">Water Bill (PrimeWater/Maynilad)</option>
-                                                    <option value="Internet / Telco Bill">Internet / Telco Bill</option>
-                                                    <option value="Lease Agreement">Residential Lease Contract</option>
-                                                </select>
-                                            </div>
-                                            <FileUploadZone
-                                                label="UPLOAD RECENT UTILITY BILL (LAST 3 MONTHS)"
-                                                file={utilityBillingPhoto}
-                                                onFileChange={setUtilityBillingPhoto}
-                                            />
-                                        </div>
-
-                                        {/* 3. Secondary ID Proof */}
-                                        <div className="bg-slate-50 p-3.5 rounded-xl border border-slate-200 space-y-3">
-                                            <div>
-                                                <label className="block text-[10px] font-bold tracking-wider text-slate-600 uppercase mb-1 flex items-center gap-2">
-                                                    SECONDARY ID <span className="text-[9px] font-bold text-slate-400 bg-slate-200 px-1.5 py-0.5 rounded uppercase">Optional</span>
-                                                </label>
-                                                <select
-                                                    value={secondaryIdType}
-                                                    onChange={(e) => {
-                                                        setSecondaryIdType(e.target.value);
-                                                        if (!e.target.value) setSecondaryIdPhoto(null);
-                                                    }}
-                                                    className="w-full px-3 py-2 bg-white border border-slate-200 focus:border-[#0284C7] rounded-lg text-xs font-semibold text-slate-700 outline-none transition-all cursor-pointer"
-                                                >
-                                                    <option value="">None (I only have PhilSys ID)</option>
-                                                    <option value="Voter ID">Voter's ID / Certification</option>
-                                                    <option value="Driver License">Driver's License</option>
-                                                    <option value="Passport">Passport</option>
-                                                    <option value="Senior Citizen ID">Senior Citizen ID</option>
-                                                    <option value="Student ID">Student ID (If Minor)</option>
-                                                </select>
-                                            </div>
-                                            <FileUploadZone
-                                                label="UPLOAD SECONDARY ID PHOTO"
-                                                file={secondaryIdPhoto}
-                                                onFileChange={setSecondaryIdPhoto}
-                                                disabled={!secondaryIdType}
-                                            />
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
+                            <ResidentVerificationUploads
+                                isExpanded={isVerificationExpanded}
+                                onToggleExpand={() => setIsVerificationExpanded((prev) => !prev)}
+                                philsysIdNumber={philsysIdNumber}
+                                onPhilsysIdNumberChange={setPhilsysIdNumber}
+                                philsysPhoto={philsysPhoto}
+                                onPhilsysPhotoChange={setPhilsysPhoto}
+                                utilityBillingType={utilityBillingType}
+                                onUtilityBillingTypeChange={setUtilityBillingType}
+                                utilityBillingPhoto={utilityBillingPhoto}
+                                onUtilityBillingPhotoChange={setUtilityBillingPhoto}
+                                secondaryIdType={secondaryIdType}
+                                onSecondaryIdTypeChange={(val) => {
+                                    setSecondaryIdType(val);
+                                    if (!val) setSecondaryIdPhoto(null);
+                                }}
+                                secondaryIdPhoto={secondaryIdPhoto}
+                                onSecondaryIdPhotoChange={setSecondaryIdPhoto}
+                            />
                         )}
 
                         {/* Minor Guardian Constraint Box */}
@@ -574,32 +369,14 @@ export const Register: React.FC = () => {
                         )}
 
                         {/* Universal Barangay Selection Dropdown */}
-                        <div>
-                            <label className="block text-[11px] font-bold tracking-wider text-slate-500 uppercase mb-1.5">
-                                LOCAL BARANGAY JURISDICTION
-                            </label>
-                            <select
-                                required
-                                value={barangayId}
-                                disabled={loadingBarangays || barangays.length === 0}
-                                onChange={(e) => setBarangayId(e.target.value)}
-                                className={`w-full px-4 py-3 bg-[#EEF2F6] focus:bg-white border border-transparent rounded-xl text-sm font-medium text-slate-900 outline-none transition-all cursor-pointer disabled:cursor-not-allowed disabled:opacity-60 ${isAdminMode ? 'focus:border-[#091B35] focus:ring-1 focus:ring-[#091B35]' : 'focus:border-[#0284C7]'}`}
-                            >
-                                <option value="">{loadingBarangays ? 'Loading approved barangays…' : 'Select your Barangay'}</option>
-                                {barangays.map((barangay) => (
-                                    <option key={barangay.id} value={barangay.id}>
-                                        {barangay.name}{barangay.municipality ? ` (${barangay.municipality}${barangay.province ? `, ${barangay.province}` : ''})` : ''}
-                                    </option>
-                                ))}
-                            </select>
-                            {barangayDirectoryError && <p role="alert" className="mt-2 text-xs text-rose-700">{barangayDirectoryError}</p>}
-                        </div>
-
-                        {isAdminMode && (
-                            <p className="text-xs text-slate-600">
-                                Registering a new barangay? <Link to="/register/barangay" className="font-bold text-primary-text underline">Apply for DILG review</Link>.
-                            </p>
-                        )}
+                        <BarangaySelectField
+                            barangayId={barangayId}
+                            onBarangayIdChange={setBarangayId}
+                            barangays={barangays}
+                            loadingBarangays={loadingBarangays}
+                            barangayDirectoryError={barangayDirectoryError}
+                            isAdminMode={isAdminMode}
+                        />
 
                         {/* Passwords */}
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -641,35 +418,14 @@ export const Register: React.FC = () => {
                             </div>
                         )}
                         
-                        {/* Admin Passkey Requirement */}
+                        {/* Admin Passkey Requirement & Affirmation */}
                         {isAdminMode && (
-                            <TextField
-                                label="LGU ADMINISTRATIVE PASSKEY"
-                                type="password"
-                                required={isAdminMode}
-                                value={passkey}
-                                onChange={(e) => setPasskey(e.target.value)}
-                                placeholder="Enter secure LGU passkey"
-                                isAdminMode={isAdminMode}
-                                icon={<KeyRound className="w-3.5 h-3.5 text-red-500" />}
+                            <AdminCredentialsSection
+                                passkey={passkey}
+                                onPasskeyChange={setPasskey}
+                                affirmation={affirmation}
+                                onAffirmationChange={setAffirmation}
                             />
-                        )}
-
-                        {/* Admin Affirmation Checkbox */}
-                        {isAdminMode && (
-                            <div className="pt-1">
-                                <label className="flex items-start gap-2.5 cursor-pointer">
-                                    <input
-                                        type="checkbox"
-                                        checked={affirmation}
-                                        onChange={(e) => setAffirmation(e.target.checked)}
-                                        className="mt-0.5 w-4 h-4 text-[#091B35] rounded focus:ring-0 border-slate-300 cursor-pointer shrink-0"
-                                    />
-                                    <span className="text-xs text-slate-600 leading-relaxed">
-                                        I affirm that I am an authorized barangay official or personnel and agree to official LGU protocols.
-                                    </span>
-                                </label>
-                            </div>
                         )}
 
                         {/* Submit Button */}

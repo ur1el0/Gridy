@@ -1,6 +1,6 @@
 # System Demonstration & Operational Verification Playbook
 
-**Project:** Gridy (Barangay Information and Service Management System)  
+**Project:** KapitBayan (Barangay Information and Service Management System)
 **Document Purpose:** End-to-end operational verification workflow, regulatory compliance matrix, and technical architecture specifications.
 
 ---
@@ -64,7 +64,7 @@ The following three-stage workflow validates all primary system capabilities acr
 
 ## 2. Technical Architecture & Regulatory Compliance Matrix
 
-| Regulatory & Security Domain | Statutory / Technical Standard | Gridy Architectural Implementation |
+| Regulatory & Security Domain | Statutory / Technical Standard | KapitBayan Architectural Implementation |
 |---|---|---|
 | **Data Privacy & Tenant Isolation** | **RA 10173** (Data Privacy Act of 2012) | Database querysets are horizontally isolated per barangay tenant (`get_queryset()` strictly filters by `request.user.barangay`). Cross-tenant data leakage is physically prevented at the ORM layer (ADR 004). |
 | **Municipal Financial Accountability** | **COA Circulars** & Local Tax Ordinances | Document issuance is coupled with serialized Official Receipt (O.R.) numbers and statutory fee tracking (ADR 007). Cash receipts are aggregated directly in SQL (`Sum('fee_amount')`) for municipal treasury auditability. |

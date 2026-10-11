@@ -17,10 +17,10 @@ void main() {
       tester.view.resetDevicePixelRatio();
     });
 
-    await tester.pumpWidget(const GridyApp());
+    await tester.pumpWidget(const KapitBayanApp());
     await tester.pumpAndSettle();
 
-    expect(find.text('GRIDY'), findsOneWidget);
+    expect(find.text('KapitBayan'), findsOneWidget);
     expect(find.text('Welcome Back'), findsOneWidget);
     expect(find.text('CITIZEN ID / USERNAME'), findsOneWidget);
     expect(find.text('PASSWORD'), findsOneWidget);
@@ -37,7 +37,7 @@ void main() {
       tester.view.resetDevicePixelRatio();
     });
 
-    await tester.pumpWidget(const GridyApp());
+    await tester.pumpWidget(const KapitBayanApp());
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Forgot Password?'));
@@ -55,7 +55,7 @@ void main() {
       tester.view.resetDevicePixelRatio();
     });
 
-    await tester.pumpWidget(const GridyApp());
+    await tester.pumpWidget(const KapitBayanApp());
     await tester.pumpAndSettle();
 
     // Find and tap the submit button
@@ -76,7 +76,7 @@ void main() {
       tester.view.resetDevicePixelRatio();
     });
 
-    await tester.pumpWidget(const GridyApp());
+    await tester.pumpWidget(const KapitBayanApp());
     await tester.pumpAndSettle();
 
     final registerLinkFinder = find.byWidgetPredicate(

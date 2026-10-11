@@ -45,3 +45,12 @@ htmlcov/
 .pytest_cache/
 
 *.AGENTS.md
+
+.agents/agents
+.agents/workflows
+
+STATUS.md
+
+docs/ai-workflow
+.codex
+.aws

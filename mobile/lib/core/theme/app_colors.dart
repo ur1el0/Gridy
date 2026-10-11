@@ -19,7 +19,7 @@ class AppColors {
   static const Color textSecondary = Color(0xFF475569);
   static const Color textMuted = Color(0xFF64748B);
   static const Color textLabel = Color(0xFF334155);
-  static const Color textHint = Color(0xFF94A3B8);
+  static const Color textHint = Color(0xFF475569);
 
   // Borders & Dividers
   static const Color borderLight = Color(0xFFCBD5E1);

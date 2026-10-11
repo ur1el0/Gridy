@@ -99,7 +99,7 @@ void main() {
     await tester.pumpAndSettle();
 
     // 1. Header & Brand Title
-    expect(find.text('Gridy'), findsOneWidget);
+    expect(find.text('KapitBayan'), findsOneWidget);
     expect(find.text('CENTRAL REGISTRY'), findsOneWidget);
     expect(find.text('Documents'), findsOneWidget);
 

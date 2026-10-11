@@ -7,21 +7,22 @@ import '../services/auth_service.dart';
 import '../services/field_official_service.dart';
 import '../services/issue_service.dart';
 import '../services/storage_service.dart';
+import '../widgets/clearance_validator_tab.dart';
+import '../widgets/field_reports_tab.dart';
+import '../widgets/queue_ticker_tab.dart';
 import 'login_screen.dart';
 
 class FieldOfficialScreen extends StatefulWidget {
   final FieldOfficialService? fieldOfficialService;
 
-  const FieldOfficialScreen({
-    super.key,
-    this.fieldOfficialService,
-  });
+  const FieldOfficialScreen({super.key, this.fieldOfficialService});
 
   @override
   State<FieldOfficialScreen> createState() => _FieldOfficialScreenState();
 }
 
-class _FieldOfficialScreenState extends State<FieldOfficialScreen> with SingleTickerProviderStateMixin {
+class _FieldOfficialScreenState extends State<FieldOfficialScreen>
+    with SingleTickerProviderStateMixin {
   static const Map<String, int> _urgencyPriority = {
     'EMERGENCY': 0,
     'HAZARD': 1,
@@ -62,20 +63,14 @@ class _FieldOfficialScreenState extends State<FieldOfficialScreen> with SingleTi
     final storage = await StorageService.init();
     _currentUser = storage.getUser();
     final apiClient = _service?.apiClient ?? ApiClient();
-    _authService = AuthService(
-      apiClient: apiClient,
-      storageService: storage,
-    );
+    _authService = AuthService(apiClient: apiClient, storageService: storage);
 
     _service ??= FieldOfficialService(
       apiClient: apiClient,
       storageService: storage,
     );
 
-    await Future.wait([
-      _loadQueueStatus(),
-      _loadBarangayReports(),
-    ]);
+    await Future.wait([_loadQueueStatus(), _loadBarangayReports()]);
 
     if (mounted) {
       setState(() => _isLoading = false);
@@ -153,7 +148,8 @@ class _FieldOfficialScreenState extends State<FieldOfficialScreen> with SingleTi
 
     if (docId == null) {
       setState(() {
-        _verificationError = 'Please enter a valid numeric ID or tracking number (e.g., REQ-12).';
+        _verificationError =
+            'Please enter a valid numeric ID or tracking number (e.g., REQ-12).';
         _verifiedClearance = null;
       });
       return;
@@ -177,7 +173,9 @@ class _FieldOfficialScreenState extends State<FieldOfficialScreen> with SingleTi
       }
     } catch (_) {
       if (mounted) {
-        setState(() => _verificationError = 'Network error verifying clearance.');
+        setState(
+          () => _verificationError = 'Network error verifying clearance.',
+        );
       }
     } finally {
       if (mounted) setState(() => _isVerifying = false);
@@ -190,8 +188,10 @@ class _FieldOfficialScreenState extends State<FieldOfficialScreen> with SingleTi
     try {
       final items = await _service!.fetchBarangayIssues();
       items.sort((first, second) {
-        final firstPriority = _urgencyPriority[first.urgency.toUpperCase()] ?? 4;
-        final secondPriority = _urgencyPriority[second.urgency.toUpperCase()] ?? 4;
+        final firstPriority =
+            _urgencyPriority[first.urgency.toUpperCase()] ?? 4;
+        final secondPriority =
+            _urgencyPriority[second.urgency.toUpperCase()] ?? 4;
         final urgencyOrder = firstPriority.compareTo(secondPriority);
         if (urgencyOrder != 0) return urgencyOrder;
 
@@ -291,11 +291,19 @@ class _FieldOfficialScreenState extends State<FieldOfficialScreen> with SingleTi
           children: [
             const Text(
               'Field Operations',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.white),
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w900,
+                color: Colors.white,
+              ),
             ),
             Text(
               _currentUser?.roleDisplay ?? 'Barangay Official',
-              style: const TextStyle(fontSize: 12, color: Color(0xFF38BDF8), fontWeight: FontWeight.w600),
+              style: const TextStyle(
+                fontSize: 12,
+                color: Color(0xFF38BDF8),
+                fontWeight: FontWeight.w600,
+              ),
             ),
           ],
         ),
@@ -313,479 +321,55 @@ class _FieldOfficialScreenState extends State<FieldOfficialScreen> with SingleTi
           labelColor: Colors.white,
           unselectedLabelColor: const Color(0xFF94A3B8),
           tabs: const [
-            Tab(icon: Icon(Icons.confirmation_number_outlined), text: 'Queue Ticker'),
-            Tab(icon: Icon(Icons.qr_code_scanner_rounded), text: 'Verify Clearance'),
-            Tab(icon: Icon(Icons.assignment_late_outlined), text: 'Field Reports'),
+            Tab(
+              icon: Icon(Icons.confirmation_number_outlined),
+              text: 'Queue Ticker',
+            ),
+            Tab(
+              icon: Icon(Icons.qr_code_scanner_rounded),
+              text: 'Verify Clearance',
+            ),
+            Tab(
+              icon: Icon(Icons.assignment_late_outlined),
+              text: 'Field Reports',
+            ),
           ],
         ),
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryNavy)))
+          ? const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(
+                  AppColors.primaryNavy,
+                ),
+              ),
+            )
           : TabBarView(
               controller: _tabController,
               children: [
-                _buildQueueTickerTab(),
-                _buildClearanceValidatorTab(),
-                _buildFieldReportsTab(),
-              ],
-            ),
-    );
-  }
-
-  Widget _buildQueueTickerTab() {
-    return RefreshIndicator(
-      onRefresh: _loadQueueStatus,
-      child: SingleChildScrollView(
-        physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(20.0),
-        child: Column(
-          children: [
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  const Text(
-                    'CURRENTLY SERVING',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: Color(0xFF64748B), letterSpacing: 1.5),
-                  ),
-                  const SizedBox(height: 12),
-                  Text(
-                    _currentTicket ?? '--',
-                    style: const TextStyle(
-                      fontSize: 54,
-                      fontWeight: FontWeight.w900,
-                      color: AppColors.primaryNavy,
-                      letterSpacing: -1,
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
-                    ),
-                    child: Text(
-                      'Waiting in queue: $_totalWaiting',
-                      style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF475569), fontSize: 13),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: 24),
-            SizedBox(
-              width: double.infinity,
-              height: 56,
-              child: ElevatedButton.icon(
-                onPressed: _isCallingTicket ? null : _callNextTicket,
-                icon: _isCallingTicket
-                    ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Icon(Icons.arrow_forward_rounded, color: Colors.white),
-                label: Text(
-                  _isCallingTicket ? 'Calling next...' : 'Call Next Ticket',
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white),
+                QueueTickerTab(
+                  currentTicket: _currentTicket,
+                  totalWaiting: _totalWaiting,
+                  isCallingTicket: _isCallingTicket,
+                  onRefresh: _loadQueueStatus,
+                  onCallNext: _callNextTicket,
                 ),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryNavy,
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-                  elevation: 2,
+                ClearanceValidatorTab(
+                  trackingIdController: _trackingIdController,
+                  isVerifying: _isVerifying,
+                  verificationError: _verificationError,
+                  verifiedClearance: _verifiedClearance,
+                  onVerify: _verifyClearance,
                 ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildClearanceValidatorTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(20.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'Clearance Authenticity Validator',
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.textPrimary),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Enter the Document Tracking ID printed on the resident certificate to verify validity.',
-            style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
-          ),
-          const SizedBox(height: 16),
-          Row(
-            children: [
-              Expanded(
-                child: TextField(
-                  controller: _trackingIdController,
-                  decoration: InputDecoration(
-                    hintText: 'e.g. 12 or REQ-12',
-                    filled: true,
-                    fillColor: Colors.white,
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
-                    ),
-                  ),
-                  keyboardType: TextInputType.text,
-                  onSubmitted: (_) => _verifyClearance(),
-                ),
-              ),
-              const SizedBox(width: 12),
-              ElevatedButton(
-                onPressed: _isVerifying ? null : _verifyClearance,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryNavy,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 15),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
-                ),
-                child: _isVerifying
-                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
-                    : const Text('Verify', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.white)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 24),
-          if (_verificationError != null)
-            Container(
-              width: double.infinity,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xFFFEF2F2),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFFCA5A5)),
-              ),
-              child: Text(
-                _verificationError!,
-                style: const TextStyle(color: Color(0xFFDC2626), fontWeight: FontWeight.w600, fontSize: 13.5),
-              ),
-            ),
-          if (_verifiedClearance != null) _buildClearanceCard(_verifiedClearance!),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildClearanceCard(DocumentRequestModel doc) {
-    final bool isValid = doc.isReadyForPickup || doc.isReleased;
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(
-          color: isValid ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
-          width: 1.5,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-                decoration: BoxDecoration(
-                  color: isValid ? const Color(0xFFECFDF5) : const Color(0xFFFFFBEB),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  children: [
-                    Icon(
-                      isValid ? Icons.verified_rounded : Icons.pending_actions_rounded,
-                      size: 16,
-                      color: isValid ? const Color(0xFF059669) : const Color(0xFFD97706),
-                    ),
-                    const SizedBox(width: 6),
-                    Text(
-                      isValid ? 'VALID & AUTHENTIC' : 'PENDING APPROVAL',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: isValid ? const Color(0xFF059669) : const Color(0xFFD97706),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              Text(
-                doc.formattedTrackingId,
-                style: const TextStyle(fontWeight: FontWeight.w700, color: Color(0xFF64748B), fontSize: 12),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            doc.documentType,
-            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: AppColors.primaryNavy),
-          ),
-          if (doc.purpose != null && doc.purpose!.isNotEmpty) ...[
-            const SizedBox(height: 6),
-            Text(
-              'Purpose: ${doc.purpose}',
-              style: const TextStyle(fontSize: 13.5, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
-            ),
-          ],
-          const SizedBox(height: 8),
-          Text(
-            'Status: ${doc.statusDisplay}',
-            style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
-          ),
-          Text(
-            'Requested Date: ${doc.formattedRequestedDate}',
-            style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
-          ),
-          if (doc.orNumber != null && doc.orNumber!.isNotEmpty) ...[
-            const SizedBox(height: 4),
-            Text(
-              'Official Receipt: ${doc.orNumber}',
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w700, color: Color(0xFF0F766E)),
-            ),
-          ],
-          if (doc.formattedFee != null) ...[
-            const SizedBox(height: 4),
-            Text(
-              'Treasury Fee: ${doc.formattedFee}',
-              style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Color(0xFF334155)),
-            ),
-          ],
-          if (doc.isWalkin) ...[
-            const SizedBox(height: 4),
-            const Text(
-              'Origin: Front Desk Walk-In',
-              style: TextStyle(fontSize: 12.5, fontWeight: FontWeight.w500, color: Color(0xFF64748B)),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-
-  Widget _buildFieldReportsTab() {
-    if (_isLoadingReports) {
-      return const Center(child: CircularProgressIndicator(valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryNavy)));
-    }
-
-    if (_reports.isEmpty) {
-      return RefreshIndicator(
-        onRefresh: _loadBarangayReports,
-        child: SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(32),
-          child: SizedBox(
-            width: double.infinity,
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                const SizedBox(height: 40),
-                Icon(Icons.check_circle_outline_rounded, size: 48, color: Colors.green.shade400),
-                const SizedBox(height: 12),
-                const Text(
-                  'No active community issues',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'All citizen reports in your barangay are resolved.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                FieldReportsTab(
+                  isLoading: _isLoadingReports,
+                  reports: _reports,
+                  onRefresh: _loadBarangayReports,
+                  onUpdateStatus: _updateReportStatus,
+                  onUpdateUrgency: _updateReportUrgency,
                 ),
               ],
             ),
-          ),
-        ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _loadBarangayReports,
-      child: ListView.separated(
-        padding: const EdgeInsets.all(16),
-        itemCount: _reports.length,
-        separatorBuilder: (_, _) => const SizedBox(height: 14),
-        itemBuilder: (context, index) {
-          final report = _reports[index];
-          final bool isResolved = report.status.toUpperCase() == 'RESOLVED';
-
-          return Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(18),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withValues(alpha: 0.03),
-                  blurRadius: 8,
-                  offset: const Offset(0, 3),
-                ),
-              ],
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                      decoration: BoxDecoration(
-                        color: isResolved ? const Color(0xFFECFDF5) : const Color(0xFFFEF3C7),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        report.status.toUpperCase(),
-                        style: TextStyle(
-                          fontSize: 10.5,
-                          fontWeight: FontWeight.w800,
-                          color: isResolved ? const Color(0xFF059669) : const Color(0xFFD97706),
-                        ),
-                      ),
-                    ),
-                    Text(
-                      report.category,
-                      style: const TextStyle(fontSize: 11.5, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  children: [
-                    _buildUrgencyBadge(report.urgency),
-                    const Spacer(),
-                    PopupMenuButton<String>(
-                      tooltip: 'Change urgency',
-                      onSelected: (urgency) =>
-                          _updateReportUrgency(report.id, urgency),
-                      itemBuilder: (context) => const [
-                        PopupMenuItem(
-                          value: 'EMERGENCY',
-                          child: Text('Emergency'),
-                        ),
-                        PopupMenuItem(
-                          value: 'HAZARD',
-                          child: Text('Hazard'),
-                        ),
-                        PopupMenuItem(
-                          value: 'MODERATE',
-                          child: Text('Moderate'),
-                        ),
-                        PopupMenuItem(value: 'MINOR', child: Text('Minor')),
-                      ],
-                      child: const Padding(
-                        padding: EdgeInsets.all(8),
-                        child: Icon(Icons.edit_outlined, size: 18),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  report.title,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  report.description,
-                  style: const TextStyle(fontSize: 13, color: Color(0xFF475569)),
-                ),
-                const SizedBox(height: 10),
-                Row(
-                  children: [
-                    const Icon(Icons.location_on_outlined, size: 14, color: AppColors.accentBlue),
-                    const SizedBox(width: 4),
-                    Expanded(
-                      child: Text(
-                        report.location,
-                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    if (!isResolved) ...[
-                      OutlinedButton(
-                        onPressed: () => _updateReportStatus(report.id, 'IN_PROGRESS'),
-                        style: OutlinedButton.styleFrom(
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        child: const Text('In-Progress', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
-                      ),
-                      const SizedBox(width: 8),
-                      ElevatedButton(
-                        onPressed: () => _updateReportStatus(report.id, 'RESOLVED'),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: const Color(0xFF10B981),
-                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                        ),
-                        child: const Text('Resolve', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white)),
-                      ),
-                    ],
-                  ],
-                ),
-              ],
-            ),
-          );
-        },
-      ),
-    );
-  }
-
-  Widget _buildUrgencyBadge(String urgency) {
-    final normalizedUrgency = urgency.toUpperCase();
-    final Color color = switch (normalizedUrgency) {
-      'EMERGENCY' => const Color(0xFFB91C1C),
-      'HAZARD' => const Color(0xFFC2410C),
-      'MODERATE' => const Color(0xFFB45309),
-      _ => const Color(0xFF1D4ED8),
-    };
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-      decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(6),
-      ),
-      child: Text(
-        normalizedUrgency,
-        style: TextStyle(
-          color: color,
-          fontSize: 11,
-          fontWeight: FontWeight.w800,
-          letterSpacing: 0.3,
-        ),
-      ),
     );
   }
 }

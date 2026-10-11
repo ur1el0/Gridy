@@ -23,7 +23,7 @@ We have built an automated test suite containing 11 tests that cover core authen
 ---
 
 ## 2. ISO/IEC 25010 Quality Evaluation
-The Gridy system is evaluated under four specific quality characteristics of the ISO/IEC 25010 model:
+The KapitBayan system is evaluated under four specific quality characteristics of the ISO/IEC 25010 model:
 
 ### 2.1 Functional Suitability
 Evaluates whether the software functions meet stated goals.

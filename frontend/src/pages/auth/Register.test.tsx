@@ -23,7 +23,7 @@ describe('Register Component (Dual-Mode)', () => {
         );
 
         // Branding & Citizen Badges
-        expect(screen.getByText('GRIDY')).toBeInTheDocument();
+        expect(screen.getByText('KapitBayan')).toBeInTheDocument();
         expect(screen.getByRole('button', { name: /resident registration/i })).toBeInTheDocument();
         expect(screen.getByText('OFFICIAL CLEARANCES ACCESS')).toBeInTheDocument();
         expect(screen.getByText('REAL-TIME QUEUE TICKETING')).toBeInTheDocument();
@@ -45,19 +45,28 @@ describe('Register Component (Dual-Mode)', () => {
         expect(screen.getByRole('link', { name: /log in here/i })).toHaveAttribute('href', '/login');
     });
 
-    it('toggles to Administrative Registration when clicking the mode switch button', () => {
+    it('toggles to Administrative Registration when clicking the mode switch button', async () => {
         render(
             <BrowserRouter>
                 <Register />
             </BrowserRouter>
         );
 
-        // Click the toggle button to switch to Staff/Admin mode
-        const toggleButton = screen.getByTitle('Tap to switch registration type');
+        await screen.findByRole('option', { name: /Barangay Ibabang Dupay/ });
+
+        // Use the header switch's full visible-mode and destination name.
+        const toggleButton = screen.getByRole('button', {
+            name: 'Resident Registration, switch to official registration',
+        });
+        expect(toggleButton).toHaveTextContent('Resident Registration');
         fireEvent.click(toggleButton);
 
         // Verify Admin Headings and Features
         expect(screen.getByRole('heading', { level: 2, name: 'Administrative Registration' })).toBeInTheDocument();
+        const switchToResidentButton = screen.getByRole('button', {
+            name: 'Staff Registration, switch to resident registration',
+        });
+        expect(switchToResidentButton).toHaveTextContent('Staff Registration');
         expect(screen.getByText('CREDENTIALS VERIFICATION')).toBeInTheDocument();
         expect(screen.getByText('ADMIN ACCESS TIERS')).toBeInTheDocument();
         expect(screen.getByText('SECURITY AUDIT COMPLIANCE')).toBeInTheDocument();
@@ -65,7 +74,10 @@ describe('Register Component (Dual-Mode)', () => {
         // Admin-Specific Inputs
         expect(screen.getByPlaceholderText('admin_captain')).toBeInTheDocument();
         expect(screen.getByRole('combobox')).toBeInTheDocument();
-        expect(screen.getByLabelText(/I affirm that I am an authorized barangay official or personnel/i)).toBeInTheDocument();
+        const affirmationCheckbox = screen.getByRole('checkbox', {
+            name: /I affirm that I am an authorized barangay official or personnel/i,
+        });
+        expect(affirmationCheckbox).toBeRequired();
         expect(screen.getByRole('button', { name: /create admin account/i })).toBeInTheDocument();
     });
 

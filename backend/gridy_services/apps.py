@@ -1,5 +1,5 @@
 from django.apps import AppConfig
 
 
-class GridyServicesConfig(AppConfig):
+class KapitBayanServicesConfig(AppConfig):
     name = 'gridy_services'

@@ -1,7 +1,8 @@
 import toast from 'react-hot-toast';
 import React, { useEffect, useState } from 'react';
 import { axiosPrivate } from '../../api/axios';
-import { Calendar, MapPin, Clock, Plus, X, Trash2 } from 'lucide-react';
+import { Calendar, MapPin, Clock, Plus, Trash2 } from 'lucide-react';
+import { ScheduleActivityModal } from '../../components/activities/ScheduleActivityModal';
 
 interface Activity {
     id: number;
@@ -190,91 +191,19 @@ export const Activities: React.FC = () => {
 
             {/* Modern Create Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-                    <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity animate-in fade-in duration-200" onClick={closeModal} />
-                    
-                    <div className="relative bg-white rounded-2xl shadow-xl max-w-lg w-full overflow-hidden flex flex-col animate-in zoom-in-95 duration-200">
-                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50">
-                                <h3 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                                        <Calendar className="w-5 h-5 text-primary-text" />
-                                        Schedule Activity
-                                </h3>
-                                <button onClick={closeModal} className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-md hover:bg-slate-200">
-                                        <X className="w-5 h-5" />
-                                </button>
-                        </div>
-                        
-                        <form onSubmit={handleCreate} className="p-6 space-y-5 bg-white">
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Event Title</label>
-                                <input 
-                                    type="text" 
-                                    required 
-                                    value={title} 
-                                    onChange={e => setTitle(e.target.value)} 
-                                    placeholder="e.g., Barangay Assembly"
-                                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl text-sm outline-none transition-all"
-                                />
-                            </div>
-                            
-                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Location</label>
-                                    <div className="relative">
-                                        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                            <MapPin className="h-4 w-4 text-slate-400" />
-                                        </div>
-                                        <input 
-                                            type="text" 
-                                            required 
-                                            value={location} 
-                                            onChange={e => setLocation(e.target.value)} 
-                                            placeholder="Covered Court"
-                                            className="w-full pl-9 pr-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl text-sm outline-none transition-all"
-                                        />
-                                    </div>
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-slate-700 mb-1.5">Date & Time</label>
-                                    <input 
-                                        type="datetime-local" 
-                                        required 
-                                        value={eventDate} 
-                                        onChange={e => setEventDate(e.target.value)} 
-                                        className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl text-sm outline-none transition-all cursor-pointer"
-                                    />
-                                </div>
-                            </div>
-
-                            <div>
-                                <label className="block text-sm font-semibold text-slate-700 mb-1.5">Description</label>
-                                <textarea 
-                                    required 
-                                    rows={3} 
-                                    value={description} 
-                                    onChange={e => setDescription(e.target.value)} 
-                                    placeholder="Details about the event..."
-                                    className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl text-sm outline-none transition-all resize-none"
-                                />
-                            </div>
-                            
-                            <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">
-                                <button type="button" onClick={closeModal} className="px-5 py-2.5 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors">
-                                    Cancel
-                                </button>
-                                <button 
-                                    type="submit" 
-                                    disabled={isSubmitting} 
-                                    className="px-5 py-2.5 rounded-xl text-sm font-semibold text-primary-foreground bg-primary hover:bg-primary-hover transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2 shadow-sm"
-                                >
-                                    {isSubmitting ? (
-                                        <><div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Scheduling...</>
-                                    ) : 'Schedule Event'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                <ScheduleActivityModal
+                    onClose={closeModal}
+                    onSubmit={handleCreate}
+                    title={title}
+                    setTitle={setTitle}
+                    location={location}
+                    setLocation={setLocation}
+                    eventDate={eventDate}
+                    setEventDate={setEventDate}
+                    description={description}
+                    setDescription={setDescription}
+                    isSubmitting={isSubmitting}
+                />
             )}
         </div>
     );

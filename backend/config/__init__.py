@@ -1,1 +1,1 @@
-# Gridy Configuration Package
+# KapitBayan Configuration Package

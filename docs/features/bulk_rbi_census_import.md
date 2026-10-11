@@ -1,7 +1,7 @@
 # Feature Specification: Bulk RBI Census CSV Import
 
 ## 1. Overview
-The Department of the Interior and Local Government (DILG) mandates that every barangay maintain a Registry of Barangay Inhabitants (RBI). Gridy allows barangay administrators to digitize their entire community registry in bulk by uploading standard RBI spreadsheets (CSV format), eliminating manual one-by-one account registration.
+The Department of the Interior and Local Government (DILG) mandates that every barangay maintain a Registry of Barangay Inhabitants (RBI). KapitBayan allows barangay administrators to digitize their entire community registry in bulk by uploading standard RBI spreadsheets (CSV format), eliminating manual one-by-one account registration.
 
 ---
 

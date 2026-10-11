@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import toast from 'react-hot-toast'
 import { axiosPrivate } from '../../api/axios'
 import { Phone, Plus, Trash2 } from 'lucide-react'
+import { AddHotlineModal } from '../../components/hotlines/AddHotlineModal'
 
 interface Hotline {
     id: number
@@ -138,55 +139,14 @@ export const HotlineManagement: React.FC = () => {
 
             {/* Add Hotline Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60">
-                    <div className="bg-white rounded-xl shadow-xl w-full max-w-md p-6 space-y-4">
-                        <h2 className="text-xl font-bold text-slate-900">Add Emergency Hotline</h2>
-                        <form onSubmit={handleCreate} className="space-y-4">
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Name</label>
-                                <input
-                                    required
-                                    value={form.name}
-                                    onChange={e => setForm(p => ({ ...p, name: e.target.value }))}
-                                    placeholder="e.g. Philippine National Police"
-                                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Number</label>
-                                <input
-                                    required
-                                    value={form.number}
-                                    onChange={e => setForm(p => ({ ...p, number: e.target.value }))}
-                                    placeholder="e.g. 117 or 0912-345-6789"
-                                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                                />
-                            </div>
-                            <div>
-                                <label className="block text-sm font-medium text-slate-700 mb-1">Category</label>
-                                <select
-                                    value={form.category}
-                                    onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
-                                    className="w-full border border-slate-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary"
-                                >
-                                    {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-                                </select>
-                            </div>
-                            <div className="flex justify-end gap-3 pt-2">
-                                <button type="button" onClick={() => setIsModalOpen(false)} className="px-4 py-2 text-sm text-slate-600 hover:text-slate-900 font-medium transition-colors">
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={isSubmitting}
-                                    className="px-4 py-2 bg-primary hover:bg-primary-hover text-primary-foreground text-sm font-medium rounded-md transition-colors disabled:opacity-60"
-                                >
-                                    {isSubmitting ? 'Adding...' : 'Add Hotline'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                <AddHotlineModal
+                    onClose={() => setIsModalOpen(false)}
+                    onSubmit={handleCreate}
+                    form={form}
+                    setForm={setForm}
+                    categories={CATEGORIES}
+                    isSubmitting={isSubmitting}
+                />
             )}
         </div>
     )

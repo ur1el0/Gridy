@@ -32,11 +32,11 @@ export const PublicAnnouncements: React.FC = () => {
                     <div className="flex items-center gap-3">
                         <Megaphone aria-hidden="true" />
                         <div>
-                            <p className="text-xs font-bold uppercase tracking-wider opacity-80">Gridy Community Bulletin</p>
+                            <p className="text-xs font-bold uppercase tracking-wider opacity-80">KapitBayan Community Bulletin</p>
                             <h1 className="text-2xl font-bold">Barangay announcements</h1>
                         </div>
                     </div>
-                    <p className="mt-3 text-sm opacity-90">Official information is shared here. Requests and transactions must be completed inside Gridy.</p>
+                    <p className="mt-3 text-sm opacity-90">Official information is shared here. Requests and transactions must be completed inside KapitBayan.</p>
                 </header>
                 {loading ? <p role="status">Loading announcements…</p> : failed ? (
                     <p role="alert" className="rounded-xl bg-rose-50 p-4 text-rose-800">Announcements are temporarily unavailable.</p>
@@ -51,7 +51,7 @@ export const PublicAnnouncements: React.FC = () => {
                     </article>
                 ))}
                 <footer className="rounded-2xl border border-slate-200 bg-white p-5 text-sm text-slate-600">
-                    Need to file a request? <Link className="font-semibold text-primary-text underline" to="/login">Sign in to Gridy</Link> to complete the transaction.
+                    Need to file a request? <Link className="font-semibold text-primary-text underline" to="/login">Sign in to KapitBayan</Link> to complete the transaction.
                 </footer>
             </div>
         </main>

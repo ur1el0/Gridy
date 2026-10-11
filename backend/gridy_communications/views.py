@@ -3,9 +3,10 @@ from rest_framework import viewsets, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
+from rest_framework.exceptions import PermissionDenied
 from drf_spectacular.utils import extend_schema
 from gridy_auth.models import User
-from gridy_auth.permissions import IsBarangayOfficial
+from gridy_auth.permissions import IsBarangayOfficial, IsDILGAdmin
 from gridy_communications.models import (
     Announcement,
     ActivitySchedule,
@@ -54,8 +55,11 @@ class ActivityScheduleViewSet(viewsets.ModelViewSet):
             
         if user.role == User.Role.DILG_ADMIN:
             return ActivitySchedule.objects.all().order_by('event_datetime', 'created_at')
+
+        if not user.barangay_id:
+            return ActivitySchedule.objects.none()
             
-        return ActivitySchedule.objects.filter(created_by__barangay=user.barangay).order_by('event_datetime', 'created_at')
+        return ActivitySchedule.objects.filter(created_by__barangay_id=user.barangay_id).order_by('event_datetime', 'created_at')
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
@@ -65,7 +69,10 @@ class ActivityScheduleViewSet(viewsets.ModelViewSet):
         return [IsBarangayOfficial()]
 
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        user = self.request.user
+        if not user.barangay_id:
+            raise PermissionDenied("A barangay assignment is required to schedule activities.")
+        serializer.save(created_by=user)
 
 
 
@@ -79,8 +86,11 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
             
         if user.role == User.Role.DILG_ADMIN:
             return Announcement.objects.all().order_by('-is_pinned', '-created_at')
+
+        if not user.barangay_id:
+            return Announcement.objects.none()
             
-        return Announcement.objects.filter(created_by__barangay=user.barangay).order_by('-is_pinned', '-created_at')
+        return Announcement.objects.filter(created_by__barangay_id=user.barangay_id).order_by('-is_pinned', '-created_at')
 
     def get_permissions(self):
         if self.action in ['list', 'retrieve']:
@@ -88,7 +98,10 @@ class AnnouncementViewSet(viewsets.ModelViewSet):
         return [IsBarangayOfficial()]
 
     def perform_create(self, serializer):
-        instance = serializer.save(created_by=self.request.user)
+        user = self.request.user
+        if not user.barangay_id:
+            raise PermissionDenied("A barangay assignment is required to publish announcements.")
+        instance = serializer.save(created_by=user)
         try:
             # Add .delay to push this to Celery queue
             async_send_fcm_topic_notification.delay(
@@ -140,9 +153,12 @@ class EmergencyHotlineViewSet(viewsets.ModelViewSet):
         
         if user.role == User.Role.DILG_ADMIN:
             return EmergencyHotline.objects.all()
+
+        if not user.barangay_id:
+            return EmergencyHotline.objects.none()
         
         # Base query: scope to the user's barangay
-        qs = EmergencyHotline.objects.filter(created_by__barangay=user.barangay)
+        qs = EmergencyHotline.objects.filter(created_by__barangay_id=user.barangay_id)
 
         # Security: Residents only see the active hotlines; Officials see everything (to toggle them)
         if user.role == User.Role.RESIDENT:
@@ -158,17 +174,20 @@ class EmergencyHotlineViewSet(viewsets.ModelViewSet):
         return [IsBarangayOfficial()]
     
     def perform_create(self, serializer):
-        serializer.save(created_by=self.request.user)
+        user = self.request.user
+        if not user.barangay_id:
+            raise PermissionDenied("A barangay assignment is required to create emergency hotlines.")
+        serializer.save(created_by=user)
 
 class FAQViewSet(viewsets.ModelViewSet):
     queryset = FAQ.objects.all()
     serializer_class = FAQSerializer
 
     def get_permissions(self):
-        # Anyone authenticated can read FAQs, but only Officials can create/edit them
+        # Anyone authenticated can read FAQs, but only DILG Admins can create/edit them
         if self.action in ['list', 'retrieve']:
             return [permissions.IsAuthenticated()]
-        return [IsBarangayOfficial()]
+        return [IsDILGAdmin()]
     
 class AdminNotificationViewSet(viewsets.ModelViewSet):
     serializer_class = AdminNotificationSerializer
