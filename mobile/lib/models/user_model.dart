@@ -11,6 +11,14 @@ class UserModel {
   final String? birthDate;
   final bool? voterStatus;
 
+  final int? residentId;
+  final String? philsysIdNumber;
+  final String? philsysIdPhoto;
+  final String? secondaryIdType;
+  final String? secondaryIdPhoto;
+  final String? utilityBillingType;
+  final String? utilityBillingPhoto;
+
   const UserModel({
     required this.id,
     required this.username,
@@ -22,6 +30,13 @@ class UserModel {
     this.purok,
     this.birthDate,
     this.voterStatus,
+    this.residentId,
+    this.philsysIdNumber,
+    this.philsysIdPhoto,
+    this.secondaryIdType,
+    this.secondaryIdPhoto,
+    this.utilityBillingType,
+    this.utilityBillingPhoto,
   });
 
   /// Factory constructor to parse both login payload and /auth/me/ profile responses
@@ -48,6 +63,13 @@ class UserModel {
       purok: profile?['purok']?.toString() ?? json['purok']?.toString(),
       birthDate: profile?['birth_date'] as String? ?? json['birth_date'] as String?,
       voterStatus: profile?['voter_status'] as bool? ?? json['voter_status'] as bool?,
+      residentId: profile?['id'] as int? ?? json['resident_id'] as int?,
+      philsysIdNumber: profile?['philsys_id_number'] as String? ?? json['philsys_id_number'] as String?,
+      philsysIdPhoto: profile?['philsys_id_photo'] as String? ?? json['philsys_id_photo'] as String?,
+      secondaryIdType: profile?['secondary_id_type'] as String? ?? json['secondary_id_type'] as String?,
+      secondaryIdPhoto: profile?['secondary_id_photo'] as String? ?? json['secondary_id_photo'] as String?,
+      utilityBillingType: profile?['utility_billing_type'] as String? ?? json['utility_billing_type'] as String?,
+      utilityBillingPhoto: profile?['utility_billing_photo'] as String? ?? json['utility_billing_photo'] as String?,
     );
   }
 
@@ -64,7 +86,66 @@ class UserModel {
       'purok': purok,
       'birth_date': birthDate,
       'voter_status': voterStatus,
+      'resident_id': residentId,
+      'philsys_id_number': philsysIdNumber,
+      'philsys_id_photo': philsysIdPhoto,
+      'secondary_id_type': secondaryIdType,
+      'secondary_id_photo': secondaryIdPhoto,
+      'utility_billing_type': utilityBillingType,
+      'utility_billing_photo': utilityBillingPhoto,
     };
+  }
+
+  UserModel copyWith({
+    int? id,
+    String? username,
+    String? email,
+    String? role,
+    String? fullName,
+    bool? isVerified,
+    String? contactNumber,
+    String? purok,
+    String? birthDate,
+    bool? voterStatus,
+    int? residentId,
+    String? philsysIdNumber,
+    String? philsysIdPhoto,
+    String? secondaryIdType,
+    String? secondaryIdPhoto,
+    String? utilityBillingType,
+    String? utilityBillingPhoto,
+  }) {
+    return UserModel(
+      id: id ?? this.id,
+      username: username ?? this.username,
+      email: email ?? this.email,
+      role: role ?? this.role,
+      fullName: fullName ?? this.fullName,
+      isVerified: isVerified ?? this.isVerified,
+      contactNumber: contactNumber ?? this.contactNumber,
+      purok: purok ?? this.purok,
+      birthDate: birthDate ?? this.birthDate,
+      voterStatus: voterStatus ?? this.voterStatus,
+      residentId: residentId ?? this.residentId,
+      philsysIdNumber: philsysIdNumber ?? this.philsysIdNumber,
+      philsysIdPhoto: philsysIdPhoto ?? this.philsysIdPhoto,
+      secondaryIdType: secondaryIdType ?? this.secondaryIdType,
+      secondaryIdPhoto: secondaryIdPhoto ?? this.secondaryIdPhoto,
+      utilityBillingType: utilityBillingType ?? this.utilityBillingType,
+      utilityBillingPhoto: utilityBillingPhoto ?? this.utilityBillingPhoto,
+    );
+  }
+
+  bool get hasPhilsysPhoto => philsysIdPhoto != null && philsysIdPhoto!.isNotEmpty;
+  bool get hasSecondaryIdPhoto => secondaryIdPhoto != null && secondaryIdPhoto!.isNotEmpty;
+  bool get hasUtilityBillingPhoto => utilityBillingPhoto != null && utilityBillingPhoto!.isNotEmpty;
+
+  int get proofDocumentsCount {
+    int count = 0;
+    if (hasPhilsysPhoto) count++;
+    if (hasSecondaryIdPhoto) count++;
+    if (hasUtilityBillingPhoto) count++;
+    return count;
   }
   
   /// Convenience getter to check if the user is a resident
