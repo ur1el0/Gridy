@@ -3,8 +3,8 @@
 ## 1. Executive Summary
 
 - **Task ID:** `m52-private-image-publish-path`
-- **State:** In progress — architecture decision and implementation contract documented; delivery verification pending
-- **Current milestone:** M1–M3 complete; M4 in progress
+- **State:** Complete — conditional architecture decision documented, scoped PR opened, and all eight hosted CI jobs passed
+- **Current milestone:** M1–M4 complete; Azure account, region, budget, and deployment gates remain open
 - **Branch:** `infra/m52-private-image-publish-path`
 - **Worktree:** `/tmp/gridy-m52-private-image-publish-path`
 - **Base content tree:** M51 tree `b455a7a201190fd8325e924701e4d95cbefc6746`
@@ -17,7 +17,7 @@
 | M1 — Baseline and scope | Complete | Isolated M51-based worktree; verified M41 image builds, M50 private ACR, M51 identities, current repository metadata, and M42 gates. |
 | M2 — Option comparison | Complete | Reviewed current official GitHub and Microsoft documentation for VNet-connected larger runners, ACR Tasks pools, managed identity, OIDC, and self-hosted runner security. |
 | M3 — Recommendation and contract | Complete | ADR 015 records a proposed conditional target and a future secure build/publish contract. No account, billing, region, or deployment approval is implied. |
-| M4 — Verification and delivery | In progress | Documentation hygiene, scoped commit, remote tree, PR, and hosted checks are being completed. |
+| M4 — Verification and delivery | Complete | Four scoped Markdown files were committed and pushed with matching content trees; PR #183 targets M51 and remains open/unmerged. Run #421 passed all eight hosted jobs. |
 
 ## 3. Findings and Recommendation
 
@@ -45,7 +45,13 @@ M42 gates remain open: Azure subscription and billing owner; budget ceiling; per
 | Existing CI/image names | `rg -n "docker build|gridy-frontend|gridy-backend|image:" .github/workflows/ci.yml` | PASS: current image tags are `kapitbayan-backend:ci` and `kapitbayan-frontend:ci`; these are local CI tags, not approved ACR repository names. |
 | Microsoft/GitHub references | Official pages linked in TASK_BRIEF.md and ADR 015 | PASS: current primary-source pages opened on 2026-10-11; plan/preview/region claims are explicitly time-sensitive. |
 | Azure CLI / resource access | No Azure CLI/account/provider commands run | PASS: none were run; no cloud state was queried or changed. |
-| M52 diff hygiene | `git diff --check` | Pending final scoped diff. |
+| M52 staged diff hygiene | `git diff --cached --check` | PASS: clean, with no whitespace errors. |
+| Markdown whitespace/final newline | Python scan of the four scoped Markdown files | PASS: no trailing whitespace; each file ends with exactly one newline. |
+| Scoped file review | `git diff --cached --name-only` before the implementation commit; GitHub commit file list after push | PASS: exactly ADR 015 and the M52 TASK_BRIEF.md, PLAN.md, and STATUS.md. |
+| Local/remote implementation tree | Local commit `c17f9e1de3890e9c183aafb4764d4ed192f57a34` and GitHub commit `f9ae35e6d8cdce7322f55a62aa566c3b9442447e` | PASS: both have content tree `563b49f9b1ecb8157ce6a66904e3d0e767f4293f`; remote commit is parented on M51 head `30c3dc3a1708edfeaad1d547abc8bc153f5ec43e`. |
+| M52 hosted CI | GitHub Actions run [#421](https://github.com/ur1el0/KapitBayan/actions/runs/38146327551) on implementation commit `f9ae35e6d8cdce7322f55a62aa566c3b9442447e` | PASS: all eight jobs succeeded — backend tests, frontend tests, mobile tests, frontend image, backend image, Compose migration gate smoke, PostgreSQL DNS reconnect smoke, and Azure foundation Bicep compile/ARM contract. |
+| Pull request | GitHub PR [#183](https://github.com/ur1el0/KapitBayan/pull/183) | PASS: open, unmerged, and targeted at `infra/m51-managed-identity-rbac`. |
+| Primary checkout | `git -C /home/dokja/vsc-fedora/all/Projects/django-projects/Gridy status --short --untracked-files=no` | PASS: no tracked changes. Existing untracked agent/environment and logo assets were not modified. |
 
 ## 6. Changed Files
 
@@ -58,12 +64,16 @@ No application, workflow, Bicep, database, dependency, or production configurati
 
 ## 7. Remaining Work
 
-- [ ] Run final documentation and Git hygiene checks.
-- [ ] Commit only the four scoped documents.
-- [ ] Push an equivalent content tree to `infra/m52-private-image-publish-path` parented on the latest remote M51 branch head.
-- [ ] Open a PR targeting M51; leave it open and unmerged.
-- [ ] Record final local/remote tree and hosted check status.
+- [x] Run final documentation and Git hygiene checks.
+- [x] Commit only the four scoped documents.
+- [x] Push an equivalent content tree to `infra/m52-private-image-publish-path` parented on the latest remote M51 branch head.
+- [x] Open PR #183 targeting M51; leave it open and unmerged.
+- [x] Record the implementation tree and hosted CI result.
 
 ## 8. Delivery Checkpoint
 
-Pending.
+- **Implementation commit:** local `c17f9e1de3890e9c183aafb4764d4ed192f57a34`; remote `f9ae35e6d8cdce7322f55a62aa566c3b9442447e`.
+- **Implementation tree:** `563b49f9b1ecb8157ce6a66904e3d0e767f4293f` locally and remotely.
+- **PR:** [#183](https://github.com/ur1el0/KapitBayan/pull/183), open and unmerged, targeting `infra/m51-managed-identity-rbac`.
+- **Hosted CI:** run [#421](https://github.com/ur1el0/KapitBayan/actions/runs/38146327551) passed all eight jobs on the M52 implementation commit before this documentation-only status checkpoint.
+- **Scope:** no Azure login, subscription/provider validation, `what-if`, deployment, image publication, secret writes, merge, or production change.
