@@ -3,7 +3,7 @@
 ## 1. Executive Summary
 
 - **Task ID:** `m45-health-probe-semantics`
-- **State:** Ready for review
+- **State:** Ready for review — PR open; GitHub Actions pending
 - **Current milestone:** M1 and M2 — implementation, verification, and documentation complete
 - **Branch:** `feat/m45-health-probe-semantics`
 - **Worktree:** `/tmp/gridy-m45-health-probe-semantics`
@@ -46,7 +46,7 @@ The task packet is ignored by the broad `docs/ai-workflow` rule and must be forc
 | Baseline route inspection | `sed` of `backend/config/health_views.py`, `backend/config/urls.py`, Dockerfile, Compose, and health tests | Existing combined DB/cache check is at `/api/v1/health/`; Dockerfile uses it and Compose depends on backend health. |
 | Hindsight | Search/list/capture via Hindsight | Unavailable: `ECONNREFUSED 127.0.0.1:9077`; no page content returned. |
 | Initial targeted test attempt | `DATABASE_URL=sqlite:////tmp/gridy-m45-health-probe-semantics.sqlite3 DEBUG=True /home/dokja/vsc-fedora/all/Projects/django-projects/Gridy/venv/bin/pytest backend/gridy_services/tests/test_health.py -q` | Failed during Django settings initialization because this isolated worktree has no local `.env` and `SECRET_KEY` is required. No test ran; reran with synthetic local-only `SECRET_KEY` and `ADMIN_REGISTRATION_PASSKEY` environment values. |
-| Targeted health tests (final source) | `DATABASE_URL=sqlite:////tmp/gridy-m45-health-probe-semantics.sqlite3 SECRET_KEY=local-only-test-key-with-more-than-thirty-two-characters ADMIN_REGISTRATION_PASSKEY=local-only-test-passkey DEBUG=True /home/dokja/vsc-fedora/all/Projects/django-projects/Gridy/venv/bin/pytest backend/gridy_services/tests/test_health.py -q` | PASS: `7 passed` in 1.48s. Django emitted 7 warnings that the isolated worktree has no `backend/staticfiles/` directory. |
+| Targeted health tests (final source) | `DATABASE_URL=sqlite:////tmp/gridy-m45-health-probe-semantics.sqlite3 SECRET_KEY=local-only-test-key-with-more-than-thirty-two-characters ADMIN_REGISTRATION_PASSKEY=local-only-test-passkey DEBUG=True /home/dokja/vsc-fedora/all/Projects/django-projects/Gridy/venv/bin/pytest backend/gridy_services/tests/test_health.py -q` | PASS: `7 passed` in 1.46s. Django emitted 7 warnings that the isolated worktree has no `backend/staticfiles/` directory. |
 | Full backend pytest suite (final source) | `DATABASE_URL=sqlite:////tmp/gridy-m45-health-probe-semantics.sqlite3 SECRET_KEY=local-only-test-key-with-more-than-thirty-two-characters ADMIN_REGISTRATION_PASSKEY=local-only-test-passkey DEBUG=True KAPITBAYAN_TEST_USE_SQLITE=True /home/dokja/vsc-fedora/all/Projects/django-projects/Gridy/venv/bin/pytest backend` | PASS: `215 passed, 5 skipped, 185 warnings, 32 subtests passed in 57.46s`. Warnings were the existing missing-staticfiles-path and test warnings. |
 | Django system check | `DATABASE_URL=sqlite:////tmp/gridy-m45-health-probe-semantics.sqlite3 SECRET_KEY=local-only-test-key-with-more-than-thirty-two-characters ADMIN_REGISTRATION_PASSKEY=local-only-test-passkey DEBUG=True /home/dokja/vsc-fedora/all/Projects/django-projects/Gridy/venv/bin/python backend/manage.py check` | PASS: `System check identified no issues (0 silenced).` Startup logged that Firebase credentials are not configured and push notifications are disabled in this local environment. |
 | Migration dry run | `DATABASE_URL=sqlite:////tmp/gridy-m45-health-probe-semantics.sqlite3 SECRET_KEY=local-only-test-key-with-more-than-thirty-two-characters ADMIN_REGISTRATION_PASSKEY=local-only-test-passkey DEBUG=True /home/dokja/vsc-fedora/all/Projects/django-projects/Gridy/venv/bin/python backend/manage.py makemigrations --check --dry-run` | PASS: `No changes detected`. |
@@ -59,7 +59,15 @@ The task packet is ignored by the broad `docs/ai-workflow` rule and must be forc
 - Readiness is mounted at `/api/v1/health/ready/`; tests verify both database and cache failure responses are HTTP 503 with sanitized error text.
 - The existing `/api/v1/health/` view remains the same and the test exercises both it and the new ready route with the prior healthy response fields.
 - Dockerfile and Compose healthcheck definitions were not changed.
-- No migrations, package/dependency changes, Celery/Redis, live provider settings, cloud resource operations, commits, or deployments have been made as of this status update.
+- No migrations, package/dependency changes, Celery/Redis, live provider settings, cloud resource operations, merges, or production deployments have been made. GitHub automatically created a Vercel Preview for PR validation; it is not a production release.
+
+### Delivery checkpoint
+
+- **Local commit:** `05fe634867668746de2a92a5d73cebab65c8eacc`, tree `bcff54f3743722181a534c3daf8285a754183e51`.
+- **Remote commit:** `dff2da2004f5539bc3583f290c5670f46502f47a`, parent M44 remote head `a53b737045a91d666212b8d720f177c74690a1f0`; tree matches the local commit.
+- **PR:** [#176](https://github.com/ur1el0/KapitBayan/pull/176), open, mergeable, unmerged; targets M44 PR #175 (`test/m44-compose-migration-gate-ci`).
+- **Vercel Preview:** Ready at `https://gridy-git-feat-m45-health-probe-semantics-ur1el0s-projects.vercel.app`; no production deployment occurred.
+- **GitHub Actions:** Run [#368](https://github.com/ur1el0/KapitBayan/actions/runs/38138638433) was queued when this status was captured; its result remains to be checked.
 
 ## 7. Remaining Work
 
@@ -67,4 +75,5 @@ The task packet is ignored by the broad `docs/ai-workflow` rule and must be forc
 - [x] Update API and deployment documentation.
 - [x] Run backend tests, Django check, migration dry run, OpenAPI generation, and diff hygiene checks.
 - [x] Review diff for scope, schema, dependency, Docker, Compose, and cloud boundaries.
-- [ ] Commit/publish the scoped branch and open a stacked PR to M44; do not merge or deploy.
+- [x] Commit/publish the scoped branch and open stacked PR #176 to M44; do not merge or deploy.
+- [ ] Check hosted Actions run #368 and record its actual result.
