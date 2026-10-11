@@ -9,8 +9,9 @@ This resource-group-scoped Bicep template defines a candidate Azure foundation f
 - A PostgreSQL Flexible Server configured for private VNet integration.
 - A Premium Azure Container Registry with public access disabled and a private endpoint.
 - An empty RBAC-enabled Key Vault with public access disabled and a private endpoint.
+- Separate user-assigned identities for Container Apps image pulls and backend API secret reads, with narrowly scoped data-plane role assignments.
 
-The template creates **no Container Apps, application ingress, custom domains, DNS cutover, database migrations, managed identities, role assignments, registry images, or Key Vault secrets**. The empty managed environment uses the external environment mode from M42's candidate topology, so a future frontend can provide the same-origin public edge; no application endpoint is created. Reassess that exposure before deployment. The PostgreSQL resource has no public database endpoint: it uses delegated-subnet/private-DNS integration.
+The template creates **no Container Apps, application ingress, custom domains, DNS cutover, database migrations, registry images, or Key Vault secrets**. The empty managed environment uses the external environment mode from M42's candidate topology, so a future frontend can provide the same-origin public edge; no application endpoint is created. Reassess that exposure before deployment. The PostgreSQL resource has no public database endpoint: it uses delegated-subnet/private-DNS integration.
 
 ## Required inputs
 
@@ -22,6 +23,7 @@ There is deliberately no .bicepparam example and no deployment defaults. Select 
 - Log Analytics SKU and retention period.
 - PostgreSQL major version, compute SKU/tier, storage size/auto-grow, backup policy, HA mode/standby zone, administrator login, and secure password.
 - Key Vault tenant ID and soft-delete retention period (7–90 days).
+- User-assigned identity names for the registry image-pull principal and backend API runtime principal.
 - Organization-required resource tags, including owner and cost-center values.
 
 This template supports a workload-profile Container Apps environment. Microsoft documents a dedicated subnet of at least /27, delegated to Microsoft.App/environments; the exact selected profile, headroom, and region support must be checked before deployment. Consumption-only environments have a different /23, non-delegated subnet contract and are intentionally outside this template.
@@ -30,11 +32,13 @@ The PostgreSQL subnet is delegated only to Microsoft.DBforPostgreSQL/flexibleSer
 
 The private-endpoint subnet is separate from both delegated subnets, has no service delegation, and disables private-endpoint network policies as required for this template's network contract. Two endpoints are created, one for the ACR registry subresource and one for the Key Vault vault subresource. Their private DNS zone groups associate the endpoints with the linked privatelink.azurecr.io and privatelink.vaultcore.azure.net zones.
 
-## Registry and secret-store controls
+## Registry, identity, and secret-store controls
 
 - ACR Private Link is available only on the **Premium** registry tier. The template constrains the SKU parameter to Premium, disables the registry admin account and anonymous pull, disables trusted-service network bypass, and disables public network access. Premium registry and private-endpoint charges require a budget review before deployment.
+- ACR explicitly uses `AbacRepositoryPermissions`, so access uses ABAC-compatible roles and does not depend on the registry's changing default mode. The dedicated image-pull identity receives `Container Registry Repository Reader` at the registry scope. This grants read access to image data across the registry, but does not grant catalog listing, image writes/deletes, or control-plane access. Once the backend/frontend repository names are approved, narrow the assignment with repository-specific ABAC conditions in a separately verified change.
+- The backend API has a separate user-assigned identity with `Key Vault Secrets User` at the Key Vault scope. This grants secret read access only; the frontend and CI receive no vault role. The vault remains empty in this milestone, and no credentials or secret values are added to source control.
 - Key Vault uses Standard SKU because this foundation stores application secrets, not HSM-backed keys. Data access uses Azure RBAC; soft delete and purge protection are enabled, and retention is required as an explicit bounded input. Purge protection is an irreversible setting after a vault is deployed.
-- The Key Vault is empty in this milestone: no secrets, certificates, keys, application identity, or role assignment is created. Public network access is disabled. Microsoft documents that trusted Azure services may remain an exception to the private-endpoint traffic rule; no secret data is present here, and any later data-plane use requires a separate access review.
+- The Key Vault is empty in this milestone: no secrets, certificates, or keys are created. Public network access is disabled. Microsoft documents that trusted Azure services may remain an exception to the private-endpoint traffic rule; no secret data is present here, and any later data-plane use requires a separate access review.
 - A public GitHub-hosted Actions runner has no private network path to this ACR. This task does not push images. Before a future image publication milestone, choose and review a private self-hosted runner or an approved private build service with network line of sight to the endpoint. Azure DevOps hosted agents also do not support private-endpoint ACR access without a self-hosted agent, per Microsoft documentation.
 
 ## Compile-only validation
@@ -60,7 +64,7 @@ M42's outstanding gates remain open:
 3. Workload sizing and provider/SKU/region/quota availability review.
 4. Agreed and funded backup retention, HA choice, RPO, and RTO.
 5. Review of non-overlapping network ranges, immutable subnet sizing, private DNS, ingress exposure, and outbound access to Cloudinary, Firebase, and SMTP.
-6. A separately reviewed deployment and parity plan covering the frontend reverse proxy, internal API routing, health probes, migration gate, managed identities and least-privilege Key Vault access, private image publication/pull, private media access, authentication cookies, and mobile API hostname.
+6. A separately reviewed deployment and parity plan covering the frontend reverse proxy, internal API routing, health probes, migration gate, assignment of the backend identity to its app, approved secret names, repository-specific ACR conditions once image names are fixed, private image publication/pull, private media access, authentication cookies, and mobile API hostname.
 
 This template is not a production-ready deployment or a substitute for provider-side validation and a non-production rehearsal. Do not deploy it until the approval gates are complete and a separate task explicitly authorizes the Azure resource operation.
 
@@ -73,6 +77,11 @@ References reviewed 2026-10-11:
 - [ACR Private Link](https://learn.microsoft.com/en-us/azure/container-registry/container-registry-private-link) — Premium-tier requirement, private DNS zone, endpoint subresource, public-access behavior, and hosted-agent constraints.
 - [Key Vault Private Link](https://learn.microsoft.com/en-us/azure/key-vault/general/private-link-service) — private DNS zone and private endpoint configuration.
 - [Key Vault network security](https://learn.microsoft.com/en-us/azure/key-vault/general/how-to-azure-key-vault-network-security) — public-access-disabled behavior and trusted-service exception.
+- [Container Apps image pull with managed identity](https://learn.microsoft.com/en-us/azure/container-apps/managed-identity-image-pull) — user-assigned identity authentication for private registry pulls.
+- [ACR ABAC repository permissions](https://learn.microsoft.com/en-us/azure/container-registry/container-registry-rbac-abac-repository-permissions) — supported role-assignment modes, ABAC-compatible image-reader roles, and repository scoping.
+- [ACR role assignment overview](https://learn.microsoft.com/en-us/azure/container-registry/container-registry-rbac-built-in-roles-overview) — recommended roles for container orchestrators.
+- [Key Vault security built-in roles](https://learn.microsoft.com/en-us/azure/role-based-access-control/built-in-roles/security) — Key Vault Secrets User scope and permissions.
+- [User-assigned identity Bicep resource](https://learn.microsoft.com/en-us/azure/templates/microsoft.managedidentity/userassignedidentities) and [Azure role assignments](https://learn.microsoft.com/en-us/azure/role-based-access-control/role-assignments) — resource and assignment contract.
 - [Container Registry Bicep resource](https://learn.microsoft.com/en-us/azure/templates/microsoft.containerregistry/2025-04-01/registries) — supported SKU and network properties.
 - [Key Vault Bicep resource](https://learn.microsoft.com/en-us/azure/templates/microsoft.keyvault/vaults) — RBAC, soft delete, purge protection, and network properties.
 - [Private Endpoints Bicep resource](https://learn.microsoft.com/en-us/azure/templates/microsoft.network/privateendpoints) — private-link connection and subnet resource shape.

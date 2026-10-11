@@ -84,11 +84,13 @@ def main() -> None:
         "acrSkuName",
         "acrPrivateEndpointName",
         "acrPrivateDnsLinkName",
+        "acrImagePullIdentityName",
         "keyVaultName",
         "keyVaultTenantId",
         "keyVaultPrivateEndpointName",
         "keyVaultPrivateDnsLinkName",
         "keyVaultSoftDeleteRetentionInDays",
+        "backendRuntimeIdentityName",
     }
     if parameters.keys() != expected_parameters:
         missing = expected_parameters - parameters.keys()
@@ -132,6 +134,8 @@ def main() -> None:
             "microsoft.dbforpostgresql/flexibleservers": 1,
             "microsoft.containerregistry/registries": 1,
             "microsoft.keyvault/vaults": 1,
+            "microsoft.managedidentity/userassignedidentities": 2,
+            "microsoft.authorization/roleassignments": 2,
         }
     )
     if type_counts != expected_counts:
@@ -242,8 +246,8 @@ def main() -> None:
         fail("ACR trusted-service network bypass must be disabled")
     if acr_properties.get("publicNetworkAccess") != "Disabled":
         fail("ACR public network access must be disabled")
-    if "identity" in acr:
-        fail("ACR identity is outside M50 scope")
+    if acr_properties.get("roleAssignmentMode") != "AbacRepositoryPermissions":
+        fail("ACR must explicitly use ABAC repository-permissions mode")
 
     vault = by_type["microsoft.keyvault/vaults"][0]
     vault_properties = vault.get("properties", {})
@@ -270,6 +274,66 @@ def main() -> None:
             "Key Vault firewall bypass/network rules are outside this reviewed "
             "private-endpoint contract"
         )
+
+    identities = by_type["microsoft.managedidentity/userassignedidentities"]
+    expected_identities = {
+        "acrImagePullIdentityName",
+        "backendRuntimeIdentityName",
+    }
+    observed_identity_parameters: set[str] = set()
+    for identity in identities:
+        name_expression = arm_expression(identity.get("name"))
+        parameter_name = next(
+            (name for name in expected_identities if f"parameters('{name}')" in name_expression),
+            None,
+        )
+        if parameter_name is None or parameter_name in observed_identity_parameters:
+            fail(f"identity has an unexpected or duplicate name parameter: {name_expression!r}")
+        observed_identity_parameters.add(parameter_name)
+        if identity.get("location") != "[parameters('location')]":
+            fail(f"identity {parameter_name} must use the required location parameter")
+        if identity.get("tags") != "[parameters('tags')]":
+            fail(f"identity {parameter_name} must use the required tags parameter")
+    if observed_identity_parameters != expected_identities:
+        fail(f"managed identity coverage mismatch: {sorted(observed_identity_parameters)}")
+
+    # Built-in role IDs are stable Azure role-definition IDs. Keep these explicit
+    # so the checker can verify both the permission and the intended identity.
+    role_contracts = {
+        "b93aa761-3e63-49ed-ac28-beffa264f7ac": {
+            "scope_type": "microsoft.containerregistry/registries",
+            "scope_parameter": "acrRegistryName",
+            "identity_parameter": "acrImagePullIdentityName",
+        },
+        "4633458b-17de-408a-b874-0445c86b69e6": {
+            "scope_type": "microsoft.keyvault/vaults",
+            "scope_parameter": "keyVaultName",
+            "identity_parameter": "backendRuntimeIdentityName",
+        },
+    }
+    observed_roles: set[str] = set()
+    for assignment in by_type["microsoft.authorization/roleassignments"]:
+        properties = assignment.get("properties", {})
+        role_definition = arm_expression(properties.get("roleDefinitionId")).casefold()
+        role_id = next((role for role in role_contracts if role in role_definition), None)
+        if role_id is None or role_id in observed_roles:
+            fail(f"role assignment has an unexpected or duplicate built-in role: {role_definition!r}")
+        observed_roles.add(role_id)
+        contract = role_contracts[role_id]
+        if properties.get("principalType") != "ServicePrincipal":
+            fail(f"role {role_id} must be assigned to a managed-identity service principal")
+        principal = arm_expression(properties.get("principalId")).casefold()
+        if contract["identity_parameter"].casefold() not in principal or ".principalid" not in principal:
+            fail(f"role {role_id} principal must resolve from {contract['identity_parameter']}")
+        scope = arm_expression(assignment.get("scope")).casefold()
+        if contract["scope_type"] not in scope or contract["scope_parameter"].casefold() not in scope:
+            fail(f"role {role_id} must be scoped to {contract['scope_type']} resource")
+        if "guid(" not in arm_expression(assignment.get("name")).casefold():
+            fail(f"role {role_id} assignment name must be deterministic")
+        if "condition" in properties or "delegatedManagedIdentityResourceId" in properties:
+            fail(f"role {role_id} contains an unreviewed condition or delegation")
+    if observed_roles != set(role_contracts):
+        fail(f"role assignment coverage mismatch: {sorted(observed_roles)}")
 
     endpoint_contracts = {
         "microsoft.containerregistry/registries": (
@@ -340,18 +404,17 @@ def main() -> None:
 
     forbidden_types = {
         "microsoft.app/containerapps",
-        "microsoft.authorization/roleassignments",
-        "microsoft.managedidentity/userassignedidentities",
         "microsoft.keyvault/vaults/secrets",
+        "microsoft.managedidentity/userassignedidentities/federatedidentitycredentials",
         "microsoft.containerregistry/registries/tasks",
         "microsoft.containerregistry/registries/replications",
     }
     if forbidden_types.intersection(type_counts):
         fail(f"out-of-scope resources found: {sorted(forbidden_types.intersection(type_counts))}")
     print(
-        "PASS: required parameters, private ACR and Key Vault, endpoint subnet, "
-        "private endpoints/DNS links, "
-        "access controls, and no-app/no-secret/no-output boundary verified."
+        "PASS: required parameters, private ACR/Key Vault, separate managed identities, "
+        "exactly scoped read roles, private endpoints/DNS, and no-app/no-secret/no-output "
+        "boundary verified."
     )
 
 

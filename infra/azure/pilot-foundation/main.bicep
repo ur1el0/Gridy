@@ -123,6 +123,11 @@ param acrPrivateEndpointName string
 param acrPrivateDnsLinkName string
 
 @minLength(3)
+@maxLength(128)
+@description('Name of the user-assigned identity reserved for Container Apps image pulls from this registry.')
+param acrImagePullIdentityName string
+
+@minLength(3)
 @maxLength(24)
 @description('Globally unique Key Vault name. Select an available valid name before deployment.')
 param keyVaultName string
@@ -135,6 +140,11 @@ param keyVaultPrivateEndpointName string
 
 @description('Name of the Key Vault private DNS VNet link.')
 param keyVaultPrivateDnsLinkName string
+
+@minLength(3)
+@maxLength(128)
+@description('Name of the user-assigned identity reserved for the backend API runtime to read Key Vault secrets.')
+param backendRuntimeIdentityName string
 
 @minValue(7)
 @maxValue(90)
@@ -289,7 +299,14 @@ resource acrRegistry 'Microsoft.ContainerRegistry/registries@2025-04-01' = {
     anonymousPullEnabled: false
     networkRuleBypassOptions: 'None'
     publicNetworkAccess: 'Disabled'
+    roleAssignmentMode: 'AbacRepositoryPermissions'
   }
+}
+
+resource acrImagePullIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
+  name: acrImagePullIdentityName
+  location: location
+  tags: tags
 }
 
 resource acrPrivateDnsZone 'Microsoft.Network/privateDnsZones@2024-06-01' = {
@@ -365,6 +382,12 @@ resource keyVault 'Microsoft.KeyVault/vaults@2025-05-01' = {
   }
 }
 
+resource backendRuntimeIdentity 'Microsoft.ManagedIdentity/userAssignedIdentities@2023-01-31' = {
+  name: backendRuntimeIdentityName
+  location: location
+  tags: tags
+}
+
 resource keyVaultPrivateDnsZone 'Microsoft.Network/privateDnsZones@2024-06-01' = {
   name: 'privatelink.vaultcore.azure.net'
   location: 'global'
@@ -417,5 +440,29 @@ resource keyVaultPrivateDnsZoneGroup 'Microsoft.Network/privateEndpoints/private
         }
       }
     ]
+  }
+}
+
+// ABAC-compatible data-plane reader; no repository catalog or write permission.
+var acrRepositoryReaderRoleDefinitionId = 'b93aa761-3e63-49ed-ac28-beffa264f7ac'
+var keyVaultSecretsUserRoleDefinitionId = '4633458b-17de-408a-b874-0445c86b69e6'
+
+resource acrImagePullRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(acrRegistry.id, acrImagePullIdentity.id, acrRepositoryReaderRoleDefinitionId)
+  scope: acrRegistry
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', acrRepositoryReaderRoleDefinitionId)
+    principalId: acrImagePullIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
+  }
+}
+
+resource backendKeyVaultSecretsRoleAssignment 'Microsoft.Authorization/roleAssignments@2022-04-01' = {
+  name: guid(keyVault.id, backendRuntimeIdentity.id, keyVaultSecretsUserRoleDefinitionId)
+  scope: keyVault
+  properties: {
+    roleDefinitionId: subscriptionResourceId('Microsoft.Authorization/roleDefinitions', keyVaultSecretsUserRoleDefinitionId)
+    principalId: backendRuntimeIdentity.properties.principalId
+    principalType: 'ServicePrincipal'
   }
 }
