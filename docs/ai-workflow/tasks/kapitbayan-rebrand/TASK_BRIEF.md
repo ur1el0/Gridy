@@ -5,9 +5,9 @@
 - **Task ID:** `kapitbayan-rebrand`
 - **Task type:** Product rebrand, asset integration, compatibility refactor, documentation
 - **Target components:** Frontend, mobile, backend API metadata and demo presentation data, project documentation, CI labels
-- **Lead / implementer / reviewer:** Codex (user-directed sole-agent mode)
-- **Working branch sequence:** `feat/kapitbayan-rebrand` through `chore/kapitbayan-final-audit`, with review correction on `fix/kapitbayan-migration-and-brand-acceptance`
-- **Push/deployment:** None authorized; local commits only
+- **Lead / implementer / reviewer:** Antigravity (implementer/writer), Codex (read-only reviewer)
+- **Working branch sequence:** `feat/kapitbayan-rebrand` (Milestone 1: Web Brand and Logo Assets)
+- **Push/deployment:** Commit and push to task branch `feat/kapitbayan-rebrand` authorized; do not open a PR or deploy
 
 ## 2. Objective and Scope
 
@@ -49,7 +49,7 @@
 7. [x] Safe internal branding tokens and labels are renamed, with explicit compatibility handling for existing test/storage configuration keys.
 8. [x] No changes occur to database schema/history, app labels/table/index names, API paths, auth/RBAC, production origins, Firebase project ID, support mailbox, Compose DB identifiers, or Android application ID.
 9. [x] All required frontend, backend, and mobile checks pass; no unintended `Gridy` product copy remains outside a documented compatibility/infrastructure/history allowlist.
-10. [x] Changes are committed in focused local milestone checkpoints, with a new branch between milestones; no unrelated/untracked agent or environment files are staged, and nothing is pushed.
+10. [x] Changes are committed in focused milestone checkpoints; commit and push to task branch `feat/kapitbayan-rebrand` authorized; no unrelated/untracked agent or environment files are staged, and no PR is opened.
 
 ## 6. Relevant Areas
 

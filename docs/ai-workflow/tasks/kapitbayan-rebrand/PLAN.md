@@ -1,6 +1,6 @@
 # Implementation Plan: KapitBayan Product Rebrand
 
-> **Work contract:** The user has directed Codex to plan, implement, verify, and self-review all milestones without handing implementation to Antigravity or pausing for user questions. Complete one milestone at a time, make a local scoped checkpoint, then create the next branch. Do not push, deploy, provision external services, or edit production data.
+> **Work contract:** Antigravity implements and verifies Milestone 1 (`feat/kapitbayan-rebrand`); Codex performs read-only review. Commit and push to task branch `feat/kapitbayan-rebrand` are authorized; do not open a PR, deploy, provision external services, or edit production data.
 
 ## 1. Plan Overview
 
@@ -10,7 +10,7 @@
 - **Schema expectation:** No migrations and no changes to persisted Django identifiers.
 - **Brand direction:** Civic, calm, and legible. Use the supplied navy/blue logo, preserve existing layout and palette, and use the exact `KapitBayan` spelling.
 - **Milestone boundaries:** M1 Web brand and assets (`feat/kapitbayan-rebrand`); M2 Mobile and preference continuity (`feat/kapitbayan-mobile-branding`); M3 API/demo content and documentation (`docs/kapitbayan-product-copy`); M4 safe identifier cleanup and cross-platform regression (`chore/kapitbayan-final-audit`); M5 review correction (`fix/kapitbayan-migration-and-brand-acceptance`). Names may be adjusted only if Git or repository evidence requires it; record any adjustment here.
-- **Checkpoint policy:** After each milestone, review its explicit diff, run the listed checks, update `STATUS.md`, commit only scoped tracked files, and create the next branch. Keep `.agents/`, `.codex/`, source JPEGs, and unrelated untracked files out of staging. Local commits only.
+- **Checkpoint policy:** After each milestone, review its explicit diff, run the listed checks, update `STATUS.md`, commit and push only scoped tracked files to the task branch (`feat/kapitbayan-rebrand`), without opening a PR. Keep `.agents/`, `.codex/`, source JPEGs, and unrelated untracked files out of staging.
 
 ## 2. Milestones
 
@@ -128,7 +128,7 @@
 - [x] Existing mobile state migrates without loss, and legacy keys are deleted only after successful migration.
 - [x] Tests exercise updated product labels and migration compatibility.
 - [x] Worktree diffs and each milestone commit contain no `.agents/`, `.codex/`, unrelated environment files, or untracked user assets.
-- [x] No changes are pushed or deployed.
+- [x] Changes committed and pushed to `feat/kapitbayan-rebrand` without opening a PR; no production deployment.
 
 ## 4. Risks and Rollback
 
