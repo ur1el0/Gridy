@@ -3,7 +3,7 @@
 ## 1. Executive Summary
 
 - **Task ID:** `m47-schema-rollout-compatibility`
-- **State:** Implementation and local documentation checks complete; publication pending
+- **State:** PR #178 open; hosted checks pending
 - **Current milestone:** M1 — record schema rollout and verification contract
 - **Branch:** `docs/m47-schema-rollout-compatibility`
 - **Worktree:** `/tmp/gridy-m47-schema-rollout-compatibility`
@@ -14,7 +14,7 @@
 
 | Milestone | State | Notes |
 | --- | --- | --- |
-| M1 — Record schema rollout and verification contract | Complete locally | ADR 014 and deployment guidance define staged schema evolution while preserving unverified release-specific gates. |
+| M1 — Record schema rollout and verification contract | Published; hosted checks pending | ADR 014 and deployment guidance define staged schema evolution while preserving unverified release-specific gates. PR #178 is open and unmerged. |
 
 ## 3. Baseline and Decisions
 
@@ -46,9 +46,19 @@
 | Markdown whitespace | Python trailing-space/tab scan across the 2 changed docs and 3 task-packet Markdown files | PASS: no trailing whitespace in 5 Markdown files. |
 | Diff hygiene and scope | `git diff --check`, `git diff --cached --check`, `git diff --name-only`, `git diff --cached --name-only`, `git status --short --branch` | PASS: clean; only the planned deployment guide is a tracked modification; new ADR 014 and ignored task packet are untracked before staging. |
 | Application tests | Not run | Documentation-only scope; no application behavior changed. |
+| M46 base hosted checks | GitHub Actions run #374 and combined status for M46 PR #177 head `10a7735626b17201fa7a2551110d31842898f4c8` | PASS: all six workflow jobs passed; Vercel Preview status is success. |
+| M47 hosted checks | GitHub Actions run #376 and combined status for M47 content commit `dff1ee61d40c07e6f34214cde0ba5b4d1f5f060d` | Pending at last check: backend, frontend, Compose smoke, and mobile jobs were in progress; Vercel status was pending. |
 
-## 6. Remaining Work
+## 6. Delivery Checkpoint
+
+- **Local content commit:** `24944e5f2eb302431651eac94f707c3ef19073e7`, tree `de5cc4835a5ef6db5e0d3e11fec7f873a8832bff`.
+- **Remote content commit:** `dff1ee61d40c07e6f34214cde0ba5b4d1f5f060d`, parent M46 PR #177 head `10a7735626b17201fa7a2551110d31842898f4c8`; tree matches the local content commit.
+- **PR:** [#178](https://github.com/ur1el0/KapitBayan/pull/178), open, unmerged, and based on M46 PR #177. GitHub reports it mergeable.
+- No merge, production deployment, Azure configuration, database migration, or live service action occurred.
+
+## 7. Remaining Work
 
 - [x] Complete ADR and deployment-doc changes within the planned scope.
 - [x] Run and record documentation and git hygiene checks.
-- [ ] Commit and publish a stacked PR against M46 PR #177; do not merge or deploy.
+- [x] Commit and publish the stacked PR against M46 PR #177; do not merge or deploy.
+- [ ] Recheck M47 hosted Actions and Vercel Preview results; do not merge or deploy.

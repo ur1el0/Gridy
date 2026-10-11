@@ -49,7 +49,7 @@ Also run a relative-link check for ADR 013/014, a Markdown trailing-whitespace s
 - [x] DNS failover/reconnect remains accurately marked as unverified.
 - [x] `git diff --check`, link validation, and Markdown whitespace scan pass.
 - [x] No runtime, schema, dependency, CI, container, cloud, or production changes occur.
-- [ ] Commit and open a stacked PR against M46 PR #177; do not merge or deploy.
+- [x] Commit and open stacked PR #178 against M46 PR #177; do not merge or deploy.
 - [ ] Check hosted CI and Preview after publication; record actual results.
 
 ## 4. Risks and Rollback
