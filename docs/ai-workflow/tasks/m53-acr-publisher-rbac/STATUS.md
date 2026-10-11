@@ -3,8 +3,8 @@
 ## 1. Executive Summary
 
 - **Task ID:** `m53-acr-publisher-rbac`
-- **State:** In progress — M1–M3 implemented; pinned hosted Bicep/ARM verification and delivery pending
-- **Current milestone:** M1–M3 complete; M4 pending
+- **State:** Complete — publisher authorization contract implemented, hosted validation passed, and stacked PR opened
+- **Current milestone:** M1–M4 complete
 - **Branch:** `infra/m53-acr-publisher-rbac`
 - **Worktree:** `/tmp/gridy-m53-acr-publisher-rbac`
 - **PR base:** `infra/m52-private-image-publish-path` (PR #183, open and unmerged)
@@ -16,9 +16,9 @@
 | Milestone | State | Notes |
 | --- | --- | --- |
 | M1 — Baseline and ABAC contract | Complete | M52 PR and tree verified; Microsoft Writer role ID, data actions, ABAC repository condition, and Bicep role-assignment condition contract reviewed. Hindsight service unavailable. |
-| M2 — Publisher identity and assignments | Implemented | Added one distinct publisher identity and two required exact-repository ABAC Writer assignments. No repository values/defaults, OIDC, workflows, or cloud operations were added. |
-| M3 — ARM checker and README | Implemented | Checker now requires exact Writer role/identity/scope/condition/action coverage; README aligns with ADR 015's conditional GitHub-hosted VNet runner direction and describes the Writer boundary. |
-| M4 — Self-review and delivery | Pending | No commit or remote branch/PR created yet. |
+| M2 — Publisher identity and assignments | Complete | Added one distinct publisher identity and two required exact-repository ABAC Writer assignments. No repository values/defaults, OIDC, workflows, or cloud operations were added. |
+| M3 — ARM checker and README | Complete | Checker requires exact Writer role/identity/scope/condition/action coverage; README aligns with ADR 015's conditional GitHub-hosted VNet runner direction and describes the Writer boundary. |
+| M4 — Self-review and delivery | Complete | Scoped commit pushed with matching local/remote tree; PR #184 targets M52 and remains open/unmerged. Hosted CI run #427 passed all eight jobs. |
 
 ## 3. Verified Baseline and Decisions
 
@@ -46,8 +46,13 @@
 | Checker syntax | `PYTHONPYCACHEPREFIX=/tmp/m53-pycache python3 -m py_compile scripts/ci/check-azure-pilot-foundation.py` | PASS: Python checker compiled with no diagnostics. |
 | Writer condition contract | In-memory calls to `validate_writer_condition` using representative ARM `format(...)` conditions and negative cases (wrong version, prefix operator, wrong parameter, and missing action) | PASS: valid shape accepted and all four malformed cases rejected. This is not a substitute for the pinned Bicep compilation. |
 | Bicep source contract | One-off Python assertions over `main.bicep` | PASS: one publisher identity, two version-2.0 assignments, both required repository parameters with no defaults, and all four Writer action names present. |
-| Local Bicep compile and compiled ARM checker | Existing pinned CI uses Bicep v0.47.16, then runs `check-azure-pilot-foundation.py` | PENDING hosted run; compiler unavailable locally. |
-| Diff hygiene | `git diff --check` | PASS: clean. |
+| Local Bicep compile and compiled ARM checker | Existing pinned CI uses Bicep v0.47.16, then runs `check-azure-pilot-foundation.py` | Local compiler unavailable; GitHub Actions run [#427](https://github.com/ur1el0/KapitBayan/actions/runs/38148213263) passed the compile and compiled ARM contract check on remote implementation commit `c8984b340f06b8593af567c4355daee38664c5d1`. |
+| Hosted CI matrix | GitHub Actions run [#427](https://github.com/ur1el0/KapitBayan/actions/runs/38148213263) | PASS: all eight jobs succeeded — backend tests, frontend tests/build, mobile analysis/tests, frontend image, backend image, Compose migration gate smoke, PostgreSQL DNS reconnect smoke, and Azure Bicep/ARM contract. Backend result: 217 passed, 3 skipped, 32 subtests passed. |
+| Vercel preview | GitHub PR #184 status check | PASS: Vercel check succeeded for the PR preview. This is not a production deployment. |
+| Commit and tree identity | Local commit `455105519c09ed9183d2310a53ee06b9e58baeaf`; remote commit `c8984b340f06b8593af567c4355daee38664c5d1` | PASS: local and remote content tree both equal `22cad45e717ca4aa109c8246d76e67041b9e5e4e`; remote commit is parented on M52 head `1c24d23c849690d93e143f9f54618e353c604098`. |
+| Pull request | GitHub PR [#184](https://github.com/ur1el0/KapitBayan/pull/184) | PASS: open, unmerged, mergeable, and targets `infra/m52-private-image-publish-path`. |
+| Diff hygiene and clean worktree | `git diff --cached --check` before implementation commit; `git status --short --branch && git diff --check && git status --short --untracked-files=all` after commit | PASS: staged diff check clean; final isolated worktree clean. |
+| Protected primary checkout | `git -C /home/dokja/vsc-fedora/all/Projects/django-projects/Gridy status --short --untracked-files=no` | PASS: no tracked changes. Implementation was confined to the isolated `/tmp` worktree; pre-existing untracked protected files remain untouched. |
 
 ## 5. Changed Files
 
@@ -65,7 +70,16 @@ Planning and implementation files:
 - [x] Record local compiler/CLI availability.
 - [x] Implement M2 publisher identity and exact repository-conditioned writer roles.
 - [x] Implement M3 fail-closed ARM checking and README correction.
-- [ ] Run actual local syntax/static/hygiene checks and hosted Bicep compile/ARM contract.
-- [ ] Commit and push the scoped M53 branch; verify matching content tree.
-- [ ] Open PR targeting M52 and inspect final CI; leave unmerged.
-- [ ] Reconfirm protected primary checkout and untracked assets are preserved.
+- [x] Run actual local syntax/static/hygiene checks and hosted Bicep compile/ARM contract.
+- [x] Commit and push the scoped M53 branch; verify matching content tree.
+- [x] Open PR targeting M52 and inspect CI; leave unmerged.
+- [x] Reconfirm protected primary checkout and untracked assets are preserved.
+
+## 7. Delivery Checkpoint
+
+- **Local implementation commit:** `455105519c09ed9183d2310a53ee06b9e58baeaf`.
+- **Remote implementation commit:** `c8984b340f06b8593af567c4355daee38664c5d1`.
+- **Implementation content tree:** `22cad45e717ca4aa109c8246d76e67041b9e5e4e` locally and remotely.
+- **PR:** [#184](https://github.com/ur1el0/KapitBayan/pull/184), open/unmerged and targeting `infra/m52-private-image-publish-path`.
+- **Hosted CI:** [run #427](https://github.com/ur1el0/KapitBayan/actions/runs/38148213263) passed all eight jobs, including the pinned Bicep compile and compiled ARM checker.
+- **Safety:** no Azure account/resource operations, image publication, identity assignment, OIDC configuration, merge, or production deployment occurred.
