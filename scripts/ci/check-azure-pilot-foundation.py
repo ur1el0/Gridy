@@ -11,9 +11,18 @@ def fail(message: str) -> None:
     raise SystemExit(f"FAIL: {message}")
 
 
-def walk_resources(resources: list[dict[str, Any]]) -> list[dict[str, Any]]:
+def walk_resources(resources: Any) -> list[dict[str, Any]]:
+    if isinstance(resources, dict):
+        resource_entries = resources.values()
+    elif isinstance(resources, list):
+        resource_entries = resources
+    else:
+        fail(f"expected nested resources to be an array or object, got {type(resources).__name__}")
+
     found: list[dict[str, Any]] = []
-    for resource in resources:
+    for resource in resource_entries:
+        if not isinstance(resource, dict):
+            fail(f"expected a compiled resource object, got {type(resource).__name__}")
         found.append(resource)
         found.extend(walk_resources(resource.get("resources", [])))
     return found

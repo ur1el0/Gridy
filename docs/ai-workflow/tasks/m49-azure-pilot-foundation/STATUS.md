@@ -3,7 +3,7 @@
 ## 1. Executive Summary
 
 - **Task ID:** `m49-azure-pilot-foundation`
-- **State:** In progress — initial delivery PR opened; hosted Bicep syntax compilation now passes, with a static secure-parameter comparison correction awaiting CI
+- **State:** In progress — initial delivery PR opened; hosted Bicep compilation and parameter contract pass, with nested-resource traversal correction awaiting CI
 - **Current milestone:** M2 complete; M3 local checks complete; hosted static-check follow-up pending
 - **Branch:** `infra/m49-azure-pilot-foundation`
 - **Worktree:** `/tmp/gridy-m49-azure-pilot-foundation`
@@ -16,8 +16,8 @@
 | --- | --- | --- |
 | M1 — Work contract and baseline | Complete | Confirmed clean isolated worktree and recorded the M42–M48 constraints and no-cloud boundary. |
 | M2 — Parameter-required foundation | Implemented locally | Added parameter-required Bicep, safety contract checker, and architecture README; local Bicep compilation is not available in the current environment. |
-| M3 — Compile-only CI and static checks | Implemented; static-check correction pending hosted verification | Hosted Bicep compilation now succeeds after changing the optional property to Bicep's `string?` form. The compiled-template checker did not accept its password type assertion; the checker now normalizes ARM type spelling and reports the actual type on failure. |
-| M4 — Self-review and delivery | In progress | Initial local commit `91c92a0` was published as remote commit `fa1713c`; PR #180 is open against M48. Follow-up syntax fix `7040130` is published remotely as `4b997ca`; the checker correction is pending. |
+| M3 — Compile-only CI and static checks | Implemented; nested-resource correction pending hosted verification | Hosted Bicep compilation now succeeds, and the normalized secure-password type assertion passes. The generated ARM representation uses an object for a nested resource collection; the checker now traverses both object and array forms. |
+| M4 — Self-review and delivery | In progress | Initial local commit `91c92a0` was published as remote commit `fa1713c`; PR #180 is open against M48. Syntax fix `7040130` is published as `4b997ca`; parameter-type checker fix `0212e59` is published as `e9b8eda`; nested-resource traversal fix is pending. |
 
 ## 3. Decisions and Gates
 
@@ -62,12 +62,13 @@ Planning packet and implementation:
 | Primary checkout preservation | `git -C /home/dokja/vsc-fedora/all/Projects/django-projects/Gridy diff --name-only` and `git -C /home/dokja/vsc-fedora/all/Projects/django-projects/Gridy status --short --untracked-files=no` | PASS: no tracked primary-checkout modifications; pre-existing untracked agent/logo content remains in place. |
 | First hosted compiler run | GitHub Actions run `38142576073`, job `Azure foundation Bicep compile` | FAIL: Bicep v0.47.16 reported BCP018 and BCP279 at `main.bicep(84,26)` for the optional type-property declaration. Corrected to `standbyAvailabilityZone: string?` in local commit `7040130`, published as remote commit `4b997ca`. |
 | Follow-up compile/static run | GitHub Actions run `38142697125`, job `Azure foundation Bicep compile` | Bicep compilation passed after the syntax correction; the Python contract checker failed its secure-parameter type assertion. The checker now compares the ARM type spelling case-insensitively and reports the actual type on failure; hosted verification is pending. |
+| Nested-resource compile/static run | GitHub Actions run `38142862806`, job `Azure foundation Bicep compile` | Bicep compilation and parameter assertions passed; the checker then raised `AttributeError: 'str' object has no attribute 'get'` while traversing a nested resource object. Updated `walk_resources` to support both object and array representations and added explicit shape errors; hosted verification is pending. |
 
 ## 6. Remaining Work and Unverified Items
 
 - [x] Implement Bicep resources and README.
 - [x] Check local Azure CLI/Bicep availability; neither is installed. Local compile result is unavailable, not passed.
 - [x] Run static source/workflow checks and diff hygiene locally.
-- [ ] Push the ARM type-comparison correction and record the hosted compile/static check result.
+- [ ] Push the nested-resource traversal correction and record the hosted compile/static check result.
 - [ ] Record final changed paths, diff hygiene, source scan, PR/check results, and primary-worktree status.
 - Azure subscription or provider validation is deliberately not attempted; no Azure login or deployment is authorized in this milestone.
