@@ -3,8 +3,8 @@
 ## 1. Executive Summary
 
 - **Task ID:** `m49-azure-pilot-foundation`
-- **State:** In progress — initial delivery PR opened; hosted Bicep compilation and parameter contract pass, with provider-name normalization correction awaiting CI
-- **Current milestone:** M2 complete; M3 local checks complete; hosted static-check follow-up pending
+- **State:** Complete — hosted Bicep compilation, static contract check, and all CI jobs pass; PR #180 is open and unmerged
+- **Current milestone:** M1–M4 complete; Azure provider validation and deployment gates remain unverified
 - **Branch:** `infra/m49-azure-pilot-foundation`
 - **Worktree:** `/tmp/gridy-m49-azure-pilot-foundation`
 - **Base:** M48 local checkpoint `e952762a171d8bfd9430063e9baa302eed907c8c`, tree `e049ab0a2f8bdb8b90f16de973dc9c44854169c5`
@@ -16,8 +16,8 @@
 | --- | --- | --- |
 | M1 — Work contract and baseline | Complete | Confirmed clean isolated worktree and recorded the M42–M48 constraints and no-cloud boundary. |
 | M2 — Parameter-required foundation | Implemented locally | Added parameter-required Bicep, safety contract checker, and architecture README; local Bicep compilation is not available in the current environment. |
-| M3 — Compile-only CI and static checks | Implemented; provider-name normalization pending hosted verification | Hosted Bicep compilation, parameter checks, and nested-resource traversal now pass. The subnet delegation check found case-preserved provider service names; the checker now normalizes those names before comparison. |
-| M4 — Self-review and delivery | In progress | Initial local commit `91c92a0` was published as remote commit `fa1713c`; PR #180 is open against M48. Syntax fix `7040130` is published as `4b997ca`; parameter-type checker fix `0212e59` as `e9b8eda`; nested-resource fix `97b8568` as `0ab6529`; provider-name normalization is pending. |
+| M3 — Compile-only CI and static checks | Complete | Hosted Bicep compilation and the compiled ARM safety contract pass on the latest branch head. |
+| M4 — Self-review and delivery | Complete | Scoped commits are pushed, PR #180 is open against M48, and all eight hosted CI jobs pass. No merge, Azure authentication, provider validation, or deployment occurred. |
 
 ## 3. Decisions and Gates
 
@@ -64,12 +64,21 @@ Planning packet and implementation:
 | Follow-up compile/static run | GitHub Actions run `38142697125`, job `Azure foundation Bicep compile` | Bicep compilation passed after the syntax correction; the Python contract checker failed its secure-parameter type assertion. The checker now compares the ARM type spelling case-insensitively and reports the actual type on failure; hosted verification is pending. |
 | Nested-resource compile/static run | GitHub Actions run `38142862806`, job `Azure foundation Bicep compile` | Bicep compilation and parameter assertions passed; the checker then raised `AttributeError: 'str' object has no attribute 'get'` while traversing a nested resource object. Updated `walk_resources` to support both object and array representations and added explicit shape errors; hosted verification is pending. |
 | Provider-name compile/static run | GitHub Actions run `38142960368`, job `Azure foundation Bicep compile` | Bicep compilation, parameter checks, and nested-resource traversal passed; subnet delegation comparison failed because ARM preserved `Microsoft.App/environments` and `Microsoft.DBforPostgreSQL/flexibleServers` casing. The checker now case-folds service names before comparison; hosted verification is pending. |
+| Final hosted CI run | GitHub Actions run `38143045439` | PASS: all eight jobs completed successfully: backend tests, frontend tests, mobile tests, frontend image, backend image, Compose migration gate smoke, PostgreSQL DNS reconnect smoke, and Azure foundation Bicep compile/static contract. Bicep log: `PASS: required parameters have no defaults; password is secure; private PostgreSQL/DNS and two delegated subnets are present; no outputs, app, or registry resources were compiled.` |
 
 ## 6. Remaining Work and Unverified Items
 
 - [x] Implement Bicep resources and README.
 - [x] Check local Azure CLI/Bicep availability; neither is installed. Local compile result is unavailable, not passed.
 - [x] Run static source/workflow checks and diff hygiene locally.
-- [ ] Push the provider-name normalization correction and record the hosted compile/static check result.
-- [ ] Record final changed paths, diff hygiene, source scan, PR/check results, and primary-worktree status.
+- [x] Push scoped changes and record the hosted compile/static check result.
+- [x] Record final changed paths, diff hygiene, source scan, PR/check results, and primary-worktree status.
 - Azure subscription or provider validation is deliberately not attempted; no Azure login or deployment is authorized in this milestone.
+
+## 7. Delivery Checkpoint
+
+- **Latest implementation commit:** local `9bd8581cd8161cdf6d57bd2a63e8a988c38de01b`; remote `fecf9974ca954c956c59d9ca2e137c8e32882443`.
+- **Tree:** local and remote content tree `e040a2a6aa035d831c117d50505b54559defb9a2`.
+- **PR:** [#180](https://github.com/ur1el0/KapitBayan/pull/180), open and unmerged, targeting M48 branch `test/m48-postgres-dns-reconnect`.
+- **Hosted CI:** run `38143045439` passed all eight jobs on the branch before this status-only checkpoint.
+- **Scope:** no Azure account access, subscription inspection, ARM validation, `what-if`, image publication, resource deployment, or production change.

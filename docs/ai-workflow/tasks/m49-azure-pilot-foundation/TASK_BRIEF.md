@@ -55,7 +55,7 @@
 4. [ ] The template defines no app image, application ingress endpoint, registry credential, production hostname, or database migration action.
 5. [ ] CI compiles the Bicep source with a pinned Bicep compiler and does not authenticate to Azure or run deployment, validation, or `what-if` commands.
 6. [ ] The README and STATUS distinguish local/template compilation from Azure provider validation and retain all M42 decision gates as unresolved.
-7. [ ] Local Bicep compilation succeeds, generated output is kept out of the worktree, workflow YAML/configuration checks pass, and `git diff --check` passes.
+7. [ ] Bicep compiles with the pinned compiler locally when installed, or in the hosted compile-only CI job when it is unavailable locally; generated output stays out of the worktree, workflow checks pass, and `git diff --check` is clean.
 8. [ ] No migrations, application source, production configuration, or runtime dependencies change; the primary checkout and protected untracked assets remain untouched.
 9. [ ] The scoped branch is committed and pushed and a PR is opened against M48 branch `test/m48-postgres-dns-reconnect`; do not merge or deploy.
 

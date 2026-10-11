@@ -48,7 +48,7 @@
 4. Push the branch and open a PR against M48's `test/m48-postgres-dns-reconnect` branch. Do not merge or deploy.
 5. Continue to the next independent milestone after confirming the PR state, without waiting for the merge.
 
-**Validation:** `git diff --check`, `git diff --cached --check`, workflow parser/static checks, `az bicep build`, `git status --short --branch`, `git diff --cached --name-only`, complete diff review, remote tree comparison, and hosted CI checks if available.
+**Validation:** `git diff --check`, `git diff --cached --check`, workflow parser/static checks, and `az bicep build` when the pinned local compiler is installed. Otherwise require the hosted compile-only CI result before completion. Also inspect `git status --short --branch`, `git diff --cached --name-only`, the complete diff, remote tree comparison, and hosted CI checks.
 
 ## 3. Risks and Mitigations
 
