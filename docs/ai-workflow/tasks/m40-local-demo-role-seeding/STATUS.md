@@ -26,7 +26,7 @@ The `seed_users` management command has been hardened with preflight collision p
 | **REV-02**: Tighten barangay recognition | COMPLETE | Removed loose substring check in `is_recognized_seed_barangay`, enforcing exact equality against known seed metadata. Added `test_seed_users_refuses_barangay_with_partial_or_loose_marker_collision`. |
 | **REV-03**: Remove username disclosure in output | COMPLETE | Removed username column from stdout summary table so no usernames or credentials are disclosed in logs. Added `test_seed_users_does_not_disclose_usernames_in_output`. |
 | **REV-04**: Rerun non-test checks with local SQLite | COMPLETE | Reran `check` and `makemigrations --check --dry-run` setting `DATABASE_URL=sqlite:///db.sqlite3`. Both clean with 0 issues and 0 changes. |
-| **REV-05**: Correct delivery note | COMPLETE | Updated delivery state in Section 6 to document exact commits, push status, branch, and confirmation that no PR or deployment was performed. |
+| **REV-05**: Correct delivery note | COMPLETE | Updated delivery state in Section 6 with the full follow-up commit hash, live remote push evidence, branch, and confirmation that no PR or deployment was performed. |
 
 ## 3. Baseline Evidence
 
@@ -99,8 +99,8 @@ The `seed_users` management command has been hardened with preflight collision p
 
 - **Branch:** `fix/seed-users-command-safety`
 - **Initial Implementation Commit:** `988dc4a59267b89500cb5e48bd24de97e28bd64f`
-- **Review Follow-up:** Dedicated follow-up commit on branch `fix/seed-users-command-safety` addressing REV-01 through REV-05.
-- **Remote Push:** Pushed to `origin/fix/seed-users-command-safety`.
+- **Review Follow-up:** `0eaeb4278ed42d41a7196348316b99c7fb87ee97` on branch `fix/seed-users-command-safety`, addressing REV-01 through REV-05.
+- **Remote Push:** Verified before this status-only documentation commit. An explicit fetch of `refs/heads/fix/seed-users-command-safety` succeeded, and a live `git ls-remote --heads origin refs/heads/fix/seed-users-command-safety` query returned `0eaeb4278ed42d41a7196348316b99c7fb87ee97`; the fetched local `origin/fix/seed-users-command-safety` tracking ref resolved to the same SHA. This confirms the follow-up commit was present on origin at verification time.
 - **PR Status:** No PR opened (per instructions).
 - **Deployment Status:** No deployment performed.
 - **Primary Checkout Safety:** `/home/dokja/vsc-fedora/all/Projects/django-projects/Gridy` remains completely untouched.
