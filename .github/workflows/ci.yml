@@ -93,6 +93,34 @@ jobs:
       - name: Exercise Django reconnect after database DNS reassignment
         run: bash scripts/ci/postgres-dns-reconnect-smoke.sh
 
+  azure-bicep-compile:
+    name: Azure foundation Bicep compile
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Compile foundation template and verify its safety contract
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            set -euo pipefail
+            az bicep install --version v0.47.16
+            version="$(az bicep version)"
+            case "$version" in
+              *0.47.16*) ;;
+              *) echo "Unexpected Bicep compiler version: $version" >&2; exit 1 ;;
+            esac
+            template_json="$(mktemp)"
+            trap 'rm -f "$template_json"' EXIT
+            az bicep build --file infra/azure/pilot-foundation/main.bicep --stdout > "$template_json"
+            python3 scripts/ci/check-azure-pilot-foundation.py "$template_json"
+
   frontend-tests:
     runs-on: ubuntu-latest
     steps:
