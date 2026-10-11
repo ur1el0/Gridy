@@ -66,6 +66,61 @@ describe("ResidentsManagement Component", () => {
         expect(screen.queryByText("Maria Clara")).not.toBeInTheDocument();
     });
 
+    it("shows a retryable load error and recovers without treating failures as empty results", async () => {
+        vi.mocked(axiosPrivate.get)
+            .mockRejectedValueOnce(new Error("Network unavailable"))
+            .mockRejectedValueOnce(new Error("Network unavailable"))
+            .mockResolvedValueOnce({ data: { results: mockResidents } });
+
+        render(<ResidentsManagement />);
+
+        expect(await screen.findByRole("alert")).toHaveTextContent(
+            "We couldn't load the resident directory.",
+        );
+        expect(screen.queryByText("No verified residents found.")).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+
+        expect(await screen.findByRole("alert")).toHaveTextContent(
+            "We couldn't load the resident directory.",
+        );
+        expect(screen.queryByText("No verified residents found.")).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+
+        expect(await screen.findByText("Juan Dela Cruz")).toBeInTheDocument();
+        expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+        expect(axiosPrivate.get).toHaveBeenCalledTimes(3);
+        expect(axiosPrivate.get).toHaveBeenNthCalledWith(1, "/auth/resident/");
+        expect(axiosPrivate.get).toHaveBeenNthCalledWith(2, "/auth/resident/");
+        expect(axiosPrivate.get).toHaveBeenNthCalledWith(3, "/auth/resident/");
+    });
+
+    it("keeps the empty directory message for a successful empty response", async () => {
+        vi.mocked(axiosPrivate.get).mockResolvedValueOnce({ data: { results: [] } });
+
+        render(<ResidentsManagement />);
+
+        expect(await screen.findByText("No verified residents found.")).toBeInTheDocument();
+        expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    });
+
+    it("disables the retry action while the directory request is pending", async () => {
+        vi.mocked(axiosPrivate.get)
+            .mockRejectedValueOnce(new Error("Network unavailable"))
+            .mockImplementationOnce(() => new Promise(() => {}));
+
+        render(<ResidentsManagement />);
+        await screen.findByRole("alert");
+
+        fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+
+        expect(
+            screen.getByRole("button", { name: "Trying again…" }),
+        ).toBeDisabled();
+        expect(axiosPrivate.get).toHaveBeenCalledTimes(2);
+    });
+
     it("opens and closes resident detail modal with demographic data", async () => {
         vi.mocked(axiosPrivate.get).mockResolvedValueOnce({ data: { results: mockResidents } });
 

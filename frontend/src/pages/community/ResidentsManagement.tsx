@@ -1,8 +1,9 @@
 import toast from 'react-hot-toast';
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { axiosPrivate } from "../../api/axios";
 import { getSafeApiErrorMessage } from "../../api/error-message";
 import { Search, Upload } from "lucide-react";
+import { InlineErrorState } from "../../components/ui/InlineErrorState";
 import {
     type Resident,
     type ImportSummary,
@@ -14,6 +15,8 @@ import {
 export const ResidentsManagement: React.FC = () => {
     const [residents, setResidents] = useState<Resident[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
+    const [retrying, setRetrying] = useState(false);
     const [search, setSearch] = useState('');
 
     // Detail Modal State
@@ -27,20 +30,24 @@ export const ResidentsManagement: React.FC = () => {
     const [importing, setImporting] = useState(false);
     const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
 
-    const fetchResidents = async () => {
+    const fetchResidents = useCallback(async (isRetry = false) => {
+        if (isRetry) setRetrying(true);
         try {
             const response = await axiosPrivate.get('/auth/resident/');
             setResidents(response.data.results || response.data);
+            setLoadError(false);
         } catch (err) {
             console.error("Failed to fetch directory:", err);
+            setLoadError(true);
         } finally {
             setLoading(false);
+            setRetrying(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
-        fetchResidents();
-    }, []);
+        void fetchResidents();
+    }, [fetchResidents]);
 
     const handleDelete = async (id: number) => {
         if (!window.confirm("Are you sure you want to permanently remove this resident? This will revoke all their access.")) return;
@@ -221,16 +228,24 @@ export const ResidentsManagement: React.FC = () => {
             </div>
 
             {/* Resident Directory Table */}
-            <ResidentDirectoryTable
-                residents={filteredResidents}
-                loading={loading}
-                onSelectResident={(resident) => {
-                    setSelectedResident(resident);
-                    setEmailDraft(resident.email ?? "");
-                }}
-                onDeleteResident={handleDelete}
-                getAge={getAge}
-            />
+            {loadError ? (
+                <InlineErrorState
+                    message="We couldn't load the resident directory."
+                    onRetry={() => { void fetchResidents(true); }}
+                    retrying={retrying}
+                />
+            ) : (
+                <ResidentDirectoryTable
+                    residents={filteredResidents}
+                    loading={loading}
+                    onSelectResident={(resident) => {
+                        setSelectedResident(resident);
+                        setEmailDraft(resident.email ?? "");
+                    }}
+                    onDeleteResident={handleDelete}
+                    getAge={getAge}
+                />
+            )}
 
             {/* Resident Profile Inspection Modal */}
             {selectedResident && (

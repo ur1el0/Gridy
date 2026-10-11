@@ -1,5 +1,5 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { describe, it, expect, vi } from "vitest";
+import { beforeEach, describe, it, expect, vi } from "vitest";
 import ResidentVerification from "./ResidentVerification";
 import { axiosPrivate } from "../../api/axios";
 
@@ -13,6 +13,12 @@ vi.mock("../../api/axios", () => ({
 }));
 
 describe("ResidentVerification Component", () => {
+    beforeEach(() => {
+        vi.mocked(axiosPrivate.get).mockReset();
+        vi.mocked(axiosPrivate.patch).mockReset();
+        vi.mocked(axiosPrivate.delete).mockReset();
+    });
+
     it("should render the loading state initially", () => {
         // Setup the mock to never resolve immediately so we can see the loading state
         vi.mocked(axiosPrivate.get).mockImplementationOnce(() => new Promise(() => {}));
@@ -88,6 +94,60 @@ describe("ResidentVerification Component", () => {
             expect(screen.getByText("Juan Dela Cruz")).toBeInTheDocument();
             expect(screen.getAllByText("Purok 3")[0]).toBeInTheDocument();
         });
+    });
+
+    it("shows a retryable load error and recovers without reporting zero pending residents", async () => {
+        const resident = {
+            id: 9,
+            full_name: "Lina Reyes",
+            birth_date: "1994-05-07",
+            voter_status: true,
+            contact_number: "09123456789",
+            purok: "2",
+            is_verified: false,
+            guardian: null,
+        };
+        vi.mocked(axiosPrivate.get)
+            .mockRejectedValueOnce(new Error("Network unavailable"))
+            .mockRejectedValueOnce(new Error("Network unavailable"))
+            .mockResolvedValueOnce({ data: { results: [resident] } });
+
+        render(<ResidentVerification />);
+
+        expect(await screen.findByRole("alert")).toHaveTextContent(
+            "We couldn't load pending resident verifications.",
+        );
+        expect(screen.queryByText("0 Pending Verification")).not.toBeInTheDocument();
+        expect(
+            screen.queryByText("No pending verifications match your filters."),
+        ).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+
+        expect(await screen.findByRole("alert")).toHaveTextContent(
+            "We couldn't load pending resident verifications.",
+        );
+
+        fireEvent.click(screen.getByRole("button", { name: "Try again" }));
+
+        expect(await screen.findByText("Lina Reyes")).toBeInTheDocument();
+        expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+        expect(axiosPrivate.get).toHaveBeenCalledTimes(3);
+        expect(axiosPrivate.get).toHaveBeenNthCalledWith(1, "auth/pending-residents/");
+        expect(axiosPrivate.get).toHaveBeenNthCalledWith(2, "auth/pending-residents/");
+        expect(axiosPrivate.get).toHaveBeenNthCalledWith(3, "auth/pending-residents/");
+    });
+
+    it("keeps the verification empty state for a successful empty response", async () => {
+        vi.mocked(axiosPrivate.get).mockResolvedValueOnce({ data: { results: [] } });
+
+        render(<ResidentVerification />);
+
+        expect(
+            await screen.findByText("No pending verifications match your filters."),
+        ).toBeInTheDocument();
+        expect(screen.getByText("0 Pending Verification")).toBeInTheDocument();
+        expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     });
 
     it("opens the resident dossier and approves from the inspected view", async () => {
