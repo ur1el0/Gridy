@@ -3,8 +3,8 @@
 ## 1. Executive Summary
 
 - **Task ID:** `m49-azure-pilot-foundation`
-- **State:** In progress — initial delivery PR opened; hosted compiler found a Bicep type syntax error, now corrected locally and awaiting a follow-up CI run
-- **Current milestone:** M2 complete; M3 local checks complete; hosted Bicep compile follow-up pending
+- **State:** In progress — initial delivery PR opened; hosted Bicep syntax compilation now passes, with a static secure-parameter comparison correction awaiting CI
+- **Current milestone:** M2 complete; M3 local checks complete; hosted static-check follow-up pending
 - **Branch:** `infra/m49-azure-pilot-foundation`
 - **Worktree:** `/tmp/gridy-m49-azure-pilot-foundation`
 - **Base:** M48 local checkpoint `e952762a171d8bfd9430063e9baa302eed907c8c`, tree `e049ab0a2f8bdb8b90f16de973dc9c44854169c5`
@@ -16,8 +16,8 @@
 | --- | --- | --- |
 | M1 — Work contract and baseline | Complete | Confirmed clean isolated worktree and recorded the M42–M48 constraints and no-cloud boundary. |
 | M2 — Parameter-required foundation | Implemented locally | Added parameter-required Bicep, safety contract checker, and architecture README; local Bicep compilation is not available in the current environment. |
-| M3 — Compile-only CI and static checks | Implemented; correction pending hosted verification | The first hosted run exposed an invalid optional-property type declaration in `main.bicep`; changed it to Bicep's `string?` form. The correction is not yet pushed or compiled by CI. |
-| M4 — Self-review and delivery | In progress | Initial local commit `91c92a0` was published as remote commit `fa1713c`; PR #180 is open against M48. A syntax-fix follow-up commit and successful CI are pending. |
+| M3 — Compile-only CI and static checks | Implemented; static-check correction pending hosted verification | Hosted Bicep compilation now succeeds after changing the optional property to Bicep's `string?` form. The compiled-template checker did not accept its password type assertion; the checker now normalizes ARM type spelling and reports the actual type on failure. |
+| M4 — Self-review and delivery | In progress | Initial local commit `91c92a0` was published as remote commit `fa1713c`; PR #180 is open against M48. Follow-up syntax fix `7040130` is published remotely as `4b997ca`; the checker correction is pending. |
 
 ## 3. Decisions and Gates
 
@@ -60,13 +60,14 @@ Planning packet and implementation:
 | Git diff hygiene | `git diff --check && git diff --cached --check` | PASS: tracked and staged diff checks are clean. The first staged check found one extra blank line at the end of `main.bicep`; it was removed and the staged check reran clean. |
 | Secret/auth boundary scan | `rg -n "azure/login|id-token: write|az deployment|what-if|AZURE_CREDENTIALS|postgres_password=[^$]" .github/workflows/ci.yml infra/azure/pilot-foundation scripts/ci/check-azure-pilot-foundation.py` | PASS: no credentials, Azure login, deployment, or workflow write-permission configuration found. Matches of command names in README describe intentionally prohibited future actions. |
 | Primary checkout preservation | `git -C /home/dokja/vsc-fedora/all/Projects/django-projects/Gridy diff --name-only` and `git -C /home/dokja/vsc-fedora/all/Projects/django-projects/Gridy status --short --untracked-files=no` | PASS: no tracked primary-checkout modifications; pre-existing untracked agent/logo content remains in place. |
-| First hosted compiler run | GitHub Actions run `38142576073`, job `Azure foundation Bicep compile` | FAIL: Bicep v0.47.16 reported BCP018 and BCP279 at `main.bicep(84,26)` for the optional type-property declaration. The declaration has been corrected locally to `standbyAvailabilityZone: string?`; this fix still needs hosted verification. |
+| First hosted compiler run | GitHub Actions run `38142576073`, job `Azure foundation Bicep compile` | FAIL: Bicep v0.47.16 reported BCP018 and BCP279 at `main.bicep(84,26)` for the optional type-property declaration. Corrected to `standbyAvailabilityZone: string?` in local commit `7040130`, published as remote commit `4b997ca`. |
+| Follow-up compile/static run | GitHub Actions run `38142697125`, job `Azure foundation Bicep compile` | Bicep compilation passed after the syntax correction; the Python contract checker failed its secure-parameter type assertion. The checker now compares the ARM type spelling case-insensitively and reports the actual type on failure; hosted verification is pending. |
 
 ## 6. Remaining Work and Unverified Items
 
 - [x] Implement Bicep resources and README.
 - [x] Check local Azure CLI/Bicep availability; neither is installed. Local compile result is unavailable, not passed.
 - [x] Run static source/workflow checks and diff hygiene locally.
-- [ ] Push the syntax correction and record the follow-up hosted Bicep compile/static check result.
+- [ ] Push the ARM type-comparison correction and record the hosted compile/static check result.
 - [ ] Record final changed paths, diff hygiene, source scan, PR/check results, and primary-worktree status.
 - Azure subscription or provider validation is deliberately not attempted; no Azure login or deployment is authorized in this milestone.

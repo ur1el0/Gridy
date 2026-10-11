@@ -67,8 +67,12 @@ def main() -> None:
     )
     if with_defaults:
         fail(f"deployment decisions have defaults: {with_defaults}")
-    if parameters["postgresAdministratorPassword"].get("type") != "secureString":
-        fail("PostgreSQL administrator password is not compiled as a secureString")
+    password_type = parameters["postgresAdministratorPassword"].get("type")
+    if not isinstance(password_type, str) or password_type.casefold() != "securestring":
+        fail(
+            "PostgreSQL administrator password must compile to ARM type 'secureString'; "
+            f"got {password_type!r}"
+        )
     if template.get("outputs"):
         fail("the foundation template must not emit output values")
 
