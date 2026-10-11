@@ -1,8 +1,9 @@
 import toast from 'react-hot-toast';
 import React, { useEffect, useState } from 'react';
 import { axiosPrivate } from '../../api/axios';
-import { Pin, Megaphone, Plus, X, Trash, Upload, Share2 } from 'lucide-react';
+import { Pin, Megaphone, Plus, Trash, Share2 } from 'lucide-react';
 import { useAuth } from '../../context/auth-context';
+import { BroadcastAnnouncementModal } from '../../components/announcements/BroadcastAnnouncementModal';
 
 interface Announcement {
     id: number;
@@ -257,106 +258,20 @@ export const Announcements: React.FC = () => {
 
             {/* Create Announcement Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-xs animate-in fade-in duration-200">
-                    <div className="bg-white rounded-2xl shadow-xl max-w-lg w-full overflow-hidden border border-slate-100">
-                        <div className="px-6 py-4 border-b border-slate-100 flex justify-between items-center bg-slate-50/50">
-                            <h3 className="text-base font-bold text-slate-900 flex items-center gap-2">
-                                <Megaphone className="w-5 h-5 text-primary-text" />
-                                Broadcast Announcement
-                            </h3>
-                            <button onClick={closeModal} className="text-slate-400 hover:text-slate-600 transition-colors p-1 rounded-md hover:bg-slate-200 cursor-pointer">
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-                        
-                        <form onSubmit={handleCreate} className="p-6 space-y-4 bg-white">
-                            <div>
-                                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">Headline</label>
-                                <input 
-                                    type="text" 
-                                    required 
-                                    value={title} 
-                                    onChange={e => setTitle(e.target.value)} 
-                                    placeholder="e.g., Scheduled Power Interruption"
-                                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl text-sm outline-none transition-all"
-                                />
-                            </div>
-
-                            <div>
-                                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">Full Content</label>
-                                <textarea 
-                                    required 
-                                    rows={4} 
-                                    value={content} 
-                                    onChange={e => setContent(e.target.value)} 
-                                    placeholder="Write the full details of the announcement here..."
-                                    className="w-full px-4 py-2.5 bg-slate-50 border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl text-sm outline-none transition-all resize-none"
-                                />
-                            </div>
-
-                            {/* Image Upload Area */}
-                            <div>
-                                <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 mb-1.5">Attached Image / Banner (Optional)</label>
-                                {imagePreview ? (
-                                    <div className="relative rounded-xl overflow-hidden border border-slate-200 bg-slate-100 max-h-48 group">
-                                        <img src={imagePreview} alt="Preview" className="w-full h-40 object-cover" />
-                                        <button
-                                            type="button"
-                                            onClick={handleRemoveImage}
-                                            className="absolute top-2 right-2 p-1.5 bg-slate-900/70 hover:bg-rose-600 text-white rounded-lg transition-colors shadow-sm cursor-pointer"
-                                            title="Remove image"
-                                        >
-                                            <X className="w-4 h-4" />
-                                        </button>
-                                    </div>
-                                ) : (
-                                    <label className="flex flex-col items-center justify-center border-2 border-dashed border-slate-200 hover:border-primary rounded-xl p-4 bg-slate-50 hover:bg-primary/5 cursor-pointer transition-all">
-                                        <Upload className="w-5 h-5 text-slate-400 mb-1" />
-                                        <span className="text-xs font-semibold text-slate-700">Click to upload banner or photo</span>
-                                        <span className="text-[11px] text-slate-400">PNG, JPG, or WEBP up to 5MB</span>
-                                        <input 
-                                            type="file" 
-                                            accept="image/*" 
-                                            onChange={handleImageChange} 
-                                            className="hidden" 
-                                        />
-                                    </label>
-                                )}
-                            </div>
-
-                            <div className="flex items-center gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                <div className="flex items-center h-5">
-                                    <input 
-                                        id="is_pinned" 
-                                        type="checkbox" 
-                                        checked={isPinned} 
-                                        onChange={e => setIsPinned(e.target.checked)} 
-                                        className="h-4 w-4 text-primary-text focus:ring-primary border-slate-300 rounded cursor-pointer"
-                                    />
-                                </div>
-                                <div className="flex flex-col">
-                                    <label htmlFor="is_pinned" className="text-xs font-bold text-slate-900 cursor-pointer">Pin to top</label>
-                                    <span className="text-[11px] text-slate-500">Pinned broadcasts will always appear first.</span>
-                                </div>
-                            </div>
-
-                            <div className="flex justify-end gap-3 pt-3 border-t border-slate-100">
-                                <button type="button" onClick={closeModal} className="px-4 py-2 rounded-xl text-sm font-semibold text-slate-600 hover:bg-slate-100 transition-colors cursor-pointer">
-                                    Cancel
-                                </button>
-                                <button 
-                                    type="submit" 
-                                    disabled={isSubmitting} 
-                                    className="px-5 py-2 rounded-xl text-sm font-semibold text-primary-foreground bg-primary hover:bg-primary-hover transition-colors disabled:opacity-70 disabled:cursor-not-allowed flex items-center gap-2 shadow-xs cursor-pointer"
-                                >
-                                    {isSubmitting ? (
-                                        <><div className="w-3.5 h-3.5 border-2 border-white border-t-transparent rounded-full animate-spin"></div> Broadcasting...</>
-                                    ) : 'Broadcast Now'}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                <BroadcastAnnouncementModal
+                    onClose={closeModal}
+                    onSubmit={handleCreate}
+                    title={title}
+                    setTitle={setTitle}
+                    content={content}
+                    setContent={setContent}
+                    isPinned={isPinned}
+                    setIsPinned={setIsPinned}
+                    imagePreview={imagePreview}
+                    onImageChange={handleImageChange}
+                    onRemoveImage={handleRemoveImage}
+                    isSubmitting={isSubmitting}
+                />
             )}
         </div>
     );

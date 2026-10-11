@@ -3,6 +3,7 @@ import toast from 'react-hot-toast';
 import { axiosPrivate } from '../../api/axios';
 import { getSafeApiErrorMessage } from '../../api/error-message';
 import { InlineErrorState } from '../../components/ui/InlineErrorState';
+import { DigitalQueueTicketModal } from '../../components/queue/DigitalQueueTicketModal';
 import {  
     Clock, 
     Users, 
@@ -10,7 +11,6 @@ import {
     CheckCircle2,
     Plus, 
     Loader2, 
-    X,
     Volume2,
     LogOut,
 } from 'lucide-react';
@@ -299,65 +299,14 @@ export const CitizenQueue: React.FC = () => {
 
             {/* Take Ticket Modal */}
             {isModalOpen && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 backdrop-blur-xs p-4">
-                    <div role="dialog" aria-modal="true" aria-labelledby="queue-ticket-dialog-title" className="bg-white rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 animate-in fade-in zoom-in-95 duration-150">
-                        <div className="flex items-center justify-between pb-4 border-b border-slate-100">
-                            <h3 id="queue-ticket-dialog-title" className="text-lg font-extrabold text-slate-900">
-                                Generate Digital Queue Ticket
-                            </h3>
-                            <button
-                                onClick={() => setIsModalOpen(false)}
-                                type="button"
-                                aria-label="Close queue ticket form"
-                                className="text-slate-400 hover:text-slate-600 rounded-lg p-1"
-                            >
-                                <X className="w-5 h-5" />
-                            </button>
-                        </div>
-
-                        <form onSubmit={handleTakeTicket} className="mt-4 space-y-4">
-                            <div>
-                                <label htmlFor="queue-service-type" className="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
-                                    Select Service
-                                </label>
-                                <select
-                                    id="queue-service-type"
-                                    value={serviceType}
-                                    onChange={(e) => setServiceType(e.target.value)}
-                                    className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 bg-[#F8FAFD] text-sm text-slate-800 font-medium focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20"
-                                >
-                                    {SERVICE_TYPES.map((type) => (
-                                        <option key={type} value={type}>
-                                            {type}
-                                        </option>
-                                    ))}
-                                </select>
-                            </div>
-
-                            <p className="text-xs leading-relaxed text-slate-600">
-                                Barangay staff verify priority lane eligibility. If you qualify, ask the service desk to review your waiting ticket.
-                            </p>
-
-                            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100">
-                                <button
-                                    type="button"
-                                    onClick={() => setIsModalOpen(false)}
-                                    className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 hover:bg-slate-100 transition-all cursor-pointer"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={submitting}
-                                    className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-primary hover:bg-primary-hover text-primary-foreground text-xs font-bold shadow-xs transition-all cursor-pointer disabled:opacity-50"
-                                >
-                                    {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                                    <span>{submitting ? 'Generating...' : 'Confirm Ticket'}</span>
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
+                <DigitalQueueTicketModal
+                    onClose={() => setIsModalOpen(false)}
+                    onSubmit={handleTakeTicket}
+                    serviceType={serviceType}
+                    setServiceType={setServiceType}
+                    serviceTypes={SERVICE_TYPES}
+                    submitting={submitting}
+                />
             )}
         </div>
     );
