@@ -229,9 +229,16 @@ Per **ADR 002 (HttpOnly Cookie Authentication)**, refresh tokens are never retur
 ---
 
 ### 2.5 System Health & Observability
- 
-#### GET `/api/v1/health/`
-*   **Description:** System heartbeat and dependency health probe per ADR 009. Checks PostgreSQL connection latency and local in-memory cache responsiveness without external broker dependencies.
+
+#### GET `/api/v1/health/live/`
+*   **Description:** Process liveness only. Returns HTTP 200 when Django can serve the request; it does not check PostgreSQL or cache and does not authenticate the request.
+*   **Response (200 OK):**
+    ```json
+    { "status": "live" }
+    ```
+
+#### GET `/api/v1/health/ready/`
+*   **Description:** Service readiness per ADR 009. Checks PostgreSQL connection latency and local in-memory cache responsiveness without external broker dependencies. Returns HTTP 503 if either dependency check fails; error details remain sanitized.
 *   **Response (200 OK):**
     ```json
     {
@@ -249,3 +256,8 @@ Per **ADR 002 (HttpOnly Cookie Authentication)**, refresh tokens are never retur
       }
     }
     ```
+
+#### GET `/api/v1/health/` (compatibility route)
+*   **Description:** Backward-compatible alias for `/api/v1/health/ready/`. It retains the existing database/cache checks, payload, and HTTP 200/503 behavior for existing callers and the Docker health check.
+
+For a future Azure Container Apps configuration, use `/api/v1/health/live/` for the liveness probe and `/api/v1/health/ready/` for readiness. This documents intended probe semantics only; no cloud probe configuration is applied by this contract update.
