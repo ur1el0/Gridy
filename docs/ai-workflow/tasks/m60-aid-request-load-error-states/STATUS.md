@@ -3,7 +3,7 @@
 ## 1. Executive Summary
 
 - **Task ID:** `m60-aid-request-load-error-states`
-- **State:** In Progress
+- **State:** Completed
 - **Current milestone:** M3 — Full verification and delivery
 - **Branch:** `fix/m60-aid-request-load-error-states-delivery`
 - **Worktree:** `/tmp/gridy-m60-aid-request-load-error-states`
@@ -24,7 +24,7 @@
 | --- | --- | --- |
 | M1 — Regression coverage | Complete | Added failure/retry, recovery, valid-empty, resident-form, pending-state, and no-mutation coverage. The clean red run isolated three expected missing-error-state failures. |
 | M2 — Retryable error UI | Complete | Reuses `InlineErrorState` in the list region, keeps the resident form visible, and clears the error when the same GET succeeds. |
-| M3 — Verification and delivery | In progress | Focused and full frontend verification are green; delivery metadata remains. |
+| M3 — Verification and delivery | Complete | Local checks and hosted checks passed; the branch is pushed and PR #191 is open and mergeable. |
 
 M1 was checkpointed in local commit `62c2f2a` on `test/m60-aid-request-load-errors`. M2 was checkpointed in commit `8403e10` on `fix/m60-aid-request-load-error-states`. M3 continues from that checkpoint on the delivery branch; the two milestone checkpoints were not pushed separately.
 
@@ -54,3 +54,12 @@ M1 was checkpointed in local commit `62c2f2a` on `test/m60-aid-request-load-erro
 - No API, database/schema, migration, dependency, payment, tenant/RBAC, or Azure changes are in scope.
 - Tests used mocked API responses only. Azure pilot remains NO-GO.
 - The M59 branch, primary checkout, and its untracked agent/environment/logo assets remain untouched.
+
+## 7. Delivery
+
+- **Commit stack:** M1 test checkpoint `62c2f2a08c7d5e2cdb17ae9fc8454c1d6309e0f2`; M2 implementation checkpoint `8403e106b3686b7de67936f0ffbd776d1d76c66f`; M3 verification record `9067792c8f54f8df551a6419faaaf11bba760315`.
+- **Push:** `fix/m60-aid-request-load-error-states-delivery` pushed to `https://github.com/ur1el0/KapitBayan.git` without force-pushing or rewriting history.
+- **Pull request:** [#191](https://github.com/ur1el0/KapitBayan/pull/191), open and mergeable against M59 branch `fix/m59-resident-load-error-states` (PR #190). Leave both PRs open and unmerged until their stack is reviewed and integrated.
+- **GitHub Actions:** [Run #456](https://github.com/ur1el0/KapitBayan/actions/runs/38159431627) passed all 9 jobs, including frontend, backend, mobile, migration-gate, Azure preflight, and both image builds.
+- **Vercel preview:** Ready at `https://gridy-git-fix-m60-aid-request-load-erro-4a5980-ur1el0s-projects.vercel.app`.
+- **Safety:** No production deployment or data access; Azure pilot remains NO-GO.
