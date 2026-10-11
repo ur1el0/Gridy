@@ -3,8 +3,8 @@
 ## 1. Executive Summary
 
 - **Task ID:** m48-postgres-dns-reconnect
-- **State:** Hosted runtime follow-up in progress; first run found and the local fix addressed a probe startup defect
-- **Current milestone:** Re-run hosted integration verification after the probe import-path correction
+- **State:** Hosted runtime follow-up in progress; CI identified two probe defects and both have focused local fixes pending hosted confirmation
+- **Current milestone:** Re-run hosted integration verification after the address normalization correction
 - **Branch:** test/m48-postgres-dns-reconnect
 - **Worktree:** /tmp/gridy-m48-postgres-dns-reconnect
 - **Base:** M47 local checkpoint 29f04cc702003bdbec1d2c17a55471c26fc560a9, tree dab1c9920e11c3894d1a52a8f4eb50b21b83b094; equivalent remote tree on PR #178.
@@ -17,6 +17,7 @@
 | M1 — Build the disposable DNS-switch harness | Complete locally | Added the probe, isolated two-network Compose stack, and project-scoped smoke runner. Local runtime could not start Docker because the daemon socket denied access. |
 | M2 — Integrate CI and document evidence boundary | Complete locally | Added an independent read-only CI job and documented that provider failover remains unverified. |
 | M2 follow-up — Correct probe startup path | Fixed locally; hosted confirmation pending | The first hosted run failed because direct execution of `tests/postgres_dns_reconnect_probe.py` did not place `/app` on `sys.path`, so Django could not import `config.settings`. The probe now adds its backend root before `django.setup()`. |
+| M2 follow-up — Normalize PostgreSQL address output | Fixed locally; hosted confirmation pending | The next hosted run successfully served the initial probe, then failed because `inet_server_addr()::text` returned `10.253.240.10/32`. The SQL now uses `host(inet_server_addr())` to compare the host address without the prefix length. |
 
 ## 3. Baseline and Decisions
 
@@ -53,13 +54,15 @@ Read-only references: M47 task status and ADR 014.
 | Whitespace and diff hygiene | Python trailing-whitespace scan across 7 changed Markdown, Python, shell, and Compose files; `git diff --check`; `git diff --cached --check` | PASS: no trailing whitespace or diff errors. |
 | Application tests | Not run | No application runtime code changed; actual same-process DNS-switch behavior will be exercised by hosted CI. |
 | First hosted CI runtime attempt | GitHub Actions run #380, job “PostgreSQL DNS reconnect smoke” on PR #179 merge ref `890a7dc2a3cab96404f6dde9fbd1b78570cb978c` | FAIL: databases became healthy, but the probe exited before serving; the runner reported `Django probe did not return an initial response`. The job log showed image build and database startup succeeded. |
+| Second hosted CI runtime attempt | GitHub Actions run #382, job “PostgreSQL DNS reconnect smoke” on the PR #179 merge ref | FAIL after startup was fixed: the first HTTP probe succeeded and reached the primary, but the assertion compared `10.253.240.10/32` with `10.253.240.10`. |
 | Failure reproduction | `SECRET_KEY=m48-local-repro-key ADMIN_REGISTRATION_PASSKEY=m48-local-repro-passkey DATABASE_URL=sqlite:///:memory: python tests/postgres_dns_reconnect_probe.py serve` from `backend/` before the correction | Reproduced `ModuleNotFoundError: No module named 'config.settings'; 'config' is not a package`. |
 | Import-path correction | Added the resolved backend directory to `sys.path` before setting up Django in `backend/tests/postgres_dns_reconnect_probe.py` | Follow-up startup reached the socket bind after Django setup, but the local sandbox denied listening sockets (`PermissionError: [Errno 1] Operation not permitted`). This does not verify the local HTTP or PostgreSQL runtime. |
 | Django setup after correction | `SECRET_KEY=m48-local-repro-key ADMIN_REGISTRATION_PASSKEY=m48-local-repro-passkey DATABASE_URL=sqlite:///:memory: DEBUG=True python tests/postgres_dns_reconnect_probe.py invalid` from `backend/` | PASS for this narrow check: Django setup completed and the script returned its expected `Use the serve or request mode.` usage message for the intentionally invalid mode; no `ModuleNotFoundError` remained. |
 | Local listener attempt | `SECRET_KEY=m48-local-repro-key ADMIN_REGISTRATION_PASSKEY=m48-local-repro-passkey DATABASE_URL=sqlite:///:memory: DEBUG=True timeout 2 /home/dokja/vsc-fedora/all/Projects/django-projects/Gridy/venv/bin/python tests/postgres_dns_reconnect_probe.py serve` from `backend/` | BLOCKED by the local sandbox: Django setup completed, then binding port 8000 failed with `PermissionError: [Errno 1] Operation not permitted`. |
+| PostgreSQL address normalization | Changed the probe query to `SELECT host(inet_server_addr())` | Expected result is a host-only address string. The disposable PostgreSQL runtime assertion must be rechecked by hosted CI because Docker is unavailable locally. |
 
 ## 6. Remaining Work
 
 - [x] Implement and statically verify the disposable smoke harness.
 - [x] Add the CI job and accurately scoped deployment documentation.
-- [ ] Re-run PR CI and record the DNS-switch smoke plus all other job results; keep the PR unmerged and do not deploy.
+- [ ] Re-run PR CI after address normalization, record the DNS-switch smoke plus all other job results, and keep the PR unmerged without deploying.

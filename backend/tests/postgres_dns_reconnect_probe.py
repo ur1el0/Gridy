@@ -40,7 +40,7 @@ class ProbeHandler(BaseHTTPRequestHandler):
 
         try:
             with connection.cursor() as cursor:
-                cursor.execute("SELECT inet_server_addr()::text")
+                cursor.execute("SELECT host(inet_server_addr())")
                 server_address = cursor.fetchone()[0]
         except DatabaseError:
             # Match Django's request-boundary cleanup: mark a dead connection

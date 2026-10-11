@@ -23,7 +23,7 @@
 
 **Actions:**
 
-1. Run a minimal HTTP probe in one backend image container, import Django settings, and query inet_server_addr() through Django's normal connection wrapper.
+1. Run a minimal HTTP probe in one backend image container, import Django settings, and query `host(inet_server_addr())` through Django's normal connection wrapper so the returned address omits the CIDR prefix length.
    - When invoking the probe file directly, explicitly put the backend project root on `sys.path` so `config.settings` and the Django apps resolve from `/app/tests` as well as from `manage.py` entry points.
 2. Start a primary database and a standby database with distinct static IPs on separate test networks. Only the primary initially owns DNS alias db; both stores are ephemeral.
 3. Verify the initial address, terminate/detach the primary, attach the standby to the shared network with alias db, and verify the active connection fails once before a subsequent request reconnects to the new server address.
