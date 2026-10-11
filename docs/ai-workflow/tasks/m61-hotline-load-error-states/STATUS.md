@@ -4,8 +4,8 @@
 
 - **Task ID:** `m61-hotline-load-error-states`
 - **State:** In Progress
-- **Current milestone:** M2 — Retryable error UI
-- **Branch:** `test/m61-hotline-load-errors` (M1 checkpoint; implementation proceeds on `fix/m61-hotline-load-error-states`)
+- **Current milestone:** M3 — Full verification and delivery
+- **Branch:** `fix/m61-hotline-load-error-states` (M2 implementation checkpoint; delivery proceeds on `fix/m61-hotline-load-error-states-delivery`)
 - **Worktree:** `/tmp/gridy-m61-hotline-load-error-states`
 - **Base:** M60 delivery commit `2a2f2e06ddd5566c364c435d4bef55462aa480e7` (PR #191)
 - **Implementer:** Codex (user-directed sole-agent mode)
@@ -23,8 +23,8 @@
 | Milestone | State | Notes |
 | --- | --- | --- |
 | M1 — Regression tests | Complete | Added four focused cases; the expected pre-implementation failures reproduce the absent retryable error UI. |
-| M2 — Retryable error UI | In progress | Implement the planned state and list-area error presentation. |
-| M3 — Verification and delivery | Pending | Run checks, commit/push delivery branch, open stacked PR. |
+| M2 — Retryable error UI | Complete | Added retryable accessible load-error state; header/add action remains available and list behavior is unchanged on success. |
+| M3 — Verification and delivery | In progress | Local frontend checks passed; complete scope review and stacked delivery. |
 
 ## 4. Files in Scope
 
@@ -46,6 +46,21 @@
 
 The test run demonstrates the original behavior: after the GET rejection, the page renders “No hotlines added yet.” without an accessible load-error state. No application source was modified before this red run.
 
+### M2 — Focused Green Verification
+
+| Command | Actual result |
+| --- | --- |
+| `npm --prefix frontend run test -- src/pages/admin/HotlineManagement.test.tsx` | Passed: one test file, 4 tests. Covers initial failure, repeated failure and recovery, successful empty response, add-dialog availability, and pending retry without POST/DELETE. |
+
+### M3 — Full Frontend Verification
+
+| Command | Actual result |
+| --- | --- |
+| `npm --prefix frontend run test` | Passed: 34 test files and 102 tests. |
+| `npm --prefix frontend run lint` | Passed; Oxlint exited 0 with no diagnostics. |
+| `npm --prefix frontend run build` | Passed; TypeScript and Vite build succeeded, 2,514 modules transformed, 986 ms. |
+| `git diff --check` | Passed with no whitespace errors. |
+
 ## 6. Scope and Safety
 
 - Frontend-only; no API, database/schema, migration, dependency, tenant/RBAC, or Azure changes are planned.
@@ -54,4 +69,4 @@ The test run demonstrates the original behavior: after the GET rejection, the pa
 
 ## 7. Delivery
 
-M1 has been committed as a local checkpoint; M2 implementation is in progress. The intended PR base is M60 PR #191's branch; keep the PR unmerged.
+M1 is checkpointed in commit `553b728` on `test/m61-hotline-load-errors`. M2 implementation is verified on `fix/m61-hotline-load-error-states`. The intended PR base is M60 PR #191's branch; keep the PR unmerged.

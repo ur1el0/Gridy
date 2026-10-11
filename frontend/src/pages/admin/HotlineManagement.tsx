@@ -3,6 +3,7 @@ import toast from 'react-hot-toast'
 import { axiosPrivate } from '../../api/axios'
 import { Phone, Plus, Trash2 } from 'lucide-react'
 import { AddHotlineModal } from '../../components/hotlines/AddHotlineModal'
+import { InlineErrorState } from '../../components/ui/InlineErrorState'
 
 interface Hotline {
     id: number
@@ -28,18 +29,23 @@ const getCategoryBadge = (category: string) => {
 export const HotlineManagement: React.FC = () => {
     const [hotlines, setHotlines] = useState<Hotline[]>([])
     const [loading, setLoading] = useState(true)
+    const [loadError, setLoadError] = useState(false)
+    const [retrying, setRetrying] = useState(false)
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
     const [form, setForm] = useState({ name: '', number: '', category: 'OTHER' })
 
-    const fetchHotlines = async () => {
+    const fetchHotlines = async (isRetry = false) => {
+        if (isRetry) setRetrying(true)
         try {
             const res = await axiosPrivate.get('/hotlines/')
             setHotlines(res.data.results || res.data)
+            setLoadError(false)
         } catch {
-            toast.error('Failed to load hotlines.')
+            setLoadError(true)
         } finally {
             setLoading(false)
+            setRetrying(false)
         }
     }
 
@@ -92,6 +98,13 @@ export const HotlineManagement: React.FC = () => {
 
             {/* Table */}
             <div className="bg-white shadow-sm border border-slate-200 rounded-lg overflow-hidden">
+                {loadError ? (
+                    <InlineErrorState
+                        message="We couldn't load emergency hotlines."
+                        onRetry={() => { void fetchHotlines(true) }}
+                        retrying={retrying}
+                    />
+                ) : (
                 <table className="min-w-full divide-y divide-slate-200">
                     <thead className="bg-slate-50">
                         <tr>
@@ -135,6 +148,7 @@ export const HotlineManagement: React.FC = () => {
                         )}
                     </tbody>
                 </table>
+                )}
             </div>
 
             {/* Add Hotline Modal */}
