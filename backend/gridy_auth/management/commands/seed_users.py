@@ -69,22 +69,11 @@ RECOGNIZED_USER_IDENTITIES = {
 
 
 def is_recognized_seed_barangay(barangay, expected_meta):
-    if (
+    return (
         barangay.captain_name == expected_meta["captain_name"]
         and barangay.office_contact == expected_meta["office_contact"]
-    ):
-        return True
-    captain = barangay.captain_name or ""
-    if any(
-        marker in captain
-        for marker in (
-            "Synthetic demo record",
-            "Seed fixture",
-            "Synthetic presentation record",
-        )
-    ):
-        return True
-    return False
+    )
+
 
 
 class Command(BaseCommand):
@@ -321,30 +310,25 @@ class Command(BaseCommand):
                 user.save()
 
                 if item["resident_profile"]:
-                    resident, res_created = Resident.objects.get_or_create(
+                    Resident.objects.get_or_create(
                         user=user,
                         defaults=item["resident_profile"],
                     )
-                    if not res_created:
-                        for attr, val in item["resident_profile"].items():
-                            setattr(resident, attr, val)
-                        resident.save(update_fields=list(item["resident_profile"].keys()))
 
                 b_name = target_barangay.name if target_barangay else "Cross-tenant / All"
                 provisioned_summary.append({
-                    "username": item["username"],
                     "role": user.get_role_display(),
                     "barangay": b_name,
                     "status": "Created" if created else "Updated password",
                 })
 
         # ---------------------------------------------------------------------
-        # 3. Output Summary Table (Credentials Redacted)
+        # 3. Output Summary Table (Credentials and Usernames Redacted)
         # ---------------------------------------------------------------------
         self.stdout.write(self.style.SUCCESS(f"\nSuccessfully seeded {len(provisioned_summary)} accounts across all roles.\n"))
-        self.stdout.write(f"{'Role':<18} {'Username':<22} {'Barangay':<26} {'Status'}")
-        self.stdout.write("-" * 78)
+        self.stdout.write(f"{'Role':<18} {'Barangay':<28} {'Status'}")
+        self.stdout.write("-" * 58)
         for row in provisioned_summary:
-            self.stdout.write(f"{row['role']:<18} {row['username']:<22} {row['barangay']:<26} {row['status']}")
-        self.stdout.write("-" * 78)
+            self.stdout.write(f"{row['role']:<18} {row['barangay']:<28} {row['status']}")
+        self.stdout.write("-" * 58)
         self.stdout.write(self.style.NOTICE("\nWeb Portal: http://localhost:8080/ (Resident default, Shift+\\ for Official/DILG)"))

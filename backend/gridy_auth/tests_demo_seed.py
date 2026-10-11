@@ -290,3 +290,56 @@ class SeedUsersCommandTests(TestCase):
         legacy_cotta_admin.refresh_from_db()
         self.assertEqual(legacy_cotta_admin.email, "admin.cotta@example.invalid")
         self.assertTrue(legacy_cotta_admin.check_password(DEFAULT_SEED_PASSWORD))
+
+    @override_settings(DEBUG=True)
+    def test_seed_users_preserves_existing_resident_profile_rows_on_rerun(self):
+        call_command("seed_users", confirm_demo_only=True, stdout=StringIO())
+        resident = Resident.objects.get(user__username="resident_dupay")
+        resident.full_name = "Custom Name That Should Not Be Overwritten"
+        resident.purok = "Purok Custom"
+        resident.is_verified = False
+        resident.save()
+
+        call_command("seed_users", confirm_demo_only=True, stdout=StringIO())
+
+        resident.refresh_from_db()
+        self.assertEqual(resident.full_name, "Custom Name That Should Not Be Overwritten")
+        self.assertEqual(resident.purok, "Purok Custom")
+        self.assertFalse(resident.is_verified)
+
+    @override_settings(DEBUG=True)
+    def test_seed_users_refuses_barangay_with_partial_or_loose_marker_collision(self):
+        existing_barangay = Barangay.objects.create(
+            name="Barangay Ibabang Dupay",
+            captain_name="Synthetic demo record — customized by tester",
+            office_contact="Different contact info",
+        )
+        out = StringIO()
+        with self.assertRaises(CommandError) as ctx:
+            call_command("seed_users", confirm_demo_only=True, stdout=out)
+
+        self.assertIn("collision", str(ctx.exception).lower())
+        existing_barangay.refresh_from_db()
+        self.assertEqual(existing_barangay.captain_name, "Synthetic demo record — customized by tester")
+        self.assertEqual(existing_barangay.office_contact, "Different contact info")
+        self.assertEqual(User.objects.count(), 0)
+
+    @override_settings(DEBUG=True)
+    def test_seed_users_does_not_disclose_usernames_in_output(self):
+        out = StringIO()
+        call_command("seed_users", confirm_demo_only=True, stdout=out)
+        output = out.getvalue()
+        seed_usernames = [
+            "dilg_admin",
+            "admin_dupay",
+            "admin_daungan",
+            "admin_cotta",
+            "tanod_dupay",
+            "tanod_cotta",
+            "resident_dupay",
+            "resident_daungan",
+            "resident_cotta_one",
+            "resident_cotta_two",
+        ]
+        for username in seed_usernames:
+            self.assertNotIn(username, output)
