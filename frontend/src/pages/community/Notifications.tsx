@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Bell, CheckCircle, Clock, AlertTriangle, FileText, Users, Trash2, CheckSquare, Square, Check, Loader2 } from 'lucide-react';
 import { axiosPrivate } from '../../api/axios';
+import { InlineErrorState } from '../../components/ui/InlineErrorState';
 import toast from 'react-hot-toast';
 
 interface AdminNotification {
@@ -23,23 +24,29 @@ export const Notifications: React.FC = () => {
     const [notifications, setNotifications] = useState<AdminNotification[]>([]);
     const [selectedIds, setSelectedIds] = useState<number[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
+    const [retrying, setRetrying] = useState(false);
 
     // 1. Fetch notifications from backend
-    const fetchNotifications = async () => {
+    const fetchNotifications = async (isRetry = false) => {
+        if (isRetry) setRetrying(true);
+
         try {
             const response = await axiosPrivate.get('/admin-notifications/');
             const data = response.data.results || response.data;
             setNotifications(Array.isArray(data) ? data : []);
+            setLoadError(false);
         } catch (err) {
             console.error("Failed to fetch notifications:", err);
-            toast.error("Failed to load notifications.");
+            setLoadError(true);
         } finally {
             setLoading(false);
+            setRetrying(false);
         }
     };
 
     useEffect(() => {
-        fetchNotifications();
+        void fetchNotifications();
     }, []);
 
     // Selection Logic
@@ -153,6 +160,12 @@ export const Notifications: React.FC = () => {
                         <Loader2 className="w-8 h-8 animate-spin mb-2" />
                         <span>Loading notifications...</span>
                     </div>
+                ) : loadError ? (
+                    <InlineErrorState
+                        message="We couldn't load notifications."
+                        onRetry={() => void fetchNotifications(true)}
+                        retrying={retrying}
+                    />
                 ) : (
                     <div className="divide-y divide-slate-100">
                         {notifications.map((notif) => {
@@ -206,7 +219,7 @@ export const Notifications: React.FC = () => {
                     </div>
                 )}
                 
-                {!loading && notifications.length === 0 && (
+                {!loading && !loadError && notifications.length === 0 && (
                     <div className="p-16 text-center flex flex-col items-center">
                         <div className="w-20 h-20 bg-slate-50 rounded-full flex items-center justify-center mb-6">
                             <Bell className="w-10 h-10 text-slate-300" />
