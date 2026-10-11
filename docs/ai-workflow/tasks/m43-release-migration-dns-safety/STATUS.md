@@ -3,8 +3,8 @@
 ## Executive summary
 
 - **Task ID:** `m43-release-migration-dns-safety`
-- **State:** Implementation and local verification complete; delivery checkpoint pending
-- **Current milestone:** M4 — Delivery and next milestone
+- **State:** Completed — implementation committed and PR #174 open; no merge or deployment
+- **Current milestone:** Complete
 - **Branch:** `fix/m43-release-migration-dns-safety`
 - **Base:** M42 `043cec79a45a853b8ec47afa66a3327c5d095d5c`
 - **Worktree:** `/tmp/gridy-m43-release-migration-dns-safety`
@@ -19,7 +19,7 @@ M43 separates API startup from schema migration, adds an explicit Compose migrat
 | M1 — Baseline and task contract | Complete | Confirmed M42 findings and created an isolated worktree. |
 | M2 — Runtime and migration lifecycle | Complete | Entrypoint forwards commands only; Compose runs a one-shot migration service before backend startup; hostname resolution remains with libpq. |
 | M3 — Deployment contract and verification | Complete | Docs and regression tests updated; focused and full backend verification passed; no schema changes detected. |
-| M4 — Delivery and next milestone | In progress | Local checkpoint, push, and stacked PR remain. Continue to the next milestone without waiting for merge. |
+| M4 — Delivery and next milestone | Complete | Local checkpoint saved; equivalent tree published to GitHub and PR #174 opened against M42. Continue to the next milestone without waiting for merge. |
 
 ## Acceptance criteria status
 
@@ -75,7 +75,7 @@ All Python/Django checks used local test configuration and SQLite. No test comma
 ### Git hygiene
 
 - Baseline and post-change inspections show work is isolated to this branch; no `.agents/`, `.codex/`, `.aws/`, logo, or environment files were included.
-- `git diff --check` and `bash -n backend/entrypoint.sh` passed with no output after implementation; the final staged diff will be checked before commit.
+- `git diff --check`, `git diff --cached --check`, and `bash -n backend/entrypoint.sh` passed with no output before the local checkpoint commit.
 - Temporary Compose env files were removed; neither `.env` nor `backend/.env` remains in the M43 worktree.
 - No migration file, dependency manifest, CI workflow, or cloud configuration was changed.
 
@@ -87,8 +87,11 @@ All Python/Django checks used local test configuration and SQLite. No test comma
 - This task documents but does not configure the provider-specific one-off release process. Operators must configure that gate before deploying a new release outside Compose.
 - Removing `hostaddr` allows new PostgreSQL connections to use the hostname's current DNS answer. Existing connections still follow the unchanged `CONN_MAX_AGE=60` and health-check lifecycle.
 
-## Remaining work
+## Delivery checkpoint
 
-- [ ] Stage and review only the nine listed M43 files; commit the checkpoint.
-- [ ] Push to the canonical GitHub repository and open the stacked PR targeting M42 `audit/m42-azure-migration-readiness`.
-- [ ] Record the PR and remote state, then begin the next isolated milestone without merging or deploying.
+- **Local commit:** `4ce94f3cfc55a3ba8880708cff0a604367c77d9e` (`fix(deploy): separate migrations from API startup`).
+- **Direct push attempt:** `git push -u origin fix/m43-release-migration-dns-safety` failed because this shell could not resolve `github.com` (`Could not resolve host: github.com`).
+- **Remote publication:** the connected GitHub API created commit `67c61caee0377e90e7755a12571f17ce0b2ff097` on `fix/m43-release-migration-dns-safety`, parented on M42 `043cec79a45a853b8ec47afa66a3327c5d095d5c`. Its tree SHA `6dca68ce9f4133a4cc12971dfbab0b309f4e4f11` exactly matches the local commit tree, and GitHub compare reports one commit ahead, zero behind, and the same nine scoped files.
+- **Pull request:** [#174](https://github.com/ur1el0/KapitBayan/pull/174), targeting `audit/m42-azure-migration-readiness`; open and not merged. GitHub currently reports it as mergeable. Stack order: #172 → #173 → #174.
+- **Observed CI status:** GitHub reports Vercel success for the remote commit. The GitHub Actions workflow-run query returned no run at the time of inspection; local test results above are the verification evidence.
+- **Production/cloud actions:** None. M43 is reviewable; begin M44 on a separate branch without waiting for PR #174 to merge.
