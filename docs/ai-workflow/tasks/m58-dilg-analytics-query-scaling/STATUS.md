@@ -3,7 +3,7 @@
 ## 1. Executive Summary
 
 - **Task ID:** `m58-dilg-analytics-query-scaling`
-- **State:** In Progress — implementation and local verification are complete; delivery and hosted checks are pending.
+- **State:** In Progress — implementation and local verification are complete; hosted checks are pending on the open PR.
 - **Current milestone:** M1 — Regression coverage, grouped aggregation, verification, and delivery
 - **Branch:** `fix/m58-dilg-analytics-query-scaling`
 - **Worktree:** `/tmp/gridy-m58-dilg-analytics-query-scaling`
@@ -19,7 +19,7 @@
 | Add semantic and query-scaling regression tests | Complete | Red phase captured 25 SQL queries for 2 barangays versus 97 for 8; metric fixture uses the configured Django timezone. |
 | Implement grouped aggregates | Complete | Endpoint now executes five total queries: barangay list plus grouped resident, document, queue, and issue aggregates. |
 | Run local backend verification and inspect diff | Complete | Focused and full pytest, Django check, migration dry-run, whitespace scan, and scope review passed. |
-| Checkpoint, push, and stack PR on M57 | Pending | M57 PR #188 is the base; do not merge either PR. |
+| Checkpoint, push, and stack PR on M57 | In Progress | Implementation commit pushed; PR #189 is open against M57 PR #188; hosted checks are pending. |
 
 ## 3. Initial Evidence and Decisions
 
@@ -80,9 +80,10 @@ Full-suite warnings were Django's existing missing `backend/staticfiles/` direct
 
 ## 8. Delivery
 
-- **Commit:** Pending
-- **Push:** Pending
-- **Pull request:** Pending; stack on M57 PR #188 (`fix/m57-data-load-error-states`), leave open and unmerged.
+- **Implementation commit:** `1374a0372950a4a7b09dc3ab01015337b6ba371d` (`perf(analytics): aggregate DILG metrics in bounded queries`).
+- **Push:** `fix/m58-dilg-analytics-query-scaling` pushed to `origin` without force-pushing or rewriting history.
+- **Pull request:** [#189](https://github.com/ur1el0/KapitBayan/pull/189), open against `fix/m57-data-load-error-states` (M57 PR #188); leave both open and unmerged.
+- **Hosted checks:** Pending at the time of this status update.
 
 ## 9. Files in Scope
 
@@ -94,4 +95,4 @@ Full-suite warnings were Django's existing missing `backend/staticfiles/` direct
 
 ## 10. Final Handoff
 
-M58 removes linear query growth from DILG analytics and preserves the endpoint's existing authorization and response semantics. Local backend checks passed; hosted verification and delivery will be recorded after the stacked PR is created.
+M58 removes linear query growth from DILG analytics and preserves the endpoint's existing authorization and response semantics. The implementation is pushed in commit `1374a0372950a4a7b09dc3ab01015337b6ba371d` and PR #189 is open on M57 PR #188. Local verification passed; hosted checks remain pending.
