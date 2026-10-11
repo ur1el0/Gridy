@@ -166,3 +166,127 @@ class SeedUsersCommandTests(TestCase):
             {"HOST": "ep-demo.ap-southeast-1.aws.neon.tech"},
         ), self.assertRaises(CommandError):
             call_command("seed_users", confirm_demo_only=True, stdout=StringIO())
+
+    @override_settings(DEBUG=True)
+    def test_seed_users_refuses_unexpected_username_collision_without_mutating_record(self):
+        existing_user = User.objects.create_user(
+            username="admin_dupay",
+            email="unexpected.admin@example.org",
+            first_name="Real",
+            last_name="Official",
+            role=User.Role.RESIDENT,
+            is_staff=False,
+        )
+        out = StringIO()
+        with self.assertRaises(CommandError) as ctx:
+            call_command("seed_users", confirm_demo_only=True, stdout=out)
+
+        self.assertIn("collision", str(ctx.exception).lower())
+        existing_user.refresh_from_db()
+        self.assertEqual(existing_user.email, "unexpected.admin@example.org")
+        self.assertEqual(existing_user.first_name, "Real")
+        self.assertEqual(existing_user.last_name, "Official")
+        self.assertEqual(existing_user.role, User.Role.RESIDENT)
+        self.assertFalse(existing_user.is_staff)
+
+    @override_settings(DEBUG=True)
+    def test_seed_users_refuses_unexpected_barangay_collision_without_mutating_record(self):
+        existing_barangay = Barangay.objects.create(
+            name="Barangay Ibabang Dupay",
+            captain_name="Hon. Real Local Leader",
+            office_contact="Real Official Office Contact",
+        )
+        out = StringIO()
+        with self.assertRaises(CommandError) as ctx:
+            call_command("seed_users", confirm_demo_only=True, stdout=out)
+
+        self.assertIn("collision", str(ctx.exception).lower())
+        existing_barangay.refresh_from_db()
+        self.assertEqual(existing_barangay.captain_name, "Hon. Real Local Leader")
+        self.assertEqual(existing_barangay.office_contact, "Real Official Office Contact")
+        self.assertEqual(User.objects.count(), 0)
+
+    @override_settings(DEBUG=True)
+    def test_seed_users_does_not_leak_password_in_output(self):
+        custom_password = "".join(["Secret", "Pass", "2026", "!"])
+        out = StringIO()
+        call_command(
+            "seed_users",
+            confirm_demo_only=True,
+            password=custom_password,
+            stdout=out,
+        )
+        output = out.getvalue()
+        self.assertNotIn(custom_password, output)
+        self.assertNotIn(DEFAULT_SEED_PASSWORD, output)
+
+    @override_settings(DEBUG=True)
+    def test_seed_users_rolls_back_atomically_on_failure(self):
+        original_save = User.save
+        call_count = 0
+
+        def failing_save(user_self, *args, **kwargs):
+            nonlocal call_count
+            call_count += 1
+            if call_count >= 3:
+                raise RuntimeError("Simulated transient write failure")
+            return original_save(user_self, *args, **kwargs)
+
+        with patch.object(User, "save", failing_save):
+            with self.assertRaises(RuntimeError):
+                call_command("seed_users", confirm_demo_only=True, stdout=StringIO())
+
+        self.assertEqual(User.objects.count(), 0)
+        self.assertEqual(Barangay.objects.count(), 0)
+
+    @override_settings(DEBUG=True)
+    def test_seed_users_refuses_unexpected_email_collision_without_mutating_record(self):
+        unexpected_user = User.objects.create_user(
+            username="unrelated_operator",
+            email="admin.dupay@example.invalid",
+            first_name="Unrelated",
+            last_name="Operator",
+        )
+        out = StringIO()
+        with self.assertRaises(CommandError) as ctx:
+            call_command("seed_users", confirm_demo_only=True, stdout=out)
+
+        self.assertIn("collision", str(ctx.exception).lower())
+        unexpected_user.refresh_from_db()
+        self.assertEqual(unexpected_user.username, "unrelated_operator")
+        self.assertEqual(unexpected_user.email, "admin.dupay@example.invalid")
+        self.assertFalse(User.objects.filter(username="admin_dupay").exists())
+
+    @override_settings(DEBUG=True)
+    def test_seed_users_preserves_existing_resident_evidence_fields_on_rerun(self):
+        call_command("seed_users", confirm_demo_only=True, stdout=StringIO())
+        resident = Resident.objects.get(user__username="resident_dupay")
+        resident.philsys_id_number = "1234-5678-9012"
+        resident.save(update_fields=["philsys_id_number"])
+
+        call_command("seed_users", confirm_demo_only=True, stdout=StringIO())
+        resident.refresh_from_db()
+        self.assertEqual(resident.philsys_id_number, "1234-5678-9012")
+        self.assertTrue(resident.is_verified)
+        self.assertEqual(resident.purok, "Purok 3 - Sampaguita")
+
+    @override_settings(DEBUG=True)
+    def test_seed_users_supports_recognized_legacy_seed_identities(self):
+        cotta = Barangay.objects.create(
+            name="Barangay Cotta",
+            captain_name="Seed fixture — verify official before production use",
+            office_contact="Seed fixture — verify contact before production use",
+        )
+        legacy_cotta_admin = User.objects.create_user(
+            username="admin_cotta",
+            email="captain.cotta@gridy.local",
+            role=User.Role.ADMIN,
+            barangay=cotta,
+            is_staff=True,
+        )
+
+        call_command("seed_users", confirm_demo_only=True, stdout=StringIO())
+
+        legacy_cotta_admin.refresh_from_db()
+        self.assertEqual(legacy_cotta_admin.email, "admin.cotta@example.invalid")
+        self.assertTrue(legacy_cotta_admin.check_password(DEFAULT_SEED_PASSWORD))
