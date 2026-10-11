@@ -4,8 +4,8 @@
 
 - **Task ID:** `m60-aid-request-load-error-states`
 - **State:** In Progress
-- **Current milestone:** M1 — Regression coverage
-- **Branch:** `fix/m60-aid-request-load-error-states`
+- **Current milestone:** M2 — Retryable error UI
+- **Branch:** `test/m60-aid-request-load-errors` (local M1 checkpoint; implementation continues from this commit on `fix/m60-aid-request-load-error-states`)
 - **Worktree:** `/tmp/gridy-m60-aid-request-load-error-states`
 - **Base:** M59 commit `f157770617edc67973ca8cd499ab80a4f0ba8b71` (PR #190)
 - **Implementer:** Codex (user-directed sole-agent mode)
@@ -22,13 +22,17 @@
 
 | Milestone | Status | Notes |
 | --- | --- | --- |
-| M1 — Regression coverage | In progress | Plan and acceptance criteria recorded before source changes. |
-| M2 — Retryable error UI | Pending | No application source has been modified. |
+| M1 — Regression coverage | Complete | Added failure/retry, recovery, valid-empty, resident-form, pending-state, and no-mutation coverage. The clean red run isolated three expected missing-error-state failures. |
+| M2 — Retryable error UI | In progress | No application source has been modified yet. |
 | M3 — Verification and delivery | Pending | Will record actual test, lint, build, diff, push, PR, and hosted results. |
 
 ## 4. Initial Verification
 
-No test or application source changes have been made yet. Baseline tests have not been run.
+- **Dependency setup:** `npm ci --offline --no-audit --no-fund` from `frontend/` — passed; 263 packages installed from cache. `package-lock.json` was not changed.
+- **First focused test run:** `npm --prefix frontend run test -- src/pages/citizen/AidRequests.test.tsx` — 6 tests, 4 failed and 2 passed. Three intended new error-state tests failed; the existing staff decline test also failed because a never-resolving one-time mock leaked across tests.
+- **Test isolation adjustment:** Replaced `vi.clearAllMocks()` with explicit `mockReset()` for GET/POST/PATCH before each test, then reinstalled the default empty GET response.
+- **Clean test-first red run:** `npm --prefix frontend run test -- src/pages/citizen/AidRequests.test.tsx` — 1 test file, 3 failed and 3 passed. The only failures were the new assertions expecting an accessible alert/retry control that the current page does not yet render; existing submission and staff decline tests passed.
+- No application source was modified before the red run.
 
 ## 5. Scope and Safety
 
