@@ -3,7 +3,7 @@
 ## 1. Executive Summary
 
 - **Task ID:** `m58-dilg-analytics-query-scaling`
-- **State:** In Progress — implementation and local verification are complete; hosted checks are pending on the open PR.
+- **State:** Complete — implementation, local and hosted verification, and stacked PR delivery are complete.
 - **Current milestone:** M1 — Regression coverage, grouped aggregation, verification, and delivery
 - **Branch:** `fix/m58-dilg-analytics-query-scaling`
 - **Worktree:** `/tmp/gridy-m58-dilg-analytics-query-scaling`
@@ -19,7 +19,7 @@
 | Add semantic and query-scaling regression tests | Complete | Red phase captured 25 SQL queries for 2 barangays versus 97 for 8; metric fixture uses the configured Django timezone. |
 | Implement grouped aggregates | Complete | Endpoint now executes five total queries: barangay list plus grouped resident, document, queue, and issue aggregates. |
 | Run local backend verification and inspect diff | Complete | Focused and full pytest, Django check, migration dry-run, whitespace scan, and scope review passed. |
-| Checkpoint, push, and stack PR on M57 | In Progress | Implementation commit pushed; PR #189 is open against M57 PR #188; hosted checks are pending. |
+| Checkpoint, push, and stack PR on M57 | Complete | Implementation commit pushed; PR #189 is open against M57 PR #188; hosted checks passed. |
 
 ## 3. Initial Evidence and Decisions
 
@@ -44,7 +44,7 @@
 | AC-4 — Document OR attribution and distinct semantics are preserved | PASS | Regression test covers same-barangay de-duplication, cross-barangay user/request attribution, and user-only assignment. Existing walk-in/digital test remains green. |
 | AC-5 — DILG-only endpoint access remains unchanged | PASS | Existing anonymous, barangay-admin, and resident denial test passes; permission classes are unchanged. |
 | AC-6 — No schema/migration/dependency or unrelated changes | PASS | Diff contains only analytics view, analytics tests, and this task packet; migration dry-run reports no changes. |
-| AC-7 — Focused/full verification is recorded | PASS | Actual command results follow. |
+| AC-7 — Focused/full verification is recorded | PASS | Actual local and hosted results follow. |
 
 ## 6. Verification Log
 
@@ -67,6 +67,8 @@ All checks below used only a temporary local SQLite test/check database under `/
 - **Result:** `No changes detected`.
 - **Tracked diff hygiene:** `git diff --check` passed with no output.
 - **Whitespace scan:** clean across the 2 application files and 3 M58 task packet files; no trailing whitespace or extra EOF blank lines.
+- **Hosted GitHub Actions:** [Run #448](https://github.com/ur1el0/KapitBayan/actions/runs/38156695820) on implementation commit `1431dc8c8c1563fa9c90202028ed28af6c836cda`; all 9 jobs passed. PostgreSQL backend suite: `220 passed, 3 skipped, 32 subtests passed`; coverage was `89.64%` (required minimum 75%).
+- **Vercel preview:** Passed on commit `1431dc8c8c1563fa9c90202028ed28af6c836cda`.
 
 Full-suite warnings were Django's existing missing `backend/staticfiles/` directory warning in the isolated worktree and JWT test-key length warnings caused by the explicitly local 19-byte test-only `SECRET_KEY`; they did not affect test results. No credential value is an application or deployment secret.
 
@@ -83,7 +85,7 @@ Full-suite warnings were Django's existing missing `backend/staticfiles/` direct
 - **Implementation commit:** `1374a0372950a4a7b09dc3ab01015337b6ba371d` (`perf(analytics): aggregate DILG metrics in bounded queries`).
 - **Push:** `fix/m58-dilg-analytics-query-scaling` pushed to `origin` without force-pushing or rewriting history.
 - **Pull request:** [#189](https://github.com/ur1el0/KapitBayan/pull/189), open against `fix/m57-data-load-error-states` (M57 PR #188); leave both open and unmerged.
-- **Hosted checks:** Pending at the time of this status update.
+- **Hosted checks:** GitHub Actions [run #448](https://github.com/ur1el0/KapitBayan/actions/runs/38156695820): all 9 jobs passed; PostgreSQL backend tests and coverage gate passed. Vercel preview passed.
 
 ## 9. Files in Scope
 
@@ -95,4 +97,4 @@ Full-suite warnings were Django's existing missing `backend/staticfiles/` direct
 
 ## 10. Final Handoff
 
-M58 removes linear query growth from DILG analytics and preserves the endpoint's existing authorization and response semantics. The implementation is pushed in commit `1374a0372950a4a7b09dc3ab01015337b6ba371d` and PR #189 is open on M57 PR #188. Local verification passed; hosted checks remain pending.
+M58 removes linear query growth from DILG analytics and preserves the endpoint's existing authorization and response semantics. Implementation commit `1374a0372950a4a7b09dc3ab01015337b6ba371d` and delivery record commit `1431dc8c8c1563fa9c90202028ed28af6c836cda` are pushed. PR [#189](https://github.com/ur1el0/KapitBayan/pull/189) is open and unmerged on M57 PR #188. Local backend checks, all 9 hosted CI jobs, and Vercel preview passed.
