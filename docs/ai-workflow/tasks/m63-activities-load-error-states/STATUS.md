@@ -3,12 +3,13 @@
 ## Summary
 
 - **Task ID:** `m63-activities-load-error-states`
-- **State:** In progress — local verification complete; delivery pending
+- **State:** Completed
 - **Milestone:** M3 — Verification and delivery
 - **Delivery branch:** `fix/m63-activities-load-error-states-delivery`
 - **Implementation checkpoint:** `459511f` on `fix/m63-activities-load-error-states`
 - **Test checkpoint:** `94f7c98` on `test/m63-activities-load-errors`
-- **Base:** M62 PR #193 head `c01a05907a9a805b5ef6d846abce3d24d3587694`
+- **Validated delivery snapshot:** `2f9d784b567c7049863e2f03958252b81c726b6e`
+- **Base:** M62 PR #193 branch `fix/m62-notification-load-error-states-delivery`
 - **Worktree:** `/tmp/gridy-m62-reliability-audit` (isolated clone; primary checkout unchanged)
 
 ## Baseline evidence
@@ -28,8 +29,8 @@ Source inspection showed that the loader runs after successful creation as well 
 | Milestone | Status | Evidence |
 | --- | --- | --- |
 | M1 — Regression tests | Complete | Five focused cases. Pre-implementation: initial run 3 failed/1 passed; after adding failed-follow-up-read preservation coverage 4 failed/1 passed. The latter reproduced the old card disappearing after a post-create GET failure. |
-| M2 — Retryable error UI | Complete | Replaced the page-level early return with `InlineErrorState` in the list area, added retrying state, and clear the error on GET success. Focused tests pass. |
-| M3 — Verification and delivery | In progress | All local frontend checks pass; final branch review and remote delivery are pending. |
+| M2 — Retryable error UI | Complete | Replaced the page-level early return with `InlineErrorState` in the list area, added retrying state, and clears the error on GET success. Focused tests pass. |
+| M3 — Verification and delivery | Complete | Local checks passed; delivery branch pushed and PR #194 opened. All hosted checks passed on snapshot `2f9d784`. |
 
 ## Verification log
 
@@ -41,7 +42,10 @@ Source inspection showed that the loader runs after successful creation as well 
 | `npm --prefix frontend run test` | Passed: 36 test files, 111 tests. |
 | `npm --prefix frontend run lint` | Passed; exit code 0 with no Oxlint diagnostics. |
 | `npm --prefix frontend run build` | Passed; TypeScript and Vite production build succeeded, 2,514 modules transformed in 906 ms. |
-| `git diff c01a05907a9a805b5ef6d846abce3d24d3587694..HEAD --check` | Passed with no whitespace errors. |
+| `git diff c01a05907a9a805b5ef6d846abce3d24d3587694..HEAD --check` (before delivery status commit) | Passed with no whitespace errors. |
+| GitHub Actions run [#38186736846](https://github.com/ur1el0/KapitBayan/actions/runs/38186736846) on delivery snapshot `2f9d784` | Passed; all 9 jobs succeeded, including frontend/backend/mobile checks, both container image builds, PostgreSQL reconnect and Compose migration-gate smokes, Azure parameter preflight, and Bicep compile. |
+| GitGuardian security check | Passed. |
+| Vercel preview for PR #194 | Passed; deployment status: https://vercel.com/ur1el0s-projects/gridy/H4T6xbGS4azAXN6aPYFSbL3ELQC5. |
 
 ## Scope review
 
@@ -51,6 +55,9 @@ Source inspection showed that the loader runs after successful creation as well 
 - No backend/API contract, schema/migration, dependency, tenant/RBAC, or infrastructure changes. `package-lock.json` is unchanged.
 - HTTP calls are mocked; no production data or cloud resources are touched. Azure pilot remains NO-GO.
 
-## Delivery
+## Delivery and safety
 
-- M1 and M2 are checkpointed separately. The delivery branch will be pushed as a PR based on M62 PR #193, leaving both PRs open and unmerged.
+- **PR:** [#194](https://github.com/ur1el0/KapitBayan/pull/194), open and mergeable, not merged. Head `fix/m63-activities-load-error-states-delivery`, base `fix/m62-notification-load-error-states-delivery` (M62 PR #193).
+- M62 PR #193 remains open and unmerged; review the stack in order.
+- No production deployment, production data, database schema, or Azure resource was changed.
+- The hosted checks above passed on the code delivery snapshot before the final status-only record update; latest checks are verified separately during final delivery.
