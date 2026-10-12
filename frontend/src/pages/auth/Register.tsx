@@ -49,24 +49,40 @@ export const Register: React.FC = () => {
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
     const [loading, setLoading] = useState(false);
+    const barangayRequestId = React.useRef(0);
 
     const navigate = useNavigate();
 
-    React.useEffect(() => {
-        let isMounted = true;
-        axiosPublic.get('/auth/public/barangays/')
-            .then((response) => {
-                const data = response.data.results || response.data;
-                if (isMounted) setBarangays(Array.isArray(data) ? data : []);
-            })
-            .catch(() => {
-                if (isMounted) setBarangayDirectoryError('Approved barangays could not be loaded. Please try again later.');
-            })
-            .finally(() => {
-                if (isMounted) setLoadingBarangays(false);
-            });
-        return () => { isMounted = false; };
+    const fetchBarangays = React.useCallback(async () => {
+        const requestId = ++barangayRequestId.current;
+        setLoadingBarangays(true);
+
+        try {
+            const response = await axiosPublic.get('/auth/public/barangays/');
+            const data = Array.isArray(response.data) ? response.data : response.data?.results;
+            if (!Array.isArray(data)) {
+                throw new Error('Unexpected approved barangays response');
+            }
+            if (requestId !== barangayRequestId.current) return;
+            setBarangays(data);
+            setBarangayDirectoryError('');
+        } catch {
+            if (requestId !== barangayRequestId.current) return;
+            setBarangays([]);
+            setBarangayDirectoryError('Approved barangays could not be loaded. Please try again.');
+        } finally {
+            if (requestId === barangayRequestId.current) {
+                setLoadingBarangays(false);
+            }
+        }
     }, []);
+
+    React.useEffect(() => {
+        void fetchBarangays();
+        return () => {
+            barangayRequestId.current += 1;
+        };
+    }, [fetchBarangays]);
 
     // Dynamically calculate if applicant is under 18
     const isMinor = React.useMemo(() => {
@@ -386,6 +402,7 @@ export const Register: React.FC = () => {
                             barangays={barangays}
                             loadingBarangays={loadingBarangays}
                             barangayDirectoryError={barangayDirectoryError}
+                            onRetry={fetchBarangays}
                             isAdminMode={isAdminMode}
                         />
 
