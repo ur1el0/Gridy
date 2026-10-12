@@ -25,7 +25,7 @@ from drf_spectacular.views import (
     SpectacularSwaggerView,
 )
 
-from config.health_views import HealthCheckView
+from config.health_views import HealthCheckView, LivenessCheckView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -33,6 +33,8 @@ urlpatterns = [
     path('api/v1/', include('gridy_services.urls')),
     path('api/v1/', include('gridy_reports.urls')),
     path('api/v1/', include('gridy_communications.urls')),
+    path('api/v1/health/live/', LivenessCheckView.as_view(), name='health_live'),
+    path('api/v1/health/ready/', HealthCheckView.as_view(), name='health_ready'),
     path('api/v1/health/', HealthCheckView.as_view(), name='health_check'),
 
     # OpenAPI Schema Views

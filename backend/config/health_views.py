@@ -10,6 +10,23 @@ from drf_spectacular.utils import extend_schema, OpenApiTypes
 
 logger = logging.getLogger(__name__)
 
+
+class LivenessCheckView(APIView):
+    authentication_classes = []
+    permission_classes = [permissions.AllowAny]
+
+    @extend_schema(
+        summary="Check Application Liveness",
+        description=(
+            "Confirm that the Django application can serve requests without "
+            "checking external dependencies."
+        ),
+        responses={200: OpenApiTypes.OBJECT},
+    )
+    def get(self, request, *args, **kwargs):
+        return Response({"status": "live"}, status=status.HTTP_200_OK)
+
+
 class HealthCheckView(APIView):
     permission_classes = [permissions.AllowAny]
 

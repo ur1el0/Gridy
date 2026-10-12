@@ -32,15 +32,18 @@ Per **ADR 009**, Prometheus and Grafana were fully decommissioned, reducing syst
 
 ## 3. Native Observability: Structured Health Check Endpoint
 
-In place of heavy external scraping daemons, KapitBayan exposes a lightweight, enterprise-standard health monitoring route:
+KapitBayan exposes lightweight HTTP probes without adding a monitoring daemon:
 
-* **Endpoint**: `GET /api/v1/health/`
-* **Diagnostic Checks**:
+* **Liveness**: `GET /api/v1/health/live/` returns HTTP 200 when Django can serve a request. It does not query the database or cache, so a dependency outage alone does not make the application appear dead.
+* **Readiness**: `GET /api/v1/health/ready/` checks the database and cache and returns HTTP 503 when either dependency is unavailable.
+* **Compatibility route**: `GET /api/v1/health/` keeps the existing readiness payload and status behavior. The backend Docker health check and Compose dependency gate continue to use this route.
+
+The readiness diagnostic checks are:
   * **Database Latency**: Executes a live SQL probe against PostgreSQL, measuring query round-trip time in milliseconds.
   * **Cache / Memory Status**: Verifies local caching responsiveness.
-  * **Service Readiness**: Reports overall HTTP 200 operational readiness without Celery or Redis dependencies.
+  * **Service Readiness**: Reports HTTP 200 when both dependencies are healthy and HTTP 503 otherwise, without Celery or Redis dependencies.
 
-The backend image runs as an unprivileged user and uses this endpoint as its Docker health check. Docker Compose waits for PostgreSQL readiness, runs migrations in the one-shot `migrate` service, and starts the backend only after that service completes successfully. The frontend then waits for the backend health check. A failed migration keeps the Compose backend from starting. The database port is bound to localhost for local use.
+For a future Azure Container Apps deployment, configure liveness against `/api/v1/health/live/` and readiness against `/api/v1/health/ready/`. These are intended probe semantics, not evidence of live Azure configuration. The backend image runs as an unprivileged user and retains `/api/v1/health/` as its Docker health check. Docker Compose waits for PostgreSQL readiness, runs migrations in the one-shot `migrate` service, and starts the backend only after that service completes successfully. The frontend then waits for the backend health check. A failed migration keeps the Compose backend from starting. The database port is bound to localhost for local use.
 
 For a deployment platform that does not use Compose, run `python manage.py migrate --noinput` exactly once as a serialized pre-release step and allow the new API revision to start only after it succeeds. Keep migration execution out of image builds and API container startup. This repository documents that requirement but does not configure or verify a live provider release command.
 
