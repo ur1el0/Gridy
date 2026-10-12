@@ -507,5 +507,206 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets('ordinary legacy profile save omits unchanged evidence types', (tester) async {
+      tester.view.physicalSize = const Size(1080, 3000);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      const legacyWithUnrecognizedMetadata = UserModel(
+        id: 4,
+        username: 'legacy_metadata',
+        email: 'legacy-metadata@test.ph',
+        role: 'RESIDENT',
+        fullName: 'Legacy Resident',
+        residentId: 28,
+        secondaryIdType: 'National eID',
+        utilityBillingType: 'Other Provider',
+      );
+      apiClient.mockResponseBody = {
+        'id': 4,
+        'username': 'legacy_metadata',
+        'email': 'legacy-metadata@test.ph',
+        'role': 'RESIDENT',
+        'full_name': 'Updated Legacy Resident',
+        'profile': {
+          'id': 28,
+          'full_name': 'Updated Legacy Resident',
+          'secondary_id_type': 'National eID',
+          'utility_billing_type': 'Other Provider',
+        },
+      };
+
+      await tester.pumpWidget(createProfileWidget(legacyWithUnrecognizedMetadata));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Edit Profile'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.widgetWithText(TextField, 'Legacy Resident'),
+        'Updated Legacy Resident',
+      );
+      await tester.ensureVisible(find.text('Save Changes'));
+      await tester.tap(find.text('Save Changes'));
+      await tester.pumpAndSettle();
+
+      final profile = apiClient.lastPatchBody!['profile'] as Map<String, dynamic>;
+      expect(profile['full_name'], 'Updated Legacy Resident');
+      expect(profile.containsKey('secondary_id_type'), isFalse);
+      expect(profile.containsKey('utility_billing_type'), isFalse);
+      expect(storage.getUser()?.secondaryIdType, 'National eID');
+      expect(storage.getUser()?.utilityBillingType, 'Other Provider');
+    });
+
+    testWidgets('explicit document type selection is included in profile update', (tester) async {
+      tester.view.physicalSize = const Size(1080, 3000);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      apiClient.mockResponseBody = {
+        'id': 3,
+        'username': 'rbi_zero',
+        'email': 'rbi@test.ph',
+        'role': 'RESIDENT',
+        'full_name': 'Andres Bonifacio',
+        'profile': {'id': 27, 'full_name': 'Andres Bonifacio'},
+      };
+
+      await tester.pumpWidget(createProfileWidget(rbiUserZeroProofs));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Edit Profile'));
+      await tester.pumpAndSettle();
+      final dropdown = find.byType(DropdownButtonFormField<String>).first;
+      await tester.ensureVisible(dropdown);
+      await tester.tap(dropdown);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('UMID').last);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Save Changes'));
+      await tester.tap(find.text('Save Changes'));
+      await tester.pumpAndSettle();
+
+      final profile = apiClient.lastPatchBody!['profile'] as Map<String, dynamic>;
+      expect(profile['secondary_id_type'], 'UMID');
+      expect(profile.containsKey('utility_billing_type'), isFalse);
+    });
+
+    testWidgets('cancelling a changed document type clears metadata change tracking', (tester) async {
+      tester.view.physicalSize = const Size(1080, 3000);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      apiClient.mockResponseBody = {
+        'id': 3,
+        'username': 'rbi_zero',
+        'email': 'rbi@test.ph',
+        'role': 'RESIDENT',
+        'full_name': 'Andres Bonifacio',
+        'profile': {'id': 27, 'full_name': 'Andres Bonifacio'},
+      };
+
+      await tester.pumpWidget(createProfileWidget(rbiUserZeroProofs));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Edit Profile'));
+      await tester.pumpAndSettle();
+      var dropdown = find.byType(DropdownButtonFormField<String>).first;
+      await tester.ensureVisible(dropdown);
+      await tester.tap(dropdown);
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('UMID').last);
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Cancel'));
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Edit Profile'));
+      await tester.pumpAndSettle();
+      await tester.ensureVisible(find.text('Save Changes'));
+      await tester.tap(find.text('Save Changes'));
+      await tester.pumpAndSettle();
+
+      final profile = apiClient.lastPatchBody!['profile'] as Map<String, dynamic>;
+      expect(profile.containsKey('secondary_id_type'), isFalse);
+      expect(profile.containsKey('utility_billing_type'), isFalse);
+    });
+
+    testWidgets('explicit utility billing type selection is included and resets after successful save', (tester) async {
+      tester.view.physicalSize = const Size(1080, 3000);
+      tester.view.devicePixelRatio = 2.0;
+      addTearDown(() {
+        tester.view.resetPhysicalSize();
+        tester.view.resetDevicePixelRatio();
+      });
+
+      apiClient.mockResponseBody = {
+        'id': 3,
+        'username': 'rbi_zero',
+        'email': 'rbi@test.ph',
+        'role': 'RESIDENT',
+        'full_name': 'Andres Bonifacio',
+        'profile': {
+          'id': 27,
+          'full_name': 'Andres Bonifacio',
+          'utility_billing_type': 'Water Utility',
+        },
+      };
+
+      await tester.pumpWidget(createProfileWidget(rbiUserZeroProofs));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Edit Profile'));
+      await tester.pumpAndSettle();
+
+      final utilityDropdown = find.byType(DropdownButtonFormField<String>).at(1);
+      await tester.ensureVisible(utilityDropdown);
+      await tester.tap(utilityDropdown);
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.text('Water Utility').last);
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(find.text('Save Changes'));
+      await tester.tap(find.text('Save Changes'));
+      await tester.pumpAndSettle();
+
+      final firstProfile = apiClient.lastPatchBody!['profile'] as Map<String, dynamic>;
+      expect(firstProfile['utility_billing_type'], 'Water Utility');
+      expect(firstProfile.containsKey('secondary_id_type'), isFalse);
+
+      apiClient.mockResponseBody = {
+        'id': 3,
+        'username': 'rbi_zero',
+        'email': 'rbi@test.ph',
+        'role': 'RESIDENT',
+        'full_name': 'Andres Bonifacio Updated',
+        'profile': {
+          'id': 27,
+          'full_name': 'Andres Bonifacio Updated',
+          'utility_billing_type': 'Water Utility',
+        },
+      };
+
+      await tester.tap(find.text('Edit Profile'));
+      await tester.pumpAndSettle();
+
+      final nameField = find.widgetWithText(TextField, 'Andres Bonifacio');
+      await tester.enterText(nameField, 'Andres Bonifacio Updated');
+
+      await tester.ensureVisible(find.text('Save Changes'));
+      await tester.tap(find.text('Save Changes'));
+      await tester.pumpAndSettle();
+
+      final secondProfile = apiClient.lastPatchBody!['profile'] as Map<String, dynamic>;
+      expect(secondProfile['full_name'], 'Andres Bonifacio Updated');
+      expect(secondProfile.containsKey('utility_billing_type'), isFalse);
+      expect(secondProfile.containsKey('secondary_id_type'), isFalse);
+    });
   });
 }
