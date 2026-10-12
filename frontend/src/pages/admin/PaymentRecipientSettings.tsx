@@ -1,5 +1,6 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useState, type FormEvent } from 'react';
 import { axiosPrivate } from '../../api/axios';
+import { InlineErrorState } from '../../components/ui/InlineErrorState';
 
 interface PaymentRecipient {
     id: number;
@@ -28,21 +29,27 @@ export function PaymentRecipientSettings() {
     const [identifier, setIdentifier] = useState('');
     const [instructions, setInstructions] = useState('');
     const [loading, setLoading] = useState(true);
+    const [retrying, setRetrying] = useState(false);
+    const [loadError, setLoadError] = useState(false);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState('');
 
-    const loadRecipients = async () => {
+    const loadRecipients = useCallback(async (isRetry = false) => {
+        if (isRetry) setRetrying(true);
+
         try {
             const response = await axiosPrivate.get('/payment-recipients/');
             setRecipients(response.data.results || response.data);
+            setLoadError(false);
         } catch {
-            setMessage('Could not load payment recipients.');
+            setLoadError(true);
         } finally {
             setLoading(false);
+            setRetrying(false);
         }
-    };
+    }, []);
 
-    useEffect(() => { void loadRecipients(); }, []);
+    useEffect(() => { void loadRecipients(); }, [loadRecipients]);
 
     const submit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -104,12 +111,34 @@ export function PaymentRecipientSettings() {
                 <button type="submit" disabled={saving} className="rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50 sm:col-span-2">{saving ? 'Saving…' : 'Add payment recipient'}</button>
             </form>
             <div className="mt-6 space-y-3" aria-live="polite">
-                {loading ? <p className="text-sm text-slate-500">Loading configured recipients…</p> : recipients.length === 0 ? <p className="text-sm text-slate-500">No e-payment recipients configured. Cash collection remains available.</p> : recipients.map((recipient) => (
-                    <article key={recipient.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 p-4">
-                        <div><h3 className="font-semibold text-slate-900">{recipient.display_name} <span className="text-xs font-normal text-slate-500">({recipient.provider_label})</span></h3><p className="text-sm text-slate-600">{recipient.recipient_name} · {recipient.recipient_identifier}</p>{recipient.instructions && <p className="mt-1 text-xs text-slate-500">{recipient.instructions}</p>}</div>
-                        <button type="button" onClick={() => void setActive(recipient)} className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold">{recipient.is_active ? 'Deactivate' : 'Activate'}</button>
-                    </article>
-                ))}
+                {loadError && (
+                    <InlineErrorState
+                        message="Could not load payment recipients."
+                        onRetry={() => void loadRecipients(true)}
+                        retrying={retrying}
+                    />
+                )}
+                {loading ? (
+                    <p className="text-sm text-slate-500">Loading configured recipients…</p>
+                ) : !loadError && recipients.length === 0 ? (
+                    <p className="text-sm text-slate-500">No e-payment recipients configured. Cash collection remains available.</p>
+                ) : (
+                    recipients.map((recipient) => (
+                        <article key={recipient.id} className="flex flex-wrap items-center justify-between gap-3 rounded-lg border border-slate-200 p-4">
+                            <div>
+                                <h3 className="font-semibold text-slate-900">
+                                    {recipient.display_name}{' '}
+                                    <span className="text-xs font-normal text-slate-500">({recipient.provider_label})</span>
+                                </h3>
+                                <p className="text-sm text-slate-600">{recipient.recipient_name} · {recipient.recipient_identifier}</p>
+                                {recipient.instructions && <p className="mt-1 text-xs text-slate-500">{recipient.instructions}</p>}
+                            </div>
+                            <button type="button" onClick={() => void setActive(recipient)} className="rounded-md border border-slate-300 px-3 py-2 text-sm font-semibold">
+                                {recipient.is_active ? 'Deactivate' : 'Activate'}
+                            </button>
+                        </article>
+                    ))
+                )}
             </div>
         </section>
     );
