@@ -2,8 +2,8 @@
 
 ## Summary
 - **Task ID:** `m66-document-requests-load-error-states`
-- **State:** In Progress
-- **Current milestone:** M3 — Full verification and delivery
+- **State:** Completed
+- **Current milestone:** M3 — Full verification and delivery (complete)
 - **Branch:** `fix/m66-document-requests-load-error-states`
 - **Base:** M65 delivery head `7a5b68e2564fab6fa11554d14154b90d0d3061fb`
 - **Primary checkout:** Preserved; all M66 work is isolated in `/tmp/gridy-m62-reliability-audit`.
@@ -20,7 +20,7 @@
 | --- | --- | --- |
 | M1 — Regression behavior | Complete | Five page tests and one table test reproduced the failure state and empty-row conflict before implementation. |
 | M2 — Retryable error UI | Complete | Error/retry row is owned by `DocumentTable`; page preserves initial loading and submit semantics. |
-| M3 — Full verification and delivery | In Progress | Full frontend checks passed; final delivery steps remain. |
+| M3 — Full verification and delivery | Complete | Local checks, hosted checks, PR delivery, and final-head recheck complete. |
 
 ## Files
 - `frontend/src/pages/services/DocumentRequests.tsx`
@@ -50,4 +50,9 @@
 - **Parent readiness:** M65 final-head checks passed on runs `38188720241` and `38188722578` before stacking M66.
 
 ## Delivery
-No M66 implementation commit, push, or PR yet. Azure pilot remains NO-GO; this task does not touch Azure or production infrastructure.
+- **Implementation commit:** `3370cd3d230e22c2339f5eb50d1a4f2dcb073ea9` (`fix(documents): add retryable list load errors`).
+- **Remote branch:** `origin/fix/m66-document-requests-load-error-states`.
+- **Pull request:** [#197](https://github.com/ur1el0/KapitBayan/pull/197), based on `fix/m65-issue-reports-load-error-states` (M65 PR #196). PR remains open and unmerged.
+- **Hosted validation:** Both runs `38189091148` and `38189105141` passed: backend and frontend tests, mobile tests, backend and frontend image builds, Azure foundation compile, Azure pilot parameter preflight, Compose migration gate smoke, PostgreSQL DNS reconnect smoke, GitGuardian, and Vercel preview checks.
+- A status-only delivery commit will add this record; its checks will be verified on the final PR head.
+- Azure pilot remains NO-GO. This task does not alter Azure or production infrastructure.
