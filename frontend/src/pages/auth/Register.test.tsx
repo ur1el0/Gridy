@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { afterEach, beforeEach, describe, it, expect, vi } from 'vitest';
 import { axiosPublic } from '../../api/axios';
@@ -92,6 +92,74 @@ describe('Register Component (Dual-Mode)', () => {
         expect(await screen.findByRole('alert')).toHaveTextContent('Approved barangays could not be loaded');
         fireEvent.click(screen.getByRole('checkbox'));
         expect(screen.getByRole('button', { name: /create resident account/i })).toBeDisabled();
+    });
+
+    it('retries a failed barangay directory lookup until it recovers without submitting registration', async () => {
+        const getSpy = vi.mocked(axiosPublic.get);
+        const postSpy = vi.spyOn(axiosPublic, 'post').mockResolvedValue({ data: {} } as never);
+        let rejectRetry!: (reason: Error) => void;
+        getSpy
+            .mockRejectedValueOnce(new Error('offline'))
+            .mockImplementationOnce(
+                () => new Promise((_resolve, reject) => { rejectRetry = reject; }),
+            )
+            .mockResolvedValueOnce({
+                data: [{ id: 2, name: 'Barangay Ibabang Dupay', municipality: 'Lucena City', province: 'Quezon' }],
+            } as never);
+
+        render(
+            <BrowserRouter>
+                <Register />
+            </BrowserRouter>,
+        );
+
+        expect(await screen.findByRole('alert')).toHaveTextContent('Approved barangays could not be loaded');
+        const selector = screen.getByRole('combobox');
+        expect(selector).toBeDisabled();
+
+        const retryButton = screen.getByRole('button', { name: 'Retry approved barangay list' });
+        fireEvent.click(retryButton);
+        await waitFor(() => expect(retryButton).toBeDisabled());
+        expect(retryButton).toHaveClass('min-h-[44px]', 'min-w-[44px]', 'focus-visible:ring-2');
+        expect(screen.getByRole('status')).toHaveTextContent('Retrying approved barangay list');
+
+        await act(async () => {
+            rejectRetry(new Error('offline again'));
+        });
+
+        expect(await screen.findByRole('alert')).toHaveTextContent('Approved barangays could not be loaded');
+        expect(screen.getByRole('button', { name: 'Retry approved barangay list' })).toBeEnabled();
+        fireEvent.click(screen.getByRole('button', { name: 'Retry approved barangay list' }));
+
+        expect(await screen.findByRole('option', { name: /Barangay Ibabang Dupay/ })).toBeInTheDocument();
+        expect(selector).toBeEnabled();
+        expect(getSpy).toHaveBeenCalledTimes(3);
+        expect(getSpy.mock.calls.map(([url]) => url)).toEqual([
+            '/auth/public/barangays/',
+            '/auth/public/barangays/',
+            '/auth/public/barangays/',
+        ]);
+        expect(postSpy).not.toHaveBeenCalled();
+    });
+
+    it('makes a malformed barangay directory response retryable', async () => {
+        const getSpy = vi.mocked(axiosPublic.get);
+        getSpy
+            .mockResolvedValueOnce({ data: { results: 'invalid' } } as never)
+            .mockResolvedValueOnce({
+                data: [{ id: 2, name: 'Barangay Ibabang Dupay', municipality: 'Lucena City', province: 'Quezon' }],
+            } as never);
+
+        render(
+            <BrowserRouter>
+                <Register />
+            </BrowserRouter>,
+        );
+
+        expect(await screen.findByRole('alert')).toHaveTextContent('Approved barangays could not be loaded');
+        fireEvent.click(screen.getByRole('button', { name: 'Retry approved barangay list' }));
+        expect(await screen.findByRole('option', { name: /Barangay Ibabang Dupay/ })).toBeInTheDocument();
+        expect(getSpy).toHaveBeenCalledTimes(2);
     });
 
     it('validates password mismatch before submission', async () => {

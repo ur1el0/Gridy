@@ -1,4 +1,5 @@
 import { Trash2 } from 'lucide-react';
+import { InlineErrorState } from '../ui/InlineErrorState';
 import type { DocumentRequest } from '../../pages/services/DocumentRequests';
 
 interface DocumentTableProps {
@@ -6,9 +7,10 @@ interface DocumentTableProps {
     openModal: (request: DocumentRequest) => void;
     getStatusBadge: (status: string) => string;
     onDelete?: (id: number) => void;
+    loadError?: { message: string; onRetry: () => void; retrying: boolean };
 }
 
-export const DocumentTable = ({ requests, openModal, getStatusBadge, onDelete }: DocumentTableProps) => {
+export const DocumentTable = ({ requests, openModal, getStatusBadge, onDelete, loadError }: DocumentTableProps) => {
     return (
         <div className="bg-white shadow-sm border border-slate-200 rounded-xl overflow-hidden">
             <div className="overflow-x-auto">
@@ -25,7 +27,18 @@ export const DocumentTable = ({ requests, openModal, getStatusBadge, onDelete }:
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-slate-100">
-                        {requests.length === 0 ? (
+                        {loadError && (
+                            <tr>
+                                <td colSpan={7} className="px-4 py-4">
+                                    <InlineErrorState
+                                        message={loadError.message}
+                                        onRetry={loadError.onRetry}
+                                        retrying={loadError.retrying}
+                                    />
+                                </td>
+                            </tr>
+                        )}
+                        {!loadError && requests.length === 0 ? (
                             <tr>
                                 <td colSpan={7} className="px-6 py-12 text-center text-sm text-slate-500">
                                     No clearance requests recorded yet.

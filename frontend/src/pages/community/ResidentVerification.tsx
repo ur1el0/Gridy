@@ -1,7 +1,8 @@
 import toast from 'react-hot-toast';
-import { useState, useEffect, useMemo } from "react";
+import { useCallback, useState, useEffect, useMemo } from "react";
 import { axiosPrivate } from "../../api/axios";
 import { Clock, Search, Filter } from "lucide-react";
+import { InlineErrorState } from "../../components/ui/InlineErrorState";
 import {
     type Resident,
     VerificationTable,
@@ -12,6 +13,8 @@ import {
 export default function ResidentVerification() {
     const [pendingResidents, setPendingResidents] = useState<Resident[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
+    const [retrying, setRetrying] = useState(false);
     
     // Search and Filter State
     const [searchQuery, setSearchQuery] = useState("");
@@ -39,20 +42,24 @@ export default function ResidentVerification() {
         });
     }, [pendingResidents, searchQuery, filterPurok]);
 
-    useEffect(() => {
-        const fetchPendingResidents = async () => {
-            try {
-                const response = await axiosPrivate.get('auth/pending-residents/');
-                setPendingResidents(response.data.results || response.data);
-            } catch (error) {
-                console.error("Failed to fetch residents", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchPendingResidents();
+    const fetchPendingResidents = useCallback(async (isRetry = false) => {
+        if (isRetry) setRetrying(true);
+        try {
+            const response = await axiosPrivate.get('auth/pending-residents/');
+            setPendingResidents(response.data.results || response.data);
+            setLoadError(false);
+        } catch (error) {
+            console.error("Failed to fetch residents", error);
+            setLoadError(true);
+        } finally {
+            setLoading(false);
+            setRetrying(false);
+        }
     }, []);
+
+    useEffect(() => {
+        void fetchPendingResidents();
+    }, [fetchPendingResidents]);
 
     const handleApprove = async (id: number) => {
         try {
@@ -114,10 +121,12 @@ export default function ResidentVerification() {
                     <h1 className="text-2xl font-bold text-slate-800">Resident Verification</h1>
                     <p className="text-sm text-slate-500 mt-1">Review PhilSys national identity credentials and utility residency proofs.</p>
                 </div>
-                <div className="bg-amber-100 text-amber-800 px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2">
-                    <Clock className="w-4 h-4" />
-                    {filteredResidents.length} Pending Verification
-                </div>
+                {!loadError && (
+                    <div className="bg-amber-100 text-amber-800 px-4 py-2 rounded-full text-sm font-semibold flex items-center gap-2">
+                        <Clock className="w-4 h-4" />
+                        {filteredResidents.length} Pending Verification
+                    </div>
+                )}
             </div>
 
             {/* Search & Filter Bar */}
@@ -149,15 +158,25 @@ export default function ResidentVerification() {
             </div>
 
             {/* Table */}
-            <VerificationTable
-                residents={filteredResidents}
-                onInspect={setResidentToInspect}
-                onApprove={handleApprove}
-                onReject={(resident) => {
-                    setRejectionReason('');
-                    setResidentToReject(resident);
-                }}
-            />
+            {loadError ? (
+                <div className="flex-1 overflow-auto p-6">
+                    <InlineErrorState
+                        message="We couldn't load pending resident verifications."
+                        onRetry={() => { void fetchPendingResidents(true); }}
+                        retrying={retrying}
+                    />
+                </div>
+            ) : (
+                <VerificationTable
+                    residents={filteredResidents}
+                    onInspect={setResidentToInspect}
+                    onApprove={handleApprove}
+                    onReject={(resident) => {
+                        setRejectionReason('');
+                        setResidentToReject(resident);
+                    }}
+                />
+            )}
 
             {/* Verification Dossier / Inspection Modal */}
             {residentToInspect && (

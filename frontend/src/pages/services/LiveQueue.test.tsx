@@ -138,6 +138,70 @@ describe('LiveQueue Component', () => {
         expect(screen.queryByRole('button', { name: /call q-001/i })).not.toBeInTheDocument();
     });
 
+    it('keeps the initial queue unavailable after failure and retries into a real empty state', async () => {
+        let resolveRetry!: (response: { data: { results: never[] } }) => void;
+        const pendingRetry = new Promise<{ data: { results: never[] } }>((resolve) => {
+            resolveRetry = resolve;
+        });
+        vi.mocked(axiosPrivate.get)
+            .mockRejectedValueOnce(new Error('Network unavailable'))
+            .mockReturnValueOnce(pendingRetry as never);
+
+        renderQueue();
+
+        expect(await screen.findByRole('alert')).toHaveTextContent('Failed to load queue tickets.');
+        const totalWaitingCard = screen.getByText('Total Waiting').parentElement?.parentElement;
+        expect(totalWaitingCard).toHaveTextContent('--');
+        expect(screen.queryByText(/No .* tickets currently waiting/)).not.toBeInTheDocument();
+        expect(screen.queryByText('No resident currently being served')).not.toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+
+        expect(screen.getByRole('button', { name: 'Trying again…' })).toBeDisabled();
+        expect(axiosPrivate.get).toHaveBeenNthCalledWith(1, '/tickets/');
+        expect(axiosPrivate.get).toHaveBeenNthCalledWith(2, '/tickets/');
+
+        await act(async () => {
+            resolveRetry({ data: { results: [] } });
+            await pendingRetry;
+        });
+
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        expect(screen.getByText('Total Waiting').parentElement?.parentElement).toHaveTextContent('0');
+        expect(screen.getByText('No priority queue tickets currently waiting.')).toBeInTheDocument();
+        expect(screen.getByText('No resident currently being served')).toBeInTheDocument();
+        expect(axiosPrivate.post).not.toHaveBeenCalled();
+    });
+
+    it('preserves the last loaded queue when an automatic refresh fails', async () => {
+        vi.useFakeTimers();
+        renderQueue();
+
+        await act(async () => {
+            await Promise.resolve();
+            await Promise.resolve();
+        });
+
+        expect(screen.getByText('Q-002')).toBeInTheDocument();
+        vi.mocked(axiosPrivate.get).mockRejectedValueOnce(new Error('Network unavailable'));
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(3000);
+        });
+
+        expect(screen.getByRole('alert')).toHaveTextContent('Failed to load queue tickets.');
+        expect(screen.getByText('Q-002')).toBeInTheDocument();
+        expect(screen.getByText('Q-001')).toBeInTheDocument();
+        expect(screen.getByText('Total Waiting').parentElement?.parentElement).toHaveTextContent('1');
+
+        await act(async () => {
+            await vi.advanceTimersByTimeAsync(3000);
+        });
+
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        expect(screen.getByText('Q-002')).toBeInTheDocument();
+    });
+
     it('shows priority and regular tickets in separate waiting lanes', async () => {
         vi.mocked(axiosPrivate.get).mockResolvedValueOnce({
             data: {

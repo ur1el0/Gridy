@@ -14,6 +14,9 @@ import type { DocumentRequest, PaymentRecipient } from './types';
 interface DocumentRequestRowProps {
     request: DocumentRequest;
     recipients: PaymentRecipient[];
+    recipientsLoading: boolean;
+    recipientsLoadError: boolean;
+    onRetryRecipients: () => void;
     selectedRecipientId: string;
     paymentReference: string;
     submittingPayment: boolean;
@@ -65,6 +68,9 @@ const RequestStatusBadge: React.FC<{ status: string }> = ({ status }) => {
 export const DocumentRequestRow: React.FC<DocumentRequestRowProps> = ({
     request,
     recipients,
+    recipientsLoading,
+    recipientsLoadError,
+    onRetryRecipients,
     selectedRecipientId,
     paymentReference,
     submittingPayment,
@@ -111,6 +117,9 @@ export const DocumentRequestRow: React.FC<DocumentRequestRowProps> = ({
                                 <PaymentReferenceForm
                                     requestId={request.id}
                                     recipients={recipients}
+                                    recipientsLoading={recipientsLoading}
+                                    recipientsLoadError={recipientsLoadError}
+                                    onRetryRecipients={onRetryRecipients}
                                     selectedRecipientId={selectedRecipientId}
                                     paymentReference={paymentReference}
                                     submitting={submittingPayment}

@@ -1,7 +1,8 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { axiosPrivate } from '../../api/axios';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from 'recharts';
 import { Globe } from 'lucide-react';
+import { InlineErrorState } from '../../components/ui/InlineErrorState';
 
 interface AnalyticsData {
     barangay_name: string;
@@ -21,21 +22,27 @@ interface AnalyticsData {
 export function DILGDashboard() {
     const [data, setData] = useState<AnalyticsData[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
+    const [retrying, setRetrying] = useState(false);
+
+    const fetchAnalytics = useCallback(async (isRetry = false) => {
+        if (isRetry) setRetrying(true);
+        try {
+            const response = await axiosPrivate.get('/dilg-analytics/');
+            setData(response.data);
+            setLoadError(false);
+        } catch (error) {
+            console.error("Failed to fetch DILG Analytics", error);
+            setLoadError(true);
+        } finally {
+            setLoading(false);
+            setRetrying(false);
+        }
+    }, []);
 
     useEffect(() => {
-        const fetchAnalytics = async () => {
-            try {
-                const response = await axiosPrivate.get('/dilg-analytics/');
-                setData(response.data);
-            } catch (error) {
-                console.error("Failed to fetch DILG Analytics", error);
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchAnalytics();
-    }, []);
+        void fetchAnalytics();
+    }, [fetchAnalytics]);
 
     if (loading) return <div className="p-8 text-center text-slate-500 font-semibold animate-pulse">Loading Global Analytics...</div>;
 
@@ -63,6 +70,17 @@ export function DILGDashboard() {
                 <p className="text-slate-500 mt-2 font-medium">Cross-barangay metrics and system overview.</p>
             </div>
 
+            {loadError ? (
+                <InlineErrorState
+                    message="We couldn't load DILG analytics."
+                    onRetry={() => { void fetchAnalytics(true); }}
+                    retrying={retrying}
+                />
+            ) : data.length === 0 ? (
+                <div role="status" className="rounded-2xl border border-slate-200 bg-white p-8 text-center text-slate-600">
+                    No barangay analytics available
+                </div>
+            ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
                 {/* Chart 1: Population Overview */}
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100">
@@ -99,7 +117,7 @@ export function DILGDashboard() {
                         </ResponsiveContainer>
                     </div>
                 </div>
-                                
+
                 {/* Chart 3: Incident Hotspots */}
                 <div className="bg-white p-6 rounded-2xl shadow-sm border border-slate-100 lg:col-span-2">
                     <h2 className="text-lg font-bold text-slate-700 mb-6">Incident Hotspots & Scenarios</h2>
@@ -120,6 +138,7 @@ export function DILGDashboard() {
                 </div>
 
             </div>
+            )}
         </div>
     );
 }

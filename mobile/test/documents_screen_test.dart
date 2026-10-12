@@ -17,8 +17,12 @@ class MockDocumentService extends DocumentService {
           storageService: storage,
         );
 
+  Future<List<DocumentRequestModel>> Function()? fetchHandler;
+
   @override
   Future<List<DocumentRequestModel>> fetchDocumentRequests() async {
+    if (fetchHandler != null) return fetchHandler!();
+
     return [
       DocumentRequestModel(
         id: 892,
@@ -246,5 +250,92 @@ void main() {
     expect(find.text('Regular'), findsOneWidget);
     expect(find.text('Urgent'), findsOneWidget);
     expect(find.text('Submit Request'), findsOneWidget);
+  });
+
+  testWidgets('failed document load shows a retryable error instead of an empty state', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final prefs = await SharedPreferences.getInstance();
+    final storage = StorageService(prefs);
+    final mockService = MockDocumentService(storage: storage);
+    var fetchAttempts = 0;
+    mockService.fetchHandler = () async {
+      fetchAttempts++;
+      if (fetchAttempts == 1) throw Exception('Network unavailable');
+      return [];
+    };
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.lightTheme,
+        home: DocumentsScreen(documentService: mockService),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text("We couldn't load your document requests."), findsOneWidget);
+    expect(find.text('No active document requests'), findsNothing);
+    expect(find.text('Try again'), findsOneWidget);
+
+    await tester.tap(find.text('Try again'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('No active document requests'), findsOneWidget);
+    expect(fetchAttempts, 2);
+  });
+
+  testWidgets('failed document refresh keeps loaded requests visible', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(1080, 2400);
+    tester.view.devicePixelRatio = 2.0;
+    addTearDown(() {
+      tester.view.resetPhysicalSize();
+      tester.view.resetDevicePixelRatio();
+    });
+
+    final prefs = await SharedPreferences.getInstance();
+    final storage = StorageService(prefs);
+    final mockService = MockDocumentService(storage: storage);
+    var fetchAttempts = 0;
+    mockService.fetchHandler = () async {
+      fetchAttempts++;
+      if (fetchAttempts == 2) throw Exception('Network unavailable');
+      return [
+        DocumentRequestModel(
+          id: 892,
+          documentType: 'Barangay Clearance',
+          urgencyTag: 'REGULAR',
+          status: 'PROCESSING',
+          createdAt: DateTime(2026, 10, 24),
+        ),
+      ];
+    };
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.lightTheme,
+        home: DocumentsScreen(documentService: mockService),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('ID: #BC-2026-0892'), findsOneWidget);
+    await tester.drag(find.byType(SingleChildScrollView), const Offset(0, 500));
+    await tester.pumpAndSettle();
+
+    expect(find.text("We couldn't refresh your document requests."), findsOneWidget);
+    expect(find.text('ID: #BC-2026-0892'), findsOneWidget);
+    expect(fetchAttempts, 2);
+
+    await tester.tap(find.text('Try again'));
+    await tester.pumpAndSettle();
+
+    expect(find.text("We couldn't refresh your document requests."), findsNothing);
+    expect(find.text('ID: #BC-2026-0892'), findsOneWidget);
+    expect(fetchAttempts, 3);
   });
 }

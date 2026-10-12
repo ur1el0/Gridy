@@ -81,6 +81,64 @@ jobs:
       - name: Exercise Compose migration success and failure gates
         run: bash scripts/ci/compose-migration-gate-smoke.sh
 
+  postgres-dns-reconnect-smoke:
+    name: PostgreSQL DNS reconnect smoke
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Exercise Django reconnect after database DNS reassignment
+        run: bash scripts/ci/postgres-dns-reconnect-smoke.sh
+
+  azure-bicep-compile:
+    name: Azure foundation Bicep compile
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Compile foundation template and verify its safety contract
+        uses: azure/cli@v2
+        with:
+          azcliversion: latest
+          inlineScript: |
+            set -euo pipefail
+            az bicep install --version v0.47.16
+            version="$(az bicep version)"
+            case "$version" in
+              *0.47.16*) ;;
+              *) echo "Unexpected Bicep compiler version: $version" >&2; exit 1 ;;
+            esac
+            template_json="$(mktemp)"
+            trap 'rm -f "$template_json"' EXIT
+            az bicep build --file infra/azure/pilot-foundation/main.bicep --stdout > "$template_json"
+            python3 scripts/ci/check-azure-pilot-foundation.py "$template_json"
+
+  acr-repository-parameter-tests:
+    name: Azure pilot parameter preflight tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Test offline ACR repository parameter validation
+        run: python -m unittest discover -s scripts/ci -p 'test_acr_repository_parameters.py'
+
+      - name: Test offline Azure pilot network parameter validation
+        run: python -m unittest discover -s scripts/ci -p 'test_azure_pilot_parameters.py'
+
   frontend-tests:
     runs-on: ubuntu-latest
     steps:

@@ -1,12 +1,23 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
+import { InlineErrorState } from '../ui/InlineErrorState';
 import type { ActivityItem } from './types';
 
 interface AppointmentsTableProps {
     activities: ActivityItem[];
+    loading: boolean;
+    loadError: boolean;
+    onRetry: () => void;
+    retrying: boolean;
 }
 
-export const AppointmentsTable: React.FC<AppointmentsTableProps> = ({ activities }) => (
+export const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
+    activities,
+    loading,
+    loadError,
+    onRetry,
+    retrying,
+}) => (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
         <div className="lg:col-span-12 bg-surface rounded-large p-6 shadow-xs border border-border/80 flex flex-col justify-between">
             <div>
@@ -33,14 +44,32 @@ export const AppointmentsTable: React.FC<AppointmentsTableProps> = ({ activities
                             </tr>
                         </thead>
                         <tbody className="text-sm divide-y divide-surface-subtle">
-                            {activities.length === 0 ? (
+                            {loading && activities.length === 0 && (
+                                <tr>
+                                    <td colSpan={4} role="status" className="py-12 text-center text-sm text-neutral-hint font-medium">
+                                        Loading appointments…
+                                    </td>
+                                </tr>
+                            )}
+                            {loadError && (
+                                <tr>
+                                    <td colSpan={4} className="p-3">
+                                        <InlineErrorState
+                                            message="We couldn't load today's appointments."
+                                            onRetry={onRetry}
+                                            retrying={retrying}
+                                        />
+                                    </td>
+                                </tr>
+                            )}
+                            {!loading && !loadError && activities.length === 0 && (
                                 <tr>
                                     <td colSpan={4} className="py-12 text-center text-sm text-neutral-hint font-medium">
                                         No appointments or activities scheduled.
                                     </td>
                                 </tr>
-                            ) : (
-                                activities.slice(0, 5).map((act) => {
+                            )}
+                            {activities.length > 0 && activities.slice(0, 5).map((act) => {
                                     const dateObj = new Date(act.event_datetime);
                                     const isValidDate = !isNaN(dateObj.getTime());
                                     const timeFormatted = isValidDate
@@ -84,8 +113,7 @@ export const AppointmentsTable: React.FC<AppointmentsTableProps> = ({ activities
                                             </td>
                                         </tr>
                                     );
-                                })
-                            )}
+                            })}
                         </tbody>
                     </table>
                 </div>

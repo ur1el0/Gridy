@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { CheckCircle2, Clock3, FileHeart, Loader2, Send, XCircle } from 'lucide-react';
 import { axiosPrivate } from '../../api/axios';
+import { InlineErrorState } from '../../components/ui/InlineErrorState';
 import { useAuth } from '../../context/auth-context';
 
 interface AidRequest {
@@ -34,21 +35,26 @@ export const AidRequests: React.FC = () => {
     const isStaff = user?.role === 'ADMIN';
     const [requests, setRequests] = useState<AidRequest[]>([]);
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
+    const [retrying, setRetrying] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [reviewingId, setReviewingId] = useState<number | null>(null);
     const [assistanceType, setAssistanceType] = useState(assistanceTypes[0]);
     const [reason, setReason] = useState('');
     const [notes, setNotes] = useState<Record<number, string>>({});
 
-    const loadRequests = async () => {
+    const loadRequests = async (isRetry = false) => {
+        if (isRetry) setRetrying(true);
         try {
             const response = await axiosPrivate.get('/aid-requests/');
             const data = response.data.results || response.data;
             setRequests(Array.isArray(data) ? data : []);
+            setLoadError(false);
         } catch {
-            toast.error('Could not load assistance requests.');
+            setLoadError(true);
         } finally {
             setLoading(false);
+            setRetrying(false);
         }
     };
 
@@ -161,6 +167,12 @@ export const AidRequests: React.FC = () => {
                     <div className="flex items-center gap-2 rounded-xl bg-white p-6 text-slate-500">
                         <Loader2 className="h-4 w-4 animate-spin" /> Loading requests…
                     </div>
+                ) : loadError ? (
+                    <InlineErrorState
+                        message="We couldn't load assistance requests."
+                        onRetry={() => void loadRequests(true)}
+                        retrying={retrying}
+                    />
                 ) : requests.length === 0 ? (
                     <div className="rounded-xl border border-dashed border-slate-300 bg-white p-8 text-center text-sm text-slate-500">
                         No assistance requests have been submitted.

@@ -3,6 +3,7 @@ import { axiosPrivate } from '../../api/axios';
 import { getSafeApiErrorMessage } from '../../api/error-message';
 import toast from 'react-hot-toast';
 import { History, Plus, X, Volume2, VolumeX } from 'lucide-react';
+import { InlineErrorState } from '../../components/ui/InlineErrorState';
 
 import { QueueMetrics } from '../../components/queue/QueueMetrics';
 import { ActiveTicketView } from '../../components/queue/ActiveTicketView';
@@ -19,6 +20,8 @@ export const LiveQueue: React.FC = () => {
     const [tickets, setTickets] = useState<QueueTicket[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string>('');
+    const [hasLoadedQueue, setHasLoadedQueue] = useState(false);
+    const [retrying, setRetrying] = useState(false);
     const [isUpdating, setIsUpdating] = useState<boolean>(false);
 
     // Modals & Form state
@@ -79,7 +82,8 @@ export const LiveQueue: React.FC = () => {
     const [notificationBanner, setNotificationBanner] = useState<string | null>(null);
 
     // Fetch tickets from backend
-    const fetchTickets = React.useCallback(async () => {
+    const fetchTickets = React.useCallback(async (isRetry = false) => {
+        if (isRetry) setRetrying(true);
         try {
             const response = await axiosPrivate.get('/tickets/');
             const newTickets = response.data.results || response.data || [];
@@ -99,12 +103,14 @@ export const LiveQueue: React.FC = () => {
             hasLoadedQueueRef.current = true;
             
             setTickets(newTickets);
+            setHasLoadedQueue(true);
             setError('');
         } catch (err) {
             console.error('Failed to load queue tickets:', err);
             setError('Failed to load queue tickets.');
         } finally {
             setLoading(false);
+            if (isRetry) setRetrying(false);
         }
     }, [announceTicket]);
 
@@ -396,8 +402,8 @@ export const LiveQueue: React.FC = () => {
                 </div>
             )}
 
-            {error && (
-                <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm font-medium">
+            {error && hasLoadedQueue && (
+                <div role="alert" className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm font-medium">
                     {error}
                 </div>
             )}
@@ -405,11 +411,23 @@ export const LiveQueue: React.FC = () => {
             {/* Main Top Grid (Now Serving + 4 Stat Cards) */}
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
                 <div className="lg:col-span-5">
-                    <ActiveTicketView servingTicket={servingTicket} />
+                    {hasLoadedQueue ? (
+                        <ActiveTicketView servingTicket={servingTicket} />
+                    ) : error ? (
+                        <InlineErrorState
+                            message="Failed to load queue tickets."
+                            onRetry={() => { void fetchTickets(true); }}
+                            retrying={retrying}
+                        />
+                    ) : (
+                        <p role="status" className="rounded-xl bg-surface p-6 text-sm text-neutral-secondary">
+                            Loading queue tickets…
+                        </p>
+                    )}
                 </div>
                 <div className="lg:col-span-7">
                     <QueueMetrics 
-                        loading={loading}
+                        loading={loading || !hasLoadedQueue}
                         totalWaitingCount={totalWaitingCount}
                         avgWaitMinutes={avgWaitMinutes}
                         servedTodayCount={servedTodayCount}
@@ -428,18 +446,20 @@ export const LiveQueue: React.FC = () => {
             />
             
             {/* Bottom Section: Waiting List Table */}
-            <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-                <div className="lg:col-span-12">
-                    <WaitingListTable 
-                        waitingTickets={waitingTickets}
-                        isUpdating={isUpdating}
-                        fetchTickets={fetchTickets}
-                        canManagePriority={canManagePriority}
-                        handlePriorityChange={handlePriorityChange}
-                        handleCancelTicket={handleCancelTicket}
-                    />
+            {hasLoadedQueue && (
+                <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
+                    <div className="lg:col-span-12">
+                        <WaitingListTable
+                            waitingTickets={waitingTickets}
+                            isUpdating={isUpdating}
+                            fetchTickets={fetchTickets}
+                            canManagePriority={canManagePriority}
+                            handlePriorityChange={handlePriorityChange}
+                            handleCancelTicket={handleCancelTicket}
+                        />
+                    </div>
                 </div>
-            </div>
+            )}
 
             {isManualModalOpen && (
                 <NewTicketModal 
