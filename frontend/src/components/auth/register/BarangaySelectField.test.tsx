@@ -19,6 +19,7 @@ describe('BarangaySelectField', () => {
                     },
                 ]}
                 loadingBarangays={false}
+                onRetry={vi.fn()}
                 isAdminMode={false}
             />,
         );
