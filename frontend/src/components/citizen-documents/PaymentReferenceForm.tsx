@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { AlertCircle, Calendar, ImageIcon, Loader2, Upload, X } from 'lucide-react';
+import { AlertCircle, Calendar, Loader2, Upload, X } from 'lucide-react';
 import type { PaymentRecipient } from './types';
 
 export interface PaymentReferenceFormProps {
