@@ -29,5 +29,6 @@
 - **Task brief and plan commit:** `66f648f` (`docs(m72): define barangay applications recovery`).
 - **Implementation commit:** `57568b902485001e380c636cac9435b7b95dafc7` (`fix(applications): recover barangay list load errors`).
 - **Remote branch:** `fix/m72-barangay-applications-load-errors`, pushed with M71 PR #202 as its base.
-- **PR:** Not open yet. GitHub public pages and HTTPS Git work, but PR API requests to `api.github.com` are denied by the current environment network policy. Hosted CI is therefore pending.
+- **PR:** Not open yet. GitHub public pages and HTTPS Git work, but PR API requests to `api.github.com` are denied by the current environment network policy. PR-event CI is pending.
+- **Hosted push CI:** PASS on implementation commit `57568b902485001e380c636cac9435b7b95dafc7` (run `38199755059`) and verification-status commit `9c5b4c08ed03c4e16ba2a67a819e1207ca107542` (run `38199809980`). These are branch push checks; PR-event checks have not run because the PR is not open.
 - **Next action:** Allow `api.github.com` through environment settings, then retry PR creation. Recheck the existing GitHub credential after that network change; request a replacement only if the API still rejects it.
