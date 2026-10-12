@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { axiosPrivate } from '../../api/axios';
+import { InlineErrorState } from '../../components/ui/InlineErrorState';
 import { useAuth } from '../../context/auth-context';
 import { PaymentRecipientSettings } from './PaymentRecipientSettings';
 
@@ -18,33 +19,43 @@ export const BarangaySettings: React.FC = () => {
     const [sealFile, setSealFile] = useState<File | null>(null);
 
     const [loading, setLoading] = useState(true);
+    const [retrying, setRetrying] = useState(false);
+    const [loadError, setLoadError] = useState(false);
     const [saving, setSaving] = useState(false);
     const [message, setMessage] = useState({ text: '', type: '' });
 
-    useEffect(() => {
-        const fetchSettings = async () => {
-            try {
-                const response = await axiosPrivate.get('/auth/barangay/');
-                // The endpoint returns a paginated list or an array since it's a ViewSet list route
-                const data = response.data.results ? response.data.results[0] : response.data[0];
-                
-                if (data) {
-                    setBarangayId(data.id);
-                    setName(data.name || '');
-                    setCaptainName(data.captain_name || '');
-                    setOfficeContact(data.office_contact || '');
-                    setPrimaryColor(data.primary_color || '#082B66');
-                    setLogoPreview(data.logo);
-                    setSealPreview(data.city_seal);
-                }
-            } catch (err) {
-                console.error("Failed to fetch barangay settings", err);
-            } finally {
-                setLoading(false);
+    const fetchSettings = useCallback(async (isRetry = false) => {
+        if (isRetry) setRetrying(true);
+
+        try {
+            const response = await axiosPrivate.get('/auth/barangay/');
+            // The endpoint returns a paginated list or an array since it's a ViewSet list route
+            const data = response.data.results ? response.data.results[0] : response.data[0];
+
+            if (!data) {
+                throw new Error('Barangay settings response did not include a record.');
             }
-        };
-        fetchSettings();
+
+            setBarangayId(data.id);
+            setName(data.name || '');
+            setCaptainName(data.captain_name || '');
+            setOfficeContact(data.office_contact || '');
+            setPrimaryColor(data.primary_color || '#082B66');
+            setLogoPreview(data.logo);
+            setSealPreview(data.city_seal);
+            setLoadError(false);
+        } catch (err) {
+            setLoadError(true);
+            console.error("Failed to fetch barangay settings", err);
+        } finally {
+            setLoading(false);
+            setRetrying(false);
+        }
     }, []);
+
+    useEffect(() => {
+        void fetchSettings();
+    }, [fetchSettings]);
 
     const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>, type: 'logo' | 'seal') => {
         if (e.target.files && e.target.files[0]) {
@@ -90,16 +101,34 @@ export const BarangaySettings: React.FC = () => {
         }
     };
 
+    const pageHeading = (
+        <div>
+            <h2 className="text-2xl font-bold text-slate-900">Barangay Identity Settings</h2>
+            <p className="mt-1 text-sm text-slate-500">
+                Manage your Barangay's official seals, contact information, and leadership details used in generated documents.
+            </p>
+        </div>
+    );
+
     if (loading) return <div className="p-8 text-slate-600">Loading settings...</div>;
+
+    if (loadError) {
+        return (
+            <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in">
+                {pageHeading}
+                <InlineErrorState
+                    message="Could not load barangay settings."
+                    onRetry={() => void fetchSettings(true)}
+                    retrying={retrying}
+                />
+                <PaymentRecipientSettings />
+            </div>
+        );
+    }
 
     return (
         <div className="max-w-4xl mx-auto space-y-6 animate-in fade-in">
-            <div>
-                <h2 className="text-2xl font-bold text-slate-900">Barangay Identity Settings</h2>
-                <p className="mt-1 text-sm text-slate-500">
-                    Manage your Barangay's official seals, contact information, and leadership details used in generated documents.
-                </p>
-            </div>
+            {pageHeading}
 
             {message.text && (
                 <div className={`p-4 rounded-md ${message.type === 'success' ? 'bg-emerald-50 text-emerald-800' : 'bg-red-50 text-red-800'}`}>

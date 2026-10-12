@@ -15,6 +15,16 @@ vi.mock('../../context/auth-context', () => ({
     useAuth: vi.fn(),
 }));
 
+const barangaySettings = {
+    id: 12,
+    name: 'Barangay Test',
+    captain_name: 'Captain Test',
+    office_contact: 'Barangay Hall',
+    logo: null,
+    city_seal: null,
+    primary_color: '#082B66',
+};
+
 describe('BarangaySettings', () => {
     const updateBarangayPrimaryColor = vi.fn();
 
@@ -27,19 +37,11 @@ describe('BarangaySettings', () => {
             isAuthenticated: true,
             updateBarangayPrimaryColor,
         });
-        vi.mocked(axiosPrivate.get).mockResolvedValue({
-            data: {
-                results: [{
-                    id: 12,
-                    name: 'Barangay Test',
-                    captain_name: '',
-                    office_contact: '',
-                    logo: null,
-                    city_seal: null,
-                    primary_color: '#082B66',
-                }],
-            },
-        } as never);
+        vi.mocked(axiosPrivate.get).mockImplementation((url: string) => Promise.resolve(
+            url === '/auth/barangay/'
+                ? { data: { results: [{ ...barangaySettings, captain_name: '', office_contact: '' }] } }
+                : { data: [] },
+        ) as never);
         vi.mocked(axiosPrivate.patch).mockResolvedValue({
             data: { primary_color: '#C70039' },
         } as never);
@@ -60,5 +62,77 @@ describe('BarangaySettings', () => {
         const formData = vi.mocked(axiosPrivate.patch).mock.calls[0]?.[1] as FormData;
         expect(formData.get('primary_color')).toBe('#C70039');
         expect(await screen.findByText('Settings updated successfully!')).toBeInTheDocument();
+    });
+
+    it('shows a retryable settings error and preserves payment recipient settings', async () => {
+        vi.mocked(axiosPrivate.get).mockImplementation((url: string) => Promise.resolve(
+            url === '/auth/barangay/'
+                ? Promise.reject(new Error('Network unavailable'))
+                : { data: [] },
+        ) as never);
+        render(<BarangaySettings />);
+
+        expect(await screen.findByRole('alert')).toHaveTextContent('Could not load barangay settings.');
+        expect(screen.getByRole('heading', { name: 'Barangay Identity Settings' })).toBeInTheDocument();
+        expect(screen.getByRole('heading', { name: 'Electronic payment recipients' })).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Save Settings' })).not.toBeInTheDocument();
+        expect(screen.queryByLabelText('Primary brand color')).not.toBeInTheDocument();
+        expect(axiosPrivate.patch).not.toHaveBeenCalled();
+    });
+
+    it('does not show a blank identity form when the settings response has no barangay record', async () => {
+        vi.mocked(axiosPrivate.get).mockImplementation((url: string) => Promise.resolve(
+            url === '/auth/barangay/'
+                ? { data: { results: [] } }
+                : { data: [] },
+        ) as never);
+        render(<BarangaySettings />);
+
+        expect(await screen.findByRole('alert')).toHaveTextContent('Could not load barangay settings.');
+        expect(screen.queryByRole('button', { name: 'Save Settings' })).not.toBeInTheDocument();
+        expect(axiosPrivate.patch).not.toHaveBeenCalled();
+    });
+
+    it('keeps repeated retry errors visible and restores the form after a successful retry', async () => {
+        let settingsReads = 0;
+        vi.mocked(axiosPrivate.get).mockImplementation((url: string) => {
+            if (url !== '/auth/barangay/') return Promise.resolve({ data: [] }) as never;
+            settingsReads += 1;
+            if (settingsReads < 3) return Promise.reject(new Error('Network unavailable')) as never;
+            return Promise.resolve({ data: { results: [barangaySettings] } }) as never;
+        });
+        render(<BarangaySettings />);
+
+        expect(await screen.findByRole('alert')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+        await waitFor(() => expect(settingsReads).toBe(2));
+        expect(screen.getByRole('alert')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+        expect(await screen.findByLabelText('Primary brand color')).toBeInTheDocument();
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        expect(screen.getByDisplayValue('Barangay Test')).toHaveValue('Barangay Test');
+        expect(screen.getByDisplayValue('Captain Test')).toHaveValue('Captain Test');
+        expect(settingsReads).toBe(3);
+        expect(axiosPrivate.patch).not.toHaveBeenCalled();
+    });
+
+    it('disables retry while the barangay settings GET is pending', async () => {
+        let settingsReads = 0;
+        vi.mocked(axiosPrivate.get).mockImplementation((url: string) => {
+            if (url !== '/auth/barangay/') return Promise.resolve({ data: [] }) as never;
+            settingsReads += 1;
+            return settingsReads === 1
+                ? Promise.reject(new Error('Network unavailable')) as never
+                : new Promise(() => {});
+        });
+        render(<BarangaySettings />);
+
+        await screen.findByRole('alert');
+        fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+
+        expect(await screen.findByRole('button', { name: 'Trying again…' })).toBeDisabled();
+        expect(settingsReads).toBe(2);
+        expect(axiosPrivate.patch).not.toHaveBeenCalled();
     });
 });
