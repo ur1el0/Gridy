@@ -2,7 +2,7 @@
 
 ## Summary
 - Task ID: m73-public-announcements-load-error-recovery
-- State: Implementation and local verification complete; delivery pending.
+- State: Implementation and local verification complete; implementation commit created, publication pending.
 - Branch: fix/m73-public-announcements-load-errors
 - Base: M72 PR #203 head cbda5d6f3c0075032e50020682604ea0ee678bc2 (fix/m72-barangay-applications-load-errors).
 - Primary checkout: Preserved; work is isolated in /tmp/kapitbayan-local-m73.
@@ -19,7 +19,8 @@
 - [x] Add focused regression coverage and reproduce the missing retry.
 - [x] Implement retryable public announcements loading.
 - [x] Run required checks and self-review the final diff.
-- [ ] Commit, push, and open a stacked PR; do not merge or deploy.
+- [x] Commit the scoped implementation locally.
+- [ ] Push and open a stacked PR; do not merge or deploy.
 
 ## Verification log
 
@@ -37,3 +38,7 @@
 - A failed request renders the shared accessible `InlineErrorState`; a retry is disabled while pending, repeated failures remain retryable, and success clears the alert before rendering either the empty or populated state.
 - Regression tests cover initial loading, public page context through a pending retry, the barangay-specific GET URL, repeated failure, successful empty-state recovery, and successful populated-state recovery. No mutation API is available to or called by the page.
 - Scope stayed within the public page and its tests. No backend, route, schema, dependency, infrastructure, or Azure changes were made.
+
+## Delivery
+- Implementation commit: `27a35b3` (`fix(frontend): add retry for public announcements`).
+- Push and PR: pending.
