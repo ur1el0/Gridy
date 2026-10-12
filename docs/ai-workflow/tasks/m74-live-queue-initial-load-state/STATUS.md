@@ -2,7 +2,7 @@
 
 ## Summary
 - Task ID: m74-live-queue-initial-load-state
-- State: Implementation and local verification complete; delivery pending.
+- State: PR opened; hosted checks are pending.
 - Branch: fix/m74-live-queue-load-state
 - Base: M73 PR #204 head e9fcc89e81e2ad4e4bc7c84fee3bd7b79ea6ecf0.
 - Worktree: isolated at `/tmp/kapitbayan-local-m73`; primary checkout preserved.
@@ -15,7 +15,7 @@
 - [x] Add failing tests for initial failure and background poll failure.
 - [x] Implement truthful initial loading/error states and retry.
 - [x] Run required frontend checks and self-review the diff.
-- [ ] Commit, push, and open a stacked PR; do not merge or deploy.
+- [x] Commit, push, and open a stacked PR; do not merge or deploy.
 
 ## Baseline evidence
 - `LiveQueue.fetchTickets()` sets an error on failure and sets `loading` false in `finally`, while `tickets` stays at its initial empty array.
@@ -39,3 +39,10 @@
 - `hasLoadedQueue` now separates never-loaded data from a valid empty response. Before the first successful GET, the page shows loading or the shared accessible retry state, keeps metric values unknown, and withholds the active-ticket and empty waiting-list presentations.
 - A successful empty response unlocks the genuine zero counts and empty lanes. Later polling failures use `role="alert"` while retaining the last successful ticket snapshot; a subsequent successful poll clears the alert.
 - Retry uses only the existing `GET /tickets/` endpoint. The three-second poll interval, action endpoints, role checks, and audio transition logic remain unchanged.
+
+## Delivery
+- Implementation commit: `cc2d9fe655c2320287140b760530a652896215e6` (`fix(queue): distinguish initial load failure from empty queue`).
+- Branch pushed to `origin/fix/m74-live-queue-load-state`.
+- Pull request: [#205](https://github.com/ur1el0/KapitBayan/pull/205), based on M73 PR #204 branch `fix/m73-public-announcements-load-errors`.
+- PR is open, unmerged, and mergeable. GitHub Actions run 516 was queued and Vercel was pending when checked; these statuses need a cloud recheck after the delivery note is pushed.
+- No merge or deployment was performed. Azure pilot remains NO-GO.
