@@ -2,10 +2,11 @@
 
 ## Summary
 - **Task ID:** `m65-issue-reports-load-error-states`
-- **State:** In Progress
+- **State:** Completed
 - **Current milestone:** M3 — Full verification and delivery
 - **Branch:** `fix/m65-issue-reports-load-error-states`
 - **Base:** M64 PR #195 head `134a30704bf8b1bbaba06b0cedfa0310bca76eb8`
+- **Implementation commit:** `466a5efba93c870045bcd685190ee12dd1e258b2`
 - **Primary checkout:** Preserved; all work is isolated in `/tmp/gridy-m62-reliability-audit`.
 
 ## Baseline evidence
@@ -20,7 +21,7 @@
 | --- | --- | --- |
 | M1 — Regression behavior | Complete | Four focused tests reproduced the missing alert/retry behavior. |
 | M2 — Retryable error UI | Complete | Retryable alert is integrated into the existing table context. |
-| M3 — Verification and delivery | In Progress | Full frontend checks and final diff review in progress. |
+| M3 — Verification and delivery | Complete | Local checks passed; pushed and opened PR #196; hosted checks passed on the implementation commit. |
 
 ## Files
 Planned:
@@ -47,11 +48,16 @@ Planned:
   - **Result:** PASS — exit code 0; Oxlint emitted no diagnostics.
 - **Command:** `npm --prefix frontend run build`
   - **Result:** PASS — TypeScript and Vite production build succeeded; 2,514 modules transformed in 1.26 s.
-- **Command:** `git diff --check` and later `git diff --cached --check`
-  - **Result:** PASS — clean; staged-content check is run before commit.
+- **Command:** `git diff --check` and `git diff --cached --check`
+  - **Result:** PASS — both clean.
 
 ## Delivery
-No M65 commit, push, or PR yet. Azure pilot remains NO-GO; this task does not touch Azure or production infrastructure.
+- **Implementation commit:** `466a5efba93c870045bcd685190ee12dd1e258b2` (`fix(reports): add retryable load errors`).
+- **Branch:** `fix/m65-issue-reports-load-error-states`, pushed to `origin`.
+- **PR:** [#196](https://github.com/ur1el0/KapitBayan/pull/196), based on M64 branch `fix/m64-announcements-load-error-states`; OPEN, mergeable, not merged.
+- **Hosted verification:** GitHub Actions runs [#38188391027](https://github.com/ur1el0/KapitBayan/actions/runs/38188391027) and [#38188413446](https://github.com/ur1el0/KapitBayan/actions/runs/38188413446) passed all nine CI jobs; Vercel and GitGuardian checks passed.
+- M64 PR #195 is OPEN, mergeable, and all current-head checks pass.
+- Azure pilot remains NO-GO; no production or Azure infrastructure was touched.
 
 ## Scope and self-review
 - Changed only the Issue Reports page, its focused tests, and this M65 task packet.
