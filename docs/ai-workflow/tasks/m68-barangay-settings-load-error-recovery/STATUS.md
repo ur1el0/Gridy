@@ -2,7 +2,7 @@
 
 ## Summary
 - **Task ID:** `m68-barangay-settings-load-error-recovery`
-- **State:** Implementation and local verification complete; PR delivery checks pending
+- **State:** Completed — implementation, local verification, and hosted checks passed
 - **Current milestone:** M3 — Full verification and delivery
 - **Branch:** `fix/m68-barangay-settings-load-error-recovery`
 - **Base:** M67 delivery head `bb1b01b`
@@ -22,7 +22,7 @@
 | --- | --- | --- |
 | M1 — Regression coverage | Complete | Four new tests cover failed/empty loads, retry pending/recovery, and payment-section availability. |
 | M2 — Recover settings load state | Complete | Retryable unavailable-record error suppresses the identity form while keeping payment settings visible. |
-| M3 — Full verification and delivery | In Progress | Local checks passed; commit, push, PR, and hosted checks remain. |
+| M3 — Full verification and delivery | Complete | Commit `c24c0e7` is pushed; PR #199 is open and all hosted checks pass on its current head. |
 
 ## Planned files
 - `frontend/src/pages/admin/BarangaySettings.tsx`
@@ -53,4 +53,9 @@
 - Re-ran `npm --prefix frontend run test -- src/pages/admin/BarangaySettings.test.tsx` against unchanged application code — expected red: 1 test passed and 3 new regression tests failed because the page had no alert/retry, continued to show blank Save Settings controls, and did not provide retry recovery.
 
 ## Delivery
-Local verification is complete. Commit, push, PR, and hosted-check results will be recorded after delivery. Azure pilot remains NO-GO; this task does not touch Azure or production infrastructure.
+- **Implementation commit:** `c24c0e7c3c94dcada02409aa634f385d989fe4eb` (`fix(settings): recover barangay settings load failures`).
+- **Remote:** Pushed to `origin/fix/m68-barangay-settings-load-error-recovery`.
+- **PR:** [#199](https://github.com/ur1el0/KapitBayan/pull/199), open, unmerged, mergeable; base is `fix/m67-payment-recipient-load-error-states` (M67 PR #198).
+- **Hosted checks on the PR head:** PASS in [run 38190427254](https://github.com/ur1el0/KapitBayan/actions/runs/38190427254) and [run 38190448374](https://github.com/ur1el0/KapitBayan/actions/runs/38190448374): backend/frontend tests, mobile tests, backend/frontend image builds, Azure foundation compile, Azure parameter preflight, Compose migration gate smoke, PostgreSQL DNS reconnect smoke, GitGuardian, and Vercel.
+- **Preceding stack:** M67 PR #198 checks also pass; no PR was merged.
+- Azure pilot remains NO-GO; this task does not touch Azure or production infrastructure.
