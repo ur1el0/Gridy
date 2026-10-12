@@ -2,7 +2,7 @@
 
 ## Summary
 - **Task ID:** `m72-barangay-applications-load-error-recovery`
-- **State:** Implementation and local verification complete; PR #203 is open and PR-event CI is queued.
+- **State:** Implementation and local verification complete; PR #203 is open and the PR-event CI run recorded below passed.
 - **Branch:** `fix/m72-barangay-applications-load-errors`
 - **Base:** M71 PR #202 head `b84b4a7e9579a3f193245952335955052aef8406` (`fix/m71-admin-dashboard-load-errors`).
 - **Primary checkout:** `/workspace/KapitBayan` was not modified; implementation was done in `/tmp/kapitbayan-m72`.
@@ -28,9 +28,10 @@
 ## Delivery
 - **Task brief and plan commit:** `66f648f` (`docs(m72): define barangay applications recovery`).
 - **Implementation commit:** `57568b902485001e380c636cac9435b7b95dafc7` (`fix(applications): recover barangay list load errors`).
-- **Status commits:** `9c5b4c0` recorded local verification; follow-up hosted status is committed as `5e454d16cd61dc5d4401c89877004d5d75bc76fd`.
+- **Status commits:** `9c5b4c0` recorded local verification; `5e454d1` recorded hosted push verification; `8367bb5` recorded the PR handoff.
 - **Remote branch:** `fix/m72-barangay-applications-load-errors`, based on the M71 PR #202 head.
 - **PR:** [#203 — fix(applications): recover barangay list load errors](https://github.com/ur1el0/KapitBayan/pull/203), OPEN, based on M71 PR #202. GitHub reports it mergeable. Do not merge until the parent M71 PR is merged and reviewed.
 - **Hosted push CI:** PASS on implementation commit `57568b902485001e380c636cac9435b7b95dafc7` (run `38199755059`) and status commit `9c5b4c08ed03c4e16ba2a67a819e1207ca107542` (run `38199809980`).
-- **PR-event CI:** run `38200931608` was QUEUED when this status was updated; its result remains to be checked. Vercel generated an automatic Preview and reported it READY on PR #203; no production deployment was initiated.
-- **Next action:** Check PR #203’s checks and review the Preview. Keep it stacked behind #202; no merge or Azure pilot action is included.
+- **PR-event CI:** run `38200970480` PASSED on PR head `8367bb5a5c7fef1fdc2769fd15f730344ee48894`; all jobs succeeded, including backend/frontend/mobile tests, both container builds, Compose migration gate smoke, PostgreSQL DNS reconnect smoke, and Azure offline preflight/Bicep checks.
+- **Preview:** Vercel automatically reported a Ready Preview on PR #203. No production deployment was initiated.
+- **Next action:** Review PR #203 and its Preview. Keep it stacked behind #202; no merge or Azure pilot action is included.
