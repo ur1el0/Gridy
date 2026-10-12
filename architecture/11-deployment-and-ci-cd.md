@@ -50,6 +50,14 @@ Strict separation of configuration across environments:
 *   `VITE_API_BASE_URL` (leave unset or `/api/v1` for production same-origin builds; `http://127.0.0.1:8000/api/v1` for local development)
 *   `REFRESH_COOKIE_SAMESITE` (defaults to `Strict`)
 
+### Runtime guarantees and scale-out gates
+
+The current notification implementation starts daemon threads in the API process. An API success response means the work was accepted by the process, not that SMTP or FCM delivered it; process termination can interrupt the work and there is no persistent queue or retry. This is the low-dependency behavior selected by [ADR 009](decisions/009-simplification-to-defended-proposal-architecture.md) and bounded for pilot planning by [ADR 013](decisions/013-pilot-notification-and-throttle-guardrails.md). Treat notification delivery as best-effort unless a separate durable delivery design is reviewed and accepted by the responsible owner.
+
+DRF scoped throttles use Django's default `LocMemCache`. Each of the three Gunicorn workers has its own in-memory counters, and replicas do not share them. Configured rates are therefore approximate request budgets, not brute-force or denial-of-service controls. Before relying on consistent abuse protection or increasing replicas, evaluate and test a shared cache or edge enforcement mechanism. A single replica does not make the worker-local counters global.
+
+These constraints document current behavior and future decision gates; they do not configure Azure resources, select a shared service, or record production-owner acceptance.
+
 ---
 
 ## 4. Mobile Distribution
