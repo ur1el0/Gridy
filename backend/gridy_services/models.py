@@ -130,6 +130,17 @@ class DocumentRequest(models.Model):
         default=PaymentStatus.NOT_REQUIRED,
     )
     payment_review_note = models.TextField(blank=True)
+    payment_proof_image = models.ImageField(
+        upload_to="payment_proofs/",
+        blank=True,
+        null=True,
+        help_text="Private receipt screenshot for manual electronic payment verification.",
+    )
+    payment_transacted_at = models.DateTimeField(
+        blank=True,
+        null=True,
+        help_text="Resident-reported timestamp of the fund transfer.",
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
