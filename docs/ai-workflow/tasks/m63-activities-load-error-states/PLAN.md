@@ -12,8 +12,9 @@
 1. Add `Activities.test.tsx` for initial GET failure versus a successful empty response.
 2. Verify Schedule Activity remains usable after failure.
 3. Verify retry repeats only `/activities/`, remains visible after repeated failure, and recovers to populated data.
-4. Verify pending retry is disabled and does not call POST or DELETE.
-5. Run the focused test before implementation and record the actual red result.
+4. Verify a failed post-create list refresh preserves the existing activity cards and exposes a retry alert.
+5. Verify pending retry is disabled and does not call POST or DELETE.
+6. Run the focused test before implementation and record actual red results.
 
 **Validation:** `npm --prefix frontend run test -- src/pages/services/Activities.test.tsx`
 
@@ -22,8 +23,9 @@
 1. Track retry state and clear/set the existing error based on GET outcomes.
 2. Replace the page-level early return with `InlineErrorState` in the list area.
 3. Keep the existing header and scheduling modal reachable during list errors.
-4. Preserve the successful empty/populated list, create/delete logic, endpoint, and response normalization.
-5. Rerun focused tests.
+4. When a follow-up GET fails after records are loaded, show the error while preserving those records.
+5. Preserve the successful empty/populated list, create/delete logic, endpoint, and response normalization.
+6. Rerun focused tests.
 
 ## Milestone 3 — Verification and delivery
 
@@ -36,3 +38,7 @@
 
 - HTTP calls are mocked. No production data, cloud resources, deployments, migrations, or external services are touched.
 - Azure pilot remains NO-GO.
+
+## Plan amendment
+
+During review of `Activities.tsx`, the loader was found to run after successful creation as well as on initial mount. The error path would therefore hide existing records if only the retry UI were added. The brief and tests were expanded narrowly to preserve already-loaded cards when that follow-up GET fails.

@@ -71,6 +71,33 @@ describe('Activities', () => {
         expect(axiosPrivate.delete).not.toHaveBeenCalled();
     });
 
+    it('preserves loaded activity cards when the post-create list refresh fails', async () => {
+        vi.mocked(axiosPrivate.get)
+            .mockResolvedValueOnce({ data: [activity] } as never)
+            .mockRejectedValueOnce(new Error('Network unavailable'));
+        vi.mocked(axiosPrivate.post).mockResolvedValueOnce({ data: {} } as never);
+
+        render(<Activities />);
+        expect(await screen.findByText('Barangay Assembly')).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Schedule Activity' }));
+        fireEvent.change(screen.getByLabelText('Event Title'), { target: { value: 'Health Screening' } });
+        fireEvent.change(screen.getByLabelText('Location'), { target: { value: 'Barangay Hall' } });
+        fireEvent.change(screen.getByLabelText('Date & Time'), { target: { value: '2026-10-20T09:00' } });
+        fireEvent.change(screen.getByLabelText('Description'), { target: { value: 'Community health screening.' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Schedule Event' }));
+
+        await waitFor(() => expect(axiosPrivate.get).toHaveBeenCalledTimes(2));
+
+        expect(screen.getByText('Barangay Assembly')).toBeInTheDocument();
+        expect(screen.getByRole('alert')).toHaveTextContent("We couldn't load activities.");
+        expect(axiosPrivate.post).toHaveBeenCalledWith('/activities/', expect.objectContaining({
+            title: 'Health Screening',
+            location: 'Barangay Hall',
+        }));
+        expect(axiosPrivate.delete).not.toHaveBeenCalled();
+    });
+
     it('shows the genuine empty state after a successful empty response', async () => {
         vi.mocked(axiosPrivate.get).mockResolvedValueOnce({ data: [] } as never);
 
