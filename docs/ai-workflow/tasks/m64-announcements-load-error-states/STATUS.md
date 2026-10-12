@@ -2,10 +2,11 @@
 
 ## Summary
 - **Task ID:** `m64-announcements-load-error-states`
-- **State:** In Progress
+- **State:** Completed
 - **Current milestone:** M3 — Full verification and delivery
 - **Branch:** `fix/m64-announcements-load-error-states`
 - **Base:** M63 delivery `82eda91e2eb115af725473b6d7f2886a7ccd3dc7`
+- **Implementation commit:** `82e863de85025394fd38213dd357f4a9a937dc23`
 - **Primary checkout:** Preserved; all work is isolated in `/tmp/gridy-m62-reliability-audit`.
 
 ## Baseline evidence
@@ -21,7 +22,7 @@
 | --- | --- | --- |
 | M1 — Regression behavior | Complete | Five focused regression tests; baseline reproduced all five failures. |
 | M2 — Retryable error UI | Complete | Existing `InlineErrorState` added to the list region; page actions and loaded cards remain visible on failure. |
-| M3 — Verification and delivery | In Progress | Full frontend checks and final diff review in progress. |
+| M3 — Verification and delivery | Complete | Local checks passed; commit pushed; PR #195 is open, mergeable, and all hosted checks passed on the implementation commit. |
 
 ## Files
 Planned:
@@ -49,11 +50,15 @@ Planned:
 - **Command:** `npm --prefix frontend run build`
   - **Result:** PASS — TypeScript and Vite production build succeeded; 2,514 modules transformed in 935 ms.
 - **Command:** `git diff --check`
-  - **Result:** PASS — no whitespace errors. The untracked test and task packet will be included in the staged-content check before commit.
+  - **Result:** PASS — no whitespace errors.
+- **Hosted verification:** GitHub Actions run [#38187801149](https://github.com/ur1el0/KapitBayan/actions/runs/38187801149) passed all nine CI jobs on implementation SHA `82e863d`; the duplicate push-triggered run [#38187773359](https://github.com/ur1el0/KapitBayan/actions/runs/38187773359) also passed. GitGuardian and Vercel passed.
 
 ## Delivery
-No M64 commit, push, or PR yet. Azure pilot remains NO-GO; this task does not touch Azure or production infrastructure.
-
+- **Commit:** `82e863de85025394fd38213dd357f4a9a937dc23` (`fix(announcements): add retryable load errors`).
+- **Branch:** `fix/m64-announcements-load-error-states`, pushed to `origin`.
+- **PR:** [#195](https://github.com/ur1el0/KapitBayan/pull/195), based on M63 delivery `fix/m63-activities-load-error-states-delivery`; state OPEN and mergeable, not merged.
+- The PR head at the time of hosted verification was the implementation SHA above. This task-status-only follow-up records delivery metadata; it contains no application-code changes.
+- Azure pilot remains NO-GO; this task does not touch Azure or production infrastructure.
 
 ## Scope and self-review
 - Changed only the Announcements page, its focused tests, and this M64 task packet.
