@@ -2,8 +2,8 @@
 
 ## Summary
 - **Task ID:** `m69-system-settings-load-error-recovery`
-- **State:** In Progress
-- **Current milestone:** M3 — Full verification and delivery
+- **State:** Complete
+- **Current milestone:** Complete — implementation, local verification, and hosted CI
 - **Branch:** `fix/m69-system-settings-load-error-recovery`
 - **Base:** M68 delivery head `3eec74b`
 - **Worktree:** `/tmp/gridy-m69-system-settings-load-errors`
@@ -21,7 +21,7 @@
 | --- | --- | --- |
 | M1 — Regression coverage | Complete | Six tests cover independent failures, retry/recovery, pending controls, and no mutation. |
 | M2 — Independent load recovery | Complete | Each section now has a separate accessible retry state; failed data is not shown as defaults or an empty session list. |
-| M3 — Full verification and delivery | In Progress | All local frontend checks pass; commit, push, PR, and hosted checks remain. |
+| M3 — Full verification and delivery | Complete | Local verification and both hosted CI runs pass; PR #200 is open and mergeable, stacked on M68. |
 
 ## Planned files
 - `frontend/src/pages/admin/Settings.tsx`
@@ -52,4 +52,10 @@
 - **Scope check:** Application changes are limited to `Settings.tsx` and its new focused test. No backend/API, tenant/RBAC, schema, dependency, infrastructure, payment, password-change, or unrelated-page code changed.
 
 ## Delivery
-No M69 commit, push, or PR yet. M68 PR #199 remains open and unmerged. Azure pilot remains NO-GO.
+- **Code commit:** `2f3c892f760cbdae1d23cb4e22334338e9deb406` (`fix(settings): recover profile and session load errors`).
+- **Remote:** `origin/fix/m69-system-settings-load-error-recovery`, pushed.
+- **Pull request:** [#200](https://github.com/ur1el0/KapitBayan/pull/200), open and mergeable; base is `fix/m68-barangay-settings-load-error-recovery`. No merge was performed.
+- **Hosted CI:** Runs `38191632137` and `38191649404` passed. Both runs include backend and frontend tests, mobile tests, backend/frontend image builds, Azure foundation compile and parameter preflight, Compose migration gate, PostgreSQL DNS reconnect smoke, and security checks. Vercel checks passed.
+- **M68 dependency:** PR #199 remains open and unmerged; M69 is intentionally stacked on it.
+- **Azure pilot:** Remains NO-GO.
+- **Follow-up:** The separately observed push-preference PATCH payload defect is deferred to M70; it is outside this milestone's load-error scope.
