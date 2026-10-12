@@ -2,8 +2,8 @@
 
 ## Summary
 - **Task ID:** `m70-push-alert-preference-payload`
-- **State:** In Progress
-- **Current milestone:** M1 — reproduce, fix, and verify payload defect
+- **State:** Complete
+- **Current milestone:** M1 — complete
 - **Branch:** `fix/m70-push-alert-preference-payload`
 - **Base:** M69 PR head `c1745472cbdaae788f546600c7645beec0d19297`
 - **Worktree:** `/tmp/gridy-m70-push-preference-payload`
@@ -29,4 +29,9 @@
 - **Scope:** Only `Settings.tsx`, `Settings.test.tsx`, and the M70 task packet changed. No backend/API, schema, dependency, infrastructure, or Azure pilot files changed.
 
 ## Delivery
-Local implementation and verification are complete. Code commit, push, PR, and hosted checks are pending. M69 PR #200 is open and unmerged. Azure pilot remains NO-GO.
+- **Implementation commit:** `4a5204115d57d40e4381d6a45fcf6f189a13a8a6` (`fix(settings): persist selected push alert value`).
+- **Remote:** `origin/fix/m70-push-alert-preference-payload`, pushed.
+- **Pull request:** [#201](https://github.com/ur1el0/KapitBayan/pull/201), open and mergeable; base is `fix/m69-system-settings-load-error-recovery`. No merge was performed.
+- **Hosted CI:** Runs `38192196116` and `38192214644` passed, including backend/frontend tests, mobile tests, backend/frontend image builds, Azure foundation compile and parameter preflight, Compose migration gate, PostgreSQL DNS reconnect smoke, GitGuardian, and Vercel.
+- **Dependency:** M69 PR #200 remains open and unmerged; M70 is intentionally stacked on it.
+- **Azure pilot:** Remains NO-GO.
