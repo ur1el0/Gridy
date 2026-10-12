@@ -4,6 +4,7 @@ import { axiosPrivate } from '../../api/axios';
 import { Pin, Megaphone, Plus, Trash, Share2 } from 'lucide-react';
 import { useAuth } from '../../context/auth-context';
 import { BroadcastAnnouncementModal } from '../../components/announcements/BroadcastAnnouncementModal';
+import { InlineErrorState } from '../../components/ui/InlineErrorState';
 
 interface Announcement {
     id: number;
@@ -33,6 +34,7 @@ export const Announcements: React.FC = () => {
     const [announcements, setAnnouncements] = useState<Announcement[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState('');
+    const [retrying, setRetrying] = useState(false);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -42,16 +44,23 @@ export const Announcements: React.FC = () => {
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-    const fetchAnnouncements = async () => {
-        setLoading(true);
+    const fetchAnnouncements = async (isRetry = false) => {
+        if (isRetry) {
+            setRetrying(true);
+        } else {
+            setLoading(true);
+        }
+
         try {
             const response = await axiosPrivate.get('/announcements/');
             setAnnouncements(response.data.results || response.data);
+            setError('');
         } catch (err) {
             setError('Failed to load announcements.');
             console.error(err);
         } finally {
             setLoading(false);
+            setRetrying(false);
         }
     };
 
@@ -159,8 +168,6 @@ export const Announcements: React.FC = () => {
         );
     }
     
-    if (error) return <div className="p-8 text-red-600 bg-red-50 rounded-lg border border-red-100">{error}</div>;
-
     return (
         <div className="space-y-6 relative animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Header Row */}
@@ -187,7 +194,16 @@ export const Announcements: React.FC = () => {
                     
             {/* Announcements Grid */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-                {announcements.length === 0 ? (
+                {error && (
+                    <div className="col-span-full">
+                        <InlineErrorState
+                            message="We couldn't load announcements."
+                            onRetry={() => void fetchAnnouncements(true)}
+                            retrying={retrying}
+                        />
+                    </div>
+                )}
+                {!error && announcements.length === 0 ? (
                     <div className="col-span-full py-12 text-center text-slate-500 bg-white rounded-xl border border-slate-100 border-dashed">
                         No announcements active right now.
                     </div>
