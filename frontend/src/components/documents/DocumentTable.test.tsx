@@ -118,5 +118,23 @@ describe('DocumentTable Component', () => {
         expect(mockOpenModal).toHaveBeenCalledTimes(1);
         expect(mockOpenModal).toHaveBeenCalledWith(mockRequests[0]);
     });
-});
 
+    it('shows a load error instead of the successful empty state', () => {
+        render(
+            <DocumentTable
+                requests={[]}
+                openModal={vi.fn()}
+                getStatusBadge={mockGetStatusBadge}
+                loadError={{
+                    message: "We couldn't load document requests.",
+                    onRetry: vi.fn(),
+                    retrying: false,
+                }}
+            />,
+        );
+
+        expect(screen.getByRole('alert')).toHaveTextContent("We couldn't load document requests.");
+        expect(screen.queryByText('No clearance requests recorded yet.')).not.toBeInTheDocument();
+        expect(screen.getByRole('columnheader', { name: 'Applicant' })).toBeInTheDocument();
+    });
+});

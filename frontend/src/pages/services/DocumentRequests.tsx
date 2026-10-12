@@ -1,5 +1,5 @@
 import toast from 'react-hot-toast';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { axiosPrivate } from '../../api/axios';
 import { getSafeApiErrorMessage } from '../../api/error-message';
 import { DocumentTable } from '../../components/documents/DocumentTable';
@@ -58,6 +58,7 @@ export const DocumentRequests: React.FC = () => {
     const [requests, setRequests] = useState<DocumentRequest[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [retrying, setRetrying] = useState(false);
 
     const [selectedRequest, setSelectedRequest] = useState<DocumentRequest | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -71,21 +72,25 @@ export const DocumentRequests: React.FC = () => {
     const [newDocType, setNewDocType] = useState('Barangay Clearance');
     const [newPurpose, setNewPurpose] = useState('');
 
-    const fetchRequests = async () => {
+    const fetchRequests = useCallback(async (isRetry = false) => {
+        if (isRetry) setRetrying(true);
+
         try {
             const response = await axiosPrivate.get('/document-requests/');
             setRequests(response.data.results || response.data);
+            setError('');
         } catch (err) {
             setError('Failed to load document requests.');
             console.error(err);
         } finally {
             setLoading(false);
+            setRetrying(false);
         }
-    };
+    }, []);
 
     useEffect(() => {
-        fetchRequests();
-    }, []);
+        void fetchRequests();
+    }, [fetchRequests]);
 
     const getStatusBadge = (status: string) => {
         switch (status.toLowerCase()) {
@@ -235,7 +240,6 @@ export const DocumentRequests: React.FC = () => {
     };
 
     if (loading) return <div className="p-4 md:p-8"><TableSkeleton /></div>;
-    if (error) return <div className="p-8 text-red-600">{error}</div>;
 
     return (
         <div className="space-y-6 relative">
@@ -253,11 +257,16 @@ export const DocumentRequests: React.FC = () => {
                 </button>
             </div>
 
-            <DocumentTable 
+            <DocumentTable
                 requests={requests}
                 openModal={openModal}
                 getStatusBadge={getStatusBadge}
                 onDelete={handleDeleteRequest}
+                loadError={error ? {
+                    message: "We couldn't load document requests.",
+                    onRetry: () => void fetchRequests(true),
+                    retrying,
+                } : undefined}
             />
 
             {isModalOpen && selectedRequest && (
