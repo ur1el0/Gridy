@@ -1,5 +1,6 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { axiosPrivate } from '../../api/axios';
+import { InlineErrorState } from '../../components/ui/InlineErrorState';
 
 interface Application {
     id: number;
@@ -22,22 +23,26 @@ export function BarangayApplications() {
     const [applications, setApplications] = useState<Application[]>([]);
     const [notes, setNotes] = useState<Record<number, string>>({});
     const [loading, setLoading] = useState(true);
+    const [loadError, setLoadError] = useState(false);
+    const [retrying, setRetrying] = useState(false);
     const [error, setError] = useState('');
     const [savingId, setSavingId] = useState<number | null>(null);
 
-    const loadApplications = async () => {
+    const loadApplications = useCallback(async (isRetry = false) => {
+        if (isRetry) setRetrying(true);
         try {
-            setError('');
             const response = await axiosPrivate.get('/auth/barangay-applications/');
             setApplications(resultsFrom(response));
+            setLoadError(false);
         } catch {
-            setError('Could not load barangay applications.');
+            setLoadError(true);
         } finally {
             setLoading(false);
+            setRetrying(false);
         }
-    };
+    }, []);
 
-    useEffect(() => { void loadApplications(); }, []);
+    useEffect(() => { void loadApplications(); }, [loadApplications]);
 
     const review = async (application: Application, decision: 'APPROVED' | 'REJECTED') => {
         const reviewNote = notes[application.id]?.trim() || '';
@@ -70,7 +75,13 @@ export function BarangayApplications() {
                 <p className="mt-2 text-sm text-slate-600">Verify the barangay and applicant through official channels before approving. Approval creates the tenant and a first official account without a password.</p>
             </header>
             {error && <p role="alert" className="rounded-lg border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">{error}</p>}
-            {loading ? <p className="text-sm text-slate-500">Loading applications…</p> : applications.length === 0 ? (
+            {loading ? <p role="status" className="text-sm text-slate-500">Loading applications…</p> : loadError ? (
+                <InlineErrorState
+                    message="Could not load barangay applications."
+                    onRetry={() => { void loadApplications(true); }}
+                    retrying={retrying}
+                />
+            ) : applications.length === 0 ? (
                 <p className="rounded-xl border border-slate-200 bg-white p-6 text-sm text-slate-600">No applications have been submitted.</p>
             ) : (
                 <div className="space-y-4">
