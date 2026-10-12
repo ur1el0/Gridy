@@ -1,5 +1,6 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { axiosPrivate } from '../../api/axios';
+import { InlineErrorState } from '../../components/ui/InlineErrorState';
 
 interface IssueReport {
     id: number;
@@ -36,6 +37,7 @@ export const IssueReports: React.FC = () => {
     const [reports, setReports] = useState<IssueReport[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [retrying, setRetrying] = useState(false);
 
     const [selectedReport, setSelectedReport] = useState<IssueReport | null>(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -44,20 +46,29 @@ export const IssueReports: React.FC = () => {
     // Lightbox state for the image
     const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
-    useEffect(() => {
-        const fetchReports = async () => {
-            try {
-                const response = await axiosPrivate.get('/reports/');
-                setReports(response.data.results || response.data);
-            } catch (err) {
-                setError('Failed to load issue reports.');
-                console.error(err);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchReports();
+    const fetchReports = useCallback(async (isRetry = false) => {
+        if (isRetry) {
+            setRetrying(true);
+        } else {
+            setLoading(true);
+        }
+
+        try {
+            const response = await axiosPrivate.get('/reports/');
+            setReports(response.data.results || response.data);
+            setError('');
+        } catch (err) {
+            setError('Failed to load issue reports.');
+            console.error(err);
+        } finally {
+            setLoading(false);
+            setRetrying(false);
+        }
     }, []);
+
+    useEffect(() => {
+        void fetchReports();
+    }, [fetchReports]);
 
     const getStatusBadge = (status: string) => {
         switch (status.toUpperCase()) {
@@ -111,7 +122,6 @@ export const IssueReports: React.FC = () => {
     };
 
     if (loading) return <div className="p-4 md:p-8"><TableSkeleton /></div>;
-    if (error) return <div className="p-8 text-red-600">{error}</div>;
 
     return (
         <div className="space-y-6 relative">
@@ -132,7 +142,18 @@ export const IssueReports: React.FC = () => {
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-border">
-                        {reports.length === 0 ? (
+                        {error && (
+                            <tr>
+                                <td colSpan={6} className="px-4 py-4">
+                                    <InlineErrorState
+                                        message="We couldn't load issue reports."
+                                        onRetry={() => void fetchReports(true)}
+                                        retrying={retrying}
+                                    />
+                                </td>
+                            </tr>
+                        )}
+                        {!error && reports.length === 0 ? (
                             <tr>
                                 <td colSpan={6} className="px-6 py-4 text-center text-sm text-slate-500">No issue reports found.</td>
                             </tr>
