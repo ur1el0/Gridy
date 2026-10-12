@@ -1,7 +1,8 @@
 import toast from 'react-hot-toast';
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Bell, Shield, Key, Smartphone, Laptop, Trash2, Clock } from 'lucide-react';
 import { ChangePasswordModal } from '../../components/modals/ChangePasswordModal';
+import { InlineErrorState } from '../../components/ui/InlineErrorState';
 import { axiosPrivate } from '../../api/axios';
 
 interface RefreshSession {
@@ -17,34 +18,63 @@ export const Settings: React.FC = () => {
     const [emailAlerts, setEmailAlerts] = useState(true);
     const [pushAlerts, setPushAlerts] = useState(false);
     const [isLoadingProfile, setIsLoadingProfile] = useState(true)
+    const [profileLoadError, setProfileLoadError] = useState(false)
+    const [isRetryingProfile, setIsRetryingProfile] = useState(false)
     const [isPasswordModalOpen, setIsPasswordModalOpen] = useState(false)
 
     const [sessions, setSessions] = useState<RefreshSession[]>([])
     const [isLoadingSessions, setIsLoadingSessions] = useState(true)
+    const [sessionsLoadError, setSessionsLoadError] = useState(false)
+    const [isRetryingSessions, setIsRetryingSessions] = useState(false)
+
+    const fetchProfile = useCallback(async (isRetry = false) => {
+        if (isRetry) setIsRetryingProfile(true)
+
+        try {
+            const response = await axiosPrivate.get('/auth/me/')
+            setEmailAlerts(response.data.email_alerts)
+            setPushAlerts(response.data.push_alerts)
+            setProfileLoadError(false)
+        } catch (error) {
+            console.error("Failed to load profile preferences", error)
+            setProfileLoadError(true)
+        } finally {
+            setIsLoadingProfile(false)
+            setIsRetryingProfile(false)
+        }
+    }, [])
+
+    const fetchSessions = useCallback(async (isRetry = false) => {
+        if (isRetry) setIsRetryingSessions(true)
+
+        try {
+            const response = await axiosPrivate.get('/auth/sessions/')
+            // Handle DRF global pagination by extracting the 'results' array if present
+            const sessionData = response.data.results ? response.data.results : response.data
+            setSessions(sessionData)
+            setSessionsLoadError(false)
+        } catch (error) {
+            console.error("Failed to fetch sessions", error)
+            setSessionsLoadError(true)
+        } finally {
+            setIsLoadingSessions(false)
+            setIsRetryingSessions(false)
+        }
+    }, [])
 
     useEffect(() => {
-        const fetchProfile = async () => {
-            try {
-                const response = await axiosPrivate.get('/auth/me/')
-                setEmailAlerts(response.data.email_alerts)
-                setPushAlerts(response.data.push_alerts)
-            } catch (error) {
-                console.error("Failed to load profile preferences", error)
-            } finally {
-                setIsLoadingProfile(false)
-            }
-        }
-        fetchProfile()
-    }, [])
+        void fetchProfile()
+    }, [fetchProfile])
+
     useEffect(() => {
-        fetchSessions()
-    }, [])
+        void fetchSessions()
+    }, [fetchSessions])
 
     const handleToggleEmail = async () => {
         const newValue = !emailAlerts
         try {
             await axiosPrivate.patch('/auth/me/', { email_alerts: newValue })
-            setEmailAlerts(newValue) // Only update UI if the backend request succeeds 
+            setEmailAlerts(newValue) // Only update UI if the backend request succeeds
         } catch {
             toast.error('Failed to update email preferences.')
         }
@@ -59,19 +89,6 @@ export const Settings: React.FC = () => {
             toast.error('Failed to update push preferences.')
         }
     }
-    const fetchSessions = async () => {
-        try {
-            const response = await axiosPrivate.get('/auth/sessions/')
-            // Handle DRF global pagination by extracting the 'results' array if present
-            const sessionData = response.data.results ? response.data.results : response.data
-            setSessions(sessionData)
-        } catch (error) {
-            console.error("Failed to fetch sessions", error)
-        } finally {
-            setIsLoadingSessions(false)
-        }
-    }
-    
     const handleRevokeSession = async (id: number) => {
         try {
             await axiosPrivate.delete(`/auth/session/${id}/`)
@@ -86,8 +103,8 @@ export const Settings: React.FC = () => {
                 <h1 className="text-2xl font-extrabold text-[#0f172a] tracking-tight">System Settings</h1>
                 <p className="text-[#64748b] text-sm mt-1">Manage your dashboard preferences and security.</p>
             </div>
-            
-            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100">  
+
+            <div className="bg-white border border-slate-200 rounded-2xl shadow-sm overflow-hidden divide-y divide-slate-100">
                 {/* Notifications Section */}
                 <div className="p-8">
                     <div className="flex items-center gap-3 mb-6">
@@ -99,36 +116,46 @@ export const Settings: React.FC = () => {
                             <p className="text-xs text-slate-500">Control when and how you are alerted.</p>
                         </div>
                     </div>
-                    
-                    <div className="space-y-4">
-                        <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-3">
-                                <Smartphone className="w-4 h-4 text-slate-400" />
-                                <span className="text-sm font-semibold text-slate-700">Push Notifications (Queue Alerts)</span>
-                            </div>
-                            <button 
+
+                    {isLoadingProfile ? (
+                        <div className="text-sm text-slate-500 animate-pulse">Loading notification preferences...</div>
+                    ) : profileLoadError ? (
+                        <InlineErrorState
+                            message="Could not load notification preferences."
+                            onRetry={() => { void fetchProfile(true); }}
+                            retrying={isRetryingProfile}
+                        />
+                    ) : (
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-3">
+                                    <Smartphone className="w-4 h-4 text-slate-400" />
+                                    <span className="text-sm font-semibold text-slate-700">Push Notifications (Queue Alerts)</span>
+                                </div>
+                                <button
                                     onClick={handleTogglePush}
                                     disabled={isLoadingProfile}
                                     className={`w-11 h-6 rounded-full transition-colors relative disabled:opacity-50 ${pushAlerts ? 'bg-orange-500' : 'bg-slate-200'}`}
                                 >
-                                <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${pushAlerts ? 'translate-x-5' : 'translate-x-0'}`}></div>
-                            </button>
-                        </div>
-                        
-                        <div className="flex items-center justify-between">
-                            <div className="flex flex-col">
-                                <span className="text-sm font-semibold text-slate-700">Email Summaries</span>
-                                <span className="text-[10px] text-slate-400">Receive daily queue and request reports</span>
+                                    <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${pushAlerts ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                                </button>
                             </div>
-                            <button 
-                                onClick={handleToggleEmail}
-                                disabled={isLoadingProfile}
-                                className={`w-11 h-6 rounded-full transition-colors relative disabled:opacity-50 ${emailAlerts ? 'bg-orange-500' : 'bg-slate-200'}`}
-                            >
-                                <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${emailAlerts ? 'translate-x-5' : 'translate-x-0'}`}></div>
-                            </button>
+
+                            <div className="flex items-center justify-between">
+                                <div className="flex flex-col">
+                                    <span className="text-sm font-semibold text-slate-700">Email Summaries</span>
+                                    <span className="text-[10px] text-slate-400">Receive daily queue and request reports</span>
+                                </div>
+                                <button
+                                    onClick={handleToggleEmail}
+                                    disabled={isLoadingProfile}
+                                    className={`w-11 h-6 rounded-full transition-colors relative disabled:opacity-50 ${emailAlerts ? 'bg-orange-500' : 'bg-slate-200'}`}
+                                >
+                                    <div className={`absolute top-1 left-1 bg-white w-4 h-4 rounded-full transition-transform ${emailAlerts ? 'translate-x-5' : 'translate-x-0'}`}></div>
+                                </button>
+                            </div>
                         </div>
-                    </div>
+                    )}
                 </div>
 
                 {/* Security Section */}
@@ -142,14 +169,14 @@ export const Settings: React.FC = () => {
                             <p className="text-xs text-slate-500">Protect your administrative account.</p>
                         </div>
                     </div>
-                    
+
                     <div className="flex items-center justify-between py-3">
                         <div className="flex items-center gap-3">
                             <Key className="w-4 h-4 text-slate-400" />
                             <span className="text-sm font-semibold text-slate-700">Change Password</span>
                         </div>
-                        <button 
-                            onClick={() => setIsPasswordModalOpen(true)} 
+                        <button
+                            onClick={() => setIsPasswordModalOpen(true)}
                             className="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-lg transition-colors"
                         >
                             Update
@@ -160,6 +187,12 @@ export const Settings: React.FC = () => {
                         <h3 className="text-sm font-bold text-slate-900 mb-4">Active Sessions</h3>
                         {isLoadingSessions ? (
                             <div className="text-sm text-slate-500 animate-pulse">Loading sessions...</div>
+                        ) : sessionsLoadError ? (
+                            <InlineErrorState
+                                message="Could not load active sessions."
+                                onRetry={() => { void fetchSessions(true); }}
+                                retrying={isRetryingSessions}
+                            />
                         ) : sessions.length === 0 ? (
                             <div className="text-sm text-slate-500">No active sessions found.</div>
                         ) : (
@@ -189,7 +222,7 @@ export const Settings: React.FC = () => {
                                                 </div>
                                             </div>
                                         </div>
-                                        
+
                                         <button
                                             onClick={() => handleRevokeSession(session.id)}
                                             className="p-2 text-red-500 hover:bg-red-50 rounded-lg transition-colors group"
@@ -205,13 +238,13 @@ export const Settings: React.FC = () => {
                 </div>
             </div>
             {/* Render the Modal here */}
-            <ChangePasswordModal 
-                isOpen={isPasswordModalOpen} 
-                onClose={() => setIsPasswordModalOpen(false)} 
+            <ChangePasswordModal
+                isOpen={isPasswordModalOpen}
+                onClose={() => setIsPasswordModalOpen(false)}
                 onSuccess={() => {
                     setIsPasswordModalOpen(false);
                     toast.success('Password updated successfully!');
-                }} 
+                }}
             />
         </div>
     );
