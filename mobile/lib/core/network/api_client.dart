@@ -149,7 +149,7 @@ class ApiClient {
     }
 
     return _sendRequest(() async {
-      final streamedResponse = await request.send();
+      final streamedResponse = await _client.send(request);
       return await http.Response.fromStream(streamedResponse);
     });
   }
@@ -176,7 +176,7 @@ class ApiClient {
     }
 
     return _sendRequest(() async {
-      final streamedResponse = await request.send();
+      final streamedResponse = await _client.send(request);
       return await http.Response.fromStream(streamedResponse);
     });
   }
