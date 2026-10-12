@@ -83,7 +83,7 @@ export const Settings: React.FC = () => {
     const handleTogglePush = async () => {
         const newValue = !pushAlerts
         try {
-            await axiosPrivate.patch('/auth/me/', { push_alerts: pushAlerts })
+            await axiosPrivate.patch('/auth/me/', { push_alerts: newValue })
             setPushAlerts(newValue)
         } catch {
             toast.error('Failed to update push preferences.')

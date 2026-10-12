@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import toast from 'react-hot-toast';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axiosPrivate } from '../../api/axios';
 import { Settings } from './Settings';
@@ -39,6 +40,13 @@ const mockSuccessfulLoads = () => {
             ? { data: profilePreferences }
             : { data: { results: [activeSession] } },
     ) as never);
+};
+
+const getPushToggle = () => {
+    const label = screen.getByText('Push Notifications (Queue Alerts)');
+    const toggle = label.closest('div.flex.items-center.justify-between')?.querySelector('button');
+    if (!toggle) throw new Error('Push notification toggle was not rendered');
+    return toggle;
 };
 
 describe('Settings load recovery', () => {
@@ -170,5 +178,64 @@ describe('Settings load recovery', () => {
 
         resolveSessions({ data: { results: [activeSession] } });
         expect(await screen.findByText('Chrome')).toBeInTheDocument();
+    });
+
+    it('sends true when enabling push alerts and waits for the save before updating the toggle', async () => {
+        vi.mocked(axiosPrivate.get).mockImplementation((url: string) => Promise.resolve(
+            url === '/auth/me/'
+                ? { data: { ...profilePreferences, push_alerts: false } }
+                : { data: { results: [activeSession] } },
+        ) as never);
+        let resolvePatch: (value: unknown) => void = () => {};
+        vi.mocked(axiosPrivate.patch).mockReturnValueOnce(new Promise((resolve) => {
+            resolvePatch = resolve;
+        }) as never);
+        render(<Settings />);
+
+        await screen.findByText('Push Notifications (Queue Alerts)');
+        const toggle = getPushToggle();
+        fireEvent.click(toggle);
+
+        await waitFor(() => expect(axiosPrivate.patch).toHaveBeenCalledWith('/auth/me/', { push_alerts: true }));
+        expect(toggle).toHaveClass('bg-slate-200');
+
+        resolvePatch({ data: {} });
+        await waitFor(() => expect(toggle).toHaveClass('bg-orange-500'));
+    });
+
+    it('sends false when disabling push alerts', async () => {
+        vi.mocked(axiosPrivate.get).mockImplementation((url: string) => Promise.resolve(
+            url === '/auth/me/'
+                ? { data: { ...profilePreferences, push_alerts: true } }
+                : { data: { results: [activeSession] } },
+        ) as never);
+        vi.mocked(axiosPrivate.patch).mockResolvedValueOnce({ data: {} } as never);
+        render(<Settings />);
+
+        await screen.findByText('Push Notifications (Queue Alerts)');
+        const toggle = getPushToggle();
+        expect(toggle).toHaveClass('bg-orange-500');
+        fireEvent.click(toggle);
+
+        await waitFor(() => expect(axiosPrivate.patch).toHaveBeenCalledWith('/auth/me/', { push_alerts: false }));
+        await waitFor(() => expect(toggle).toHaveClass('bg-slate-200'));
+    });
+
+    it('keeps the push toggle unchanged when saving the new preference fails', async () => {
+        vi.mocked(axiosPrivate.get).mockImplementation((url: string) => Promise.resolve(
+            url === '/auth/me/'
+                ? { data: { ...profilePreferences, push_alerts: false } }
+                : { data: { results: [activeSession] } },
+        ) as never);
+        vi.mocked(axiosPrivate.patch).mockRejectedValueOnce(new Error('Network unavailable'));
+        render(<Settings />);
+
+        await screen.findByText('Push Notifications (Queue Alerts)');
+        const toggle = getPushToggle();
+        fireEvent.click(toggle);
+
+        await waitFor(() => expect(axiosPrivate.patch).toHaveBeenCalledWith('/auth/me/', { push_alerts: true }));
+        await waitFor(() => expect(toast.error).toHaveBeenCalledWith('Failed to update push preferences.'));
+        expect(toggle).toHaveClass('bg-slate-200');
     });
 });
