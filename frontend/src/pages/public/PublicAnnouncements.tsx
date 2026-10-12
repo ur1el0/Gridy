@@ -1,7 +1,8 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { Megaphone } from 'lucide-react';
 import { axiosPublic } from '../../api/axios';
+import { InlineErrorState } from '../../components/ui/InlineErrorState';
 
 interface PublicAnnouncement {
     id: number;
@@ -16,14 +17,26 @@ export const PublicAnnouncements: React.FC = () => {
     const [announcements, setAnnouncements] = useState<PublicAnnouncement[]>([]);
     const [loading, setLoading] = useState(true);
     const [failed, setFailed] = useState(false);
+    const [retrying, setRetrying] = useState(false);
+
+    const loadAnnouncements = useCallback(async (isRetry = false) => {
+        if (!barangayId) return;
+        if (isRetry) setRetrying(true);
+        try {
+            const response = await axiosPublic.get(`/public/barangays/${barangayId}/announcements/`);
+            setAnnouncements(response.data);
+            setFailed(false);
+        } catch {
+            setFailed(true);
+        } finally {
+            setLoading(false);
+            setRetrying(false);
+        }
+    }, [barangayId]);
 
     useEffect(() => {
-        if (!barangayId) return;
-        axiosPublic.get(`/public/barangays/${barangayId}/announcements/`)
-            .then((response) => setAnnouncements(response.data))
-            .catch(() => setFailed(true))
-            .finally(() => setLoading(false));
-    }, [barangayId]);
+        void loadAnnouncements();
+    }, [loadAnnouncements]);
 
     return (
         <main className="min-h-screen bg-slate-50 px-4 py-10 text-slate-900">
@@ -39,7 +52,11 @@ export const PublicAnnouncements: React.FC = () => {
                     <p className="mt-3 text-sm opacity-90">Official information is shared here. Requests and transactions must be completed inside KapitBayan.</p>
                 </header>
                 {loading ? <p role="status">Loading announcements…</p> : failed ? (
-                    <p role="alert" className="rounded-xl bg-rose-50 p-4 text-rose-800">Announcements are temporarily unavailable.</p>
+                    <InlineErrorState
+                        message="Announcements are temporarily unavailable."
+                        onRetry={() => { void loadAnnouncements(true); }}
+                        retrying={retrying}
+                    />
                 ) : announcements.length === 0 ? (
                     <p className="rounded-xl bg-white p-6 text-slate-600">There are no public announcements at this time.</p>
                 ) : announcements.map((announcement) => (
