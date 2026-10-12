@@ -2,7 +2,7 @@
 
 ## Summary
 - **Task ID:** `m67-payment-recipient-load-error-states`
-- **State:** In Progress
+- **State:** Completed
 - **Current milestone:** M2 — Separate and recover list state
 - **Branch:** `fix/m67-payment-recipient-load-error-states`
 - **Base:** M66 delivery head `a250030`
@@ -21,7 +21,7 @@
 | --- | --- | --- |
 | M1 — Regression coverage | Complete | Five new regression cases reproduce load-state, retry, and feedback-collision issues. |
 | M2 — Separate and recover list state | Complete | Independent read-error/retry state uses `InlineErrorState`; mutation feedback and known rows are preserved. |
-| M3 — Full verification and delivery | In Progress | Local checks passed; final review and delivery remain. |
+| M3 — Full verification and delivery | Complete | Local checks, hosted validation, PR delivery, and final review complete. |
 
 ## Planned files
 - `frontend/src/pages/admin/PaymentRecipientSettings.tsx`
@@ -48,4 +48,9 @@
 - **Scope review:** Only `PaymentRecipientSettings.tsx`, its focused test, and this M67 task packet are in scope. No backend, API, schema, dependency, infrastructure, or unrelated-page changes.
 
 ## Delivery
-No M67 commit, push, or PR yet. Azure pilot remains NO-GO; this task does not touch Azure or production infrastructure.
+- **Implementation commit:** `68b08f597af1ba066e709fb6126f10dec599cd42` (`fix(settings): add payment recipient load retry`).
+- **Remote branch:** `origin/fix/m67-payment-recipient-load-error-states`.
+- **Pull request:** [#198](https://github.com/ur1el0/KapitBayan/pull/198), based on `fix/m66-document-requests-load-error-states` (M66 PR #197). PR is open, mergeable, and unmerged.
+- **Hosted validation:** Both runs `38189681004` and `38189697114` passed: backend and frontend tests, mobile tests, backend and frontend image builds, Azure foundation compile, Azure pilot parameter preflight, Compose migration gate smoke, PostgreSQL DNS reconnect smoke, GitGuardian, and Vercel preview checks.
+- **M66 parent:** PR #197 remains open and unmerged; its final-head checks passed on runs `38189408417` and `38189411422`.
+- Azure pilot remains NO-GO. This task does not alter Azure or production infrastructure.
