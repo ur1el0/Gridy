@@ -2,11 +2,11 @@
 
 ## Summary
 - **Task ID:** `m72-barangay-applications-load-error-recovery`
-- **State:** Implementation and local verification complete; PR creation is blocked on GitHub API access.
+- **State:** Implementation and local verification complete; PR #203 is open and PR-event CI is queued.
 - **Branch:** `fix/m72-barangay-applications-load-errors`
 - **Base:** M71 PR #202 head `b84b4a7e9579a3f193245952335955052aef8406` (`fix/m71-admin-dashboard-load-errors`).
-- **Primary checkout:** `/workspace/KapitBayan` was not modified; work was done in `/tmp/kapitbayan-m72`.
-- **Azure pilot:** NO-GO; no deployment or merge was performed.
+- **Primary checkout:** `/workspace/KapitBayan` was not modified; implementation was done in `/tmp/kapitbayan-m72`.
+- **Azure pilot:** NO-GO; no merge or production deployment was performed.
 
 ## Baseline and scope
 - A rejected `GET /auth/barangay-applications/` displayed the error alert and the successful-empty message together, with no retry control.
@@ -28,7 +28,9 @@
 ## Delivery
 - **Task brief and plan commit:** `66f648f` (`docs(m72): define barangay applications recovery`).
 - **Implementation commit:** `57568b902485001e380c636cac9435b7b95dafc7` (`fix(applications): recover barangay list load errors`).
-- **Remote branch:** `fix/m72-barangay-applications-load-errors`, pushed with M71 PR #202 as its base.
-- **PR:** Not open yet. GitHub public pages and HTTPS Git work, but PR API requests to `api.github.com` are denied by the current environment network policy. PR-event CI is pending.
-- **Hosted push CI:** PASS on implementation commit `57568b902485001e380c636cac9435b7b95dafc7` (run `38199755059`) and verification-status commit `9c5b4c08ed03c4e16ba2a67a819e1207ca107542` (run `38199809980`). These are branch push checks; PR-event checks have not run because the PR is not open.
-- **Next action:** Allow `api.github.com` through environment settings, then retry PR creation. Recheck the existing GitHub credential after that network change; request a replacement only if the API still rejects it.
+- **Status commits:** `9c5b4c0` recorded local verification; follow-up hosted status is committed as `5e454d16cd61dc5d4401c89877004d5d75bc76fd`.
+- **Remote branch:** `fix/m72-barangay-applications-load-errors`, based on the M71 PR #202 head.
+- **PR:** [#203 — fix(applications): recover barangay list load errors](https://github.com/ur1el0/KapitBayan/pull/203), OPEN, based on M71 PR #202. GitHub reports it mergeable. Do not merge until the parent M71 PR is merged and reviewed.
+- **Hosted push CI:** PASS on implementation commit `57568b902485001e380c636cac9435b7b95dafc7` (run `38199755059`) and status commit `9c5b4c08ed03c4e16ba2a67a819e1207ca107542` (run `38199809980`).
+- **PR-event CI:** run `38200931608` was QUEUED when this status was updated; its result remains to be checked. Vercel generated an automatic Preview and reported it READY on PR #203; no production deployment was initiated.
+- **Next action:** Check PR #203’s checks and review the Preview. Keep it stacked behind #202; no merge or Azure pilot action is included.
