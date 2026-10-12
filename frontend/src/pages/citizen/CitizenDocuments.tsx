@@ -24,6 +24,8 @@ export const CitizenDocuments: React.FC = () => {
     const [paymentReference, setPaymentReference] = useState<Record<number, string>>({});
     const [selectedRecipientId, setSelectedRecipientId] = useState<Record<number, string>>({});
     const [paymentRecipients, setPaymentRecipients] = useState<PaymentRecipient[]>([]);
+    const [paymentRecipientsLoading, setPaymentRecipientsLoading] = useState(true);
+    const [paymentRecipientsLoadError, setPaymentRecipientsLoadError] = useState(false);
     const [submittingPaymentId, setSubmittingPaymentId] = useState<number | null>(null);
 
     // Form State
@@ -44,14 +46,26 @@ export const CitizenDocuments: React.FC = () => {
         }
     };
 
+    const fetchPaymentRecipients = async () => {
+        setPaymentRecipientsLoading(true);
+        try {
+            const response = await axiosPrivate.get('/payment-recipients/');
+            const data = response.data.results || response.data;
+            if (!Array.isArray(data)) {
+                throw new Error('Invalid payment recipient response');
+            }
+            setPaymentRecipients(data);
+            setPaymentRecipientsLoadError(false);
+        } catch {
+            setPaymentRecipientsLoadError(true);
+        } finally {
+            setPaymentRecipientsLoading(false);
+        }
+    };
+
     useEffect(() => {
         fetchRequests();
-        axiosPrivate.get('/payment-recipients/')
-            .then((response) => {
-                const data = response.data.results || response.data;
-                setPaymentRecipients(Array.isArray(data) ? data : []);
-            })
-            .catch(() => setPaymentRecipients([]));
+        void fetchPaymentRecipients();
     }, []);
 
     const handleCreateRequest = async (e: React.SubmitEvent<HTMLElement>) => {
@@ -222,6 +236,9 @@ export const CitizenDocuments: React.FC = () => {
                                         key={request.id}
                                         request={request}
                                         recipients={paymentRecipients}
+                                        recipientsLoading={paymentRecipientsLoading}
+                                        recipientsLoadError={paymentRecipientsLoadError}
+                                        onRetryRecipients={() => void fetchPaymentRecipients()}
                                         selectedRecipientId={selectedRecipientId[request.id] || ''}
                                         paymentReference={paymentReference[request.id] ?? ''}
                                         submittingPayment={submittingPaymentId === request.id}

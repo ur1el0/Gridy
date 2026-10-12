@@ -7,6 +7,16 @@ vi.mock('../../api/axios', () => ({
     axiosPrivate: { get: vi.fn(), post: vi.fn(), delete: vi.fn() },
 }));
 
+const createDeferred = <T,>() => {
+    let resolve!: (value: T) => void;
+    let reject!: (reason?: unknown) => void;
+    const promise = new Promise<T>((resolvePromise, rejectPromise) => {
+        resolve = resolvePromise;
+        reject = rejectPromise;
+    });
+    return { promise, resolve, reject };
+};
+
 describe('CitizenDocuments', () => {
     beforeEach(() => {
         vi.clearAllMocks();
@@ -58,6 +68,96 @@ describe('CitizenDocuments', () => {
             '/document-requests/15/payment-reference/',
             { payment_recipient_id: 7, payment_reference: 'GC-REF-5512' },
         ));
+    });
+
+    it('keeps recipient failures separate from requests and retries only the recipient read', async () => {
+        const initialRead = createDeferred<{ data: unknown }>();
+        const failedRetry = createDeferred<{ data: unknown }>();
+        const recoveredRead = createDeferred<{ data: unknown }>();
+        const recipientReads = [initialRead, failedRetry, recoveredRead];
+        let recipientReadCount = 0;
+
+        vi.mocked(axiosPrivate.get).mockImplementation((url: string) => {
+            if (url === '/payment-recipients/') {
+                return recipientReads[recipientReadCount++].promise as never;
+            }
+            return Promise.resolve({
+                data: [{
+                    id: 15,
+                    document_type: 'Barangay Clearance',
+                    purpose: 'Employment',
+                    status: 'READY_FOR_PICKUP',
+                    fee_amount: '50.00',
+                    payment_method: '',
+                    payment_status: 'UNPAID',
+                    created_at: '2026-10-08T00:00:00Z',
+                }],
+            } as never);
+        });
+
+        render(<CitizenDocuments />);
+
+        expect(await screen.findByText('Barangay Clearance')).toBeInTheDocument();
+        expect(await screen.findByRole('status')).toHaveTextContent('Loading payment recipients');
+        expect(screen.queryByText(/has not configured an e-payment recipient/i)).not.toBeInTheDocument();
+
+        initialRead.reject(new Error('recipient service unavailable'));
+        const retryButton = await screen.findByRole('button', { name: 'Retry payment recipient loading' });
+        expect(screen.getByRole('alert')).toHaveTextContent("We couldn't load payment recipients");
+        expect(screen.queryByText(/has not configured an e-payment recipient/i)).not.toBeInTheDocument();
+
+        fireEvent.click(retryButton);
+        await waitFor(() => expect(retryButton).toBeDisabled());
+        expect(screen.getByRole('status')).toHaveTextContent('Retrying payment recipients');
+        expect(axiosPrivate.get).toHaveBeenCalledTimes(3);
+
+        failedRetry.reject(new Error('recipient service still unavailable'));
+        await waitFor(() => expect(retryButton).toBeEnabled());
+        expect(screen.getByRole('alert')).toHaveTextContent("We couldn't load payment recipients");
+
+        fireEvent.click(retryButton);
+        recoveredRead.resolve({
+            data: [{
+                id: 7,
+                provider: 'MAYA',
+                provider_label: 'Maya',
+                display_name: 'Barangay Maya',
+                recipient_name: 'Barangay Treasurer',
+                recipient_identifier: '09170000000',
+                instructions: 'Add the document request number.',
+            }],
+        });
+
+        expect(await screen.findByLabelText('Payment recipient for request 15')).toBeInTheDocument();
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        expect(screen.getByText('Barangay Clearance')).toBeInTheDocument();
+        expect(axiosPrivate.get).toHaveBeenCalledTimes(4);
+        const requestedUrls = vi.mocked(axiosPrivate.get).mock.calls.map(([url]) => url);
+        expect(requestedUrls.filter((url) => url === '/payment-recipients/')).toHaveLength(3);
+        expect(requestedUrls.filter((url) => url === '/document-requests/')).toHaveLength(1);
+        expect(axiosPrivate.post).not.toHaveBeenCalled();
+        expect(axiosPrivate.delete).not.toHaveBeenCalled();
+    });
+
+    it('shows the in-person fallback only after a successful empty recipient response', async () => {
+        vi.mocked(axiosPrivate.get).mockImplementation(async (url: string) => ({
+            data: url === '/payment-recipients/' ? [] : [{
+                id: 15,
+                document_type: 'Barangay Clearance',
+                purpose: 'Employment',
+                status: 'READY_FOR_PICKUP',
+                fee_amount: '50.00',
+                payment_method: '',
+                payment_status: 'UNPAID',
+                created_at: '2026-10-08T00:00:00Z',
+            }],
+        } as never));
+
+        render(<CitizenDocuments />);
+
+        expect(await screen.findByText(/has not configured an e-payment recipient/i)).toBeInTheDocument();
+        expect(screen.getByText('Barangay Clearance')).toBeInTheDocument();
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
 
     it('submits a new clearance request from the request modal', async () => {
