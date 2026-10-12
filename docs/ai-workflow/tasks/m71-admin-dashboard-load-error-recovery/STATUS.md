@@ -2,8 +2,8 @@
 
 ## Summary
 - **Task ID:** `m71-admin-dashboard-load-error-recovery`
-- **State:** In Progress
-- **Current milestone:** M3 — full verification and delivery
+- **State:** Completed (PR #202 open and unmerged)
+- **Current milestone:** M3 — complete
 - **Branch:** `fix/m71-admin-dashboard-load-errors`
 - **Base:** M70 PR head `7f97061f3c13ee21a29864f05b2e6502dc38bf9a`
 - **Worktree:** `/tmp/gridy-m71-admin-dashboard-load-errors`
@@ -24,6 +24,10 @@
 - **Lint:** `npm --prefix frontend run lint` — PASS, exit code 0 with no diagnostics.
 - **Build:** `npm --prefix frontend run build` — PASS, TypeScript and Vite production build; 2,514 modules transformed.
 - **Diff hygiene:** `git diff --check` — PASS with no output. The final self-review confirms the implementation changes are limited to the dashboard page, appointments table, and their focused tests; there are no backend, API, schema, dependency, or infrastructure changes. The M71 task packet has no trailing whitespace.
+- **Hosted CI on implementation commit `ecc85d850b608ccfb84e8460dddedcd172916d66`:** PASS. GitHub Actions runs `38193570286` and `38193605387` both completed successfully. Backend/frontend tests and image builds, mobile tests, Azure foundation and pilot preflight checks, Compose migration gate, PostgreSQL DNS reconnect smoke, GitGuardian, and Vercel checks passed.
 
 ## Delivery
-No M71 code commit, push, or PR yet. M70 PR #201 is open and unmerged. Azure pilot remains NO-GO.
+- **Implementation commit:** `ecc85d850b608ccfb84e8460dddedcd172916d66` (`fix(dashboard): recover failed dashboard reads`).
+- **Branch:** `fix/m71-admin-dashboard-load-errors`, pushed to `origin` and tracking its remote branch.
+- **PR:** [#202](https://github.com/ur1el0/KapitBayan/pull/202), based on `fix/m70-push-alert-preference-payload` (M70 PR #201). PR #202 is open and unmerged; PR #201 remains open and unmerged.
+- The status update is documentation-only; it does not change application behavior. No merge or production deployment was performed. Azure pilot remains NO-GO.
