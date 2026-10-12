@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { axiosPrivate } from '../../api/axios';
 import { useAuth } from '../../context/auth-context';
@@ -7,14 +7,64 @@ import { DemographicsCharts } from '../../components/admin-dashboard/Demographic
 import { MetricCards } from '../../components/admin-dashboard/MetricCards';
 import { ScenarioBreakdownChart } from '../../components/admin-dashboard/ScenarioBreakdownChart';
 import type { ActivityItem, DashboardSummary } from '../../components/admin-dashboard/types';
+import { InlineErrorState } from '../../components/ui/InlineErrorState';
 
 export const Dashboard: React.FC = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
     const [summaryData, setSummaryData] = useState<DashboardSummary | null>(null);
     const [activities, setActivities] = useState<ActivityItem[]>([]);
-    const [loading, setLoading] = useState<boolean>(true);
-    const [, setError] = useState<string | null>(null);
+    const [isLoadingSummary, setIsLoadingSummary] = useState(true);
+    const [summaryLoadError, setSummaryLoadError] = useState(false);
+    const [isRetryingSummary, setIsRetryingSummary] = useState(false);
+    const [isLoadingActivities, setIsLoadingActivities] = useState(true);
+    const [activitiesLoadError, setActivitiesLoadError] = useState(false);
+    const [isRetryingActivities, setIsRetryingActivities] = useState(false);
+    const summaryRequestController = useRef<AbortController | null>(null);
+    const activitiesRequestController = useRef<AbortController | null>(null);
+
+    const fetchSummary = useCallback(async (isRetry = false) => {
+        summaryRequestController.current?.abort();
+        const controller = new AbortController();
+        summaryRequestController.current = controller;
+        if (isRetry) setIsRetryingSummary(true);
+
+        try {
+            const response = await axiosPrivate.get('/dashboard/summary/', { signal: controller.signal });
+            setSummaryData(response.data);
+            setSummaryLoadError(false);
+        } catch {
+            if (!controller.signal.aborted) setSummaryLoadError(true);
+        } finally {
+            if (summaryRequestController.current === controller) {
+                summaryRequestController.current = null;
+                setIsLoadingSummary(false);
+                setIsRetryingSummary(false);
+            }
+        }
+    }, []);
+
+    const fetchActivities = useCallback(async (isRetry = false) => {
+        activitiesRequestController.current?.abort();
+        const controller = new AbortController();
+        activitiesRequestController.current = controller;
+        if (isRetry) setIsRetryingActivities(true);
+
+        try {
+            const response = await axiosPrivate.get('/activities/', { signal: controller.signal });
+            const data = response.data;
+            setActivities(data.results || data || []);
+            setActivitiesLoadError(false);
+        } catch {
+            if (!controller.signal.aborted) setActivitiesLoadError(true);
+        } finally {
+            if (activitiesRequestController.current === controller) {
+                activitiesRequestController.current = null;
+                setIsLoadingActivities(false);
+                setIsRetryingActivities(false);
+            }
+        }
+    }, []);
 
     useEffect(() => {
         if (user?.role === 'DILG_ADMIN') {
@@ -25,43 +75,16 @@ export const Dashboard: React.FC = () => {
     useEffect(() => {
         if (user?.role === 'DILG_ADMIN') return;
 
-        let isMounted = true;
-        const controller = new AbortController();
-
-        const fetchData = async () => {
-            try {
-                const [summaryRes, activitiesRes] = await Promise.allSettled([
-                    axiosPrivate.get('/dashboard/summary/', { signal: controller.signal }),
-                    axiosPrivate.get('/activities/', { signal: controller.signal }),
-                ]);
-
-                if (isMounted) {
-                    if (summaryRes.status === 'fulfilled') {
-                        setSummaryData(summaryRes.value.data);
-                    }
-                    if (activitiesRes.status === 'fulfilled') {
-                        const data = activitiesRes.value.data;
-                        setActivities(data.results || data || []);
-                    }
-                    setLoading(false);
-                }
-            } catch (err: any) {
-                if (err.name !== 'CanceledError') {
-                    if (isMounted) {
-                        setError('Failed to fetch dashboard data.');
-                        setLoading(false);
-                    }
-                }
-            }
-        };
-
-        fetchData();
+        void fetchSummary();
+        void fetchActivities();
 
         return () => {
-            isMounted = false;
-            controller.abort();
+            summaryRequestController.current?.abort();
+            activitiesRequestController.current?.abort();
+            summaryRequestController.current = null;
+            activitiesRequestController.current = null;
         };
-    }, [user?.role]);
+    }, [user?.role, fetchSummary, fetchActivities]);
 
     const purokData = summaryData?.demographics?.purok_distribution
         ? Object.entries(summaryData.demographics.purok_distribution).map(([name, value]) => ({
@@ -112,10 +135,33 @@ export const Dashboard: React.FC = () => {
                 </button>
             </div>
 
-            <MetricCards loading={loading} summary={summaryData} />
-            <ScenarioBreakdownChart loading={loading} data={scenarioData} />
-            <DemographicsCharts purokData={purokData} ageData={ageData} />
-            <AppointmentsTable activities={activities} />
+            {summaryLoadError && summaryData === null ? (
+                <InlineErrorState
+                    message="We couldn't load dashboard summary."
+                    onRetry={() => { void fetchSummary(true); }}
+                    retrying={isRetryingSummary}
+                />
+            ) : (
+                <>
+                    {summaryLoadError && (
+                        <InlineErrorState
+                            message="We couldn't refresh dashboard summary."
+                            onRetry={() => { void fetchSummary(true); }}
+                            retrying={isRetryingSummary}
+                        />
+                    )}
+                    <MetricCards loading={isLoadingSummary} summary={summaryData} />
+                    <ScenarioBreakdownChart loading={isLoadingSummary} data={scenarioData} />
+                    {!isLoadingSummary && <DemographicsCharts purokData={purokData} ageData={ageData} />}
+                </>
+            )}
+            <AppointmentsTable
+                activities={activities}
+                loading={isLoadingActivities}
+                loadError={activitiesLoadError}
+                onRetry={() => { void fetchActivities(true); }}
+                retrying={isRetryingActivities}
+            />
         </div>
     );
 };

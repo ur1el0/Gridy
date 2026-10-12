@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor, within } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { axiosPrivate } from '../../api/axios';
@@ -6,7 +6,7 @@ import { AuthContext, type AuthContextType } from '../../context/auth-context';
 import { Dashboard } from './Dashboard';
 
 vi.mock('../../api/axios', () => ({
-    axiosPrivate: { get: vi.fn() },
+    axiosPrivate: { get: vi.fn(), post: vi.fn(), patch: vi.fn(), delete: vi.fn() },
 }));
 
 const summary = {
@@ -95,5 +95,90 @@ describe('Dashboard', () => {
 
         expect(await screen.findByText('DILG analytics destination')).toBeInTheDocument();
         expect(axiosPrivate.get).not.toHaveBeenCalled();
+    });
+
+    it('recovers a failed summary independently while retaining appointments', async () => {
+        let summaryReads = 0;
+        let activitiesReads = 0;
+        let rejectSummaryRetry: (reason: unknown) => void = () => {};
+        vi.mocked(axiosPrivate.get).mockReset();
+        vi.mocked(axiosPrivate.get).mockImplementation((url: string) => {
+            if (url === '/dashboard/summary/') {
+                summaryReads += 1;
+                if (summaryReads === 1) return Promise.reject(new Error('Network unavailable')) as never;
+                if (summaryReads === 2) {
+                    return new Promise((_resolve, reject) => { rejectSummaryRetry = reject; }) as never;
+                }
+                return Promise.resolve({ data: summary }) as never;
+            }
+            activitiesReads += 1;
+            return Promise.resolve({ data: { results: activities } }) as never;
+        });
+        renderDashboard();
+
+        const summaryError = await screen.findByRole('alert');
+        expect(summaryError).toHaveTextContent("We couldn't load dashboard summary.");
+        expect(screen.getByText('Community Health Day')).toBeInTheDocument();
+        expect(screen.queryByText('₱0.00')).not.toBeInTheDocument();
+
+        fireEvent.click(within(summaryError).getByRole('button', { name: 'Try again' }));
+        const pendingRetry = await screen.findByRole('button', { name: 'Trying again…' });
+        expect(pendingRetry).toBeDisabled();
+        rejectSummaryRetry(new Error('Still unavailable'));
+        await waitFor(() => expect(screen.getByRole('alert')).toHaveTextContent("We couldn't load dashboard summary."));
+
+        fireEvent.click(within(screen.getByRole('alert')).getByRole('button', { name: 'Try again' }));
+        expect(await screen.findByText('₱1,250.00')).toBeInTheDocument();
+        expect(screen.getByText('Community Health Day')).toBeInTheDocument();
+        expect(summaryReads).toBe(3);
+        expect(activitiesReads).toBe(1);
+        expect(axiosPrivate.post).not.toHaveBeenCalled();
+        expect(axiosPrivate.patch).not.toHaveBeenCalled();
+        expect(axiosPrivate.delete).not.toHaveBeenCalled();
+    });
+
+    it('recovers a failed appointments read independently while retaining summary metrics', async () => {
+        let summaryReads = 0;
+        let activitiesReads = 0;
+        let rejectActivitiesRetry: (reason: unknown) => void = () => {};
+        let resolveActivitiesRetry: (value: unknown) => void = () => {};
+        vi.mocked(axiosPrivate.get).mockReset();
+        vi.mocked(axiosPrivate.get).mockImplementation((url: string) => {
+            if (url === '/dashboard/summary/') {
+                summaryReads += 1;
+                return Promise.resolve({ data: summary }) as never;
+            }
+            activitiesReads += 1;
+            if (activitiesReads === 1) return Promise.reject(new Error('Network unavailable')) as never;
+            if (activitiesReads === 2) {
+                return new Promise((_resolve, reject) => { rejectActivitiesRetry = reject; }) as never;
+            }
+            return new Promise((resolve) => { resolveActivitiesRetry = resolve; }) as never;
+        });
+        renderDashboard();
+
+        const activitiesError = await screen.findByRole('alert');
+        expect(activitiesError).toHaveTextContent("We couldn't load today's appointments.");
+        expect(screen.queryByText('No appointments or activities scheduled.')).not.toBeInTheDocument();
+        expect(screen.getByText('₱1,250.00')).toBeInTheDocument();
+
+        fireEvent.click(within(activitiesError).getByRole('button', { name: 'Try again' }));
+        const pendingRetry = await screen.findByRole('button', { name: 'Trying again…' });
+        expect(pendingRetry).toBeDisabled();
+
+        rejectActivitiesRetry(new Error('Still unavailable'));
+        const repeatedFailureRetry = await screen.findByRole('button', { name: 'Try again' });
+        expect(screen.getByRole('alert')).toHaveTextContent("We couldn't load today's appointments.");
+        fireEvent.click(repeatedFailureRetry);
+        await screen.findByRole('button', { name: 'Trying again…' });
+        resolveActivitiesRetry({ data: { results: activities } });
+
+        expect(await screen.findByText('Community Health Day')).toBeInTheDocument();
+        expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+        expect(summaryReads).toBe(1);
+        expect(activitiesReads).toBe(3);
+        expect(axiosPrivate.post).not.toHaveBeenCalled();
+        expect(axiosPrivate.patch).not.toHaveBeenCalled();
+        expect(axiosPrivate.delete).not.toHaveBeenCalled();
     });
 });
