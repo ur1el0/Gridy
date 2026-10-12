@@ -1,6 +1,7 @@
 import toast from 'react-hot-toast';
 import React, { useEffect, useState } from 'react';
 import { axiosPrivate } from '../../api/axios';
+import { InlineErrorState } from '../../components/ui/InlineErrorState';
 import { Calendar, MapPin, Clock, Plus, Trash2 } from 'lucide-react';
 import { ScheduleActivityModal } from '../../components/activities/ScheduleActivityModal';
 
@@ -31,6 +32,7 @@ export const Activities: React.FC = () => {
     const [activities, setActivities] = useState<Activity[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
+    const [retrying, setRetrying] = useState(false);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -39,21 +41,28 @@ export const Activities: React.FC = () => {
     const [location, setLocation] = useState('');
     const [eventDate, setEventDate] = useState('');
 
-    const fetchActivities = async () => {
-        setLoading(true);
+    const fetchActivities = async (isRetry = false) => {
+        if (isRetry) {
+            setRetrying(true);
+        } else {
+            setLoading(true);
+        }
+
         try {
             const response = await axiosPrivate.get('/activities/');
             setActivities(response.data.results || response.data);
+            setError('');
         } catch (err) {
             setError('Failed to load activities.');
             console.error(err);
         } finally {
             setLoading(false);
+            setRetrying(false);
         }
     };
 
     useEffect(() => {
-        fetchActivities();
+        void fetchActivities();
     }, []);
 
     const handleCreate = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -107,8 +116,6 @@ export const Activities: React.FC = () => {
         );
     }
     
-    if (error) return <div className="p-8 text-red-600 bg-red-50 rounded-lg border border-red-100">{error}</div>;
-
     return (
         <div className="space-y-6 relative animate-in fade-in slide-in-from-bottom-4 duration-500">
             {/* Header / Action Row */}
@@ -128,7 +135,16 @@ export const Activities: React.FC = () => {
 
             {/* Activities Grid */}
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
-                {activities.length === 0 ? (
+                {error && (
+                    <div className="col-span-full">
+                        <InlineErrorState
+                            message="We couldn't load activities."
+                            onRetry={() => void fetchActivities(true)}
+                            retrying={retrying}
+                        />
+                    </div>
+                )}
+                {!error && activities.length === 0 ? (
                     <div className="col-span-full py-12 text-center text-slate-500 bg-white rounded-xl border border-slate-100 border-dashed">
                         No upcoming activities scheduled.
                     </div>

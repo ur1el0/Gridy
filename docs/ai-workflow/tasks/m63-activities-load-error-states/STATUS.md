@@ -4,38 +4,39 @@
 
 - **Task ID:** `m63-activities-load-error-states`
 - **State:** In progress
-- **Milestone:** M1 — Regression tests
-- **Branch:** `test/m63-activities-load-errors`
-- **Base:** M62 PR #193 head `c01a05907a9a805b5ef6d846abce3d24d3587694`
+- **Milestone:** M2 — Retryable error UI
+- **Branch:** `fix/m63-activities-load-error-states`
+- **Base:** M1 checkpoint `94f7c98` on `test/m63-activities-load-errors`, based on M62 PR #193 head `c01a05907a9a805b5ef6d846abce3d24d3587694`
 - **Worktree:** `/tmp/gridy-m62-reliability-audit` (isolated clone; primary checkout unchanged)
 
 ## Baseline evidence
 
-- `Activities.fetchActivities()` catches GET failures and sets an error string.
-- The page-level error return hides the page header and Schedule Activity control and has no accessible alert or retry.
-- The same list loader runs after successful creation, so a failed follow-up GET also hides previously loaded activity cards.
+- `Activities.fetchActivities()` caught GET failures and set an error string.
+- The page-level error return hid the page header and Schedule Activity control and had no accessible alert or retry.
+- The same list loader runs after successful creation, so a failed follow-up GET also hid previously loaded activity cards.
 - The existing `InlineErrorState` is the established accessible retry UI in this frontend.
 - Hindsight knowledge listing/search were attempted; the service refused connections at `127.0.0.1:9077`. Planning uses current source and repository task history.
 
 ## Plan amendment
 
-While refining the implementation, source inspection showed that the same GET loader runs after successful creation. The M63 contract was narrowly amended to keep existing cards visible alongside the retry alert if that follow-up read fails. A focused regression test was added before application changes.
+Source inspection showed that the loader runs after successful creation as well as on initial mount. The M63 contract was narrowly amended to preserve existing cards beside the retry alert if that follow-up read fails; a regression test was added before application changes.
 
 ## Milestone log
 
 | Milestone | Status | Evidence |
 | --- | --- | --- |
-| M1 — Regression tests | Complete | Five focused cases. Initial pre-implementation run: 1 file, 3 failed and 1 passed. After adding the follow-up-refresh preservation case, the pre-implementation run: 1 file, 4 failed and 1 passed. Failures reproduce missing alert/retry, hidden scheduling action, and dropped known card; the successful-empty response passes. |
-| M2 — Retryable error UI | Pending | — |
+| M1 — Regression tests | Complete | Five focused cases. Pre-implementation: initial run 3 failed/1 passed; after adding failed-follow-up-read preservation coverage 4 failed/1 passed. The latter specifically reproduced the old card disappearing after a post-create GET failure. |
+| M2 — Retryable error UI | Complete | Replaced the page-level early return with `InlineErrorState` in the list area, added retrying state, and clear the error on GET success. Focused tests pass. |
 | M3 — Verification and delivery | Pending | — |
 
 ## Verification log
 
 | Command | Actual result |
 | --- | --- |
-| `npm --prefix frontend run test -- src/pages/services/Activities.test.tsx` (initial pre-implementation run) | Expected red: 1 test file, 3 failed and 1 passed. Failed tests could not find `role="alert"`; the current page returned only plain error text. The successful-empty case passed. |
-| `npm --prefix frontend run test -- src/pages/services/Activities.test.tsx` (after adding refresh-preservation coverage, before implementation) | Expected red: 1 test file, 4 failed and 1 passed. In addition to the missing alert/retry, the failed follow-up GET caused the old activity card to disappear. The successful-empty case passed. |
-| `git diff --check` | Passed with no whitespace errors for the M1 test and task packet. |
+| `npm --prefix frontend run test -- src/pages/services/Activities.test.tsx` (initial pre-implementation run) | Expected red: 1 test file, 3 failed and 1 passed. Failures could not find the accessible alert; successful-empty passed. |
+| `npm --prefix frontend run test -- src/pages/services/Activities.test.tsx` (after adding preservation coverage, before implementation) | Expected red: 1 test file, 4 failed and 1 passed. The prior loaded activity card disappeared on failed post-create GET, and the page still lacked alert/retry UI. |
+| `npm --prefix frontend run test -- src/pages/services/Activities.test.tsx` (after implementation) | Passed: 1 test file, 5 tests. Covers initial failure and scheduling access, repeat failure and data recovery, preservation on failed post-create reload, successful-empty response, and disabled retry without mutations. |
+| `git diff --check` | Passed with no whitespace errors for the implementation diff. |
 
 ## Files
 
@@ -45,8 +46,9 @@ While refining the implementation, source inspection showed that the same GET lo
 - `docs/ai-workflow/tasks/m63-activities-load-error-states/PLAN.md`
 - `docs/ai-workflow/tasks/m63-activities-load-error-states/STATUS.md`
 
-## Safety
+## Safety and scope
 
-- M1 changed only regression tests and the task packet; application source was unchanged during the red-phase runs.
-- Tests use mocked API calls. No production services or data are accessed.
-- No schema, dependency, or infrastructure changes are planned. Azure pilot remains NO-GO.
+- M1 changed only tests and the task packet; application source was unchanged during the red-phase runs.
+- M2 changes only Activities page request state and error presentation. Retry calls only `GET /activities/`.
+- Create/delete handlers, endpoint, response normalization, and successful list rendering remain unchanged.
+- HTTP is mocked in tests. No production data, schema, dependencies, infrastructure, or Azure resources are touched. Azure pilot remains NO-GO.
