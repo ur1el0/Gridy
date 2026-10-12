@@ -44,5 +44,5 @@
 - Implementation commit: `cc2d9fe655c2320287140b760530a652896215e6` (`fix(queue): distinguish initial load failure from empty queue`).
 - Branch pushed to `origin/fix/m74-live-queue-load-state`.
 - Pull request: [#205](https://github.com/ur1el0/KapitBayan/pull/205), based on M73 PR #204 branch `fix/m73-public-announcements-load-errors`.
-- PR is open, unmerged, and mergeable. GitHub Actions run 516 was queued and Vercel was pending when checked; these statuses need a cloud recheck after the delivery note is pushed.
+- Cloud recheck after the delivery note push: PR #205 remains open, unmerged, and mergeable. GitHub Actions run 518 is in progress; Vercel is pending. In run 516, frontend tests and Oxlint passed, mobile analysis passed, Azure preflight and Bicep passed, while the frontend build, mobile tests, and remaining integration jobs were still running. This is a point-in-time record; no merge or deployment was performed.
 - No merge or deployment was performed. Azure pilot remains NO-GO.
