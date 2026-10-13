@@ -3,7 +3,6 @@ from rest_framework.routers import DefaultRouter
 from .views import (
     SessionViewSet,
     RegisterView, 
-    AdminRegisterView,
     CustomTokenObtainPairView, 
     ResidentImportView, 
     UserProfileView, 
@@ -30,7 +29,6 @@ router.register(r"barangay-applications", BarangayApplicationViewSet, basename="
 
 urlpatterns = [
     path('register/', RegisterView.as_view(), name='auth_register'),
-    path('register/admin/', AdminRegisterView.as_view(), name='auth_register_admin'),
     path('public/barangays/', PublicBarangayDirectoryView.as_view(), name='public-barangay-list'),
     path('login/', CustomTokenObtainPairView.as_view(), name='auth_login'),
     path('token/refresh/', CustomTokenRefreshView.as_view(), name='auth_token_refresh'),

@@ -14,7 +14,6 @@ from .password_reset import (
 )
 from .registration import (
     RegisterView,
-    AdminRegisterView,
 )
 from .profile import (
     UserProfileView,

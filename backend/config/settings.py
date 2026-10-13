@@ -37,10 +37,6 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = env('SECRET_KEY')
 
 ADMIN_REGISTRATION_PASSKEY = env('ADMIN_REGISTRATION_PASSKEY', default='').strip()
-if not ADMIN_REGISTRATION_PASSKEY:
-    raise ImproperlyConfigured(
-        'ADMIN_REGISTRATION_PASSKEY must be configured with a non-empty secret.'
-    )
 
 PRIVACY_CONSENT_VERSION = "resident-v1"
 
