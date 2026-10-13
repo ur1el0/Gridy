@@ -53,7 +53,7 @@ export const AdminProfile: React.FC = () => {
                             <div className="space-y-3">
                                 <div className="flex items-center gap-3 text-sm text-slate-700">
                                     <User className="w-4 h-4 text-slate-400" />
-                                    Role ID: {user.id}
+                                    Account ID: #{user.id}
                                 </div>
                                 <div className="flex items-center gap-3 text-sm text-slate-700">
                                     <Calendar className="w-4 h-4 text-slate-400" />
