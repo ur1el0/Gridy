@@ -105,6 +105,7 @@ class PaymentProofStorageAndEndpointTests(APITestCase):
             document_type="Barangay Clearance",
             status=DocumentRequest.Status.READY_FOR_PICKUP,
             fee_amount=50.00,
+            fee_assessment_status=DocumentRequest.FeeAssessmentStatus.ASSESSED,
             payment_method=DocumentRequest.PaymentMethod.GCASH,
             payment_status=DocumentRequest.PaymentStatus.PENDING_VERIFICATION,
             payment_reference="GCASH-123456",
@@ -390,6 +391,7 @@ class PaymentSubmissionAndReviewWorkflowTests(APITestCase):
             "purpose": "Employment",
             "status": DocumentRequest.Status.READY_FOR_PICKUP,
             "fee_amount": 75.00,
+            "fee_assessment_status": DocumentRequest.FeeAssessmentStatus.ASSESSED,
             "payment_status": DocumentRequest.PaymentStatus.UNPAID,
         }
         values.update(kwargs)

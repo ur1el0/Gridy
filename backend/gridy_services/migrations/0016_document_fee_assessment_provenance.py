@@ -69,6 +69,24 @@ def backfill_fee_assessment_provenance(apps, schema_editor):
                     "fee_waiver_reason",
                 ]
             )
+        elif doc.status == "READY_FOR_PICKUP" and doc.fee_amount == 0:
+            # Zero-fee requests at READY_FOR_PICKUP cannot have reached that state
+            # without an explicit fee decision. Revert to PROCESSING so staff must
+            # assess or waive the fee before the document can be released.
+            doc.status = "PROCESSING"
+            doc.fee_assessment_status = "AWAITING_ASSESSMENT"
+            doc.fee_assessed_at = None
+            doc.fee_assessed_by = None
+            doc.fee_waiver_reason = ""
+            doc.save(
+                update_fields=[
+                    "status",
+                    "fee_assessment_status",
+                    "fee_assessed_at",
+                    "fee_assessed_by",
+                    "fee_waiver_reason",
+                ]
+            )
         else:
             if doc.fee_amount > 0:
                 doc.fee_assessment_status = "ASSESSED"
@@ -147,4 +165,3 @@ class Migration(migrations.Migration):
             reverse_code=migrations.RunPython.noop,
         ),
     ]
-

@@ -149,6 +149,10 @@ class DocumentRequestReviewSerializer(FeePolicyValidationMixin, serializers.Mode
         required=False,
         allow_blank=True,
     )
+    fee_assessment_status = serializers.ChoiceField(
+        choices=DocumentRequest.FeeAssessmentStatus.choices,
+        required=False,
+    )
 
     class Meta:
         model = DocumentRequest
@@ -159,6 +163,7 @@ class DocumentRequestReviewSerializer(FeePolicyValidationMixin, serializers.Mode
             "fee_amount",
             "payment_method",
             "fee_waiver_reason",
+            "fee_assessment_status",
         ]
 
     def validate_status(self, value):

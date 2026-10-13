@@ -78,4 +78,3 @@ Migration `0016_document_fee_assessment_provenance.py` adds the schema columns a
 - [ADR 010: Adviser-Approved Service Workflows](010-adviser-approved-service-workflows.md)
 - [ADR 011: Verified Barangay Onboarding and Tenant Payment Recipients](011-verified-barangay-onboarding-and-manual-payment-recipients.md)
 - [ADR 016: Resident Manual E-Payment Evidence, Storage Isolation, and Verification Architecture](016-manual-epayment-evidence-and-verification.md)
-

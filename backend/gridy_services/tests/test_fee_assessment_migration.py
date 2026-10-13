@@ -129,8 +129,15 @@ class FeeAssessmentMigrationBackfillTests(TestCase):
 
         backfill_fee_assessment_provenance(apps, None)
 
+        pending_doc.refresh_from_db()
+        processing_doc.refresh_from_db()
+        ready_doc.refresh_from_db()
+
+        self.assertEqual(pending_doc.status, DocumentRequest.Status.PENDING)
+        self.assertEqual(processing_doc.status, DocumentRequest.Status.PROCESSING)
+        self.assertEqual(ready_doc.status, DocumentRequest.Status.PROCESSING)
+
         for d in (pending_doc, processing_doc, ready_doc):
-            d.refresh_from_db()
             self.assertEqual(
                 d.fee_assessment_status,
                 DocumentRequest.FeeAssessmentStatus.AWAITING_ASSESSMENT,

@@ -29,7 +29,7 @@ from decimal import Decimal
 from gridy_audit.services import log_action
 from gridy_audit.models import AuditLog
 from rest_framework.exceptions import PermissionDenied, ValidationError
-from ..fee_policy import FEE_EXEMPT_DOCUMENT_TYPES
+from ..fee_policy import FEE_EXEMPT_DOCUMENT_TYPES, check_ra11261_eligibility
 
 class DocumentRequestViewSet(viewsets.ModelViewSet):
     serializer_class = DocumentRequestSerializer
@@ -214,6 +214,7 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
             document_request = DocumentRequest.objects.select_for_update().get(
                 pk=self.get_object().pk
             )
+            initial_fee_assessment_status = document_request.fee_assessment_status
             serializer = DocumentRequestReviewSerializer(
                 document_request,
                 data=request.data,
@@ -226,11 +227,41 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
 
             fee_amount_input = request.data.get("fee_amount")
             fee_waiver_reason_input = request.data.get("fee_waiver_reason")
+            fee_assessment_status_input = request.data.get("fee_assessment_status")
+            statutory_exempt_flag = request.data.get("statutory_exempt") or request.data.get("is_statutory_exempt")
 
-            if is_statutory:
+            if fee_assessment_status_input == DocumentRequest.FeeAssessmentStatus.STATUTORY_EXEMPT or statutory_exempt_flag:
+                # Staff explicitly grants statutory exemption under RA 11261
+                is_eligible, ineligibility_reason = check_ra11261_eligibility(
+                    user=document_request.user,
+                    document_type=document_request.document_type,
+                    current_request_id=document_request.pk,
+                )
+                if not is_eligible:
+                    raise ValidationError({"fee_assessment_status": ineligibility_reason})
+
                 document_request.fee_amount = Decimal("0.00")
                 document_request.fee_assessment_status = DocumentRequest.FeeAssessmentStatus.STATUTORY_EXEMPT
-                document_request.fee_waiver_reason = ""
+                document_request.fee_assessed_by = request.user
+                document_request.fee_assessed_at = timezone.now()
+                document_request.fee_waiver_reason = (
+                    fee_waiver_reason_input or "RA 11261 First-Time Jobseeker statutory exemption verified."
+                ).strip()
+                document_request.payment_status = DocumentRequest.PaymentStatus.NOT_REQUIRED
+                log_action(
+                    user=request.user,
+                    action_type=AuditLog.ActionType.DOCUMENT_ACTION,
+                    description=(
+                        f"Granted RA 11261 statutory fee exemption for document request #{document_request.id} "
+                        f"({document_request.document_type}). Justification: {document_request.fee_waiver_reason}"
+                    ),
+                    request=self.request,
+                )
+            elif is_statutory or initial_fee_assessment_status == DocumentRequest.FeeAssessmentStatus.STATUTORY_EXEMPT:
+                document_request.fee_amount = Decimal("0.00")
+                document_request.fee_assessment_status = DocumentRequest.FeeAssessmentStatus.STATUTORY_EXEMPT
+                document_request.fee_waiver_reason = document_request.fee_waiver_reason or ""
+                document_request.fee_assessed_by = request.user
                 if not document_request.fee_assessed_at:
                     document_request.fee_assessed_at = timezone.now()
             elif fee_amount_input is not None or fee_waiver_reason_input is not None:

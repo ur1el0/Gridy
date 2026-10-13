@@ -176,24 +176,6 @@ class DocumentRequest(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
-    def save(self, *args, **kwargs):
-        doc_type_clean = " ".join((self.document_type or "").split()).casefold()
-        from .fee_policy import FEE_EXEMPT_DOCUMENT_TYPES
-        from decimal import Decimal
-        try:
-            fee_decimal = Decimal(str(self.fee_amount)) if self.fee_amount is not None else Decimal("0.00")
-        except Exception:
-            fee_decimal = Decimal("0.00")
-
-        if doc_type_clean in FEE_EXEMPT_DOCUMENT_TYPES:
-            self.fee_assessment_status = self.FeeAssessmentStatus.STATUTORY_EXEMPT
-        elif (
-            fee_decimal > Decimal("0.00")
-            and self.fee_assessment_status == self.FeeAssessmentStatus.AWAITING_ASSESSMENT
-        ):
-            self.fee_assessment_status = self.FeeAssessmentStatus.ASSESSED
-        super().save(*args, **kwargs)
-
     def __str__(self):
         applicant = self.user.username if self.user else f"Walk-in: {self.walkin_name}"
         return f"{self.document_type} - {applicant} ({self.status})"
