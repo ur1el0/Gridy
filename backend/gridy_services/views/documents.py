@@ -60,10 +60,18 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
         if not user or not user.is_authenticated:
             return DocumentRequest.objects.none()
         
-        # Barangay Officials see digital requests from their residents + walk-ins assigned to their barangay
+        # The request's barangay is authoritative; only legacy null-barangay
+        # digital requests fall back to the resident's current barangay.
         if user.role in [User.Role.ADMIN, User.Role.FIELD_OFFICIAL]:
+            if user.barangay_id is None:
+                return DocumentRequest.objects.none()
             return DocumentRequest.objects.filter(
-                Q(user__barangay=user.barangay) | Q(barangay=user.barangay)
+                Q(barangay_id=user.barangay_id)
+                | Q(
+                    barangay_id__isnull=True,
+                    is_walkin=False,
+                    user__barangay_id=user.barangay_id,
+                )
             ).order_by('-created_at')
 
         if user.role == User.Role.DILG_ADMIN:

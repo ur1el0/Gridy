@@ -316,6 +316,21 @@ class _DocumentPaymentSectionState extends State<DocumentPaymentSection> {
           ),
         ],
 
+        if (req != null &&
+            !req.isFeeExempt &&
+            (req.isReadyForPickup || req.isReleased) &&
+            (req.feeAmount ?? 0) <= 0) ...[
+          const SizedBox(height: 16),
+          const Text(
+            'No payment required',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF166534),
+            ),
+          ),
+        ],
+
         // 4. Pending Verification State Card with Proof Preview
         if (req != null && req.paymentStatus == 'PENDING_VERIFICATION') ...[
           const SizedBox(height: 16),

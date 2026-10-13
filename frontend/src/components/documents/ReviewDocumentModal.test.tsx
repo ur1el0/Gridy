@@ -159,6 +159,30 @@ describe('ReviewDocumentModal', () => {
         );
     });
 
+    it('allows staff to assess an ordinary request that starts with zero fee', () => {
+        const unassessedRequest: DocumentRequest = {
+            ...baseRequest,
+            status: 'PROCESSING',
+            fee_amount: '0.00',
+            payment_status: 'NOT_REQUIRED',
+            payment_method: '',
+        };
+        render(<ReviewDocumentModal {...defaultProps} selectedRequest={unassessedRequest} />);
+
+        const feeInput = screen.getByPlaceholderText('50.00');
+        expect(feeInput).toBeEnabled();
+        expect(screen.queryByText(/Fee Exempt \(₱0\.00\)/)).not.toBeInTheDocument();
+        fireEvent.change(feeInput, { target: { value: '50.00' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Mark Ready for Pickup' }));
+
+        expect(defaultProps.handleStatusUpdate).toHaveBeenCalledWith(
+            'READY_FOR_PICKUP',
+            '',
+            '50.00',
+            '',
+        );
+    });
+
     it('renders cash instructions when payment method is CASH', () => {
         const cashRequest: DocumentRequest = {
             ...baseRequest,
@@ -200,4 +224,3 @@ describe('ReviewDocumentModal', () => {
         );
     });
 });
-

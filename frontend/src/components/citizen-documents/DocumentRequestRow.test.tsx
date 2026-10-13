@@ -96,7 +96,7 @@ describe('DocumentRequestRow', () => {
         expect(screen.queryByLabelText(/Payment recipient for request 101/i)).not.toBeInTheDocument();
     });
 
-    it('renders statutory fee exemption badge when fee_amount is 0 or payment_status is NOT_REQUIRED', () => {
+    it('renders statutory fee exemption badge for an exempt document type', () => {
         const req: DocumentRequest = {
             ...baseRequest,
             document_type: 'Certificate of Indigency',
@@ -109,6 +109,34 @@ describe('DocumentRequestRow', () => {
             screen.getByText(/Statutory Fee Exemption — No Payment Required \(RA 11261 \/ Indigency\)/i),
         ).toBeInTheDocument();
         expect(screen.queryByText(/Assessment: ₱/i)).not.toBeInTheDocument();
+        expect(screen.queryByLabelText(/Payment recipient for request 101/i)).not.toBeInTheDocument();
+    });
+
+    it('does not call an ordinary unassessed request statutory fee exempt', () => {
+        const req: DocumentRequest = {
+            ...baseRequest,
+            status: 'PROCESSING',
+            fee_amount: 0,
+            payment_status: 'NOT_REQUIRED',
+        };
+        renderInTable(<DocumentRequestRow {...defaultProps} request={req} />);
+
+        expect(screen.getByText('Document Under Processing')).toBeInTheDocument();
+        expect(screen.getByText(/fee is pending staff assessment/i)).toBeInTheDocument();
+        expect(screen.queryByText(/Statutory Fee Exemption/i)).not.toBeInTheDocument();
+        expect(screen.queryByLabelText(/Payment recipient for request 101/i)).not.toBeInTheDocument();
+    });
+
+    it('shows ordinary zero-fee requests as no payment required after assessment', () => {
+        const req: DocumentRequest = {
+            ...baseRequest,
+            fee_amount: 0,
+            payment_status: 'NOT_REQUIRED',
+        };
+        renderInTable(<DocumentRequestRow {...defaultProps} request={req} />);
+
+        expect(screen.getByText('No payment required')).toBeInTheDocument();
+        expect(screen.queryByText(/Statutory Fee Exemption/i)).not.toBeInTheDocument();
         expect(screen.queryByLabelText(/Payment recipient for request 101/i)).not.toBeInTheDocument();
     });
 
@@ -206,4 +234,3 @@ describe('DocumentRequestRow', () => {
         expect(defaultProps.onDownloadPdf).toHaveBeenCalledTimes(1);
     });
 });
-

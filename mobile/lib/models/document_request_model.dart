@@ -122,9 +122,9 @@ class DocumentRequestModel {
   bool get isRejected => status.toUpperCase() == 'REJECTED';
   bool get isCompleted => isReleased;
   bool get isFeeExempt =>
-      (feeAmount != null && feeAmount == 0.0) ||
-      documentType.toLowerCase().contains('indigency') ||
-      documentType.toLowerCase().contains('first time job seeker');
+      {'certificate of indigency', 'first time job seeker certificate'}.contains(
+        documentType.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase(),
+      );
 
   /// Formatted fee string in Philippine Pesos (e.g. "₱50.00")
   String? get formattedFee =>

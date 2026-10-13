@@ -61,6 +61,75 @@ void main() {
       );
     });
 
+    testWidgets('ordinary zero fee stays pending assessment during processing', (
+      tester,
+    ) async {
+      final request = DocumentRequestModel(
+        id: 110,
+        documentType: 'Barangay Clearance',
+        status: 'PROCESSING',
+        feeAmount: 0.0,
+        paymentStatus: 'NOT_REQUIRED',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: DocumentPaymentSection(
+              request: request,
+              canSubmitElectronicPayment: false,
+              isLoadingRecipients: false,
+              recipientError: null,
+              recipients: mockRecipients,
+              selectedRecipientId: null,
+              referenceController: TextEditingController(),
+              isSubmitting: false,
+              onSelectedRecipientChanged: (_) {},
+              onSubmitPaymentReference: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Payment Unavailable During Processing'), findsOneWidget);
+      expect(find.text('Statutory Fee Exemption (₱0.00)'), findsNothing);
+      expect(request.isFeeExempt, isFalse);
+    });
+
+    testWidgets('ordinary zero fee after assessment has no statutory claim', (
+      tester,
+    ) async {
+      final request = DocumentRequestModel(
+        id: 111,
+        documentType: 'Barangay Clearance',
+        status: 'READY_FOR_PICKUP',
+        feeAmount: 0.0,
+        paymentStatus: 'NOT_REQUIRED',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: DocumentPaymentSection(
+              request: request,
+              canSubmitElectronicPayment: false,
+              isLoadingRecipients: false,
+              recipientError: null,
+              recipients: mockRecipients,
+              selectedRecipientId: null,
+              referenceController: TextEditingController(),
+              isSubmitting: false,
+              onSelectedRecipientChanged: (_) {},
+              onSubmitPaymentReference: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('No payment required'), findsOneWidget);
+      expect(find.text('Statutory Fee Exemption (₱0.00)'), findsNothing);
+    });
+
     testWidgets('renders cash instructions banner when paymentMethod is CASH', (
       tester,
     ) async {

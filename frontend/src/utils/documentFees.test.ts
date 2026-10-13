@@ -13,6 +13,9 @@ describe('isFeeExemptDocumentType', () => {
         expect(
             isFeeExemptDocumentType('  CERTIFICATE OF INDIGENCY  '),
         ).toBe(true);
+        expect(
+            isFeeExemptDocumentType('First  Time\tJob Seeker Certificate'),
+        ).toBe(true);
     });
 
     it.each(['Barangay Clearance', 'Business Permit'])(

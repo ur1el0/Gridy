@@ -8,6 +8,14 @@ from .base import ServiceAPIBaseTestCase
 
 
 class DocumentRequestAPITests(ServiceAPIBaseTestCase):
+    def _assign_shared_barangay(self):
+        barangay = Barangay.objects.create(name="Document API Assigned Barangay")
+        self.official.barangay = barangay
+        self.official.save(update_fields=["barangay"])
+        self.resident.barangay = barangay
+        self.resident.save(update_fields=["barangay"])
+        return barangay
+
     def test_resident_can_create_document_request(self):
         self.client.force_login(self.resident)
         url = reverse('document-request-list')
@@ -246,9 +254,11 @@ class DocumentRequestAPITests(ServiceAPIBaseTestCase):
 
     def test_official_can_validate_document_request(self):
         # 1. Setup: Log in the admin and create a dummy request
+        barangay = self._assign_shared_barangay()
         self.client.force_login(self.official)
         doc_req = DocumentRequest.objects.create(
             user=self.resident,
+            barangay=barangay,
             document_type="Barangay Clearance",
         )
 
@@ -271,9 +281,11 @@ class DocumentRequestAPITests(ServiceAPIBaseTestCase):
         self.assertEqual(AuditLog.objects.filter(action_type=AuditLog.ActionType.DOCUMENT_ACTION).count(), 1)
 
     def test_official_can_delete_released_document_request(self):
+        barangay = self._assign_shared_barangay()
         self.client.force_login(self.official)
         doc = DocumentRequest.objects.create(
             user=self.resident,
+            barangay=barangay,
             document_type="Barangay Clearance",
             status=DocumentRequest.Status.RELEASED
         )
@@ -284,9 +296,11 @@ class DocumentRequestAPITests(ServiceAPIBaseTestCase):
         self.assertTrue(AuditLog.objects.filter(action_type=AuditLog.ActionType.DOCUMENT_ACTION, action_by=self.official).exists())
 
     def test_official_can_delete_rejected_document_request(self):
+        barangay = self._assign_shared_barangay()
         self.client.force_login(self.official)
         doc = DocumentRequest.objects.create(
             user=self.resident,
+            barangay=barangay,
             document_type="Barangay Clearance",
             status=DocumentRequest.Status.REJECTED
         )
@@ -296,9 +310,11 @@ class DocumentRequestAPITests(ServiceAPIBaseTestCase):
         self.assertFalse(DocumentRequest.objects.filter(id=doc.id).exists())
 
     def test_official_cannot_delete_pending_document_request(self):
+        barangay = self._assign_shared_barangay()
         self.client.force_login(self.official)
         doc = DocumentRequest.objects.create(
             user=self.resident,
+            barangay=barangay,
             document_type="Barangay Clearance",
             status=DocumentRequest.Status.PENDING
         )
@@ -401,6 +417,7 @@ class DocumentRequestAPITests(ServiceAPIBaseTestCase):
         self.assertEqual(created_request.status, DocumentRequest.Status.PENDING)
 
     def test_staff_validation_cannot_add_fee_to_exempt_document(self):
+        self._assign_shared_barangay()
         document_request = DocumentRequest.objects.create(
             user=self.resident,
             barangay=self.official.barangay,

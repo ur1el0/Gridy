@@ -171,7 +171,7 @@ export const ReviewDocumentModal = ({
     const [feeAmount, setFeeAmount] = useState('50.00');
     const [paymentMethod, setPaymentMethod] = useState('');
     const [paymentReviewNote, setPaymentReviewNote] = useState('');
-    const isFeeExempt = isFeeExemptDocumentType(selectedRequest?.document_type) || Number(selectedRequest?.fee_amount) === 0;
+    const isFeeExempt = isFeeExemptDocumentType(selectedRequest?.document_type);
     const dialogTitleId = useId();
     const dialogRef = useModalFocus<HTMLDivElement>(Boolean(selectedRequest), closeModal);
 
@@ -181,7 +181,7 @@ export const ReviewDocumentModal = ({
             setPaymentMethod(selectedRequest.payment_method || '');
             setPaymentReviewNote('');
             setFeeAmount(
-                isFeeExemptDocumentType(selectedRequest.document_type) || Number(selectedRequest.fee_amount) === 0
+                isFeeExemptDocumentType(selectedRequest.document_type)
                     ? '0.00'
                     : selectedRequest.fee_amount != null
                         ? Number(selectedRequest.fee_amount).toFixed(2)

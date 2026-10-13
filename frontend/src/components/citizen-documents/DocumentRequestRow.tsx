@@ -13,6 +13,7 @@ import {
 import { PaymentReferenceForm } from './PaymentReferenceForm';
 import type { DocumentRequest, PaymentRecipient } from './types';
 import { usePrivateMediaUrl } from '../../hooks/usePrivateMediaUrl';
+import { isFeeExemptDocumentType } from '../../utils/documentFees';
 
 interface DocumentRequestRowProps {
     request: DocumentRequest;
@@ -173,9 +174,8 @@ export const DocumentRequestRow: React.FC<DocumentRequestRowProps> = ({
         request.status.toUpperCase(),
     );
 
-    const isExempt =
-        Number(request.fee_amount ?? 0) <= 0 ||
-        request.payment_status === 'NOT_REQUIRED';
+    const isStatutoryFeeExempt = isFeeExemptDocumentType(request.document_type);
+    const isPaymentNotRequired = isStatutoryFeeExempt || Number(request.fee_amount ?? 0) <= 0;
 
     const isCash = request.payment_method === 'CASH';
 
@@ -217,7 +217,7 @@ export const DocumentRequestRow: React.FC<DocumentRequestRowProps> = ({
                     <RequestStatusBadge status={request.status} />
 
                     {/* Fee-Exempt Badge (REV-07) */}
-                    {isExempt && (
+                    {isStatutoryFeeExempt && (
                         <div>
                             <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
                                 <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
@@ -227,20 +227,23 @@ export const DocumentRequestRow: React.FC<DocumentRequestRowProps> = ({
                     )}
 
                     {/* Processing State Guidance Banner */}
-                    {!isExempt && request.status.toUpperCase() === 'PROCESSING' && (
+                    {!isStatutoryFeeExempt && request.status.toUpperCase() === 'PROCESSING' && (
                         <div className="p-3 rounded-xl border border-blue-200 bg-blue-50/70 text-xs text-blue-900 space-y-1">
                             <p className="font-semibold flex items-center gap-1.5">
                                 <Clock className="w-4 h-4 text-blue-600 shrink-0" />
                                 <span>Document Under Processing</span>
                             </p>
                             <p className="text-blue-800 leading-relaxed">
-                                Assessment fee is ₱{Number(request.fee_amount).toFixed(2)}. Official payment instructions and recipient details will become available once staff process and approve your document and mark it Ready for Pickup.
+                                {Number(request.fee_amount ?? 0) > 0
+                                    ? `Assessment fee is ₱${Number(request.fee_amount).toFixed(2)}. `
+                                    : 'The fee is pending staff assessment. '}
+                                Official payment instructions and recipient details will become available once staff process and approve your document and mark it Ready for Pickup.
                             </p>
                         </div>
                     )}
 
                     {/* Cash Instructions Banner (REV-07) */}
-                    {!isExempt && isCash && (
+                    {!isPaymentNotRequired && isCash && (
                         <div className="p-3 rounded-xl border border-amber-200 bg-amber-50/60 text-xs text-amber-900 space-y-1">
                             <p className="font-semibold">Payment Method: Cash</p>
                             <p className="text-amber-800 leading-relaxed">
@@ -249,8 +252,13 @@ export const DocumentRequestRow: React.FC<DocumentRequestRowProps> = ({
                         </div>
                     )}
 
-                    {/* Non-exempt, Electronic Payment Lifecycle */}
-                    {!isExempt && !isCash && (
+                    {!isStatutoryFeeExempt && isPaymentNotRequired &&
+                        ['READY_FOR_PICKUP', 'RELEASED'].includes(request.status.toUpperCase()) && (
+                            <p className="text-xs font-semibold text-emerald-800">No payment required</p>
+                        )}
+
+                    {/* Assessed electronic payment lifecycle */}
+                    {!isPaymentNotRequired && !isCash && (
                         <div className="space-y-1.5 text-xs text-slate-600">
                             <p>Assessment: ₱{Number(request.fee_amount).toFixed(2)}</p>
 

@@ -32,4 +32,3 @@ def delete_document_payment_proof_on_delete(sender, instance, **kwargs):
         storage = instance.payment_proof_image.storage
         file_name = instance.payment_proof_image.name
         transaction.on_commit(lambda: safe_delete_storage_file(storage, file_name))
-

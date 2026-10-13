@@ -48,7 +48,7 @@ Access to payment proof images and payment verification endpoints is restricted 
 - Authorized staff (`ADMIN` or `FIELD_OFFICIAL`) can persist and update the Official Receipt (`or_number`) independently during payment review or while the request is `READY_FOR_PICKUP`, without triggering immediate document release.
 - When transitioning to `RELEASED`, the server-side model and serializer validation strictly enforce:
   `if fee_amount > 0 and not or_number: raise ValidationError("An Official Receipt (O.R.) number is required before releasing a document with a fee.")`
-- Statutory fee exemptions (`is_fee_exempt = True` or `fee_amount == 0.00`) and `NOT_REQUIRED` payments bypass the O.R. requirement and do not require payment proof.
+- The release gate does not require an O.R. when `fee_amount == 0.00`. Statutory exemptions are determined by the document type in the fee policy; an ordinary request's initial zero fee is pending assessment, not proof of exemption.
 
 ### 7. Transaction-Safe Storage Cleanup
 Storage lifecycle is managed through atomic database transactions and post-delete signals:
@@ -57,14 +57,14 @@ Storage lifecycle is managed through atomic database transactions and post-delet
 - Deletion of a `DocumentRequest` schedules proof file deletion via `post_delete` signal on transaction commit.
 
 ### 8. Audit Logging, Privacy (RA 10173), and Rollback Retention
-- System audit logs record structured action metadata (`user_id`, `action`, `document_request_id`, `reference`, `transacted_at`). Raw image bytes, account passwords, PINs, OTPs, and private banking credentials are never logged or stored.
-- In the event of a database migration rollback (removing `payment_proof_image` and `payment_transacted_at` columns), physical proof files retained in private storage remain secured under Cloudinary private asset policies or local `ProtectedMediaView` directories, ensuring COA audit traceability without creating unauthenticated exposure.
+- `AuditLog` records the actor, action type, free-form description identifying the document request, IP address, and timestamp for submission and review events. The transaction reference and transfer timestamp remain on `DocumentRequest`; they are not separate structured `AuditLog` fields. Raw image bytes, account passwords, PINs, OTPs, and private banking credentials are never logged.
+- A database migration rollback drops the proof path and transaction timestamp columns but leaves existing files in private storage. This preserves access restrictions, yet loses the request-to-file association and can leave orphaned files. Operators must inventory and securely retain the database metadata before any production rollback to support COA audit retrieval.
 
 ### 9. Web and Mobile Parity
 Both the React web portal and Flutter mobile application provide identical user experience across all payment states:
 - `PROCESSING`: Explanatory notice that payment opens upon approval.
 - `CASH`: Clear instructions to visit the Barangay Treasurer desk.
-- `NOT_REQUIRED` / Fee-Exempt: Statutory exemption badge with Republic Act citation.
+- `NOT_REQUIRED` / Fee-Exempt: A statutory exemption badge with the relevant citation appears only for exempt document types. Ordinary requests at their initial zero fee remain pending staff assessment; a zero fee after approval is shown as no payment required without a statutory claim.
 - `UNPAID` / `REJECTED`: Multi-provider selector, reference input, Manila datetime picker, screenshot picker/dropzone with client-side image preview and remove button, and staff rejection note display.
 - `PENDING_VERIFICATION`: Transfer snapshot summary with authenticated in-modal/dialog proof preview.
 - Staff Desk: Electronic transfer card, full zoom inspection modal, decoupled O.R. save button, release gate verification, and mandatory rejection feedback.
@@ -87,4 +87,3 @@ Both the React web portal and Flutter mobile application provide identical user 
 - [ADR 009: Simplification to Defended Proposal Architecture](009-simplification-to-defended-proposal-architecture.md)
 - [ADR 010: Adviser-Approved Service Workflows](010-adviser-approved-service-workflows.md)
 - [ADR 011: Verified Barangay Onboarding and Tenant Payment Recipients](011-verified-barangay-onboarding-and-manual-payment-recipients.md)
-

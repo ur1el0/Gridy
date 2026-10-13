@@ -213,6 +213,69 @@ class PaymentProofStorageAndEndpointTests(APITestCase):
                 f"User {user.username} ({user.role}) should receive 404 on alias",
             )
 
+    def test_unassigned_staff_cannot_read_or_validate_walkin_from_another_barangay(self):
+        walkin = DocumentRequest.objects.create(
+            user=None,
+            barangay=self.other_barangay,
+            is_walkin=True,
+            walkin_name="Walk-in Resident",
+            document_type="Barangay Clearance",
+            status=DocumentRequest.Status.READY_FOR_PICKUP,
+            fee_amount=50,
+            or_number="",
+        )
+        unassigned_admin = User.objects.create_user(
+            username="unassigned_admin",
+            password="SecurePassword123!",
+            email="unassigned_admin@test.ph",
+            role=User.Role.ADMIN,
+            barangay=None,
+        )
+
+        for staff_user in (self.unassigned_official, unassigned_admin):
+            self.client.force_authenticate(user=staff_user)
+            detail_url = reverse("document-request-detail", args=[walkin.pk])
+            validate_url = reverse("document-request-validate", args=[walkin.pk])
+            self.assertEqual(self.client.get(detail_url).status_code, status.HTTP_404_NOT_FOUND)
+            self.assertEqual(
+                self.client.patch(validate_url, {"or_number": "CROSS-TENANT-OR"}, format="json").status_code,
+                status.HTTP_404_NOT_FOUND,
+            )
+
+        walkin.refresh_from_db()
+        self.assertEqual(walkin.or_number, "")
+
+    def test_document_barangay_controls_staff_scope_with_legacy_null_fallback(self):
+        self.document.barangay = self.other_barangay
+        self.document.save(update_fields=["barangay"])
+        detail_url = reverse("document-request-detail", args=[self.document.pk])
+        validate_url = reverse("document-request-validate", args=[self.document.pk])
+
+        for staff_user in (self.admin, self.field_official):
+            self.client.force_authenticate(user=staff_user)
+            self.assertEqual(self.client.get(detail_url).status_code, status.HTTP_404_NOT_FOUND)
+            self.assertEqual(
+                self.client.patch(validate_url, {"or_number": "WRONG-TENANT"}, format="json").status_code,
+                status.HTTP_404_NOT_FOUND,
+            )
+        for staff_user in (self.foreign_admin, self.foreign_field_official):
+            self.client.force_authenticate(user=staff_user)
+            self.assertEqual(self.client.get(detail_url).status_code, status.HTTP_200_OK)
+
+        self.document.barangay = None
+        self.document.save(update_fields=["barangay"])
+        for staff_user in (self.admin, self.field_official):
+            self.client.force_authenticate(user=staff_user)
+            self.assertEqual(self.client.get(detail_url).status_code, status.HTTP_200_OK)
+        for staff_user in (self.foreign_admin, self.foreign_field_official):
+            self.client.force_authenticate(user=staff_user)
+            self.assertEqual(self.client.get(detail_url).status_code, status.HTTP_404_NOT_FOUND)
+
+        self.document.is_walkin = True
+        self.document.save(update_fields=["is_walkin"])
+        self.client.force_authenticate(user=self.admin)
+        self.assertEqual(self.client.get(detail_url).status_code, status.HTTP_404_NOT_FOUND)
+
     def test_missing_proof_returns_404_to_owner_and_staff(self):
         doc_without_proof = DocumentRequest.objects.create(
             user=self.resident,

@@ -7,6 +7,6 @@ export function isFeeExemptDocumentType(
     documentType: string | null | undefined,
 ): boolean {
     return FEE_EXEMPT_DOCUMENT_TYPES.has(
-        documentType?.trim().toLowerCase() ?? '',
+        documentType?.trim().replace(/\s+/g, ' ').toLowerCase() ?? '',
     );
 }
