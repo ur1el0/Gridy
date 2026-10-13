@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../core/theme/app_colors.dart';
 
 class CustomTextField extends StatelessWidget {
@@ -31,57 +32,34 @@ class CustomTextField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(
-          label.toUpperCase(),
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w700,
-            color: AppColors.textLabel,
-            letterSpacing: 0.8,
-          ),
-        ),
+        Text(label.toUpperCase(), style: theme.textTheme.labelMedium),
         const SizedBox(height: 8),
-        Container(
-          decoration: BoxDecoration(
-            color: AppColors.inputBackground,
-            borderRadius: BorderRadius.circular(12),
-          ),
-          child: Semantics(
-            label: label.toUpperCase(),
-            child: TextFormField(
-              controller: controller,
-              obscureText: obscureText,
-              keyboardType: keyboardType,
-              textInputAction: textInputAction,
-              validator: validator,
-              onFieldSubmitted: onFieldSubmitted,
-              enabled: enabled,
-              style: const TextStyle(
-                fontSize: 15,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textPrimary,
-              ),
-              decoration: InputDecoration(
-                hintText: hintText,
-                hintStyle: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w400,
-                  color: AppColors.textHint,
-                ),
-                prefixIcon: prefixIcon != null
-                    ? Icon(prefixIcon, color: AppColors.textMuted, size: 20)
-                    : null,
-                suffixIcon: suffixIcon,
-                border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(
-                  horizontal: 16,
-                  vertical: 16,
-                ),
-              ),
+        Semantics(
+          label: label.toUpperCase(),
+          child: TextFormField(
+            controller: controller,
+            obscureText: obscureText,
+            keyboardType: keyboardType,
+            textInputAction: textInputAction,
+            validator: validator,
+            onFieldSubmitted: onFieldSubmitted,
+            enabled: enabled,
+            style: theme.textTheme.bodyLarge?.copyWith(
+              color: AppColors.textPrimary,
+              fontWeight: FontWeight.w500,
+            ),
+            decoration: InputDecoration(
+              hintText: hintText,
+              prefixIcon: prefixIcon != null
+                  ? Icon(prefixIcon, color: AppColors.textMuted, size: 20)
+                  : null,
+              suffixIcon: suffixIcon,
             ),
           ),
         ),

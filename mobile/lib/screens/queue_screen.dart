@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/network/api_client.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_tokens.dart';
 import '../models/queue_ticket_model.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
@@ -12,6 +13,7 @@ import '../widgets/queue_metric_cards.dart';
 import '../widgets/recent_completions_section.dart';
 import '../widgets/request_queue_ticket_sheet.dart';
 import '../widgets/user_ticket_card.dart';
+import '../widgets/app_surface.dart';
 import 'dashboard_screen.dart';
 import 'documents_screen.dart';
 import 'schedule_screen.dart';
@@ -156,7 +158,7 @@ class _QueueScreenState extends State<QueueScreen> {
     final user = _currentUser;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.background,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(64),
         child: SafeArea(
@@ -241,31 +243,15 @@ class _QueueScreenState extends State<QueueScreen> {
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 20.0,
-                      vertical: 12.0,
+                      horizontal: AppSpacing.pageHorizontal,
+                      vertical: AppSpacing.pageVertical,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        // Section Subtitle & Title Header
-                        const Text(
-                          'LIVE QUEUE STATUS',
-                          style: TextStyle(
-                            color: Color(0xFF64748B),
-                            fontSize: 11,
-                            fontWeight: FontWeight.w800,
-                            letterSpacing: 1.0,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        const Text(
-                          "Today's Queue",
-                          style: TextStyle(
-                            color: Color(0xFF0A2540),
-                            fontSize: 28,
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: -0.5,
-                          ),
+                        const AppPageHeading(
+                          eyebrow: 'LIVE QUEUE STATUS',
+                          title: "Today's Queue",
                         ),
 
                         const SizedBox(height: 20),
