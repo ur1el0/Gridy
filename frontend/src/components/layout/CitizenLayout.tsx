@@ -47,7 +47,7 @@ export const CitizenLayout: React.FC = () => {
                                     <span className="text-xl font-bold tracking-tight text-primary-foreground leading-none">
                                         KapitBayan
                                     </span>
-                                    <span className="px-2 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-primary-foreground text-primary">
+                                    <span className="inline-flex items-center justify-center whitespace-nowrap shrink-0 px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider bg-primary-foreground text-primary leading-normal shadow-sm">
                                         Resident Portal
                                     </span>
                                 </div>
