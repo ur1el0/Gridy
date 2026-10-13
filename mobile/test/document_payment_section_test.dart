@@ -30,6 +30,7 @@ void main() {
         documentType: 'Barangay Clearance',
         status: 'PROCESSING',
         feeAmount: 50.0,
+        feeAssessmentStatus: 'ASSESSED',
       );
 
       await tester.pumpWidget(
@@ -59,6 +60,10 @@ void main() {
         find.textContaining('Payment submission unlocks once marked READY FOR PICKUP'),
         findsOneWidget,
       );
+      expect(
+        find.textContaining('Assessed fee: ₱50.00'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('ordinary zero fee stays pending assessment during processing', (
@@ -70,6 +75,7 @@ void main() {
         status: 'PROCESSING',
         feeAmount: 0.0,
         paymentStatus: 'NOT_REQUIRED',
+        feeAssessmentStatus: 'AWAITING_ASSESSMENT',
       );
 
       await tester.pumpWidget(
@@ -92,8 +98,52 @@ void main() {
       );
 
       expect(find.text('Payment Unavailable During Processing'), findsOneWidget);
+      expect(
+        find.textContaining('Fee is awaiting staff assessment'),
+        findsOneWidget,
+      );
       expect(find.text('Statutory Fee Exemption (₱0.00)'), findsNothing);
       expect(request.isFeeExempt, isFalse);
+    });
+
+    testWidgets('renders staff waiver banner when fee is waived', (
+      tester,
+    ) async {
+      final request = DocumentRequestModel(
+        id: 112,
+        documentType: 'Barangay Clearance',
+        status: 'READY_FOR_PICKUP',
+        feeAmount: 0.0,
+        paymentStatus: 'NOT_REQUIRED',
+        feeAssessmentStatus: 'WAIVED',
+        feeWaiverReason: 'Indigent family member recommendation approved.',
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: DocumentPaymentSection(
+              request: request,
+              canSubmitElectronicPayment: false,
+              isLoadingRecipients: false,
+              recipientError: null,
+              recipients: mockRecipients,
+              selectedRecipientId: null,
+              referenceController: TextEditingController(),
+              isSubmitting: false,
+              onSelectedRecipientChanged: (_) {},
+              onSubmitPaymentReference: () {},
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Fee Waived (₱0.00) — Staff Approved'), findsOneWidget);
+      expect(
+        find.text('Reason: Indigent family member recommendation approved.'),
+        findsOneWidget,
+      );
+      expect(find.text('Select Payment Channel'), findsNothing);
     });
 
     testWidgets('ordinary zero fee after assessment has no statutory claim', (

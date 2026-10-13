@@ -170,7 +170,7 @@ class _DocumentPaymentSectionState extends State<DocumentPaymentSection> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         // 1. Processing Banner
-        if (req != null && req.isProcessing) ...[
+        if (req != null && req.isProcessing && !req.isFeeWaived && !req.isStatutoryExempt) ...[
           const SizedBox(height: 16),
           Container(
             width: double.infinity,
@@ -203,13 +203,66 @@ class _DocumentPaymentSectionState extends State<DocumentPaymentSection> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        'Your document is currently being prepared. Payment submission unlocks once marked READY FOR PICKUP.${(req.feeAmount ?? 0) > 0 ? " Assessed fee: ${req.formattedFee}." : ""}',
+                        req.isAwaitingAssessment
+                            ? 'Your document is currently being prepared. Fee is awaiting staff assessment. Payment instructions will become available once marked READY FOR PICKUP.'
+                            : 'Your document is currently being prepared. Payment submission unlocks once marked READY FOR PICKUP.${(req.feeAmount ?? 0) > 0 ? " Assessed fee: ${req.formattedFee}." : ""}',
                         style: const TextStyle(
                           fontSize: 12,
                           height: 1.4,
                           color: Color(0xFF1E40AF),
                         ),
                       ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+
+        // Staff-Approved Fee Waiver Banner
+        if (req != null && req.isFeeWaived) ...[
+          const SizedBox(height: 16),
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(14),
+            decoration: BoxDecoration(
+              color: const Color(0xFFF0FDF4),
+              border: Border.all(color: const Color(0xFF86EFAC)),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Icon(
+                  Icons.verified_outlined,
+                  color: Color(0xFF15803D),
+                  size: 20,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Fee Waived (₱0.00) — Staff Approved',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF14532D),
+                        ),
+                      ),
+                      if (req.feeWaiverReason != null && req.feeWaiverReason!.isNotEmpty) ...[
+                        const SizedBox(height: 4),
+                        Text(
+                          'Reason: ${req.feeWaiverReason}',
+                          style: const TextStyle(
+                            fontSize: 12,
+                            height: 1.4,
+                            color: Color(0xFF166534),
+                          ),
+                        ),
+                      ],
                     ],
                   ),
                 ),

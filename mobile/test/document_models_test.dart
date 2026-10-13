@@ -144,5 +144,71 @@ void main() {
       expect(modelPaid.feeAmount, 50.0);
       expect(modelPaid.formattedFee, '₱50.00');
     });
+
+    test('parses fee assessment status, waiver reason, and staff provenance correctly', () {
+      final json = {
+        'id': 701,
+        'document_type': 'Barangay Clearance',
+        'status': 'READY_FOR_PICKUP',
+        'fee_amount': 0.0,
+        'payment_status': 'NOT_REQUIRED',
+        'fee_assessment_status': 'WAIVED',
+        'fee_assessed_by_name': 'Officer Juan Dela Cruz',
+        'fee_assessed_at': '2026-10-13T10:15:00Z',
+        'fee_waiver_reason': 'Indigent family member recommendation approved by Punong Barangay.',
+      };
+
+      final model = DocumentRequestModel.fromJson(json);
+
+      expect(model.id, 701);
+      expect(model.feeAssessmentStatus, 'WAIVED');
+      expect(model.isFeeWaived, isTrue);
+      expect(model.isAwaitingAssessment, isFalse);
+      expect(model.isStatutoryExempt, isFalse);
+      expect(model.feeAssessedByName, 'Officer Juan Dela Cruz');
+      expect(
+        model.feeWaiverReason,
+        'Indigent family member recommendation approved by Punong Barangay.',
+      );
+      expect(model.feeAssessedAt, isNotNull);
+
+      final serialized = model.toJson();
+      expect(serialized['fee_assessment_status'], 'WAIVED');
+      expect(serialized['fee_assessed_by_name'], 'Officer Juan Dela Cruz');
+      expect(
+        serialized['fee_waiver_reason'],
+        'Indigent family member recommendation approved by Punong Barangay.',
+      );
+    });
+
+    test('correctly evaluates isAwaitingAssessment and isStatutoryExempt', () {
+      final awaiting = DocumentRequestModel(
+        id: 702,
+        documentType: 'Barangay Clearance',
+        status: 'PROCESSING',
+        feeAssessmentStatus: 'AWAITING_ASSESSMENT',
+      );
+      expect(awaiting.isAwaitingAssessment, isTrue);
+      expect(awaiting.isFeeWaived, isFalse);
+      expect(awaiting.isStatutoryExempt, isFalse);
+
+      final statutory = DocumentRequestModel(
+        id: 703,
+        documentType: 'Certificate of Indigency',
+        status: 'PROCESSING',
+        feeAssessmentStatus: 'STATUTORY_EXEMPT',
+      );
+      expect(statutory.isAwaitingAssessment, isFalse);
+      expect(statutory.isFeeWaived, isFalse);
+      expect(statutory.isStatutoryExempt, isTrue);
+      expect(statutory.isFeeExempt, isTrue);
+
+      final statutoryByDocType = DocumentRequestModel(
+        id: 704,
+        documentType: 'First Time Job Seeker Certificate',
+        status: 'PROCESSING',
+      );
+      expect(statutoryByDocType.isStatutoryExempt, isTrue);
+    });
   });
 }
