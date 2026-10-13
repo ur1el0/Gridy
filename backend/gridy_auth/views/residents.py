@@ -4,6 +4,7 @@ import logging
 import uuid
 from datetime import datetime
 from django.db import transaction
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from rest_framework import status, permissions, viewsets
 from rest_framework.views import APIView
@@ -364,5 +365,20 @@ class ResidentViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         if user.role == User.Role.DILG_ADMIN:
-            return Resident.objects.filter(is_verified=True).select_related('user').order_by('full_name')
-        return Resident.objects.filter(is_verified=True, user__barangay=user.barangay).select_related('user').order_by('full_name')
+            queryset = Resident.objects.filter(is_verified=True)
+        else:
+            queryset = Resident.objects.filter(
+                is_verified=True,
+                user__barangay=user.barangay,
+            )
+
+        search = self.request.query_params.get("search", "").strip()
+        if search:
+            queryset = queryset.filter(
+                Q(full_name__icontains=search)
+                | Q(user__username__icontains=search)
+                | Q(purok__icontains=search)
+                | Q(philsys_id_number__icontains=search)
+            )
+
+        return queryset.select_related("user").order_by("full_name", "pk")

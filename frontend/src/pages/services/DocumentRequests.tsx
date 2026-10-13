@@ -5,7 +5,12 @@ import { getSafeApiErrorMessage } from '../../api/error-message';
 import { DocumentTable } from '../../components/documents/DocumentTable';
 import { ReviewDocumentModal } from '../../components/documents/ReviewDocumentModal';
 import { WalkinRequestModal } from '../../components/documents/WalkinRequestModal';
+import { TablePagination } from '../../components/ui/TablePagination';
+import { parsePageResponse } from '../../api/pagination';
 import { isFeeExemptDocumentType } from '../../utils/documentFees';
+import { useUrlPagination } from '../../hooks/useUrlPagination';
+
+const PAGE_SIZE = 25;
 
 export interface DocumentRequest {
     id: number;
@@ -61,7 +66,9 @@ const TableSkeleton = () => (
 );
 
 export const DocumentRequests: React.FC = () => {
+    const { page, setPage } = useUrlPagination('documentPage');
     const [requests, setRequests] = useState<DocumentRequest[]>([]);
+    const [totalCount, setTotalCount] = useState(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [retrying, setRetrying] = useState(false);
@@ -82,8 +89,12 @@ export const DocumentRequests: React.FC = () => {
         if (isRetry) setRetrying(true);
 
         try {
-            const response = await axiosPrivate.get('/document-requests/');
-            setRequests(response.data.results || response.data);
+            const response = await axiosPrivate.get(
+                `/document-requests/?page=${page}&page_size=${PAGE_SIZE}`,
+            );
+            const pageResponse = parsePageResponse<DocumentRequest>(response.data);
+            setRequests(pageResponse.results);
+            setTotalCount(pageResponse.count);
             setError('');
         } catch (err) {
             setError('Failed to load document requests.');
@@ -92,7 +103,7 @@ export const DocumentRequests: React.FC = () => {
             setLoading(false);
             setRetrying(false);
         }
-    }, []);
+    }, [page]);
 
     useEffect(() => {
         void fetchRequests();
@@ -238,7 +249,12 @@ export const DocumentRequests: React.FC = () => {
 
         try {
             await axiosPrivate.delete(`/document-requests/${id}/`);
-            setRequests(prev => prev.filter(req => req.id !== id));
+            const remainingRequests = requests.filter((request) => request.id !== id);
+            setRequests(remainingRequests);
+            setTotalCount((current) => Math.max(0, current - 1));
+            if (remainingRequests.length === 0 && page > 1) {
+                setPage(page - 1);
+            }
             toast.success('Clearance request deleted successfully.');
         } catch (err) {
             toast.error(getSafeApiErrorMessage(
@@ -310,6 +326,15 @@ export const DocumentRequests: React.FC = () => {
                     retrying,
                 } : undefined}
             />
+            {!error && (
+                <TablePagination
+                    count={totalCount}
+                    page={page}
+                    pageSize={PAGE_SIZE}
+                    label="Document requests"
+                    onPageChange={setPage}
+                />
+            )}
 
             {isModalOpen && selectedRequest && (
                 <ReviewDocumentModal

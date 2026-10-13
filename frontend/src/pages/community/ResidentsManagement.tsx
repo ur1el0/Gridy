@@ -4,6 +4,9 @@ import { axiosPrivate } from "../../api/axios";
 import { getSafeApiErrorMessage } from "../../api/error-message";
 import { Search, Upload } from "lucide-react";
 import { InlineErrorState } from "../../components/ui/InlineErrorState";
+import { TablePagination } from "../../components/ui/TablePagination";
+import { parsePageResponse } from "../../api/pagination";
+import { useUrlPagination } from "../../hooks/useUrlPagination";
 import {
     type Resident,
     type ImportSummary,
@@ -12,12 +15,16 @@ import {
     ResidentImportModal
 } from "../../components/residents";
 
+const PAGE_SIZE = 25;
+
 export const ResidentsManagement: React.FC = () => {
+    const { page, setPage, searchParams, setSearchParams } = useUrlPagination('residentPage');
     const [residents, setResidents] = useState<Resident[]>([]);
+    const [totalCount, setTotalCount] = useState(0);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState(false);
     const [retrying, setRetrying] = useState(false);
-    const [search, setSearch] = useState('');
+    const [search, setSearch] = useState(() => searchParams.get('residentSearch') ?? '');
 
     // Detail Modal State
     const [selectedResident, setSelectedResident] = useState<Resident | null>(null);
@@ -32,9 +39,17 @@ export const ResidentsManagement: React.FC = () => {
 
     const fetchResidents = useCallback(async (isRetry = false) => {
         if (isRetry) setRetrying(true);
+        else setLoading(true);
         try {
-            const response = await axiosPrivate.get('/auth/resident/');
-            setResidents(response.data.results || response.data);
+            const query = new URLSearchParams({
+                page: String(page),
+                page_size: String(PAGE_SIZE),
+            });
+            if (search.trim()) query.set('search', search.trim());
+            const response = await axiosPrivate.get(`/auth/resident/?${query.toString()}`);
+            const pageResponse = parsePageResponse<Resident>(response.data);
+            setResidents(pageResponse.results);
+            setTotalCount(pageResponse.count);
             setLoadError(false);
         } catch (err) {
             console.error("Failed to fetch directory:", err);
@@ -43,17 +58,24 @@ export const ResidentsManagement: React.FC = () => {
             setLoading(false);
             setRetrying(false);
         }
-    }, []);
+    }, [page, search]);
 
     useEffect(() => {
         void fetchResidents();
     }, [fetchResidents]);
 
+    useEffect(() => {
+        setSearch(searchParams.get('residentSearch') ?? '');
+    }, [searchParams]);
+
     const handleDelete = async (id: number) => {
         if (!window.confirm("Are you sure you want to remove this resident? This will revoke their login access and terminate all active sessions while preserving historical records.")) return;
         try {
             await axiosPrivate.delete(`/auth/resident/${id}/`);
-            setResidents(prev => prev.filter(r => r.id !== id));
+            const remainingResidents = residents.filter((resident) => resident.id !== id);
+            setResidents(remainingResidents);
+            setTotalCount((current) => Math.max(0, current - 1));
+            if (remainingResidents.length === 0 && page > 1) setPage(page - 1);
             if (selectedResident?.id === id) {
                 setSelectedResident(null);
             }
@@ -185,12 +207,16 @@ export const ResidentsManagement: React.FC = () => {
         }
     };
 
-    const filteredResidents = residents.filter(r => 
-        r.full_name.toLowerCase().includes(search.toLowerCase()) ||
-        (r.username && r.username.toLowerCase().includes(search.toLowerCase())) ||
-        (r.purok && String(r.purok).toLowerCase().includes(search.toLowerCase())) ||
-        (r.philsys_id_number && r.philsys_id_number.toLowerCase().includes(search.toLowerCase()))
-    );
+    const updateSearch = (value: string) => {
+        setSearch(value);
+        setSearchParams((current) => {
+            const updated = new URLSearchParams(current);
+            if (value) updated.set('residentSearch', value);
+            else updated.delete('residentSearch');
+            updated.delete('residentPage');
+            return updated;
+        }, { replace: true });
+    };
 
     return (
         <div className="space-y-6">
@@ -202,16 +228,17 @@ export const ResidentsManagement: React.FC = () => {
                 </div>
 
                 <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <div className="relative flex-1 sm:w-64">
+                    <label className="relative flex-1 sm:w-64">
+                        <span className="sr-only">Search residents</span>
                         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <input
                             type="text"
                             placeholder="Search name, PhilSys ID, purok..."
                             value={search}
-                            onChange={(e) => setSearch(e.target.value)}
+                            onChange={(e) => updateSearch(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all shadow-2xs"
                         />
-                    </div>
+                    </label>
 
                     <button
                         onClick={() => {
@@ -236,7 +263,7 @@ export const ResidentsManagement: React.FC = () => {
                 />
             ) : (
                 <ResidentDirectoryTable
-                    residents={filteredResidents}
+                    residents={residents}
                     loading={loading}
                     onSelectResident={(resident) => {
                         setSelectedResident(resident);
@@ -244,6 +271,15 @@ export const ResidentsManagement: React.FC = () => {
                     }}
                     onDeleteResident={handleDelete}
                     getAge={getAge}
+                />
+            )}
+            {!loadError && !loading && (
+                <TablePagination
+                    count={totalCount}
+                    page={page}
+                    pageSize={PAGE_SIZE}
+                    label="Residents"
+                    onPageChange={setPage}
                 />
             )}
 

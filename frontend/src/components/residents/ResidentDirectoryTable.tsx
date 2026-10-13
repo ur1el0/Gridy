@@ -45,7 +45,7 @@ export const ResidentDirectoryTable: React.FC<ResidentDirectoryTableProps> = ({
                                 <tr
                                     key={resident.id}
                                     onClick={() => onSelectResident(resident)}
-                                    className="hover:bg-primary/5 transition-colors cursor-pointer group"
+                                    className="hover:bg-primary/5 transition-colors group"
                                 >
                                     <td className="py-3.5 px-6">
                                         <div className="flex items-center gap-3">
@@ -53,9 +53,17 @@ export const ResidentDirectoryTable: React.FC<ResidentDirectoryTableProps> = ({
                                                 {resident.full_name.charAt(0).toUpperCase()}
                                             </div>
                                             <div>
-                                                <div className="font-bold text-slate-900 group-hover:text-primary-text transition-colors">
+                                                <button
+                                                    type="button"
+                                                    aria-label={`Open ${resident.full_name} resident details`}
+                                                    onClick={(event) => {
+                                                        event.stopPropagation();
+                                                        onSelectResident(resident);
+                                                    }}
+                                                    className="rounded text-left font-bold text-slate-900 transition-colors hover:text-primary-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                                                >
                                                     {resident.full_name}
-                                                </div>
+                                                </button>
                                                 <div className="text-xs text-slate-500">
                                                     Born: {resident.birth_date} ({getAge(resident.birth_date)})
                                                 </div>

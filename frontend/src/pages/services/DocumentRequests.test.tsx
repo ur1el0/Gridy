@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { axiosPrivate } from '../../api/axios';
 import { DocumentRequests } from './DocumentRequests';
 
@@ -26,6 +27,12 @@ const request = {
     created_at: '2026-10-12T08:00:00Z',
 };
 
+const renderDocumentRequests = () => render(
+    <MemoryRouter>
+        <DocumentRequests />
+    </MemoryRouter>,
+);
+
 describe('DocumentRequests', () => {
     beforeEach(() => {
         vi.mocked(axiosPrivate.get).mockReset();
@@ -43,7 +50,7 @@ describe('DocumentRequests', () => {
     it('shows an accessible list error and keeps the heading, table, and walk-in action available', async () => {
         vi.mocked(axiosPrivate.get).mockRejectedValueOnce(new Error('Network unavailable'));
 
-        render(<DocumentRequests />);
+        renderDocumentRequests();
 
         expect(await screen.findByRole('alert')).toHaveTextContent("We couldn't load document requests.");
         expect(screen.getByRole('heading', { name: 'Clearance Desk & Document Requests' })).toBeInTheDocument();
@@ -51,7 +58,7 @@ describe('DocumentRequests', () => {
         expect(screen.queryByText('No clearance requests recorded yet.')).not.toBeInTheDocument();
         fireEvent.click(screen.getByRole('button', { name: /request walk-in/i }));
         expect(screen.getByRole('dialog', { name: 'Create Walk-in Request' })).toBeInTheDocument();
-        expect(axiosPrivate.get).toHaveBeenCalledExactlyOnceWith('/document-requests/');
+        expect(axiosPrivate.get).toHaveBeenCalledExactlyOnceWith('/document-requests/?page=1&page_size=25');
         expect(axiosPrivate.post).not.toHaveBeenCalled();
         expect(axiosPrivate.patch).not.toHaveBeenCalled();
         expect(axiosPrivate.delete).not.toHaveBeenCalled();
@@ -63,7 +70,7 @@ describe('DocumentRequests', () => {
             .mockRejectedValueOnce(new Error('Network unavailable'))
             .mockResolvedValueOnce({ data: { results: [request] } } as never);
 
-        render(<DocumentRequests />);
+        renderDocumentRequests();
         expect(await screen.findByRole('alert')).toHaveTextContent("We couldn't load document requests.");
 
         fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
@@ -74,12 +81,37 @@ describe('DocumentRequests', () => {
         expect(await screen.findByText('Rosa Resident')).toBeInTheDocument();
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
         expect(screen.queryByText('No clearance requests recorded yet.')).not.toBeInTheDocument();
-        expect(axiosPrivate.get).toHaveBeenNthCalledWith(1, '/document-requests/');
-        expect(axiosPrivate.get).toHaveBeenNthCalledWith(2, '/document-requests/');
-        expect(axiosPrivate.get).toHaveBeenNthCalledWith(3, '/document-requests/');
+        expect(axiosPrivate.get).toHaveBeenNthCalledWith(1, '/document-requests/?page=1&page_size=25');
+        expect(axiosPrivate.get).toHaveBeenNthCalledWith(2, '/document-requests/?page=1&page_size=25');
+        expect(axiosPrivate.get).toHaveBeenNthCalledWith(3, '/document-requests/?page=1&page_size=25');
         expect(axiosPrivate.post).not.toHaveBeenCalled();
         expect(axiosPrivate.patch).not.toHaveBeenCalled();
         expect(axiosPrivate.delete).not.toHaveBeenCalled();
+    });
+
+    it('loads the next server page through accessible pagination controls', async () => {
+        vi.mocked(axiosPrivate.get)
+            .mockResolvedValueOnce({ data: { count: 51, results: [request] } } as never)
+            .mockResolvedValueOnce({
+                data: {
+                    count: 51,
+                    results: [{ ...request, id: 8, requester_name: 'Lina Resident' }],
+                },
+            } as never);
+
+        render(
+            <MemoryRouter initialEntries={['/?keep=active']}>
+                <DocumentRequests />
+            </MemoryRouter>,
+        );
+
+        expect(await screen.findByRole('navigation', { name: 'Document requests pagination' })).toBeInTheDocument();
+        expect(screen.getByText('Page 1 of 3')).toBeInTheDocument();
+        fireEvent.click(screen.getByRole('button', { name: 'Next page' }));
+
+        expect(await screen.findByText('Lina Resident')).toBeInTheDocument();
+        expect(screen.getByText('Page 2 of 3')).toBeInTheDocument();
+        expect(axiosPrivate.get).toHaveBeenNthCalledWith(2, '/document-requests/?page=2&page_size=25');
     });
 
     it('preserves loaded requests when the post-create list refresh fails', async () => {
@@ -88,7 +120,7 @@ describe('DocumentRequests', () => {
             .mockRejectedValueOnce(new Error('Network unavailable'));
         vi.mocked(axiosPrivate.post).mockResolvedValueOnce({ data: {} } as never);
 
-        render(<DocumentRequests />);
+        renderDocumentRequests();
         expect(await screen.findByText('Rosa Resident')).toBeInTheDocument();
 
         fireEvent.click(screen.getByRole('button', { name: /request walk-in/i }));
@@ -115,7 +147,7 @@ describe('DocumentRequests', () => {
             .mockRejectedValueOnce(new Error('Network unavailable'))
             .mockResolvedValueOnce({ data: { results: [] } } as never);
 
-        render(<DocumentRequests />);
+        renderDocumentRequests();
         await screen.findByRole('alert');
         fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
 
@@ -129,7 +161,7 @@ describe('DocumentRequests', () => {
             .mockRejectedValueOnce(new Error('Network unavailable'))
             .mockImplementationOnce(() => new Promise(() => {}));
 
-        render(<DocumentRequests />);
+        renderDocumentRequests();
         await screen.findByRole('alert');
         fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
 

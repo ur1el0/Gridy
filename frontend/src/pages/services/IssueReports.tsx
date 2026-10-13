@@ -1,6 +1,11 @@
 import React, { useCallback, useEffect, useState } from 'react';
 import { axiosPrivate } from '../../api/axios';
 import { InlineErrorState } from '../../components/ui/InlineErrorState';
+import { TablePagination } from '../../components/ui/TablePagination';
+import { parsePageResponse } from '../../api/pagination';
+import { useUrlPagination } from '../../hooks/useUrlPagination';
+
+const PAGE_SIZE = 25;
 
 interface IssueReport {
     id: number;
@@ -34,7 +39,9 @@ const TableSkeleton = () => (
 );
 
 export const IssueReports: React.FC = () => {
+    const { page, setPage } = useUrlPagination('issuePage');
     const [reports, setReports] = useState<IssueReport[]>([]);
+    const [totalCount, setTotalCount] = useState(0);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
     const [retrying, setRetrying] = useState(false);
@@ -54,8 +61,12 @@ export const IssueReports: React.FC = () => {
         }
 
         try {
-            const response = await axiosPrivate.get('/reports/');
-            setReports(response.data.results || response.data);
+            const response = await axiosPrivate.get(
+                `/reports/?page=${page}&page_size=${PAGE_SIZE}`,
+            );
+            const pageResponse = parsePageResponse<IssueReport>(response.data);
+            setReports(pageResponse.results);
+            setTotalCount(pageResponse.count);
             setError('');
         } catch (err) {
             setError('Failed to load issue reports.');
@@ -64,7 +75,7 @@ export const IssueReports: React.FC = () => {
             setLoading(false);
             setRetrying(false);
         }
-    }, []);
+    }, [page]);
 
     useEffect(() => {
         void fetchReports();
@@ -130,7 +141,8 @@ export const IssueReports: React.FC = () => {
             </div>
 
             <div className="bg-surface shadow-sm border border-border rounded-lg overflow-hidden">
-                <table className="min-w-full divide-y divide-border">
+                <div className="overflow-x-auto">
+                <table className="min-w-[760px] w-full divide-y divide-border">
                     <thead className="bg-slate-50">
                         <tr>
                             <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-slate-500 uppercase tracking-wider">ID</th>
@@ -159,8 +171,17 @@ export const IssueReports: React.FC = () => {
                             </tr>
                         ) : (
                             reports.map((rep) => (
-                                <tr key={rep.id} onClick={() => openModal(rep)} className="hover:bg-slate-50 transition-colors cursor-pointer">
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-medium">#{rep.id}</td>
+                                <tr key={rep.id} className="hover:bg-slate-50 transition-colors">
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-900 font-medium">
+                                        <button
+                                            type="button"
+                                            aria-label={`Open issue report #${rep.id} details`}
+                                            onClick={() => openModal(rep)}
+                                            className="rounded font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                                        >
+                                            #{rep.id}
+                                        </button>
+                                    </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-700">{rep.title}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-slate-500">{rep.location}</td>
                                     <td className="px-6 py-4 whitespace-nowrap">
@@ -181,7 +202,17 @@ export const IssueReports: React.FC = () => {
                         )}
                     </tbody>
                 </table>
+                </div>
             </div>
+            {!error && (
+                <TablePagination
+                    count={totalCount}
+                    page={page}
+                    pageSize={PAGE_SIZE}
+                    label="Issue reports"
+                    onPageChange={setPage}
+                />
+            )}
 
             {isModalOpen && selectedReport && (
                 <div className="fixed inset-0 overflow-hidden z-40">

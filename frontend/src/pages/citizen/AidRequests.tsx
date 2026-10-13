@@ -1,9 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { CheckCircle2, Clock3, FileHeart, Loader2, Send, XCircle } from 'lucide-react';
 import { axiosPrivate } from '../../api/axios';
 import { InlineErrorState } from '../../components/ui/InlineErrorState';
+import { TablePagination } from '../../components/ui/TablePagination';
+import { parsePageResponse } from '../../api/pagination';
+import { useUrlPagination } from '../../hooks/useUrlPagination';
 import { useAuth } from '../../context/auth-context';
+
+const PAGE_SIZE = 25;
 
 interface AidRequest {
     id: number;
@@ -33,7 +38,9 @@ const statusLabel: Record<AidRequest['status'], string> = {
 export const AidRequests: React.FC = () => {
     const { user } = useAuth();
     const isStaff = user?.role === 'ADMIN';
+    const { page, setPage } = useUrlPagination('aidPage');
     const [requests, setRequests] = useState<AidRequest[]>([]);
+    const [totalCount, setTotalCount] = useState(0);
     const [loading, setLoading] = useState(true);
     const [loadError, setLoadError] = useState(false);
     const [retrying, setRetrying] = useState(false);
@@ -43,12 +50,16 @@ export const AidRequests: React.FC = () => {
     const [reason, setReason] = useState('');
     const [notes, setNotes] = useState<Record<number, string>>({});
 
-    const loadRequests = async (isRetry = false) => {
+    const loadRequests = useCallback(async (isRetry = false) => {
         if (isRetry) setRetrying(true);
+        else setLoading(true);
         try {
-            const response = await axiosPrivate.get('/aid-requests/');
-            const data = response.data.results || response.data;
-            setRequests(Array.isArray(data) ? data : []);
+            const response = await axiosPrivate.get(
+                `/aid-requests/?page=${page}&page_size=${PAGE_SIZE}`,
+            );
+            const pageResponse = parsePageResponse<AidRequest>(response.data);
+            setRequests(pageResponse.results);
+            setTotalCount(pageResponse.count);
             setLoadError(false);
         } catch {
             setLoadError(true);
@@ -56,11 +67,11 @@ export const AidRequests: React.FC = () => {
             setLoading(false);
             setRetrying(false);
         }
-    };
+    }, [page]);
 
     useEffect(() => {
         void loadRequests();
-    }, []);
+    }, [loadRequests]);
 
     const submitRequest = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -73,7 +84,8 @@ export const AidRequests: React.FC = () => {
             });
             setReason('');
             toast.success('Assistance request submitted for staff review.');
-            await loadRequests();
+            if (page > 1) setPage(1);
+            else await loadRequests();
         } catch (error: any) {
             toast.error(error.response?.data?.detail || 'Could not submit your request.');
         } finally {
@@ -225,6 +237,15 @@ export const AidRequests: React.FC = () => {
                         </article>
                     );
                 })}
+                {!loading && !loadError && (
+                    <TablePagination
+                        count={totalCount}
+                        page={page}
+                        pageSize={PAGE_SIZE}
+                        label="Assistance requests"
+                        onPageChange={setPage}
+                    />
+                )}
             </div>
         </section>
     );

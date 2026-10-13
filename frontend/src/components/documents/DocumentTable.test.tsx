@@ -119,6 +119,22 @@ describe('DocumentTable Component', () => {
         expect(mockOpenModal).toHaveBeenCalledWith(mockRequests[0]);
     });
 
+    it('opens request details from the named keyboard-accessible applicant button', () => {
+        const mockOpenModal = vi.fn();
+
+        render(
+            <DocumentTable
+                requests={mockRequests}
+                openModal={mockOpenModal}
+                getStatusBadge={mockGetStatusBadge}
+            />,
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Open clearance request #1 details' }));
+
+        expect(mockOpenModal).toHaveBeenCalledExactlyOnceWith(mockRequests[0]);
+    });
+
     it('shows a load error instead of the successful empty state', () => {
         render(
             <DocumentTable

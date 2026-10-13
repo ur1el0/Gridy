@@ -1,4 +1,5 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axiosPrivate } from '../../api/axios';
 import { useAuth } from '../../context/auth-context';
@@ -17,11 +18,17 @@ describe('AidRequests', () => {
         vi.mocked(axiosPrivate.get).mockResolvedValue({ data: [] } as never);
     });
 
+    const renderAidRequests = () => render(
+        <MemoryRouter>
+            <AidRequests />
+        </MemoryRouter>,
+    );
+
     it('submits a resident request for manual review', async () => {
         vi.mocked(useAuth).mockReturnValue({ user: { role: 'RESIDENT' } } as never);
         vi.mocked(axiosPrivate.post).mockResolvedValue({ data: {} } as never);
 
-        render(<AidRequests />);
+        renderAidRequests();
         fireEvent.change(await screen.findByLabelText('Reason for request'), {
             target: { value: 'I am requesting help with school expenses.' },
         });
@@ -37,7 +44,7 @@ describe('AidRequests', () => {
         vi.mocked(useAuth).mockReturnValue({ user: { role: 'RESIDENT' } } as never);
         vi.mocked(axiosPrivate.get).mockRejectedValueOnce(new Error('Network unavailable'));
 
-        render(<AidRequests />);
+        renderAidRequests();
 
         expect(await screen.findByRole('alert')).toHaveTextContent(
             "We couldn't load assistance requests.",
@@ -63,7 +70,7 @@ describe('AidRequests', () => {
                 }],
             } as never);
 
-        render(<AidRequests />);
+        renderAidRequests();
         expect(await screen.findByRole('alert')).toBeInTheDocument();
 
         fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
@@ -75,19 +82,35 @@ describe('AidRequests', () => {
         expect(await screen.findByText('Requesting grocery support.')).toBeInTheDocument();
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
         expect(screen.queryByText('No assistance requests have been submitted.')).not.toBeInTheDocument();
-        expect(axiosPrivate.get).toHaveBeenNthCalledWith(1, '/aid-requests/');
-        expect(axiosPrivate.get).toHaveBeenNthCalledWith(2, '/aid-requests/');
-        expect(axiosPrivate.get).toHaveBeenNthCalledWith(3, '/aid-requests/');
+        expect(axiosPrivate.get).toHaveBeenNthCalledWith(1, '/aid-requests/?page=1&page_size=25');
+        expect(axiosPrivate.get).toHaveBeenNthCalledWith(2, '/aid-requests/?page=1&page_size=25');
+        expect(axiosPrivate.get).toHaveBeenNthCalledWith(3, '/aid-requests/?page=1&page_size=25');
     });
 
     it('keeps the empty-history message for a successful empty response', async () => {
         vi.mocked(useAuth).mockReturnValue({ user: { role: 'RESIDENT' } } as never);
         vi.mocked(axiosPrivate.get).mockResolvedValueOnce({ data: [] } as never);
 
-        render(<AidRequests />);
+        renderAidRequests();
 
         expect(await screen.findByText('No assistance requests have been submitted.')).toBeInTheDocument();
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
+    });
+
+    it('loads the next page and requests only that page of assistance history', async () => {
+        vi.mocked(useAuth).mockReturnValue({ user: { role: 'RESIDENT' } } as never);
+        vi.mocked(axiosPrivate.get)
+            .mockResolvedValueOnce({ data: { count: 26, results: [] } } as never)
+            .mockResolvedValueOnce({ data: { count: 26, results: [] } } as never);
+
+        renderAidRequests();
+        const nextPage = await screen.findByRole('button', { name: 'Next page' });
+        fireEvent.click(nextPage);
+
+        await waitFor(() => expect(axiosPrivate.get).toHaveBeenCalledTimes(2));
+        expect(axiosPrivate.get).toHaveBeenNthCalledWith(1, '/aid-requests/?page=1&page_size=25');
+        expect(axiosPrivate.get).toHaveBeenNthCalledWith(2, '/aid-requests/?page=2&page_size=25');
+        expect(await screen.findByText('Page 2 of 2')).toBeInTheDocument();
     });
 
     it('disables retry while the list request is pending without invoking mutations', async () => {
@@ -96,7 +119,7 @@ describe('AidRequests', () => {
             .mockRejectedValueOnce(new Error('Network unavailable'))
             .mockImplementationOnce(() => new Promise(() => {}));
 
-        render(<AidRequests />);
+        renderAidRequests();
         await screen.findByRole('alert');
         fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
 
@@ -131,7 +154,7 @@ describe('AidRequests', () => {
             },
         } as never);
 
-        render(<AidRequests />);
+        renderAidRequests();
         const decline = await screen.findByRole('button', { name: 'Decline' });
         fireEvent.click(decline);
         expect(axiosPrivate.patch).not.toHaveBeenCalled();

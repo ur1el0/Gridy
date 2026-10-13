@@ -48,17 +48,25 @@ export const DocumentTable = ({ requests, openModal, getStatusBadge, onDelete, l
                             requests.map((req, index) => (
                                 <tr 
                                     key={req.id || index} 
-                                    onClick={() => openModal(req)} 
-                                    className="hover:bg-slate-50/80 transition-colors cursor-pointer group"
+                                    onClick={() => openModal(req)}
+                                    className="hover:bg-slate-50/80 transition-colors group"
                                 >
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-bold text-slate-900">
                                         #{req.id}
                                     </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm">
                                         <div className="flex items-center gap-2">
-                                            <span className="font-semibold text-slate-900">
+                                            <button
+                                                type="button"
+                                                onClick={(event) => {
+                                                    event.stopPropagation();
+                                                    openModal(req);
+                                                }}
+                                                aria-label={`Open clearance request #${req.id} details`}
+                                                className="rounded text-left font-semibold text-slate-900 hover:text-primary-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                                            >
                                                 {req.requester_name || req.walkin_name || 'Resident'}
-                                            </span>
+                                            </button>
                                             {req.is_walkin && (
                                                 <span className="px-2 py-0.5 text-[10px] font-extrabold uppercase tracking-wide bg-amber-100 text-amber-800 rounded-md border border-amber-200">
                                                     Walk-in

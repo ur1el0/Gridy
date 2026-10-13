@@ -1,5 +1,6 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { ResidentsManagement } from "./ResidentsManagement";
 import { axiosPrivate } from "../../api/axios";
 
@@ -44,10 +45,23 @@ describe("ResidentsManagement Component", () => {
         vi.clearAllMocks();
     });
 
-    it("renders directory list and search/filter inputs", async () => {
-        vi.mocked(axiosPrivate.get).mockResolvedValueOnce({ data: { results: mockResidents } });
+    const renderResidentsManagement = () => render(
+        <MemoryRouter>
+            <ResidentsManagement />
+        </MemoryRouter>,
+    );
 
-        render(<ResidentsManagement />);
+const LocationSearch = () => {
+    const location = useLocation();
+    return <output data-testid="location-search">{location.search}</output>;
+};
+
+    it("renders directory list and search/filter inputs", async () => {
+        vi.mocked(axiosPrivate.get)
+            .mockResolvedValueOnce({ data: { count: 26, results: mockResidents } })
+            .mockResolvedValueOnce({ data: { count: 1, results: [mockResidents[0]] } });
+
+        renderResidentsManagement();
 
         expect(screen.getByText("Loading directory...")).toBeInTheDocument();
 
@@ -62,8 +76,45 @@ describe("ResidentsManagement Component", () => {
         const searchInput = screen.getByPlaceholderText("Search name, PhilSys ID, purok...");
         fireEvent.change(searchInput, { target: { value: "Juan" } });
 
-        expect(screen.getByText("Juan Dela Cruz")).toBeInTheDocument();
-        expect(screen.queryByText("Maria Clara")).not.toBeInTheDocument();
+        await waitFor(() => {
+            expect(screen.getByText("Juan Dela Cruz")).toBeInTheDocument();
+            expect(screen.queryByText("Maria Clara")).not.toBeInTheDocument();
+        });
+        expect(axiosPrivate.get).toHaveBeenNthCalledWith(
+            2,
+            "/auth/resident/?page=1&page_size=25&search=Juan",
+        );
+    });
+
+    it("keeps the resident search and unrelated URL state while changing pages", async () => {
+        vi.mocked(axiosPrivate.get)
+            .mockResolvedValueOnce({ data: { count: 51, results: mockResidents } })
+            .mockResolvedValueOnce({ data: { count: 51, results: [mockResidents[1]] } })
+            .mockResolvedValueOnce({ data: { count: 51, results: [mockResidents[1]] } });
+
+        render(
+            <MemoryRouter initialEntries={["/residents?keep=active"]}>
+                <ResidentsManagement />
+                <LocationSearch />
+            </MemoryRouter>,
+        );
+
+        const searchInput = await screen.findByLabelText("Search residents");
+        fireEvent.change(searchInput, { target: { value: "Maria" } });
+        await waitFor(() => expect(axiosPrivate.get).toHaveBeenCalledTimes(2));
+        expect(screen.getByTestId("location-search")).toHaveTextContent(
+            "keep=active&residentSearch=Maria",
+        );
+
+        fireEvent.click(await screen.findByRole("button", { name: "Next page" }));
+        await waitFor(() => expect(axiosPrivate.get).toHaveBeenCalledTimes(3));
+        expect(axiosPrivate.get).toHaveBeenNthCalledWith(
+            3,
+            "/auth/resident/?page=2&page_size=25&search=Maria",
+        );
+        expect(screen.getByTestId("location-search")).toHaveTextContent(
+            "keep=active&residentSearch=Maria&residentPage=2",
+        );
     });
 
     it("shows a retryable load error and recovers without treating failures as empty results", async () => {
@@ -72,7 +123,7 @@ describe("ResidentsManagement Component", () => {
             .mockRejectedValueOnce(new Error("Network unavailable"))
             .mockResolvedValueOnce({ data: { results: mockResidents } });
 
-        render(<ResidentsManagement />);
+        renderResidentsManagement();
 
         expect(await screen.findByRole("alert")).toHaveTextContent(
             "We couldn't load the resident directory.",
@@ -91,15 +142,15 @@ describe("ResidentsManagement Component", () => {
         expect(await screen.findByText("Juan Dela Cruz")).toBeInTheDocument();
         expect(screen.queryByRole("alert")).not.toBeInTheDocument();
         expect(axiosPrivate.get).toHaveBeenCalledTimes(3);
-        expect(axiosPrivate.get).toHaveBeenNthCalledWith(1, "/auth/resident/");
-        expect(axiosPrivate.get).toHaveBeenNthCalledWith(2, "/auth/resident/");
-        expect(axiosPrivate.get).toHaveBeenNthCalledWith(3, "/auth/resident/");
+        expect(axiosPrivate.get).toHaveBeenNthCalledWith(1, "/auth/resident/?page=1&page_size=25");
+        expect(axiosPrivate.get).toHaveBeenNthCalledWith(2, "/auth/resident/?page=1&page_size=25");
+        expect(axiosPrivate.get).toHaveBeenNthCalledWith(3, "/auth/resident/?page=1&page_size=25");
     });
 
     it("keeps the empty directory message for a successful empty response", async () => {
         vi.mocked(axiosPrivate.get).mockResolvedValueOnce({ data: { results: [] } });
 
-        render(<ResidentsManagement />);
+        renderResidentsManagement();
 
         expect(await screen.findByText("No verified residents found.")).toBeInTheDocument();
         expect(screen.queryByRole("alert")).not.toBeInTheDocument();
@@ -110,7 +161,7 @@ describe("ResidentsManagement Component", () => {
             .mockRejectedValueOnce(new Error("Network unavailable"))
             .mockImplementationOnce(() => new Promise(() => {}));
 
-        render(<ResidentsManagement />);
+        renderResidentsManagement();
         await screen.findByRole("alert");
 
         fireEvent.click(screen.getByRole("button", { name: "Try again" }));
@@ -124,12 +175,11 @@ describe("ResidentsManagement Component", () => {
     it("opens and closes resident detail modal with demographic data", async () => {
         vi.mocked(axiosPrivate.get).mockResolvedValueOnce({ data: { results: mockResidents } });
 
-        render(<ResidentsManagement />);
+        renderResidentsManagement();
 
         await screen.findByText("Juan Dela Cruz");
 
-        // Click on the resident row to open detail modal
-        fireEvent.click(screen.getByText("Juan Dela Cruz"));
+        fireEvent.click(screen.getByRole("button", { name: "Open Juan Dela Cruz resident details" }));
 
         await waitFor(() => {
             expect(screen.getByText("Personal Demographics")).toBeInTheDocument();
@@ -149,7 +199,7 @@ describe("ResidentsManagement Component", () => {
     it("opens and closes import CSV modal", async () => {
         vi.mocked(axiosPrivate.get).mockResolvedValueOnce({ data: { results: mockResidents } });
 
-        render(<ResidentsManagement />);
+        renderResidentsManagement();
 
         await screen.findByText("Residents Directory & RBI");
 
@@ -170,7 +220,7 @@ describe("ResidentsManagement Component", () => {
         vi.mocked(axiosPrivate.delete).mockResolvedValueOnce({ data: {} });
         vi.spyOn(window, "confirm").mockReturnValue(true);
 
-        render(<ResidentsManagement />);
+        renderResidentsManagement();
 
         await screen.findByText("Juan Dela Cruz");
 
