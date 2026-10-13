@@ -63,7 +63,11 @@ export const ResidentsHub: React.FC = () => {
 
     const handleTabChange = (tab: 'directory' | 'verifications') => {
         setActiveTab(tab);
-        setSearchParams({ tab });
+        setSearchParams((current) => {
+            const next = new URLSearchParams(current);
+            next.set('tab', tab);
+            return next;
+        });
     };
 
     return (
@@ -76,9 +80,10 @@ export const ResidentsHub: React.FC = () => {
             </div>
 
             <div className="border-b border-slate-200 bg-white px-2 rounded-xl shadow-2xs">
-                <nav className="-mb-px flex space-x-8" aria-label="Tabs">
+                <nav className="-mb-px flex flex-wrap gap-x-3" aria-label="Resident views">
                     <button
                         type="button"
+                        aria-pressed={activeTab === 'directory'}
                         onClick={() => handleTabChange('directory')}
                         className={`flex items-center gap-2 whitespace-nowrap py-4 px-2 border-b-2 font-medium text-sm transition-colors cursor-pointer ${
                             activeTab === 'directory'
@@ -92,6 +97,7 @@ export const ResidentsHub: React.FC = () => {
 
                     <button
                         type="button"
+                        aria-pressed={activeTab === 'verifications'}
                         onClick={() => handleTabChange('verifications')}
                         className={`flex items-center gap-2 whitespace-nowrap py-4 px-2 border-b-2 font-medium text-sm transition-colors cursor-pointer ${
                             activeTab === 'verifications'
