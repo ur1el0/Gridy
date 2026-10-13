@@ -1,7 +1,7 @@
 from rest_framework import status, permissions
 from rest_framework.views import APIView
 from rest_framework.response import Response
-from drf_spectacular.utils import extend_schema
+from drf_spectacular.utils import extend_schema, OpenApiTypes
 
 from gridy_auth.serializers import (
     UserSerializer,
@@ -47,17 +47,22 @@ class AdminRegisterView(APIView):
     permission_classes = [permissions.AllowAny]
     throttle_scope = 'auth_admin_register'
 
-    @extend_schema(request=AdminRegisterSerializer, responses={201: UserSerializer})
+    @extend_schema(
+        summary="Public Admin Registration (Disabled)",
+        description=(
+            "Direct administrative registration via passkey is disabled under ADR 011. "
+            "Barangay administrators must be provisioned through verified DILG onboarding applications."
+        ),
+        responses={403: OpenApiTypes.OBJECT},
+    )
     def post(self, request):
-        serializer = AdminRegisterSerializer(data=request.data)
-        if serializer.is_valid():
-            user = serializer.save()
-
-            full_name = f"{user.first_name} {user.last_name}".strip() or user.username
-            send_welcome_email.delay(user.email, full_name)
-
-            return Response(
-                UserSerializer(user).data,
-                status=status.HTTP_201_CREATED
-            )
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response(
+            {
+                "detail": (
+                    "Public administrator registration is disabled under ADR 011. "
+                    "Barangay administrators are provisioned exclusively through "
+                    "verified DILG onboarding applications (/api/v1/auth/barangay-applications/)."
+                )
+            },
+            status=status.HTTP_403_FORBIDDEN,
+        )

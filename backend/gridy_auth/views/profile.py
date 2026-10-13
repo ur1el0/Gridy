@@ -1,12 +1,14 @@
 import json
+import uuid
 
+from django.db import transaction
 from rest_framework import status, permissions, viewsets
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from drf_spectacular.utils import extend_schema, OpenApiTypes
 
-from gridy_auth.models import Barangay, User
+from gridy_auth.models import Barangay, User, RefreshSession
 from gridy_auth.serializers import UserSerializer, BarangaySerializer
 from gridy_auth.permissions import IsBarangayOfficial
 from gridy_audit.services import log_action
@@ -103,16 +105,47 @@ class UserProfileView(APIView):
     )
     def delete(self, request):
         user = request.user
+        user_id = user.id
 
-        # Log the voluntary self-deletion for the audit trail before the object is destroyed
-        log_action(
-            user=user,
-            action_type=AuditLog.ActionType.USER_ACTION,
-            description=f"User {user.username} (ID: {user.id}) voluntarily exercised their Right to Erasure and permanently deleted their account.",
-            request=request
-        )
+        with transaction.atomic():
+            # 1. Audit log before anonymization, preserving audit trail without retaining actor linkage or sensitive PII
+            log_action(
+                user=None,
+                action_type=AuditLog.ActionType.USER_ACTION,
+                description=f"User (ID: {user_id}) voluntarily exercised Right to Erasure; account deactivated and credentials anonymized.",
+                request=request
+            )
 
-        user.delete()
+            # 2. Deactivate account and anonymize credentials
+            anon_token = uuid.uuid4().hex[:12]
+            user.is_active = False
+            user.username = f"erased_{user_id}_{anon_token}"
+            user.email = f"erased_{user_id}_{anon_token}@erased.local"
+            user.first_name = ""
+            user.last_name = ""
+            user.set_unusable_password()
+            user.save(update_fields=['is_active', 'username', 'email', 'first_name', 'last_name', 'password'])
+
+            # 3. Revoke all active refresh sessions
+            RefreshSession.objects.filter(user=user).delete()
+
+            # 4. Schedule safe cleanup of private identity proof files on commit & delete Resident profile
+            if hasattr(user, 'profile'):
+                profile = user.profile
+                for proof in [profile.philsys_id_photo, profile.secondary_id_photo, profile.utility_billing_photo]:
+                    if proof and proof.name:
+                        p_storage = proof.storage
+                        p_name = proof.name
+
+                        def _safe_delete(s=p_storage, n=p_name):
+                            try:
+                                s.delete(n)
+                            except Exception:
+                                pass
+
+                        transaction.on_commit(_safe_delete)
+                profile.delete()
+
         return Response(status=status.HTTP_204_NO_CONTENT)
     
 @extend_schema(tags=['Barangay Settings'])

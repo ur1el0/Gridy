@@ -26,6 +26,13 @@ class AuthAPITests(IsolatedAuthAPITestCase):
             password=self.password,
             email="resident@example.com",
             role=User.Role.RESIDENT,
+            barangay=self.barangay,
+        )
+        self.profile = Resident.objects.create(
+            user=self.user,
+            full_name="Auth Test Resident",
+            birth_date="1990-01-01",
+            is_verified=True,
         )
 
     def test_user_login_success(self):
@@ -140,12 +147,7 @@ class AuthAPITests(IsolatedAuthAPITestCase):
         )
 
     def test_token_refresh_denied_after_resident_verification_revoked(self):
-        resident_profile = Resident.objects.create(
-            user=self.user,
-            full_name="Verification Test Resident",
-            birth_date="1995-05-15",
-            is_verified=True,
-        )
+        resident_profile = self.profile
 
         login_response = self.client.post(
             reverse("auth_login"),
@@ -174,13 +176,6 @@ class AuthAPITests(IsolatedAuthAPITestCase):
             "username": self.username,
             "password": self.password
         }
-
-        Resident.objects.create(
-            user=self.user,
-            full_name="Verified Test Resident",
-            birth_date="1995-05-15",
-            is_verified=True,
-        )
 
         login_response = self.client.post(login_url, login_payload, format='json')
         self.assertEqual(login_response.status_code, status.HTTP_200_OK)

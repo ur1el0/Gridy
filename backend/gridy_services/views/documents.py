@@ -138,10 +138,9 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
                 "Only residents can create personal document requests."
             )
 
-        if hasattr(user, "profile") and not user.profile.is_verified:
+        if not getattr(user, "is_active", False) or not hasattr(user, "profile") or not user.profile.is_verified:
             raise PermissionDenied(
-                "Your account is currently pending verification. Please verify "
-                "your residency with Barangay Hall before requesting clearances."
+                "An active, verified resident profile is required to request clearances."
             )
 
         doc_type_clean = " ".join((data.get("document_type") or "").split()).casefold()

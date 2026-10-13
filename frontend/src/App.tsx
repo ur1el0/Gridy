@@ -106,6 +106,7 @@ export function App() {
                             <Route path="/login" element={<Login />} />
                             <Route path="/register" element={<Register />} />
                             <Route path="/register/barangay" element={<BarangayApplication />} />
+                            <Route path="/onboard" element={<Navigate to="/register/barangay" replace />} />
                             <Route path="/forgot-password" element={<ForgotPassword />} />
                             <Route path="/reset-password" element={<ResetPassword />} />
                             <Route path="/public/queue/:barangayId" element={<PublicQueueDisplay />} />

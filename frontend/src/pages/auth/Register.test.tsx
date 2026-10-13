@@ -45,7 +45,7 @@ describe('Register Component (Dual-Mode)', () => {
         expect(screen.getByRole('link', { name: /log in here/i })).toHaveAttribute('href', '/login');
     });
 
-    it('toggles to Administrative Registration when clicking the mode switch button', async () => {
+    it('toggles to Barangay Official Onboarding guidance when clicking the mode switch button', async () => {
         render(
             <BrowserRouter>
                 <Register />
@@ -56,29 +56,26 @@ describe('Register Component (Dual-Mode)', () => {
 
         // Use the header switch's full visible-mode and destination name.
         const toggleButton = screen.getByRole('button', {
-            name: 'Resident Registration, switch to official registration',
+            name: 'Resident Registration, switch to official onboarding',
         });
         expect(toggleButton).toHaveTextContent('Resident Registration');
         fireEvent.click(toggleButton);
 
         // Verify Admin Headings and Features
-        expect(screen.getByRole('heading', { level: 2, name: 'Administrative Registration' })).toBeInTheDocument();
+        expect(screen.getByRole('heading', { level: 2, name: 'Barangay Official Onboarding' })).toBeInTheDocument();
         const switchToResidentButton = screen.getByRole('button', {
-            name: 'Staff Registration, switch to resident registration',
+            name: 'Staff Onboarding, switch to resident registration',
         });
-        expect(switchToResidentButton).toHaveTextContent('Staff Registration');
-        expect(screen.getByText('CREDENTIALS VERIFICATION')).toBeInTheDocument();
-        expect(screen.getByText('ADMIN ACCESS TIERS')).toBeInTheDocument();
-        expect(screen.getByText('SECURITY AUDIT COMPLIANCE')).toBeInTheDocument();
+        expect(switchToResidentButton).toHaveTextContent('Official Onboarding');
+        expect(screen.getByText('DILG VERIFIED ONBOARDING')).toBeInTheDocument();
+        expect(screen.getByText('MUNICIPAL INTEGRITY')).toBeInTheDocument();
+        expect(screen.getByText('GOVERNANCE COMPLIANCE (ADR 011)')).toBeInTheDocument();
 
-        // Admin-Specific Inputs
-        expect(screen.getByPlaceholderText('admin_captain')).toBeInTheDocument();
-        expect(screen.getByRole('combobox')).toBeInTheDocument();
-        const affirmationCheckbox = screen.getByRole('checkbox', {
-            name: /I affirm that I am an authorized barangay official or personnel/i,
-        });
-        expect(affirmationCheckbox).toBeRequired();
-        expect(screen.getByRole('button', { name: /create admin account/i })).toBeInTheDocument();
+        // Official Guidance & Link to Onboarding Application
+        expect(screen.getByText(/DILG Onboarding Governance \(ADR 011\)/)).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /go to barangay onboarding application/i })).toBeInTheDocument();
+        expect(screen.queryByPlaceholderText('admin_captain')).not.toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: /create admin account/i })).not.toBeInTheDocument();
     });
 
     it('blocks registration when the approved barangay directory is unavailable', async () => {
@@ -187,35 +184,20 @@ describe('Register Component (Dual-Mode)', () => {
         expect(await screen.findByText('Passwords do not match.')).toBeInTheDocument();
     });
 
-    it('validates affirmation requirement before administrative account submission', async () => {
+    it('switches to official onboarding mode when clicking bottom mode switch link', async () => {
         render(
             <BrowserRouter>
                 <Register />
             </BrowserRouter>
         );
 
-        // Switch to Admin mode
-        const toggleButton = screen.getByTitle('Tap to switch registration type');
-        fireEvent.click(toggleButton);
+        const bottomLink = screen.getByRole('button', {
+            name: /Barangay Personnel\? Official Onboarding Information/i,
+        });
+        fireEvent.click(bottomLink);
 
-        const fullNameInput = screen.getByPlaceholderText('e.g. Juan Dela Cruz');
-        const usernameInput = screen.getByPlaceholderText('admin_captain');
-        const emailInput = screen.getByPlaceholderText('juan@example.com');
-        const [passwordInput, confirmPasswordInput] = screen.getAllByPlaceholderText('••••••••');
-        const submitButton = screen.getByRole('button', { name: /create admin account/i });
-
-        fireEvent.change(fullNameInput, { target: { value: 'Brgy Kagawad' } });
-        fireEvent.change(usernameInput, { target: { value: 'brgy_kagawad' } });
-        fireEvent.change(emailInput, { target: { value: 'kagawad@barangay.gov.ph' } });
-        fireEvent.change(passwordInput, { target: { value: 'AdminPass123!' } });
-        fireEvent.change(confirmPasswordInput, { target: { value: 'AdminPass123!' } });
-
-        // Dispatch submit without checking the affirmation checkbox
-        fireEvent.submit(submitButton.closest('form')!);
-
-        expect(
-            await screen.findByText('You must affirm that you are an authorized barangay official or personnel.')
-        ).toBeInTheDocument();
+        expect(screen.getByRole('heading', { level: 2, name: 'Barangay Official Onboarding' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /go to barangay onboarding application/i })).toBeInTheDocument();
     });
 
     it('sends accepted privacy consent with resident registration', async () => {

@@ -45,10 +45,30 @@ class CustomTokenObtainPairView(TokenObtainPairView):
 
             # 1. Enforce Resident Verification Status
             if user.role == User.Role.RESIDENT:
-                if hasattr(user, 'profile') and not user.profile.is_verified:
+                if not user.is_active:
+                    return Response(
+                        {
+                            "detail": (
+                                "Your resident account is inactive, pending verification, "
+                                "or has been removed. Please contact Barangay Hall."
+                            )
+                        },
+                        status=status.HTTP_403_FORBIDDEN
+                    )
+                if not hasattr(user, 'profile'):
+                    return Response(
+                        {
+                            "detail": (
+                                "Your resident account has been removed. "
+                                "Please contact Barangay Hall."
+                            )
+                        },
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+                if not user.profile.is_verified:
                     return Response(
                         {"detail": "Your resident account is pending verification by the admin. Please try again later."},
-                        status=status.HTTP_403_FORBIDDEN
+                        status=status.HTTP_403_FORBIDDEN,
                     )
 
             # 2. SECURITY: Enforce Active Status for Barangay Admins & Field Officials
@@ -116,6 +136,14 @@ class CustomTokenRefreshView(TokenRefreshView):
             return Response(
                 {"detail": "Invalid token details."},
                 status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        if not session.user.is_active:
+            session.is_revoked = True
+            session.save(update_fields=["is_revoked"])
+            return Response(
+                {"detail": "Your account is deactivated. Please contact your barangay administrator."},
+                status=status.HTTP_403_FORBIDDEN,
             )
 
         if session.user.role == User.Role.RESIDENT:

@@ -44,6 +44,12 @@ class ResidentProfileAPITests(IsolatedAuthAPITestCase):
         self.assertFalse(resident_profile.is_verified)
 
     def test_profile_endpoint_success(self):
+        Resident.objects.create(
+            user=self.user,
+            full_name="Profile Success Resident",
+            birth_date="1995-05-15",
+            is_verified=True,
+        )
         #  1. Login the user to obtain a token
         login_url = reverse('auth_login')
         login_payload = {
@@ -69,12 +75,15 @@ class ResidentProfileAPITests(IsolatedAuthAPITestCase):
         response = self.client.delete(reverse("auth_me"))
 
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(User.objects.filter(pk=user_id).exists())
+        user = User.objects.get(pk=user_id)
+        self.assertFalse(user.is_active)
+        self.assertTrue(user.username.startswith("erased_"))
+        self.assertFalse(Resident.objects.filter(user_id=user_id).exists())
 
         audit_log = AuditLog.objects.get(
             action_type=AuditLog.ActionType.USER_ACTION,
             description__startswith=(
-                f"User {self.username} (ID: {user_id}) voluntarily exercised"
+                f"User (ID: {user_id}) voluntarily exercised"
             ),
         )
         self.assertIsNone(audit_log.action_by_id)

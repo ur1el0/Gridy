@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework.parsers import MultiPartParser, FormParser
 from drf_spectacular.utils import extend_schema, OpenApiTypes
 
-from gridy_auth.models import User, Resident
+from gridy_auth.models import User, Resident, RefreshSession
 from gridy_auth.serializers import (
     ResidentAdminUpdateSerializer,
     ResidentSerializer,
@@ -313,6 +313,50 @@ class ResidentViewSet(viewsets.ModelViewSet):
                     ),
                     request=self.request,
                 )
+
+    def destroy(self, request, *args, **kwargs):
+        resident = self.get_object()
+        user = resident.user
+        full_name = resident.full_name
+        resident_id = resident.id
+
+        with transaction.atomic():
+            # 1. Deactivate User account to revoke future logins
+            user.is_active = False
+            user.save(update_fields=['is_active'])
+
+            # 2. Revoke all active refresh sessions and tokens
+            RefreshSession.objects.filter(user=user).delete()
+
+            # 3. Schedule safe cleanup of private identity proof files on commit
+            for proof in [resident.philsys_id_photo, resident.secondary_id_photo, resident.utility_billing_photo]:
+                if proof and proof.name:
+                    p_storage = proof.storage
+                    p_name = proof.name
+
+                    def _safe_delete(s=p_storage, n=p_name):
+                        try:
+                            s.delete(n)
+                        except Exception:
+                            pass
+
+                    transaction.on_commit(_safe_delete)
+
+            # 4. Remove the resident profile record
+            resident.delete()
+
+            # 5. Durably audit the administrative removal and access revocation
+            log_action(
+                user=request.user,
+                action_type=AuditLog.ActionType.USER_ACTION,
+                description=(
+                    f"Removed resident account for {full_name} (ID: {resident_id}) "
+                    f"and revoked login and session access."
+                ),
+                request=request,
+            )
+
+        return Response(status=status.HTTP_204_NO_CONTENT)
 
     def get_queryset(self):
         user = self.request.user

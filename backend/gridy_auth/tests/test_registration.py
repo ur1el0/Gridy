@@ -1,6 +1,7 @@
 import os
 import subprocess
 import sys
+from datetime import date, timedelta
 from io import BytesIO
 from pathlib import Path
 from unittest.mock import patch
@@ -62,168 +63,133 @@ class AuthRegistrationAPITests(IsolatedAuthAPITestCase):
                 self.assertNotEqual(result.returncode, 0)
                 self.assertIn("ADMIN_REGISTRATION_PASSKEY", result.stderr)
 
-    def test_admin_registration_rejects_known_default_passkey(self):
-        barangay = Barangay.objects.create(name="Barangay Passkey Test")
+    def test_admin_registration_endpoint_is_disabled_under_adr_011(self):
         url = reverse('auth_register_admin')
         payload = {
-            "username": "known_default_attempt",
+            "username": "admin_attempt",
             "full_name": "Unauthorized Admin",
-            "barangay_id": barangay.id,
-            "email": "known-default-attempt@example.com",
-            "password": "SecurePassword123!",
-            "confirm_password": "SecurePassword123!",
-            "affirmation": True,
-            "passkey": "LGU-DEFAULT-PASSKEY",
-        }
-
-        response = self.client.post(url, payload, format='json')
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("passkey", response.data)
-        self.assertFalse(
-            User.objects.filter(email="known-default-attempt@example.com").exists()
-        )
-
-    def test_admin_registration_success(self):
-        barangay = Barangay.objects.create(name="Barangay Central")
-        url = reverse('auth_register_admin')
-        payload = {
-            "username": "admin_central",
-            "full_name": "Juan De La Cruz",
-            "barangay_id": barangay.id,
-            "email": "juandelacruz@example.com",
-            "password": "SecurePassword123!",
-            "confirm_password": "SecurePassword123!",
-            "affirmation": True,
-            "passkey": settings.ADMIN_REGISTRATION_PASSKEY
-        }
-        response = self.client.post(url, payload, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(User.objects.filter(email="juandelacruz@example.com").exists())
-        user = User.objects.get(email="juandelacruz@example.com")
-        self.assertEqual(user.username, "admin_central")
-        self.assertEqual(user.role, User.Role.ADMIN)
-        self.assertEqual(user.first_name, "Juan")
-        self.assertEqual(user.last_name, "De La Cruz")
-        self.assertEqual(user.barangay, barangay)
-        self.assertTrue(user.is_staff)
-        self.assertTrue(user.is_active)
-
-        # Verify admin can log in with username
-        login_url = reverse('auth_login')
-        login_resp = self.client.post(login_url, {"username": "admin_central", "password": "SecurePassword123!"}, format='json')
-        self.assertEqual(login_resp.status_code, status.HTTP_200_OK)
-
-        # Verify admin can also log in with email
-        login_email_resp = self.client.post(login_url, {"username": "juandelacruz@example.com", "password": "SecurePassword123!"}, format='json')
-        self.assertEqual(login_email_resp.status_code, status.HTTP_200_OK)
-
-    def test_admin_registration_requires_barangay(self):
-        response = self.client.post(
-            reverse("auth_register_admin"),
-            {
-                "username": "unassigned_official",
-                "full_name": "Unassigned Official",
-                "email": "unassigned@example.com",
-                "password": "SecurePassword123!",
-                "confirm_password": "SecurePassword123!",
-                "affirmation": True,
-                "passkey": settings.ADMIN_REGISTRATION_PASSKEY,
-            },
-            format="json",
-        )
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("barangay_id", response.data)
-        self.assertFalse(User.objects.filter(username="unassigned_official").exists())
-
-    def test_admin_registration_duplicate_username(self):
-        User.objects.create_user(
-            username="existing_admin_handle",
-            email="handle@example.com",
-            password="SecurePassword123!",
-            role=User.Role.ADMIN
-        )
-        url = reverse('auth_register_admin')
-        payload = {
-            "username": "existing_admin_handle",
-            "full_name": "Duplicate Admin",
             "barangay_id": self.barangay.id,
-            "email": "another@example.com",
+            "email": "unauthorized@example.com",
             "password": "SecurePassword123!",
             "confirm_password": "SecurePassword123!",
             "affirmation": True,
-            "passkey": settings.ADMIN_REGISTRATION_PASSKEY
+            "passkey": settings.ADMIN_REGISTRATION_PASSKEY,
         }
         response = self.client.post(url, payload, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("username", response.data)
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertIn("detail", response.data)
+        self.assertIn("ADR 011", response.data["detail"])
+        self.assertFalse(User.objects.filter(username="admin_attempt").exists())
 
-    def test_admin_registration_password_mismatch(self):
-        url = reverse('auth_register_admin')
+    def test_user_registration_rejects_future_birth_date(self):
+        url = reverse('auth_register')
+        future_date = (date.today() + timedelta(days=1)).isoformat()
         payload = {
-            "full_name": "Juan De La Cruz",
+            "username": "time_traveler",
+            "email": "traveler@example.com",
+            "password": "ValidPassword123!",
+            "full_name": "Time Traveler",
+            "birth_date": future_date,
             "barangay_id": self.barangay.id,
-            "email": "mismatch@example.com",
-            "password": "SecurePassword123!",
-            "confirm_password": "DifferentPassword123!",
-            "affirmation": True,
-            "passkey": settings.ADMIN_REGISTRATION_PASSKEY
+            "privacy_consent": True,
+            "privacy_consent_version": settings.PRIVACY_CONSENT_VERSION,
+            "philsys_id_photo": create_test_image_upload(),
         }
-        response = self.client.post(url, payload, format='json')
+        storage = Resident._meta.get_field("philsys_id_photo").storage
+        with patch.object(storage, "save", side_effect=lambda name, content, max_length=None: name):
+            response = self.client.post(url, payload, format='multipart')
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("confirm_password", response.data)
+        self.assertIn("birth_date", response.data)
+        self.assertIn("cannot be in the future", str(response.data["birth_date"]))
+        self.assertFalse(User.objects.filter(username="time_traveler").exists())
 
-    def test_admin_registration_missing_affirmation(self):
-        url = reverse('auth_register_admin')
+    def test_user_registration_minor_requires_verified_same_barangay_guardian(self):
+        url = reverse('auth_register')
+        minor_birth_date = (date.today() - timedelta(days=365 * 10)).isoformat()
+
+        # Case 1: Minor without guardian
         payload = {
-            "full_name": "Juan De La Cruz",
+            "username": "minor_no_guardian",
+            "email": "minor1@example.com",
+            "password": "ValidPassword123!",
+            "full_name": "Minor Resident",
+            "birth_date": minor_birth_date,
             "barangay_id": self.barangay.id,
-            "email": "unaffirmed@example.com",
-            "password": "SecurePassword123!",
-            "confirm_password": "SecurePassword123!",
-            "affirmation": False,
-            "passkey": settings.ADMIN_REGISTRATION_PASSKEY
+            "privacy_consent": True,
+            "privacy_consent_version": settings.PRIVACY_CONSENT_VERSION,
+            "philsys_id_photo": create_test_image_upload(),
         }
-        response = self.client.post(url, payload, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("affirmation", response.data)
+        storage = Resident._meta.get_field("philsys_id_photo").storage
+        with patch.object(storage, "save", side_effect=lambda name, content, max_length=None: name):
+            resp = self.client.post(url, payload, format='multipart')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("guardian_id", resp.data)
 
-    def test_admin_registration_duplicate_email(self):
-        User.objects.create_user(
-            username="existing_admin",
-            email="existing@example.com",
-            password="SecurePassword123!",
-            role=User.Role.ADMIN
+        # Case 2: Guardian does not exist
+        payload["guardian_id"] = "non_existent_guardian"
+        payload["philsys_id_photo"] = create_test_image_upload()
+        with patch.object(storage, "save", side_effect=lambda name, content, max_length=None: name):
+            resp = self.client.post(url, payload, format='multipart')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("guardian_id", resp.data)
+
+        # Case 3: Guardian is from another barangay
+        other_barangay = Barangay.objects.create(name="Other Barangay For Guardian")
+        other_user = User.objects.create_user(
+            username="other_guardian",
+            role=User.Role.RESIDENT,
+            barangay=other_barangay,
         )
-        url = reverse('auth_register_admin')
-        payload = {
-            "full_name": "Duplicate Admin",
-            "barangay_id": self.barangay.id,
-            "email": "existing@example.com",
-            "password": "SecurePassword123!",
-            "confirm_password": "SecurePassword123!",
-            "affirmation": True,
-            "passkey": settings.ADMIN_REGISTRATION_PASSKEY
-        }
-        response = self.client.post(url, payload, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("email", response.data)
+        Resident.objects.create(
+            user=other_user,
+            full_name="Other Guardian",
+            birth_date="1980-01-01",
+            is_verified=True,
+        )
+        payload["guardian_id"] = "other_guardian"
+        payload["philsys_id_photo"] = create_test_image_upload()
+        with patch.object(storage, "save", side_effect=lambda name, content, max_length=None: name):
+            resp = self.client.post(url, payload, format='multipart')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("guardian_id", resp.data)
 
-    def test_admin_registration_invalid_barangay(self):
-        url = reverse('auth_register_admin')
-        payload = {
-            "full_name": "Juan De La Cruz",
-            "barangay_id": 99999,
-            "email": "bad_brgy@example.com",
-            "password": "SecurePassword123!",
-            "confirm_password": "SecurePassword123!",
-            "affirmation": True,
-            "passkey": settings.ADMIN_REGISTRATION_PASSKEY
-        }
-        response = self.client.post(url, payload, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("barangay_id", response.data)
+        # Case 4: Guardian is in same barangay but unverified
+        local_unverified = User.objects.create_user(
+            username="unverified_guardian",
+            role=User.Role.RESIDENT,
+            barangay=self.barangay,
+        )
+        Resident.objects.create(
+            user=local_unverified,
+            full_name="Unverified Guardian",
+            birth_date="1980-01-01",
+            is_verified=False,
+        )
+        payload["guardian_id"] = "unverified_guardian"
+        payload["philsys_id_photo"] = create_test_image_upload()
+        with patch.object(storage, "save", side_effect=lambda name, content, max_length=None: name):
+            resp = self.client.post(url, payload, format='multipart')
+        self.assertEqual(resp.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("guardian_id", resp.data)
+
+        # Case 5: Guardian is in same barangay, RESIDENT, and verified -> SUCCESS
+        local_verified = User.objects.create_user(
+            username="verified_guardian",
+            role=User.Role.RESIDENT,
+            barangay=self.barangay,
+        )
+        Resident.objects.create(
+            user=local_verified,
+            full_name="Verified Guardian",
+            birth_date="1980-01-01",
+            is_verified=True,
+        )
+        payload["guardian_id"] = "verified_guardian"
+        payload["philsys_id_photo"] = create_test_image_upload()
+        with patch.object(storage, "save", side_effect=lambda name, content, max_length=None: name):
+            resp = self.client.post(url, payload, format='multipart')
+        self.assertEqual(resp.status_code, status.HTTP_201_CREATED)
+        self.assertTrue(User.objects.filter(username="minor_no_guardian").exists())
 
     def test_user_registration_success(self):
         url = reverse('auth_register')

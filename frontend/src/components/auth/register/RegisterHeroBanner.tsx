@@ -35,8 +35,8 @@ export const RegisterHeroBanner: React.FC<RegisterHeroBannerProps> = ({
                 <button
                     type="button"
                     aria-label={isAdminMode
-                        ? 'Staff Registration, switch to resident registration'
-                        : 'Resident Registration, switch to official registration'}
+                        ? 'Staff Onboarding, switch to resident registration'
+                        : 'Resident Registration, switch to official onboarding'}
                     onClick={onToggleMode}
                     className={`px-3 py-1.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider cursor-pointer flex items-center gap-1.5 transition-all active:scale-95 select-none ${
                         isAdminMode
@@ -45,7 +45,7 @@ export const RegisterHeroBanner: React.FC<RegisterHeroBannerProps> = ({
                     }`}
                     title="Tap to switch registration type"
                 >
-                    <span>{isAdminMode ? 'Staff Registration' : 'Resident Registration'}</span>
+                    <span>{isAdminMode ? 'Official Onboarding' : 'Resident Registration'}</span>
                     <span className="text-[11px] opacity-75 font-bold">⇄</span>
                 </button>
             </div>
@@ -55,9 +55,9 @@ export const RegisterHeroBanner: React.FC<RegisterHeroBannerProps> = ({
                 <h1 className="text-4xl lg:text-[2.75rem] font-extrabold text-white tracking-tight leading-[1.15] mb-4">
                     {isAdminMode ? (
                         <>
-                            Register as<br />
-                            Authorized<br />
-                            Personnel
+                            Barangay<br />
+                            Official<br />
+                            Onboarding
                         </>
                     ) : (
                         <>
@@ -69,7 +69,7 @@ export const RegisterHeroBanner: React.FC<RegisterHeroBannerProps> = ({
                 </h1>
                 <p className="text-blue-100/75 text-sm lg:text-base font-normal max-w-sm mb-10 leading-relaxed">
                     {isAdminMode
-                        ? 'Create your administrative credentials to manage the KapitBayan Barangay System. Access is restricted to authorized barangay personnel.'
+                        ? 'Barangay administration is provisioned via the verified DILG onboarding application. Access is restricted to authorized personnel.'
                         : 'Register your resident account to request clearances, access community services, and track lobby queues.'}
                 </p>
 
@@ -81,7 +81,7 @@ export const RegisterHeroBanner: React.FC<RegisterHeroBannerProps> = ({
                                     <Shield className="w-5 h-5 text-amber-300" />
                                 </div>
                                 <span className="text-[11px] lg:text-xs font-semibold tracking-wider text-blue-100/90 uppercase">
-                                    CREDENTIALS VERIFICATION
+                                    DILG VERIFIED ONBOARDING
                                 </span>
                             </div>
                             <div className="flex items-center gap-3.5">
@@ -89,7 +89,7 @@ export const RegisterHeroBanner: React.FC<RegisterHeroBannerProps> = ({
                                     <KeyRound className="w-5 h-5 text-amber-300" />
                                 </div>
                                 <span className="text-[11px] lg:text-xs font-semibold tracking-wider text-blue-100/90 uppercase">
-                                    ADMIN ACCESS TIERS
+                                    MUNICIPAL INTEGRITY
                                 </span>
                             </div>
                             <div className="flex items-center gap-3.5">
@@ -97,7 +97,7 @@ export const RegisterHeroBanner: React.FC<RegisterHeroBannerProps> = ({
                                     <FileCheck2 className="w-5 h-5 text-amber-300" />
                                 </div>
                                 <span className="text-[11px] lg:text-xs font-semibold tracking-wider text-blue-100/90 uppercase">
-                                    SECURITY AUDIT COMPLIANCE
+                                    GOVERNANCE COMPLIANCE (ADR 011)
                                 </span>
                             </div>
                         </>

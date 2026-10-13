@@ -86,6 +86,8 @@ class RegisterSerializer(serializers.ModelSerializer):
         age = None
         if birth_date:
             today = date.today()
+            if birth_date > today:
+                raise serializers.ValidationError({"birth_date": "Birth date cannot be in the future."})
             age = today.year - birth_date.year - ((today.month, today.day) < (birth_date.month, birth_date.day))
 
         # Enforce minor constraint barrier
@@ -104,9 +106,16 @@ class RegisterSerializer(serializers.ModelSerializer):
             try:
                 # The mobile app uses 'username' as the Barangay ID/Registered ID
                 guardian_user = User.objects.get(username=guardian_id, role=User.Role.RESIDENT)
+                guardian_profile = getattr(guardian_user, 'profile', None)
+                if not guardian_profile:
+                    raise serializers.ValidationError({"guardian_id": "No resident found with this Registered ID."})
+                if not guardian_user.is_active or not guardian_profile.is_verified:
+                    raise serializers.ValidationError({"guardian_id": "Guardian must be an active, verified resident."})
+                if barangay_id and guardian_user.barangay_id != barangay_id:
+                    raise serializers.ValidationError({"guardian_id": "Guardian must be registered in the same barangay."})
                 # Stash the actual Resident object in attrs for the create() method
-                attrs['guardian_resident'] = guardian_user.profile
-            except (User.DoesNotExist, Resident.DoesNotExist):
+                attrs['guardian_resident'] = guardian_profile
+            except User.DoesNotExist:
                 raise serializers.ValidationError({"guardian_id": "No resident found with this Registered ID."})
             
         return attrs

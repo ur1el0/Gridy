@@ -9,7 +9,6 @@ import {
     RegisterHeroBanner,
     ResidentVerificationUploads,
     BarangaySelectField,
-    AdminCredentialsSection,
     type PublicBarangay,
 } from '../../components/auth/register';
 
@@ -37,14 +36,12 @@ export const Register: React.FC = () => {
     const [secondaryIdType, setSecondaryIdType] = useState('');
     const [secondaryIdPhoto, setSecondaryIdPhoto] = useState<File | null>(null);
 
-    // Admin-specific fields
+    // Barangay selection fields
     const [barangayId, setBarangayId] = useState('');
     const [barangays, setBarangays] = useState<PublicBarangay[]>([]);
     const [loadingBarangays, setLoadingBarangays] = useState(true);
     const [barangayDirectoryError, setBarangayDirectoryError] = useState('');
-    const [affirmation, setAffirmation] = useState(false);
     const [dataPrivacyConsent, setDataPrivacyConsent] = useState(false);
-    const [passkey, setPasskey] = useState('');
 
     const [error, setError] = useState('');
     const [success, setSuccess] = useState('');
@@ -107,13 +104,7 @@ export const Register: React.FC = () => {
             return;
         }
 
-        if (isAdminMode && !affirmation) {
-            setError('You must affirm that you are an authorized barangay official or personnel.');
-            return;
-        }
-
         if (
-            !isAdminMode &&
             !philsysPhoto &&
             !utilityBillingPhoto &&
             !secondaryIdPhoto
@@ -126,84 +117,61 @@ export const Register: React.FC = () => {
         setLoading(true);
 
         try {
-            if (isAdminMode) {
-                // Official Personnel Registration Pipeline
-                const payload: Record<string, any> = {
-                    username: username.trim(),
-                    full_name: fullName.trim(),
-                    email: email.trim().toLowerCase(),
-                    password,
-                    confirm_password: confirmPassword,
-                    affirmation,
-                    passkey,
-                };
+            // Resident Registration Pipeline (Multipart FormData)
+            const formData = new FormData();
+            formData.append('full_name', fullName.trim());
+            formData.append('username', username.trim());
+            formData.append('email', email.trim().toLowerCase());
+            formData.append('password', password);
+            formData.append('birth_date', birthDate);
+            formData.append('voter_status', 'false');
+            formData.append(
+                'privacy_consent',
+                dataPrivacyConsent ? 'true' : 'false',
+            );
+            formData.append('privacy_consent_version', 'resident-v1');
 
-                if (barangayId.trim()) {
-                    const parsedId = parseInt(barangayId.trim(), 10);
-                    if (!isNaN(parsedId)) {
-                        payload.barangay_id = parsedId;
-                    }
-                }
-
-                await axiosPublic.post('/auth/register/admin/', payload);
-                setSuccess('Official account registered successfully! Redirecting to login...');
-            } else {
-                // Resident Registration Pipeline (Multipart FormData)
-                const formData = new FormData();
-                formData.append('full_name', fullName.trim());
-                formData.append('username', username.trim());
-                formData.append('email', email.trim().toLowerCase());
-                formData.append('password', password);
-                formData.append('birth_date', birthDate);
-                formData.append('voter_status', 'false');
-                formData.append(
-                    'privacy_consent',
-                    dataPrivacyConsent ? 'true' : 'false',
-                );
-                formData.append('privacy_consent_version', 'resident-v1');
-
-                if (contactNumber.trim()) {
-                    formData.append('contact_number', contactNumber.trim());
-                }
-                if (guardianId.trim()) {
-                    formData.append('guardian_id', guardianId.trim());
-                }
-                if (barangayId.trim()) {
-                    const parsedId = parseInt(barangayId.trim(), 10);
-                    if (!isNaN(parsedId)) {
-                        formData.append('barangay_id', String(parsedId));
-                    }
-                }
-
-                // PhilSys Identity
-                if (philsysIdNumber.trim()) {
-                    formData.append('philsys_id_number', philsysIdNumber.trim());
-                }
-                if (philsysPhoto) {
-                    formData.append('philsys_id_photo', philsysPhoto);
-                }
-
-                // Utility Proof of Residency
-                if (utilityBillingType.trim()) {
-                    formData.append('utility_billing_type', utilityBillingType.trim());
-                }
-                if (utilityBillingPhoto) {
-                    formData.append('utility_billing_photo', utilityBillingPhoto);
-                }
-
-                // Secondary Valid ID (Optional)
-                if (secondaryIdType.trim()) {
-                    formData.append('secondary_id_type', secondaryIdType.trim());
-                }
-                if (secondaryIdPhoto) {
-                    formData.append('secondary_id_photo', secondaryIdPhoto);
-                }
-
-                await axiosPublic.post('/auth/register/', formData, {
-                    headers: { 'Content-Type': 'multipart/form-data' },
-                });
-                setSuccess('Resident account created successfully! Redirecting to login...');
+            if (contactNumber.trim()) {
+                formData.append('contact_number', contactNumber.trim());
             }
+            if (guardianId.trim()) {
+                formData.append('guardian_id', guardianId.trim());
+            }
+            if (barangayId.trim()) {
+                const parsedId = parseInt(barangayId.trim(), 10);
+                if (!isNaN(parsedId)) {
+                    formData.append('barangay_id', String(parsedId));
+                }
+            }
+
+            // PhilSys Identity
+            if (philsysIdNumber.trim()) {
+                formData.append('philsys_id_number', philsysIdNumber.trim());
+            }
+            if (philsysPhoto) {
+                formData.append('philsys_id_photo', philsysPhoto);
+            }
+
+            // Utility Proof of Residency
+            if (utilityBillingType.trim()) {
+                formData.append('utility_billing_type', utilityBillingType.trim());
+            }
+            if (utilityBillingPhoto) {
+                formData.append('utility_billing_photo', utilityBillingPhoto);
+            }
+
+            // Secondary Valid ID (Optional)
+            if (secondaryIdType.trim()) {
+                formData.append('secondary_id_type', secondaryIdType.trim());
+            }
+            if (secondaryIdPhoto) {
+                formData.append('secondary_id_photo', secondaryIdPhoto);
+            }
+
+            await axiosPublic.post('/auth/register/', formData, {
+                headers: { 'Content-Type': 'multipart/form-data' },
+            });
+            setSuccess('Resident account created successfully! Redirecting to login...');
 
             setTimeout(() => {
                 navigate('/login');
@@ -267,15 +235,15 @@ export const Register: React.FC = () => {
                             <span className={`px-2.5 py-0.5 rounded-full text-[10px] font-extrabold uppercase tracking-wider ${
                                 isAdminMode ? 'bg-amber-100 text-amber-900' : 'bg-sky-100 text-sky-900'
                             }`}>
-                                {isAdminMode ? 'Authorized Staff' : 'Resident'}
+                                {isAdminMode ? 'Authorized Personnel' : 'Resident'}
                             </span>
                         </div>
                         <h2 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                            {isAdminMode ? 'Administrative Registration' : 'Resident Registration'}
+                            {isAdminMode ? 'Barangay Official Onboarding' : 'Resident Registration'}
                         </h2>
                         <p className="text-slate-500 text-sm mt-1">
                             {isAdminMode
-                                ? 'Enter your staff authorization details to create an official account.'
+                                ? 'Barangay administration is provisioned via the verified DILG onboarding application.'
                                 : 'Complete your registration details to access barangay services.'}
                         </p>
                     </div>
@@ -299,60 +267,104 @@ export const Register: React.FC = () => {
                         </div>
                     )}
 
-                    {/* Registration Form */}
-                    <form className="space-y-4" onSubmit={handleRegister}>
-                        <TextField 
-                            label="FULL NAME (AS IN ID)"
-                            type="text"
-                            required
-                            value={fullName}
-                            onChange={(e) => setFullName(e.target.value)}
-                            placeholder="e.g. Juan Dela Cruz"
-                            isAdminMode={isAdminMode}
-                        />
+                    {isAdminMode ? (
+                        <div className="space-y-6">
+                            <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-xs space-y-4">
+                                <div className="flex items-start gap-3.5">
+                                    <div className="w-10 h-10 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-center shrink-0">
+                                        <Shield className="w-5 h-5 text-amber-600" />
+                                    </div>
+                                    <div className="space-y-1">
+                                        <h3 className="text-sm font-bold text-slate-900">DILG Onboarding Governance (ADR 011)</h3>
+                                        <p className="text-xs text-slate-600 leading-relaxed">
+                                            Public self-service administrator registration is disabled to prevent unauthorized account provisioning. New barangay administrators and local government personnel must submit an application through the official DILG onboarding application.
+                                        </p>
+                                    </div>
+                                </div>
 
-                        <TextField
-                            label="USERNAME"
-                            type="text"
-                            required
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            placeholder={isAdminMode ? 'admin_captain' : 'juandelacruz'}
-                            isAdminMode={isAdminMode}
-                        />
+                                <div className="pt-2">
+                                    <Button
+                                        type="button"
+                                        isAdminMode={true}
+                                        onClick={() => navigate('/register/barangay')}
+                                    >
+                                        Go to Barangay Onboarding Application
+                                    </Button>
+                                </div>
+                            </div>
 
-                        <TextField
-                            label="EMAIL ADDRESS"
-                            type="email"
-                            required
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            placeholder="juan@example.com"
-                            isAdminMode={isAdminMode}
-                        />
+                            {/* Mode Switch Link */}
+                            <div className="text-center pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setError('');
+                                        setSuccess('');
+                                        setIsAdminMode(false);
+                                    }}
+                                    className="text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                                >
+                                    <span>Registering as a Resident? <span className="text-[#0284C7] font-bold underline">Switch to Resident Sign Up</span></span>
+                                </button>
+                            </div>
 
-                        {/* Resident Mode: Contact Number & Date of Birth */}
-                        {!isAdminMode && (
-                            <>
-                                <TextField
-                                    label="CONTACT NUMBER"
-                                    type="tel"
-                                    value={contactNumber}
-                                    onChange={(e) => setContactNumber(e.target.value)}
-                                    placeholder="0917 123 4567"
-                                />
-                                <TextField
-                                    label="DATE OF BIRTH"
-                                    type="date"
-                                    required
-                                    value={birthDate}
-                                    onChange={(e) => setBirthDate(e.target.value)}
-                                />
-                            </>
-                        )}
+                            {/* Back to Login */}
+                            <div className="text-center pt-1">
+                                <p className="text-xs text-slate-500 font-medium">
+                                    Already have an account?{' '}
+                                    <Link to="/login" className="font-bold text-slate-900 hover:text-[#0284C7] hover:underline transition-colors">
+                                        Log in here
+                                    </Link>
+                                </p>
+                            </div>
+                        </div>
+                    ) : (
+                        /* Registration Form */
+                        <form className="space-y-4" onSubmit={handleRegister}>
+                            <TextField
+                                label="FULL NAME (AS IN ID)"
+                                type="text"
+                                required
+                                value={fullName}
+                                onChange={(e) => setFullName(e.target.value)}
+                                placeholder="e.g. Juan Dela Cruz"
+                            />
 
-                        {/* Resident Mode: Identity & Residency Verification Proofs */}
-                        {!isAdminMode && (
+                            <TextField
+                                label="USERNAME"
+                                type="text"
+                                required
+                                value={username}
+                                onChange={(e) => setUsername(e.target.value)}
+                                placeholder="juandelacruz"
+                            />
+
+                            <TextField
+                                label="EMAIL ADDRESS"
+                                type="email"
+                                required
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                placeholder="juan@example.com"
+                            />
+
+                            {/* Contact Number & Date of Birth */}
+                            <TextField
+                                label="CONTACT NUMBER"
+                                type="tel"
+                                value={contactNumber}
+                                onChange={(e) => setContactNumber(e.target.value)}
+                                placeholder="0917 123 4567"
+                            />
+                            <TextField
+                                label="DATE OF BIRTH"
+                                type="date"
+                                required
+                                value={birthDate}
+                                onChange={(e) => setBirthDate(e.target.value)}
+                            />
+
+                            {/* Identity & Residency Verification Proofs */}
                             <ResidentVerificationUploads
                                 isExpanded={isVerificationExpanded}
                                 onToggleExpand={() => setIsVerificationExpanded((prev) => !prev)}
@@ -372,64 +384,60 @@ export const Register: React.FC = () => {
                                 secondaryIdPhoto={secondaryIdPhoto}
                                 onSecondaryIdPhotoChange={setSecondaryIdPhoto}
                             />
-                        )}
 
-                        {/* Minor Guardian Constraint Box */}
-                        {!isAdminMode && isMinor && (
-                            <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2 animate-fadeIn">
-                                <div className="flex items-center gap-2 text-amber-900 text-xs font-bold uppercase tracking-wider">
-                                    <Shield className="w-4 h-4 text-amber-600 shrink-0" />
-                                    <span>Parent / Legal Guardian Verification Required</span>
+                            {/* Minor Guardian Constraint Box */}
+                            {isMinor && (
+                                <div className="bg-amber-50 border border-amber-200 rounded-xl p-4 space-y-2 animate-fadeIn">
+                                    <div className="flex items-center gap-2 text-amber-900 text-xs font-bold uppercase tracking-wider">
+                                        <Shield className="w-4 h-4 text-amber-600 shrink-0" />
+                                        <span>Parent / Legal Guardian Verification Required</span>
+                                    </div>
+                                    <p className="text-[11px] text-amber-800 leading-relaxed">
+                                        Applicants under 18 must link their registration to an already registered parent or legal guardian's account.
+                                    </p>
+                                    <TextField
+                                        label="GUARDIAN'S REGISTERED USERNAME *"
+                                        type="text"
+                                        required
+                                        value={guardianId}
+                                        onChange={(e) => setGuardianId(e.target.value)}
+                                        placeholder="e.g. resident_dupay"
+                                    />
                                 </div>
-                                <p className="text-[11px] text-amber-800 leading-relaxed">
-                                    Applicants under 18 must link their registration to an already registered parent or legal guardian's account.
-                                </p>
+                            )}
+
+                            {/* Universal Barangay Selection Dropdown */}
+                            <BarangaySelectField
+                                barangayId={barangayId}
+                                onBarangayIdChange={setBarangayId}
+                                barangays={barangays}
+                                loadingBarangays={loadingBarangays}
+                                barangayDirectoryError={barangayDirectoryError}
+                                onRetry={fetchBarangays}
+                                isAdminMode={false}
+                            />
+
+                            {/* Passwords */}
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <TextField
-                                    label="GUARDIAN'S REGISTERED USERNAME *"
-                                    type="text"
+                                    label="PASSWORD"
+                                    type="password"
                                     required
-                                    value={guardianId}
-                                    onChange={(e) => setGuardianId(e.target.value)}
-                                    placeholder="e.g. resident_dupay"
+                                    value={password}
+                                    onChange={(e) => setPassword(e.target.value)}
+                                    placeholder="••••••••"
+                                />
+                                <TextField
+                                    label="CONFIRM PASSWORD"
+                                    type="password"
+                                    required
+                                    value={confirmPassword}
+                                    onChange={(e) => setConfirmPassword(e.target.value)}
+                                    placeholder="••••••••"
                                 />
                             </div>
-                        )}
 
-                        {/* Universal Barangay Selection Dropdown */}
-                        <BarangaySelectField
-                            barangayId={barangayId}
-                            onBarangayIdChange={setBarangayId}
-                            barangays={barangays}
-                            loadingBarangays={loadingBarangays}
-                            barangayDirectoryError={barangayDirectoryError}
-                            onRetry={fetchBarangays}
-                            isAdminMode={isAdminMode}
-                        />
-
-                        {/* Passwords */}
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                            <TextField
-                                label="PASSWORD"
-                                type="password"
-                                required
-                                value={password}
-                                onChange={(e) => setPassword(e.target.value)}
-                                placeholder="••••••••"
-                                isAdminMode={isAdminMode}
-                            />
-                            <TextField
-                                label="CONFIRM PASSWORD"
-                                type="password"
-                                required
-                                value={confirmPassword}
-                                onChange={(e) => setConfirmPassword(e.target.value)}
-                                placeholder="••••••••"
-                                isAdminMode={isAdminMode}
-                            />
-                        </div>
-
-                        {/* Resident Mode: Data Privacy Consent */}
-                        {!isAdminMode && (
+                            {/* Data Privacy Consent */}
                             <div className="pt-1">
                                 <label className="flex items-start gap-2.5 cursor-pointer">
                                     <input
@@ -444,64 +452,48 @@ export const Register: React.FC = () => {
                                     </span>
                                 </label>
                             </div>
-                        )}
-                        
-                        {/* Admin Passkey Requirement & Affirmation */}
-                        {isAdminMode && (
-                            <AdminCredentialsSection
-                                passkey={passkey}
-                                onPasskeyChange={setPasskey}
-                                affirmation={affirmation}
-                                onAffirmationChange={setAffirmation}
-                            />
-                        )}
 
-                        {/* Submit Button */}
-                        <div className="pt-2">
-                            <Button
-                                type="submit"
-                                isAdminMode={isAdminMode}
-                                loading={loading}
-                                loadingText={isAdminMode ? 'Creating Admin Account...' : 'Creating Resident Account...'}
-                                disabled={
-                                    loadingBarangays || barangays.length === 0 ||
-                                    (!isAdminMode && !dataPrivacyConsent) ||
-                                    (isAdminMode && (!affirmation || !passkey))
-                                }
-                            >
-                                {isAdminMode ? 'Create Admin Account' : 'Create Resident Account'}
-                            </Button>
-                        </div>
+                            {/* Submit Button */}
+                            <div className="pt-2">
+                                <Button
+                                    type="submit"
+                                    isAdminMode={false}
+                                    loading={loading}
+                                    loadingText="Creating Resident Account..."
+                                    disabled={
+                                        loadingBarangays || barangays.length === 0 || !dataPrivacyConsent
+                                    }
+                                >
+                                    Create Resident Account
+                                </Button>
+                            </div>
 
-                        {/* Mode Switch Link */}
-                        <div className="text-center pt-2">
-                            <button
-                                type="button"
-                                onClick={() => {
-                                    setError('');
-                                    setSuccess('');
-                                    setIsAdminMode((prev) => !prev);
-                                }}
-                                className="text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
-                            >
-                                {isAdminMode ? (
-                                    <span>Registering as a Resident? <span className="text-[#0284C7] font-bold underline">Switch to Resident Sign Up</span></span>
-                                ) : (
-                                    <span>Barangay Personnel? <span className="text-slate-900 font-bold underline">Switch to Official Registration</span></span>
-                                )}
-                            </button>
-                        </div>
+                            {/* Mode Switch Link */}
+                            <div className="text-center pt-2">
+                                <button
+                                    type="button"
+                                    onClick={() => {
+                                        setError('');
+                                        setSuccess('');
+                                        setIsAdminMode(true);
+                                    }}
+                                    className="text-xs font-medium text-slate-500 hover:text-slate-800 transition-colors cursor-pointer"
+                                >
+                                    <span>Barangay Personnel? <span className="text-slate-900 font-bold underline">Official Onboarding Information</span></span>
+                                </button>
+                            </div>
 
-                        {/* Back to Login */}
-                        <div className="text-center pt-1">
-                            <p className="text-xs text-slate-500 font-medium">
-                                Already have an account?{' '}
-                                <Link to="/login" className="font-bold text-slate-900 hover:text-[#0284C7] hover:underline transition-colors">
-                                    Log in here
-                                </Link>
-                            </p>
-                        </div>
-                    </form>
+                            {/* Back to Login */}
+                            <div className="text-center pt-1">
+                                <p className="text-xs text-slate-500 font-medium">
+                                    Already have an account?{' '}
+                                    <Link to="/login" className="font-bold text-slate-900 hover:text-[#0284C7] hover:underline transition-colors">
+                                        Log in here
+                                    </Link>
+                                </p>
+                            </div>
+                        </form>
+                    )}
                 </div>
             </div>
         </div>

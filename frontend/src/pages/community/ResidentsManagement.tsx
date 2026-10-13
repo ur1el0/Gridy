@@ -50,17 +50,17 @@ export const ResidentsManagement: React.FC = () => {
     }, [fetchResidents]);
 
     const handleDelete = async (id: number) => {
-        if (!window.confirm("Are you sure you want to permanently remove this resident? This will revoke all their access.")) return;
+        if (!window.confirm("Are you sure you want to remove this resident? This will revoke their login access and terminate all active sessions while preserving historical records.")) return;
         try {
             await axiosPrivate.delete(`/auth/resident/${id}/`);
             setResidents(prev => prev.filter(r => r.id !== id));
             if (selectedResident?.id === id) {
                 setSelectedResident(null);
             }
-            toast.success('Resident record deleted.');
+            toast.success('Resident account removed and access revoked.');
         } catch (err) {
             console.error("Failed to delete resident", err);
-            toast.error('Failed to delete resident.');
+            toast.error('Failed to remove resident.');
         }
     };
 

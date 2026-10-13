@@ -178,7 +178,7 @@ describe("ResidentsManagement Component", () => {
         fireEvent.click(deleteButtons[0]);
 
         expect(window.confirm).toHaveBeenCalledWith(
-            "Are you sure you want to permanently remove this resident? This will revoke all their access."
+            "Are you sure you want to remove this resident? This will revoke their login access and terminate all active sessions while preserving historical records."
         );
 
         await waitFor(() => {
