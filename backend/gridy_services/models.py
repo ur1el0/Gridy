@@ -108,6 +108,37 @@ class DocumentRequest(models.Model):
     # Official Receipt (OR) & Fee Auditing
     or_number = models.CharField(max_length=50, blank=True, null=True, help_text="Official Receipt Number issued by Barangay Treasurer")
     fee_amount = models.DecimalField(max_digits=8, decimal_places=2, default=0.00, help_text="Clearance issuance fee in PHP")
+
+    class FeeAssessmentStatus(models.TextChoices):
+        AWAITING_ASSESSMENT = "AWAITING_ASSESSMENT", "Awaiting Assessment"
+        ASSESSED = "ASSESSED", "Staff-Assessed Fee"
+        WAIVED = "WAIVED", "Staff-Approved Waiver"
+        STATUTORY_EXEMPT = "STATUTORY_EXEMPT", "Statutory Exemption"
+
+    fee_assessment_status = models.CharField(
+        max_length=25,
+        choices=FeeAssessmentStatus.choices,
+        default=FeeAssessmentStatus.AWAITING_ASSESSMENT,
+        help_text="Explicit provenance of clearance fee determination.",
+    )
+    fee_assessed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="assessed_document_requests",
+        help_text="Barangay staff member who assessed or waived the clearance fee.",
+    )
+    fee_assessed_at = models.DateTimeField(
+        blank=True,
+        null=True,
+        help_text="Timestamp when the clearance fee was assessed or waived.",
+    )
+    fee_waiver_reason = models.TextField(
+        blank=True,
+        help_text="Mandatory written justification when an ordinary fee is waived by staff.",
+    )
+
     payment_method = models.CharField(
         max_length=12,
         choices=PaymentMethod.choices,
@@ -144,6 +175,24 @@ class DocumentRequest(models.Model):
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def save(self, *args, **kwargs):
+        doc_type_clean = " ".join((self.document_type or "").split()).casefold()
+        from .fee_policy import FEE_EXEMPT_DOCUMENT_TYPES
+        from decimal import Decimal
+        try:
+            fee_decimal = Decimal(str(self.fee_amount)) if self.fee_amount is not None else Decimal("0.00")
+        except Exception:
+            fee_decimal = Decimal("0.00")
+
+        if doc_type_clean in FEE_EXEMPT_DOCUMENT_TYPES:
+            self.fee_assessment_status = self.FeeAssessmentStatus.STATUTORY_EXEMPT
+        elif (
+            fee_decimal > Decimal("0.00")
+            and self.fee_assessment_status == self.FeeAssessmentStatus.AWAITING_ASSESSMENT
+        ):
+            self.fee_assessment_status = self.FeeAssessmentStatus.ASSESSED
+        super().save(*args, **kwargs)
 
     def __str__(self):
         applicant = self.user.username if self.user else f"Walk-in: {self.walkin_name}"
