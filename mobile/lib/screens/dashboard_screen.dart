@@ -25,6 +25,7 @@ import 'profile_screen.dart';
 import 'my_issues_screen.dart';
 import 'announcements_screen.dart';
 import 'aid_requests_screen.dart';
+import 'navigator_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final DashboardService? dashboardService;
@@ -286,6 +287,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           context,
                           MaterialPageRoute(
                             builder: (_) => const AidRequestsScreen(),
+                          ),
+                        );
+                      },
+                      onAskBarangay: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => NavigatorScreen(
+                              apiClient: _dashboardService?.apiClient,
+                            ),
                           ),
                         );
                       },
