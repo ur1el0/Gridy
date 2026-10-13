@@ -7,6 +7,7 @@ API credentials stay strictly server-side and are transmitted via x-goog-api-key
 
 import json
 import logging
+import math
 from typing import Dict, List, Optional
 import requests
 from django.conf import settings
@@ -49,7 +50,8 @@ def clamp_timeout(val: Optional[float]) -> float:
     """
     Safely resolves and clamps the provider timeout.
     Enforces a default of 8.0s and an 8.0s hard maximum.
-    Non-positive, null, or invalid values fall back safely to 8.0s.
+    Non-finite (NaN, inf, -inf), non-positive (<= 0), null, or invalid values
+    fall back safely to 8.0s. Valid lower values (e.g. 4.5s) are preserved.
     """
     if val is None:
         return DEFAULT_TIMEOUT_SECONDS
@@ -57,7 +59,7 @@ def clamp_timeout(val: Optional[float]) -> float:
         val_float = float(val)
     except (ValueError, TypeError):
         return DEFAULT_TIMEOUT_SECONDS
-    if val_float <= 0.0:
+    if not math.isfinite(val_float) or val_float <= 0.0:
         return DEFAULT_TIMEOUT_SECONDS
     return min(val_float, MAX_TIMEOUT_SECONDS)
 

@@ -28,8 +28,9 @@ GOV_ID_PATTERNS = [
     re.compile(r'\b\d{2}[-\s]?\d{7}[-\s]?\d{1}\b'),              # SSS number (XX-XXXXXXX-X)
     re.compile(r'\b\d{2}[-\s]?\d{9}[-\s]?\d{1}\b'),              # PhilHealth 12-digit
     re.compile(r'\b[A-Z]\d{2}[-\s]?\d{2}[-\s]?\d{6}\b', re.IGNORECASE),  # PH Driver's License (e.g. N01-12-123456)
+    re.compile(r'\b[A-PR-WY]\d{7}[A-Z0-9]\b'),                   # PH Passport number (e.g. P1234567A, P12345678)
     re.compile(r'\b\d{3}[-\s]?\d{3}[-\s]?\d{3}(?:[-\s]?\d{3})?\b'),  # TIN
-    re.compile(r'\b(?:philsys|national id|sss|tin|gsis|passport|voter[\'s]? id|prc license|driver[\'s]? license|philhealth|umid|postal id|cedula)\s*(?:number|no\.?|#)?\s*(?:is|:)?\s*[\w\d-]+\b', re.IGNORECASE),
+    re.compile(r'\b(?:philsys|national id|sss|tin|gsis|passport|pasaporte|voter[\'s]? id|prc license|driver[\'s]? license|philhealth|umid|postal id|cedula|ctc)\s*(?:(?:number|no\.?|#)\s*(?:is|:)?|(?:is|:))\s*[\w\d-]*\d[\w\d-]*\b', re.IGNORECASE),
 ]
 
 # Patterns for personal identification and civil registry document probes (English, Tagalog, Taglish)
@@ -37,19 +38,22 @@ ID_DOCUMENT_SUBMISSION_PATTERNS = [
     re.compile(
         r'\b(?:eto\s+(?:po\s+)?ang|ito\s+(?:po\s+)?ang|here\s+is\s+my|attached\s+is\s+my|'
         r'upload(?:ed)?\s+my|check\s+my|paki-check\s+(?:ang\s+)?|tingnan\s+(?:mo\s+)?ang|'
-        r'pakitingnan\s+ang)\s*(?:valid\s+id|id|id\s+picture|kopya\s+ng\s+(?:valid\s+)?id|'
+        r'pakitingnan\s+ang|submitting\s+(?:my\s+)?|pinadala\s+ko\s+ang|nag-?upload\s+(?:ako\s+ng\s+)?)\s*'
+        r'(?:valid\s+id|id|id\s+picture|kopya\s+ng\s+(?:valid\s+)?id|'
         r'picture\s+ng\s+(?:valid\s+)?id|larawan\s+ng\s+(?:valid\s+)?id|birth\s+cert(?:ificate)?|'
-        r'cedula|passport|driver[\'s]?\s+license)\b',
+        r'cedula|passport|pasaporte|driver[\'s]?\s+license)\b',
         re.IGNORECASE,
     ),
     re.compile(
-        r'\b(?:my\s+valid\s+id\s+is|valid\s+id\s+ko\s+ay|eto\s+ang\s+cedula\s+ko|picture\s+ng\s+id\s+ko|'
-        r'kopya\s+ng\s+id\s+ko|id\s+picture\s+ko|attached\s+ang\s+id\s+ko|eto\s+id\s+ko)\b',
+        r'\b(?:my\s+(?:valid\s+id|passport|driver[\'s]?\s+license|cedula|birth\s+cert(?:ificate)?)\s+is|'
+        r'(?:valid\s+id|passport|driver[\'s]?\s+license|cedula)\s+ko\s+ay|eto\s+ang\s+(?:cedula|passport|id)\s+ko|'
+        r'(?:picture|kopya|larawan)\s+ng\s+(?:id|passport|cedula)\s+ko|(?:id|passport)\s+picture\s+ko|'
+        r'attached\s+ang\s+(?:id|passport)\s+ko|eto\s+(?:id|passport)\s+ko)\b',
         re.IGNORECASE,
     ),
     re.compile(
         r'\b(?:may\s+picture\s+ako\s+ng\s+(?:valid\s+)?id|picture\s+ng\s+passport\s+ko|'
-        r'larawan\s+ng\s+id\s+ko|senend\s+ko\s+ang\s+id\s+ko|sinend\s+ko\s+ang\s+id\s+ko)\b',
+        r'larawan\s+ng\s+id\s+ko|senend\s+ko\s+ang\s+id\s+ko|sinend\s+ko\s+ang\s+(?:id|passport)\s+ko)\b',
         re.IGNORECASE,
     ),
 ]
@@ -66,11 +70,23 @@ BILLING_DOC_PATTERNS = [
     ),
     re.compile(
         r'\b(?:proof\s+of\s+billing|billing\s+statement|meralco\s+bill|electric\s+bill|water\s+bill|'
-        r'maynilad\s+bill|patunay\s+ng\s+tirahan)\s+(?:ko|ko\s+po|is|ko\s+ay|account|number|no\.?|#)\b',
+        r'maynilad\s+bill|patunay\s+ng\s+tirahan)\s+(?:ko|ko\s+po|ko\s+ay)\b',
         re.IGNORECASE,
     ),
     re.compile(
         r'\b(?:my\s+billing\s+statement|my\s+meralco\s+bill|my\s+electric\s+bill|my\s+water\s+bill|my\s+proof\s+of\s+billing)\b',
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r'\b(?:meralco|maynilad|manila\s+water|electric\s+bill|water\s+bill|utility|billing)\s*(?:account|acc\.?|acct\.?|meter|cust(?:omer)?)\s*(?:(?:no\.?|number|#)\s*(?:is|:)?|(?:is|:))\s*[\w\d-]*\d[\w\d-]*\b',
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r'\b(?:billing\s+account|utility\s+account|electric\s+account|water\s+account)\s*(?:(?:no\.?|number|#)\s*(?:is|:)?|(?:is|:))\s*[\w\d-]*\d[\w\d-]*\b',
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r'\baccount\s*(?:no\.?|number|#)\s*(?:is|:)?\s*\d{6,}\b',
         re.IGNORECASE,
     ),
 ]
@@ -101,7 +117,8 @@ PAYMENT_PATTERNS = [
     re.compile(r'\b(?:proof\s+of\s+payment|official\s+receipt|or\s+number|or\s*#|receipt\s*(?:no\.?|number|#))\b', re.IGNORECASE),
     re.compile(r'\b(?:did\s+you\s+receive\s+my\s+payment|verify\s+my\s+payment|payment\s+status|check\s+my\s+payment|status\s+of\s+my\s+payment)\b', re.IGNORECASE),
     re.compile(r'\b(?:paid\s+(?:through|via|using)\s+(?:gcash|maya|bank))\b', re.IGNORECASE),
-    re.compile(r'\b(?:gcash|maya|bank|online)\s+(?:ref(?:erence)?|reference\s+no\.?|txn|transaction|receipt)\s*(?:no\.?|number|#)?\s*(?:is|:)?\s*[\w\d-]+\b', re.IGNORECASE),
+    re.compile(r'\b(?:gcash|maya|paymaya|bank|online)\s*(?:ref(?:erence)?|txn|transaction|receipt)?\s*(?:(?:no\.?|number|#)\s*(?:is|:)?|(?:is|:))\s*[\w\d-]*\d[\w\d-]*\b', re.IGNORECASE),
+    re.compile(r'\b(?:gcash|maya|paymaya)\s+(?:ref(?:erence)?|txn|transaction|receipt)\s*[\w\d-]*\d[\w\d-]*\b', re.IGNORECASE),
     re.compile(r'\b(?:ref(?:erence)?\s*(?:no\.?|number|#)\s*(?:is|:)?\s*[\w\d-]+|transaction\s*(?:id|no\.?|number|#)\s*(?:is|:)?\s*[\w\d-]+)\b', re.IGNORECASE),
     re.compile(r'\b(?:nagbayad\s+na\s+(?:po\s+)?ako|bayad\s+na\s+(?:po\s+)?ako|nabayaran\s+ko\s+na|pumasok\s+ba\s+ang\s+bayad\s+ko|na-receive\s+ba\s+ang\s+bayad\s+ko|natanggap\s+ba\s+ang\s+bayad\s+ko|tingnan\s+mo\s+kung\s+bayad\s+na|nagsend\s+na\s+(?:po\s+)?ako\s+ng\s+bayad|nagpadala\s+na\s+(?:po\s+)?ako\s+ng\s+bayad|sinend\s+ko\s+na\s+ang\s+bayad)\b', re.IGNORECASE),
     re.compile(r'\b(?:resibo\s+ko|resibo\s+number|resibo\s*#|patunay\s+ng\s+bayad|screenshot\s+ng\s+bayad|katibayan\s+ng\s+bayad)\b', re.IGNORECASE),
@@ -187,9 +204,17 @@ SOURCE_INJECTION_PATTERNS = [
 
 # Patterns for local source content screening (omitting suspect records)
 SENSITIVE_SOURCE_PATTERNS = [
-    re.compile(r'\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b'),  # 16-digit ID
+    re.compile(r'\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b'),  # 16-digit PhilSys / National ID
     re.compile(r'\b\d{2}[-\s]?\d{7}[-\s]?\d{1}\b'),              # SSS
-    re.compile(r'\b\d{3}[-\s]?\d{3}[-\s]?\d{3}\b'),              # TIN
+    re.compile(r'\b\d{2}[-\s]?\d{9}[-\s]?\d{1}\b'),              # PhilHealth 12-digit
+    re.compile(r'\b[A-Z]\d{2}[-\s]?\d{2}[-\s]?\d{6}\b', re.IGNORECASE),  # PH Driver's License
+    re.compile(r'\b[A-PR-WY]\d{7}[A-Z0-9]\b'),                   # PH Passport format
+    re.compile(r'\b\d{3}[-\s]?\d{3}[-\s]?\d{3}(?:[-\s]?\d{3})?\b'),  # TIN
+    re.compile(r'\b(?:philsys|national id|sss|tin|gsis|passport|pasaporte|voter[\'s]? id|prc license|driver[\'s]? license|philhealth|umid|postal id|cedula|ctc)\s*(?:(?:number|no\.?|#)\s*(?:is|:)?|(?:is|:))\s*[\w\d-]*\d[\w\d-]*\b', re.IGNORECASE),
+    re.compile(r'\b(?:meralco|maynilad|manila\s+water|electric\s+bill|water\s+bill|utility|billing)\s*(?:account|acc\.?|acct\.?|meter|cust(?:omer)?)\s*(?:(?:no\.?|number|#)\s*(?:is|:)?|(?:is|:))\s*[\w\d-]*\d[\w\d-]*\b', re.IGNORECASE),
+    re.compile(r'\baccount\s*(?:no\.?|number|#)\s*(?:is|:)?\s*\d{6,}\b', re.IGNORECASE),
+    re.compile(r'\b(?:gcash|maya|paymaya|bank|online)\s*(?:ref(?:erence)?|txn|transaction|receipt)?\s*(?:(?:no\.?|number|#)\s*(?:is|:)?|(?:is|:))\s*[\w\d-]*\d[\w\d-]*\b', re.IGNORECASE),
+    re.compile(r'\b(?:ref(?:erence)?\s*(?:no\.?|number|#)\s*(?:is|:)?\s*[\w\d-]+|transaction\s*(?:id|no\.?|number|#)\s*(?:is|:)?\s*[\w\d-]+)\b', re.IGNORECASE),
 ]
 
 

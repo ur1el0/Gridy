@@ -54,21 +54,21 @@ INVALID_CONTACT_PLACEHOLDERS = {
 }
 
 
-def sanitize_source_text(text: str) -> Optional[str]:
+def sanitize_source_text(text: str, min_len: int = 15) -> Optional[str]:
     """
     Strips web URLs, links with query parameters, and markdown links from source text.
-    If stripping leaves the content empty or misleadingly brief (< 15 characters),
+    If stripping leaves the content empty or misleadingly brief (< min_len characters),
     returns None to safely omit the affected record from the navigator prompt bundle.
     """
     if not text:
         return None
     # Strip markdown link syntax: [link text](url) -> keep link text
-    cleaned = re.sub(r'\[([^\]]+)\]\([^\)]+\)', r'\1', text)
-    # Strip web URLs
+    cleaned = re.sub(r'\[([^\]]+)\]\s*\([^\)]+\)', r'\1', text)
+    # Strip web URLs (http://, https://, www., including query parameters and fragments)
     cleaned = URL_REGEX.sub('', cleaned)
     # Collapse multiple whitespaces
     cleaned = re.sub(r'\s+', ' ', cleaned).strip()
-    if len(cleaned) < 15:
+    if len(cleaned) < min_len:
         return None
     return cleaned
 
@@ -124,8 +124,9 @@ def retrieve_public_sources(barangay_id: int) -> Dict[str, dict]:
             logger.info("Omitted announcement %s from navigator bundle due to sensitive or prompt-injection pattern match.", ann.id)
             continue
 
-        sanitized_content = sanitize_source_text(ann.content)
-        if sanitized_content is None:
+        sanitized_title = sanitize_source_text(ann.title, min_len=3)
+        sanitized_content = sanitize_source_text(ann.content, min_len=15)
+        if sanitized_title is None or sanitized_content is None:
             logger.info("Omitted announcement %s from navigator bundle because sanitization left misleading or insufficient content.", ann.id)
             continue
 
@@ -134,7 +135,7 @@ def retrieve_public_sources(barangay_id: int) -> Dict[str, dict]:
         source_id = f"announcement:{ann.id}"
         sources[source_id] = {
             "id": source_id,
-            "title": ann.title,
+            "title": sanitized_title,
             "category": "announcement",
             "reference": f"Barangay Announcement #{ann.id}",
             "updated_at": ann.updated_at.isoformat() if ann.updated_at else None,
@@ -157,8 +158,10 @@ def retrieve_public_sources(barangay_id: int) -> Dict[str, dict]:
             logger.info("Omitted activity %s from navigator bundle due to sensitive or prompt-injection pattern match.", act.id)
             continue
 
-        sanitized_desc = sanitize_source_text(act.description)
-        if sanitized_desc is None:
+        sanitized_title = sanitize_source_text(act.title, min_len=3)
+        sanitized_desc = sanitize_source_text(act.description, min_len=15)
+        sanitized_location = sanitize_source_text(act.location, min_len=3)
+        if sanitized_title is None or sanitized_desc is None or sanitized_location is None:
             logger.info("Omitted activity %s from navigator bundle because sanitization left misleading or insufficient content.", act.id)
             continue
 
@@ -167,14 +170,14 @@ def retrieve_public_sources(barangay_id: int) -> Dict[str, dict]:
 
         source_id = f"activity:{act.id}"
         act_content = (
-            f"Activity: {act.title}. Scheduled Date & Time: {event_time_str} (Asia/Manila). "
-            f"Location: {act.location}. Description: {sanitized_desc}"
+            f"Activity: {sanitized_title}. Scheduled Date & Time: {event_time_str} (Asia/Manila). "
+            f"Location: {sanitized_location}. Description: {sanitized_desc}"
         )
         act_content = truncate_to_limit(act_content, MAX_ACTIVITY_RECORD_CONTENT_CHARS)
 
         sources[source_id] = {
             "id": source_id,
-            "title": act.title,
+            "title": sanitized_title,
             "category": "activity",
             "reference": f"Barangay Activity #{act.id}",
             "updated_at": act.updated_at.isoformat() if act.updated_at else None,

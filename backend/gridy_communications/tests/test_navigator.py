@@ -26,12 +26,14 @@ from gridy_auth.models import Barangay, User, Resident
 from gridy_communications.models import Announcement, ActivitySchedule, EmergencyHotline, FAQ
 from gridy_communications.navigator.provider import (
     GeminiNavigatorProvider,
+    clamp_timeout,
     ProviderTimeoutError,
     ProviderNetworkError,
     ProviderQuotaError,
     ProviderMalformedOutputError,
 )
 from django.utils import timezone
+from config.settings import _parse_safe_timeout
 from gridy_communications.navigator.catalog import STATUTORY_CATALOG
 from gridy_communications.navigator.guard import (
     contains_sensitive_data,
@@ -43,6 +45,7 @@ from gridy_communications.navigator.prompt import build_navigator_prompt, MAX_TO
 from gridy_communications.navigator.retrieval import (
     is_valid_office_contact,
     retrieve_public_sources,
+    sanitize_source_text,
     truncate_to_limit,
     MAX_ANNOUNCEMENT_CONTENT_CHARS,
     MAX_ACTIVITY_CONTENT_CHARS,
@@ -1033,7 +1036,31 @@ class NavigatorAPITestCase(APITestCase):
         self.assertIn("Free rabies shots for pets.", content)
 
     def test_gemini_provider_timeout_clamping_and_defaults(self):
-        """Provider timeout enforces 8.0s default and hard 8.0s maximum clamp (REV-14)."""
+        """Provider timeout enforces 8.0s default, rejects non-finite/non-positive/malformed, clamps to 8.0s (REV-14, REV-19)."""
+        # Direct clamp_timeout unit tests
+        self.assertEqual(clamp_timeout(None), 8.0)
+        self.assertEqual(clamp_timeout("8.0"), 8.0)
+        self.assertEqual(clamp_timeout(8.0), 8.0)
+        self.assertEqual(clamp_timeout(4.5), 4.5)
+        self.assertEqual(clamp_timeout("4.5"), 4.5)
+        self.assertEqual(clamp_timeout(15.0), 8.0)
+        self.assertEqual(clamp_timeout("15.0"), 8.0)
+        self.assertEqual(clamp_timeout(0.0), 8.0)
+        self.assertEqual(clamp_timeout("0"), 8.0)
+        self.assertEqual(clamp_timeout(-5.0), 8.0)
+        self.assertEqual(clamp_timeout("-5.0"), 8.0)
+        self.assertEqual(clamp_timeout("malformed"), 8.0)
+        self.assertEqual(clamp_timeout("nan"), 8.0)
+        self.assertEqual(clamp_timeout("NaN"), 8.0)
+        self.assertEqual(clamp_timeout(float("nan")), 8.0)
+        self.assertEqual(clamp_timeout("inf"), 8.0)
+        self.assertEqual(clamp_timeout("Infinity"), 8.0)
+        self.assertEqual(clamp_timeout(float("inf")), 8.0)
+        self.assertEqual(clamp_timeout("-inf"), 8.0)
+        self.assertEqual(clamp_timeout("-Infinity"), 8.0)
+        self.assertEqual(clamp_timeout(float("-inf")), 8.0)
+
+        # Provider initialization tests
         provider_default = GeminiNavigatorProvider()
         self.assertEqual(provider_default.timeout, 8.0)
 
@@ -1052,6 +1079,33 @@ class NavigatorAPITestCase(APITestCase):
         with override_settings(PUBLIC_NAVIGATOR_TIMEOUT_SECONDS=4.5):
             provider_valid = GeminiNavigatorProvider()
             self.assertEqual(provider_valid.timeout, 4.5)
+
+        with override_settings(PUBLIC_NAVIGATOR_TIMEOUT_SECONDS=float("nan")):
+            provider_nan = GeminiNavigatorProvider()
+            self.assertEqual(provider_nan.timeout, 8.0)
+
+        with override_settings(PUBLIC_NAVIGATOR_TIMEOUT_SECONDS=float("inf")):
+            provider_inf = GeminiNavigatorProvider()
+            self.assertEqual(provider_inf.timeout, 8.0)
+
+        with override_settings(PUBLIC_NAVIGATOR_TIMEOUT_SECONDS="invalid_timeout_str"):
+            provider_invalid_str = GeminiNavigatorProvider()
+            self.assertEqual(provider_invalid_str.timeout, 8.0)
+
+        # Settings safe parsing helper tests
+        self.assertEqual(_parse_safe_timeout(None), 8.0)
+        self.assertEqual(_parse_safe_timeout("4.5"), 4.5)
+        self.assertEqual(_parse_safe_timeout("12.0"), 8.0)
+        self.assertEqual(_parse_safe_timeout("malformed"), 8.0)
+        self.assertEqual(_parse_safe_timeout("NaN"), 8.0)
+        self.assertEqual(_parse_safe_timeout("Infinity"), 8.0)
+        self.assertEqual(_parse_safe_timeout("-Infinity"), 8.0)
+        self.assertEqual(_parse_safe_timeout("-1"), 8.0)
+        self.assertEqual(_parse_safe_timeout("0"), 8.0)
+
+        # Feature disabled by default check
+        from django.conf import settings as django_settings
+        self.assertFalse(django_settings.PUBLIC_NAVIGATOR_ENABLED)
 
     def test_announcement_with_phone_number_is_omitted(self):
         """Announcements containing telephone numbers (provincial landline or mobile) are omitted from sources."""
@@ -1210,43 +1264,314 @@ class NavigatorAPITestCase(APITestCase):
         self.assertLessEqual(total_chars, MAX_AGGREGATE_SOURCE_BUNDLE_CHARS)
 
     def test_statutory_catalog_legal_grounding(self):
-        """Verifies accurate legal grounding, citations, and local policy distinctions in catalog."""
+        """Verifies accurate legal grounding, citations, and local policy distinctions in catalog (REV-18)."""
         catalog_map = {entry["id"]: entry for entry in STATUTORY_CATALOG}
 
-        # 1. First Time Jobseeker
+        # 1. First Time Jobseeker (RA 11261)
         self.assertIn("statutory:first_time_jobseeker", catalog_map)
         ftj = catalog_map["statutory:first_time_jobseeker"]
         self.assertIn("11261", ftj["reference"])
         self.assertIn("IRR", ftj["reference"])
+        self.assertEqual(ftj["category"], "statutory")
+        # Section 3 provides the waiver and one-time availment rule
+        self.assertIn("Section 3", ftj["content"])
+        self.assertIn("fee waiver may be availed of only once", ftj["content"])
+        # Section 4 lists covered transactions subject to Section 5
         self.assertIn("Section 4", ftj["content"])
+        # Section 5 requires Barangay certification
         self.assertIn("Section 5", ftj["content"])
+        self.assertIn("Barangay Certification", ftj["content"])
+        # Do not attribute one-time rule to Section 5
+        self.assertNotIn("Section 5 limits this statutory fee exemption to one-time", ftj["content"])
         self.assertIn("Oath of Undertaking", ftj["content"])
-        self.assertIn("Barangay Hall", ftj["content"])
+        # Distinguish FTJS exemption from ordinary/general clearances
+        self.assertIn("strictly limited to first-time jobseekers", ftj["content"])
+        self.assertIn("non-employment purposes are not exempt", ftj["content"])
 
-        # 2. Barangay Clearance
+        # 2. Barangay Clearance (RA 7160 Sec. 152(c) strictly limited to business clearances)
         self.assertIn("statutory:barangay_clearance", catalog_map)
         bc = catalog_map["statutory:barangay_clearance"]
         self.assertIn("7160", bc["reference"])
-        self.assertIn("152(c)", bc["reference"])
+        self.assertEqual(bc["category"], "statutory")
+        self.assertIn("Section 152(c)", bc["content"])
+        self.assertIn("strictly limited", bc["content"])
+        self.assertIn("does not establish ordinary personal-clearance fees", bc["content"])
         self.assertIn("ordinance", bc["content"].lower())
         self.assertIn("Barangay Hall", bc["content"])
 
-        # 3. Certificate of Indigency
+        # 3. Certificate of Indigency (Local administrative policy, not statutory)
         self.assertIn("statutory:certificate_of_indigency", catalog_map)
         ind = catalog_map["statutory:certificate_of_indigency"]
+        self.assertEqual(ind["category"], "administrative_policy")
         self.assertIn("Social Welfare", ind["reference"])
-        self.assertIn("ordinance", ind["content"].lower())
+        self.assertIn("administrative policy", ind["content"].lower())
+        self.assertIn("rather than a national statutory mandate", ind["content"])
         self.assertIn("Barangay Hall", ind["content"])
 
-        # 4. Certificate of Residency
+        # 4. Certificate of Residency (Local administrative policy, not statutory)
         self.assertIn("statutory:certificate_of_residency", catalog_map)
         res = catalog_map["statutory:certificate_of_residency"]
-        self.assertIn("Ordinance", res["reference"])
+        self.assertEqual(res["category"], "administrative_policy")
+        self.assertIn("Administrative Policy", res["reference"])
+        self.assertIn("administrative policy", res["content"].lower())
+        self.assertIn("rather than a national statutory mandate", res["content"])
         self.assertIn("Barangay Hall", res["content"])
 
-        # 5. Business Clearance
+        # 5. Business Clearance (No claims of scaling by capitalization or gross sales)
         self.assertIn("statutory:business_clearance", catalog_map)
         bus = catalog_map["statutory:business_clearance"]
+        self.assertEqual(bus["category"], "statutory")
         self.assertIn("7160", bus["reference"])
         self.assertIn("152(c)", bus["reference"])
+        self.assertIn("Section 152(c)", bus["content"])
+        self.assertNotIn("capitalization", bus["content"].lower())
+        self.assertNotIn("gross sales", bus["content"].lower())
+        self.assertNotIn("commonly scaled", bus["content"].lower())
         self.assertIn("Barangay Hall", bus["content"])
+
+    @override_settings(PUBLIC_NAVIGATOR_ENABLED=True, GEMINI_API_KEY="test-key")
+    @patch("gridy_communications.views.get_navigator_provider")
+    def test_privacy_guard_strengthened_screening_and_controls(self, mock_get_provider):
+        """Verifies strengthened query screening (IDs, passport, billing, GCash/Maya) and legitimate controls (REV-16)."""
+        self.client.force_login(self.resident_user_a)
+
+        # 1. Government IDs and Passport values
+        gov_probes = [
+            ("PhilSys number: 1234-5678-9012-3456", "privacy_guard_gov_id"),
+            ("My SSS is 12-3456789-0", "privacy_guard_gov_id"),
+            ("PhilHealth no. 12-345678901-2", "privacy_guard_gov_id"),
+            ("Driver's License N01-12-123456", "privacy_guard_gov_id"),
+            ("My passport is P1234567A", "privacy_guard_doc_submission"),
+            ("passport no: P12345678", "privacy_guard_gov_id"),
+            ("TIN: 123-456-789-000", "privacy_guard_gov_id"),
+        ]
+        for query_text, expected_reason in gov_probes:
+            cache.clear()
+            response = self.client.post(self.canonical_url, {"query": query_text})
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(response.data["status"], "abstained")
+            self.assertEqual(response.data["reason"], expected_reason)
+        mock_get_provider.assert_not_called()
+
+        # 2. Passport and ID submissions (English, Tagalog, Taglish)
+        id_submission_probes = [
+            "Here is my passport for verification",
+            "Eto po ang passport ko",
+            "Picture ng passport ko",
+            "Submitting my valid id for clearance",
+            "Sinend ko ang passport ko",
+        ]
+        for query_text in id_submission_probes:
+            cache.clear()
+            response = self.client.post(self.canonical_url, {"query": query_text})
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(response.data["status"], "abstained")
+            self.assertEqual(response.data["reason"], "privacy_guard_doc_submission")
+        mock_get_provider.assert_not_called()
+
+        # 3. Personal billing account details
+        billing_probes = [
+            "Here is my Meralco bill",
+            "Meralco account no: 1234567890",
+            "Water bill account: 987654321",
+            "Electric bill account # 12345678",
+            "Proof of billing ko po",
+            "account number: 9876543210",
+        ]
+        for query_text in billing_probes:
+            cache.clear()
+            response = self.client.post(self.canonical_url, {"query": query_text})
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(response.data["status"], "abstained")
+            self.assertEqual(response.data["reason"], "privacy_guard_billing_doc")
+        mock_get_provider.assert_not_called()
+
+        # 4. GCash / Maya payment references
+        payment_probes = [
+            "GCash ref: 123456789012",
+            "Maya reference no. 987654321098",
+            "Transaction ID: TXN-2026-9988",
+            "Ref #: 1234567890",
+            "Nabayaran ko na po gamit ang GCash, ito ang resibo ko",
+            "paid via gcash",
+        ]
+        for query_text in payment_probes:
+            cache.clear()
+            response = self.client.post(self.canonical_url, {"query": query_text})
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            self.assertEqual(response.data["status"], "abstained")
+            self.assertEqual(response.data["reason"], "privacy_guard_payment")
+        mock_get_provider.assert_not_called()
+
+        # 5. Legitimate public inquiries (Control group: MUST NOT be rejected)
+        mock_provider = mock_get_provider.return_value
+        mock_provider.is_configured.return_value = True
+        mock_provider.generate_answer.return_value = {
+            "status": "answered",
+            "answer": "Public information response.",
+            "reason": None,
+            "cited_sources": ["statutory:barangay_clearance"],
+        }
+
+        legitimate_controls = [
+            "Kailangan ba ng proof of billing para sa certificate of residency?",
+            "Is proof of billing required for certificate of residency?",
+            "Pwede ba ang passport para sa barangay clearance?",
+            "Is passport accepted as valid ID?",
+            "Magkano ang bayad sa barangay clearance?",
+            "May bayad ba ang barangay clearance?",
+        ]
+        for query_text in legitimate_controls:
+            cache.clear()
+            mock_get_provider.reset_mock()
+            response = self.client.post(self.canonical_url, {"query": query_text})
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+            # Must NOT be rejected by privacy guard
+            self.assertFalse(str(response.data.get("reason", "")).startswith("privacy_guard_"))
+            mock_get_provider.assert_called()
+
+    def test_source_screening_omits_sensitive_records_and_preserves_public_data(self):
+        """Opted-in announcements and activities with sensitive data are omitted; hotlines and catalog stay (REV-16)."""
+        # Announcement with PhilHealth ID
+        ann_philhealth = Announcement.objects.create(
+            title="PhilHealth Registration Drive",
+            content="Member registration update for PhilHealth 12-345678901-2 on Monday.",
+            navigator_ai_enabled=True,
+            created_by=self.official_a,
+        )
+        # Announcement with GCash reference
+        ann_gcash = Announcement.objects.create(
+            title="Payment Confirmation Notice",
+            content="Official confirmation for GCash ref: 998877665544 at the hall.",
+            navigator_ai_enabled=True,
+            created_by=self.official_a,
+        )
+        # Activity with personal billing account
+        future_dt = timezone.now() + timezone.timedelta(days=2)
+        act_billing = ActivitySchedule.objects.create(
+            title="Meralco Meter Check",
+            description="Inspection of Meralco account no: 1234567890 in Sector 4.",
+            location="Barangay Hall Plaza",
+            event_datetime=future_dt,
+            navigator_ai_enabled=True,
+            created_by=self.official_a,
+        )
+        # Activity with passport format
+        act_passport = ActivitySchedule.objects.create(
+            title="Lost Document Notification",
+            description="Found lost passport P1234567A near the basketball court.",
+            location="Barangay Police Desk",
+            event_datetime=future_dt,
+            navigator_ai_enabled=True,
+            created_by=self.official_a,
+        )
+        # Clean announcement
+        ann_clean = Announcement.objects.create(
+            title="Clean Community Advisory",
+            content="General reminder for proper waste disposal and recycling schedule.",
+            navigator_ai_enabled=True,
+            created_by=self.official_a,
+        )
+
+        with self.assertLogs("gridy_communications.navigator.retrieval", level="INFO") as cm:
+            sources = retrieve_public_sources(self.barangay_a.id)
+
+        # Confirm that logs record only IDs, never raw sensitive text
+        logged_text = " ".join(cm.output)
+        self.assertNotIn("12-345678901-2", logged_text)
+        self.assertNotIn("998877665544", logged_text)
+        self.assertNotIn("1234567890", logged_text)
+        self.assertNotIn("P1234567A", logged_text)
+
+        # Omitted sensitive records
+        self.assertNotIn(f"announcement:{ann_philhealth.id}", sources)
+        self.assertNotIn(f"announcement:{ann_gcash.id}", sources)
+        self.assertNotIn(f"activity:{act_billing.id}", sources)
+        self.assertNotIn(f"activity:{act_passport.id}", sources)
+
+        # Clean announcement retained
+        self.assertIn(f"announcement:{ann_clean.id}", sources)
+
+        # Intentionally public statutory catalog entries retained
+        self.assertIn("statutory:first_time_jobseeker", sources)
+        self.assertIn("statutory:barangay_clearance", sources)
+
+        # Intentionally public emergency hotline retained
+        hotline = EmergencyHotline.objects.create(
+            name="San Isidro Fire Substation",
+            number="(042) 710-9999",
+            category="BFP",
+            is_active=True,
+            created_by=self.official_a,
+        )
+        sources_with_hotline = retrieve_public_sources(self.barangay_a.id)
+        self.assertIn(f"hotline:{hotline.id}", sources_with_hotline)
+
+    def test_provider_bound_source_field_sanitization_and_prompt_cleanliness(self):
+        """Sanitizes titles, locations, and descriptions, omitting records if text is insufficient (REV-17)."""
+        future_dt = timezone.now() + timezone.timedelta(days=3)
+
+        # 1. Announcement with URL and markdown link in title
+        ann_with_urls = Announcement.objects.create(
+            title="Medical Mission [Register](https://health.gov.ph?ref=123) https://bit.ly/mission",
+            content="Free medical checkup and pediatric vitamins at the multi-purpose court.",
+            navigator_ai_enabled=True,
+            created_by=self.official_a,
+        )
+
+        # 2. Announcement where title is ONLY a URL (should be omitted)
+        ann_url_only_title = Announcement.objects.create(
+            title="https://malicious.example.com/phishing",
+            content="Official community announcement for residents.",
+            navigator_ai_enabled=True,
+            created_by=self.official_a,
+        )
+
+        # 3. Activity with URL and markdown link in location
+        act_with_urls = ActivitySchedule.objects.create(
+            title="Youth Leadership Seminar [Details](https://youth.gov.ph)",
+            description="Leadership training and workshops for barangay youth council members.",
+            location="Barangay Covered Court [Map](https://maps.google.com/?q=14.1,121.2) https://maps.app.goo.gl/xyz",
+            event_datetime=future_dt,
+            navigator_ai_enabled=True,
+            created_by=self.official_a,
+        )
+
+        # 4. Activity where location is ONLY a URL (should be omitted)
+        act_url_only_loc = ActivitySchedule.objects.create(
+            title="Community Assembly Meeting",
+            description="General assembly for all registered household heads.",
+            location="https://maps.example.com",
+            event_datetime=future_dt,
+            navigator_ai_enabled=True,
+            created_by=self.official_a,
+        )
+
+        sources = retrieve_public_sources(self.barangay_a.id)
+
+        # Omitted records whose title or location became empty / insufficient
+        self.assertNotIn(f"announcement:{ann_url_only_title.id}", sources)
+        self.assertNotIn(f"activity:{act_url_only_loc.id}", sources)
+
+        # Retained records have sanitized fields
+        self.assertIn(f"announcement:{ann_with_urls.id}", sources)
+        ann_source = sources[f"announcement:{ann_with_urls.id}"]
+        self.assertEqual(ann_source["title"], "Medical Mission Register")
+        self.assertNotIn("http", ann_source["title"])
+        self.assertNotIn("?ref=", ann_source["title"])
+
+        self.assertIn(f"activity:{act_with_urls.id}", sources)
+        act_source = sources[f"activity:{act_with_urls.id}"]
+        self.assertEqual(act_source["title"], "Youth Leadership Seminar Details")
+        self.assertNotIn("http", act_source["title"])
+        self.assertNotIn("http", act_source["content"])
+        self.assertIn("Location: Barangay Covered Court Map", act_source["content"])
+
+        # Capture exact prompt from build_navigator_prompt and verify prompt cleanliness
+        prompt = build_navigator_prompt("Kailan ang medical mission?", list(sources.values()))
+        self.assertIsNotNone(prompt)
+        self.assertNotIn("https://", prompt)
+        self.assertNotIn("http://", prompt)
+        self.assertNotIn("www.", prompt)
+        self.assertNotIn("?ref=", prompt)
+        self.assertNotIn("](http", prompt)
