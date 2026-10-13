@@ -25,6 +25,7 @@ class DocumentRequestSerializer(FeePolicyValidationMixin, serializers.ModelSeria
     payment_instructions_snapshot = serializers.SerializerMethodField()
     payment_proof_url = serializers.SerializerMethodField()
     payment_transacted_at = serializers.DateTimeField(read_only=True)
+    fee_assessed_by_name = serializers.SerializerMethodField()
 
     class Meta:
         model = DocumentRequest
@@ -43,6 +44,10 @@ class DocumentRequestSerializer(FeePolicyValidationMixin, serializers.ModelSeria
             'admin_notes',
             'or_number',
             'fee_amount',
+            'fee_assessment_status',
+            'fee_assessed_at',
+            'fee_waiver_reason',
+            'fee_assessed_by_name',
             'payment_method',
             'payment_recipient',
             'payment_recipient_name_snapshot',
@@ -62,6 +67,10 @@ class DocumentRequestSerializer(FeePolicyValidationMixin, serializers.ModelSeria
             'admin_notes',
             'or_number',
             'fee_amount',
+            'fee_assessment_status',
+            'fee_assessed_at',
+            'fee_waiver_reason',
+            'fee_assessed_by_name',
             'payment_method',
             'payment_recipient',
             'payment_recipient_name_snapshot',
@@ -85,6 +94,13 @@ class DocumentRequestSerializer(FeePolicyValidationMixin, serializers.ModelSeria
         if obj.user and hasattr(obj.user, 'profile') and obj.user.profile.purok:
             return str(obj.user.profile.purok)
         return str(obj.walkin_purok) if obj.walkin_purok else "N/A"
+
+    def get_fee_assessed_by_name(self, obj) -> str | None:
+        if not obj.fee_assessed_by:
+            return None
+        profile = getattr(obj.fee_assessed_by, 'profile', None)
+        full_name = getattr(profile, 'full_name', None)
+        return full_name if full_name else obj.fee_assessed_by.username
 
     def _can_view_payment_recipient_snapshot(self, obj):
         request = self.context.get("request")
@@ -129,6 +145,11 @@ class DocumentRequestSerializer(FeePolicyValidationMixin, serializers.ModelSeria
 
 
 class DocumentRequestReviewSerializer(FeePolicyValidationMixin, serializers.ModelSerializer):
+    fee_waiver_reason = serializers.CharField(
+        required=False,
+        allow_blank=True,
+    )
+
     class Meta:
         model = DocumentRequest
         fields = [
@@ -137,6 +158,7 @@ class DocumentRequestReviewSerializer(FeePolicyValidationMixin, serializers.Mode
             "or_number",
             "fee_amount",
             "payment_method",
+            "fee_waiver_reason",
         ]
 
     def validate_status(self, value):

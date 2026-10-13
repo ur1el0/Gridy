@@ -668,7 +668,10 @@ class PaymentSubmissionAndReviewWorkflowTests(APITestCase):
         with self.captureOnCommitCallbacks(execute=True):
             response = self.client.patch(
                 reverse("document-request-validate", args=[document.pk]),
-                {"fee_amount": 0},
+                {
+                    "fee_amount": 0,
+                    "fee_waiver_reason": "Resident qualified for fee waiver",
+                },
                 format="json",
             )
 
