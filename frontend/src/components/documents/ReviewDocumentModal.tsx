@@ -18,7 +18,13 @@ interface ReviewDocumentModalProps {
     selectedRequest: DocumentRequest | null;
     closeModal: () => void;
     getStatusBadge: (status: string) => string;
-    handleStatusUpdate: (newStatus: string, orNumber?: string, feeAmount?: string, paymentMethod?: string) => void;
+    handleStatusUpdate: (
+        newStatus: string,
+        orNumber?: string,
+        feeAmount?: string,
+        paymentMethod?: string,
+        feeWaiverReason?: string,
+    ) => void;
     handlePaymentReview: (status: 'VERIFIED' | 'REJECTED', note: string, orNumber?: string) => void;
     handleSaveOrNumber?: (orNumber: string) => Promise<void> | void;
     isUpdating: boolean;
@@ -169,9 +175,11 @@ export const ReviewDocumentModal = ({
 }: ReviewDocumentModalProps) => {
     const [orNumber, setOrNumber] = useState('');
     const [feeAmount, setFeeAmount] = useState('50.00');
+    const [isWaived, setIsWaived] = useState(false);
+    const [feeWaiverReason, setFeeWaiverReason] = useState('');
     const [paymentMethod, setPaymentMethod] = useState('');
     const [paymentReviewNote, setPaymentReviewNote] = useState('');
-    const isFeeExempt = isFeeExemptDocumentType(selectedRequest?.document_type);
+    const isFeeExempt = isFeeExemptDocumentType(selectedRequest?.document_type) || selectedRequest?.fee_assessment_status === 'STATUTORY_EXEMPT';
     const dialogTitleId = useId();
     const dialogRef = useModalFocus<HTMLDivElement>(Boolean(selectedRequest), closeModal);
 
@@ -180,29 +188,77 @@ export const ReviewDocumentModal = ({
             setOrNumber(selectedRequest.or_number || '');
             setPaymentMethod(selectedRequest.payment_method || '');
             setPaymentReviewNote('');
-            setFeeAmount(
-                isFeeExemptDocumentType(selectedRequest.document_type)
-                    ? '0.00'
-                    : selectedRequest.fee_amount != null
+
+            const isStatutory = isFeeExemptDocumentType(selectedRequest.document_type) || selectedRequest.fee_assessment_status === 'STATUTORY_EXEMPT';
+            if (isStatutory) {
+                setFeeAmount('0.00');
+                setIsWaived(false);
+                setFeeWaiverReason('');
+            } else if (selectedRequest.fee_assessment_status === 'WAIVED') {
+                setFeeAmount('0.00');
+                setIsWaived(true);
+                setFeeWaiverReason(selectedRequest.fee_waiver_reason || '');
+            } else if (
+                selectedRequest.fee_assessment_status === 'ASSESSED' ||
+                (selectedRequest.fee_amount != null && Number(selectedRequest.fee_amount) > 0)
+            ) {
+                setFeeAmount(Number(selectedRequest.fee_amount).toFixed(2));
+                setIsWaived(false);
+                setFeeWaiverReason('');
+            } else {
+                setFeeAmount(
+                    selectedRequest.fee_amount != null && Number(selectedRequest.fee_amount) > 0
                         ? Number(selectedRequest.fee_amount).toFixed(2)
-                        : '50.00',
-            );
+                        : '50.00'
+                );
+                setIsWaived(false);
+                setFeeWaiverReason('');
+            }
         }
     }, [selectedRequest]);
 
     if (!selectedRequest) return null;
 
     const onUpdate = (status: string) => {
-        handleStatusUpdate(
-            status,
-            orNumber.trim(),
-            isFeeExempt ? '0.00' : feeAmount.trim(),
-            isFeeExempt ? '' : paymentMethod,
-        );
+        const effectiveFee = isFeeExempt || isWaived ? '0.00' : feeAmount.trim();
+        const effectiveMethod = isFeeExempt || isWaived ? '' : paymentMethod;
+        const effectiveReason = isWaived ? feeWaiverReason.trim() : '';
+
+        if (status === 'READY_FOR_PICKUP' && !isFeeExempt) {
+            if (isWaived) {
+                if (!effectiveReason) {
+                    toast.error('A written justification is required to waive clearance fees.');
+                    return;
+                }
+            } else {
+                if (!effectiveFee || Number(effectiveFee) <= 0) {
+                    toast.error('Document fee must be assessed or explicitly waived before marking ready for pickup.');
+                    return;
+                }
+            }
+        }
+
+        if (effectiveReason) {
+            handleStatusUpdate(
+                status,
+                orNumber.trim(),
+                effectiveFee,
+                effectiveMethod,
+                effectiveReason,
+            );
+        } else {
+            handleStatusUpdate(
+                status,
+                orNumber.trim(),
+                effectiveFee,
+                effectiveMethod,
+            );
+        }
     };
 
     const handleRelease = () => {
-        if (!isFeeExempt && Number(feeAmount) > 0 && !orNumber.trim()) {
+        const effectiveFee = isFeeExempt || isWaived ? '0.00' : feeAmount.trim();
+        if (!isFeeExempt && !isWaived && Number(effectiveFee) > 0 && !orNumber.trim()) {
             toast.error('Official Receipt (O.R.) number is required before releasing a paid document.');
             return;
         }
@@ -285,12 +341,45 @@ export const ReviewDocumentModal = ({
                                     <h4 className="text-xs font-extrabold text-sky-900 uppercase tracking-wider flex items-center gap-1.5">
                                         Official Assessment & Treasury
                                     </h4>
-                                    {selectedRequest.or_number && (
-                                        <span className="px-2 py-0.5 text-xs font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 rounded">
-                                            O.R. #{selectedRequest.or_number}
-                                        </span>
-                                    )}
+                                    <div className="flex items-center gap-1.5 flex-wrap justify-end">
+                                        {isFeeExempt && (
+                                            <span className="px-2 py-0.5 text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 rounded">
+                                                Statutory Exemption
+                                            </span>
+                                        )}
+                                        {!isFeeExempt && selectedRequest.fee_assessment_status === 'WAIVED' && (
+                                            <span className="px-2 py-0.5 text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 rounded">
+                                                Staff Waiver
+                                            </span>
+                                        )}
+                                        {!isFeeExempt && selectedRequest.fee_assessment_status === 'ASSESSED' && (
+                                            <span className="px-2 py-0.5 text-xs font-bold bg-blue-100 text-blue-800 border border-blue-200 rounded">
+                                                Staff Assessed
+                                            </span>
+                                        )}
+                                        {!isFeeExempt && selectedRequest.fee_assessment_status === 'AWAITING_ASSESSMENT' && (
+                                            <span className="px-2 py-0.5 text-xs font-bold bg-amber-100 text-amber-800 border border-amber-200 rounded">
+                                                Awaiting Assessment
+                                            </span>
+                                        )}
+                                        {selectedRequest.or_number && (
+                                            <span className="px-2 py-0.5 text-xs font-mono font-bold bg-emerald-100 text-emerald-800 border border-emerald-200 rounded">
+                                                O.R. #{selectedRequest.or_number}
+                                            </span>
+                                        )}
+                                    </div>
                                 </div>
+
+                                {Boolean(selectedRequest.fee_assessed_by_name || selectedRequest.fee_assessed_at) && (
+                                    <div className="text-[11px] text-slate-600 bg-white/70 p-2 rounded-lg border border-sky-100 flex items-center justify-between">
+                                        <span>
+                                            Assessment by: <strong className="text-slate-800">{selectedRequest.fee_assessed_by_name || 'Barangay Staff'}</strong>
+                                        </span>
+                                        {selectedRequest.fee_assessed_at && (
+                                            <span>{formatTransactionDate(selectedRequest.fee_assessed_at)}</span>
+                                        )}
+                                    </div>
+                                )}
 
                                 <div className="grid grid-cols-2 gap-3">
                                     <div>
@@ -323,8 +412,8 @@ export const ReviewDocumentModal = ({
                                         <input 
                                             type="number"
                                             step="0.01"
-                                            value={isFeeExempt ? '0.00' : feeAmount}
-                                            disabled={isFeeExempt}
+                                            value={isFeeExempt || isWaived ? '0.00' : feeAmount}
+                                            disabled={isFeeExempt || isWaived}
                                             onChange={(e) => setFeeAmount(e.target.value)}
                                             placeholder="50.00"
                                             className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-500"
@@ -336,6 +425,47 @@ export const ReviewDocumentModal = ({
                                             </div>
                                         )}
                                     </div>
+
+                                    {!isFeeExempt && (
+                                        <div className="col-span-2 space-y-2">
+                                            <label className="flex items-center gap-2 cursor-pointer select-none text-xs font-semibold text-slate-700">
+                                                <input
+                                                    type="checkbox"
+                                                    id="waive-fee-checkbox"
+                                                    checked={isWaived}
+                                                    onChange={(e) => {
+                                                        const checked = e.target.checked;
+                                                        setIsWaived(checked);
+                                                        if (checked) {
+                                                            setFeeAmount('0.00');
+                                                        } else {
+                                                            setFeeAmount(selectedRequest.fee_amount != null && Number(selectedRequest.fee_amount) > 0 ? Number(selectedRequest.fee_amount).toFixed(2) : '50.00');
+                                                        }
+                                                    }}
+                                                    className="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary/20"
+                                                />
+                                                <span>Waive clearance fee for resident (₱0.00)</span>
+                                            </label>
+
+                                            {isWaived && (
+                                                <div className="p-2.5 rounded-lg bg-emerald-50/70 border border-emerald-200 space-y-1.5">
+                                                    <label className="block text-xs font-bold text-emerald-900">
+                                                        Waiver Written Justification <span className="text-rose-600">*</span>
+                                                    </label>
+                                                    <textarea
+                                                        rows={2}
+                                                        value={feeWaiverReason}
+                                                        onChange={(e) => setFeeWaiverReason(e.target.value)}
+                                                        placeholder="State mandatory reason for fee waiver (e.g. indigent resident, local ordinance exemption)"
+                                                        className="w-full px-3 py-2 bg-white border border-slate-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-primary/20"
+                                                    />
+                                                    <p className="text-[11px] text-emerald-800">
+                                                        A written justification is required by audit rules to issue zero-fee clearances to ordinary requests.
+                                                    </p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    )}
                                     {!isFeeExempt && (
                                         <div className="col-span-2">
                                             <label className="block text-xs font-semibold text-slate-600 mb-1">Payment Method</label>

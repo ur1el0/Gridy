@@ -233,4 +233,21 @@ describe('DocumentRequestRow', () => {
 
         expect(defaultProps.onDownloadPdf).toHaveBeenCalledTimes(1);
     });
+
+    it('renders staff-approved waiver card with reason when fee_assessment_status is WAIVED', () => {
+        const waivedReq: DocumentRequest = {
+            ...baseRequest,
+            status: 'READY_FOR_PICKUP',
+            fee_amount: 0,
+            fee_assessment_status: 'WAIVED',
+            fee_waiver_reason: 'Medical mission assistance exemption',
+            payment_status: 'NOT_REQUIRED',
+        };
+        renderInTable(<DocumentRequestRow {...defaultProps} request={waivedReq} />);
+
+        expect(screen.getByText('Fee Waived (₱0.00) — Staff Approved')).toBeInTheDocument();
+        expect(screen.getByText(/Reason:/)).toBeInTheDocument();
+        expect(screen.getByText(/Medical mission assistance exemption/)).toBeInTheDocument();
+        expect(screen.queryByLabelText(/Payment recipient for request 101/i)).not.toBeInTheDocument();
+    });
 });

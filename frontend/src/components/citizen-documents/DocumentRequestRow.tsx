@@ -174,8 +174,9 @@ export const DocumentRequestRow: React.FC<DocumentRequestRowProps> = ({
         request.status.toUpperCase(),
     );
 
-    const isStatutoryFeeExempt = isFeeExemptDocumentType(request.document_type);
-    const isPaymentNotRequired = isStatutoryFeeExempt || Number(request.fee_amount ?? 0) <= 0;
+    const isStatutoryFeeExempt = isFeeExemptDocumentType(request.document_type) || request.fee_assessment_status === 'STATUTORY_EXEMPT';
+    const isStaffWaived = request.fee_assessment_status === 'WAIVED';
+    const isPaymentNotRequired = isStatutoryFeeExempt || isStaffWaived || Number(request.fee_amount ?? 0) <= 0;
 
     const isCash = request.payment_method === 'CASH';
 
@@ -226,8 +227,23 @@ export const DocumentRequestRow: React.FC<DocumentRequestRowProps> = ({
                         </div>
                     )}
 
+                    {/* Staff-Approved Waiver Banner */}
+                    {isStaffWaived && (
+                        <div className="p-2.5 rounded-xl border border-emerald-200 bg-emerald-50 text-xs text-emerald-900 space-y-1">
+                            <p className="font-bold flex items-center gap-1.5 text-emerald-800">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 shrink-0" />
+                                <span>Fee Waived (₱0.00) — Staff Approved</span>
+                            </p>
+                            {request.fee_waiver_reason && (
+                                <p className="text-emerald-800">
+                                    <span className="font-semibold">Reason:</span> {request.fee_waiver_reason}
+                                </p>
+                            )}
+                        </div>
+                    )}
+
                     {/* Processing State Guidance Banner */}
-                    {!isStatutoryFeeExempt && request.status.toUpperCase() === 'PROCESSING' && (
+                    {!isStatutoryFeeExempt && !isStaffWaived && request.status.toUpperCase() === 'PROCESSING' && (
                         <div className="p-3 rounded-xl border border-blue-200 bg-blue-50/70 text-xs text-blue-900 space-y-1">
                             <p className="font-semibold flex items-center gap-1.5">
                                 <Clock className="w-4 h-4 text-blue-600 shrink-0" />
@@ -252,7 +268,7 @@ export const DocumentRequestRow: React.FC<DocumentRequestRowProps> = ({
                         </div>
                     )}
 
-                    {!isStatutoryFeeExempt && isPaymentNotRequired &&
+                    {!isStatutoryFeeExempt && !isStaffWaived && isPaymentNotRequired &&
                         ['READY_FOR_PICKUP', 'RELEASED'].includes(request.status.toUpperCase()) && (
                             <p className="text-xs font-semibold text-emerald-800">No payment required</p>
                         )}
