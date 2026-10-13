@@ -280,6 +280,7 @@ REST_FRAMEWORK = {
         'barangay_application': '5/hour',
         'password_reset_request': '5/hour',
         'password_reset_confirm': '10/hour',
+        'public_navigator': env('PUBLIC_NAVIGATOR_THROTTLE_RATE', default='10/minute'),
     }
 }
 
@@ -359,6 +360,9 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,
     'SERVE_PERMISSIOMNS': ['gridy_auth.permissions.IsBarangayOfficial'],
+    'ENUM_NAME_OVERRIDES': {
+        'NavigatorQueryStatusEnum': ['answered', 'abstained', 'unavailable'],
+    },
 }
 
 # Cache Settings (In-memory cache for session and throttling management)
@@ -476,3 +480,10 @@ if IS_TESTING:
                 'NAME': ':memory:',
             }
         }
+
+# Public Information AI Navigator (Server-side Gemini Integration)
+PUBLIC_NAVIGATOR_ENABLED = env.bool('PUBLIC_NAVIGATOR_ENABLED', default=False)
+GEMINI_API_KEY = env('GEMINI_API_KEY', default='').strip()
+GEMINI_MODEL = env('GEMINI_MODEL', default='gemini-2.5-flash')
+PUBLIC_NAVIGATOR_TIMEOUT_SECONDS = env.float('PUBLIC_NAVIGATOR_TIMEOUT_SECONDS', default=8.0)
+PUBLIC_NAVIGATOR_MAX_OUTPUT_TOKENS = env.int('PUBLIC_NAVIGATOR_MAX_OUTPUT_TOKENS', default=800)

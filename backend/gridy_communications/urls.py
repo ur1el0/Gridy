@@ -7,7 +7,8 @@ from gridy_communications.views import (
     FCMDeviceViewSet, 
     EmergencyHotlineViewSet,
     FAQViewSet,
-    AdminNotificationViewSet
+    AdminNotificationViewSet,
+    NavigatorQueryView,
 )
 
 router = DefaultRouter()
@@ -24,5 +25,15 @@ urlpatterns = [
         'public/barangays/<int:barangay_id>/announcements/',
         PublicAnnouncementListView.as_view(),
         name='public-announcements',
+    ),
+    path(
+        'public/navigator/query/',
+        NavigatorQueryView.as_view(),
+        name='public-navigator-query',
+    ),
+    path(
+        'navigator/query/',
+        NavigatorQueryView.as_view(),
+        name='navigator-query',
     ),
 ]

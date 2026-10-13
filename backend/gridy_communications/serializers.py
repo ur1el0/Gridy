@@ -1,4 +1,5 @@
 from rest_framework import serializers
+from gridy_auth.models import User
 from gridy_communications.models import Announcement, ActivitySchedule, FCMDevice, EmergencyHotline, FAQ, AdminNotification
 
 class FCMDeviceSerializer(serializers.ModelSerializer):
@@ -20,6 +21,19 @@ class AnnouncementSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError("Image file size cannot exceed 5MB. Please compress your image.")
             return value
 
+    def validate_navigator_ai_enabled(self, value):
+        if value:
+            request = self.context.get('request')
+            if request and hasattr(request, 'user') and request.user.is_authenticated:
+                user = request.user
+                if user.role == User.Role.DILG_ADMIN:
+                    raise serializers.ValidationError("DILG administrators cannot enable AI sharing across barangays.")
+                if user.role not in [User.Role.ADMIN, User.Role.FIELD_OFFICIAL]:
+                    raise serializers.ValidationError("Only authorized barangay staff may enable AI sharing.")
+                if not user.barangay_id:
+                    raise serializers.ValidationError("A barangay assignment is required to enable AI sharing.")
+        return value
+
 
 class PublicAnnouncementSerializer(serializers.ModelSerializer):
     class Meta:
@@ -33,6 +47,19 @@ class ActivityScheduleSerializer(serializers.ModelSerializer):
         model = ActivitySchedule
         fields = '__all__'
         read_only_fields = ['created_by']
+
+    def validate_navigator_ai_enabled(self, value):
+        if value:
+            request = self.context.get('request')
+            if request and hasattr(request, 'user') and request.user.is_authenticated:
+                user = request.user
+                if user.role == User.Role.DILG_ADMIN:
+                    raise serializers.ValidationError("DILG administrators cannot enable AI sharing across barangays.")
+                if user.role not in [User.Role.ADMIN, User.Role.FIELD_OFFICIAL]:
+                    raise serializers.ValidationError("Only authorized barangay staff may enable AI sharing.")
+                if not user.barangay_id:
+                    raise serializers.ValidationError("A barangay assignment is required to enable AI sharing.")
+        return value
 
 class EmergencyHotlineSerializer(serializers.ModelSerializer):
     category_display = serializers.CharField(
