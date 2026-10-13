@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import 'api_exception.dart';
@@ -251,6 +252,11 @@ class ApiClient {
     final fullUrl = '$cleanBase$cleanEndpoint';
 
     final uri = Uri.parse(fullUrl);
+    if (kReleaseMode && uri.scheme != 'https') {
+      throw StateError(
+        'Release builds require an HTTPS endpoint. Cleartext HTTP is prohibited: $fullUrl',
+      );
+    }
     if (queryParams != null && queryParams.isNotEmpty) {
       return uri.replace(queryParameters: queryParams);
     }
