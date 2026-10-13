@@ -6,15 +6,91 @@ import '../models/queue_ticket_model.dart';
 class UserTicketCard extends StatelessWidget {
   final QueueTicketModel? ticket;
   final VoidCallback? onGetTicket;
+  final bool hasError;
+  final String? errorMessage;
+  final VoidCallback? onRetry;
 
   const UserTicketCard({
     super.key,
     this.ticket,
     this.onGetTicket,
+    this.hasError = false,
+    this.errorMessage,
+    this.onRetry,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (hasError) {
+      return Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: const Color(0xFFFECACA)),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF0F172A).withValues(alpha: 0.05),
+              blurRadius: 15,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'YOUR TICKET',
+                    style: TextStyle(
+                      color: Color(0xFF64748B),
+                      fontSize: 11,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.8,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  const Text(
+                    'Unable to Load Ticket',
+                    style: TextStyle(
+                      color: Color(0xFFB91C1C),
+                      fontSize: 16,
+                      fontWeight: FontWeight.w800,
+                      letterSpacing: -0.3,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    errorMessage ?? 'Tap retry to check ticket status',
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFF64748B),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            if (onRetry != null)
+              IconButton(
+                onPressed: onRetry,
+                tooltip: 'Retry loading ticket',
+                icon: const Icon(
+                  Icons.refresh_rounded,
+                  color: AppColors.primaryNavy,
+                ),
+              ),
+          ],
+        ),
+      );
+    }
+
     final bool hasTicket = ticket != null && !ticket!.isCompleted && !ticket!.isCancelled;
 
     return Container(

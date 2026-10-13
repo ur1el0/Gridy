@@ -85,10 +85,14 @@ void main() {
       expect(active.first.id, equals(9201));
     });
 
-    test('getAppointmentsForDate returns appointments matching created date or active', () {
+    test('getAppointmentsForDate returns only appointments matching created date and empty when no match', () {
       final appointments = data.getAppointmentsForDate(DateTime(2026, 10, 24));
       expect(appointments.isNotEmpty, isTrue);
       expect(appointments.first.documentType, equals('Barangay Clearance'));
+
+      // Non-matching date returns strictly empty list with no fallback to activeAppointments
+      final nonMatching = data.getAppointmentsForDate(DateTime(2026, 10, 25));
+      expect(nonMatching, isEmpty);
     });
   });
 }

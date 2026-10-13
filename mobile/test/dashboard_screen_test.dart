@@ -186,4 +186,147 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Recent Notifications'), findsOneWidget);
   });
+
+  testWidgets(
+    'empty notifications displays honest empty state without sample notifications',
+    (WidgetTester tester) async {
+      final prefs = await SharedPreferences.getInstance();
+      final storage = StorageService(prefs);
+      final emptyService = _EmptyNotificationsDashboardService(storage: storage);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: DashboardScreen(dashboardService: emptyService),
+        ),
+      );
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('No new notifications at this time.', skipOffstage: false),
+        findsOneWidget,
+      );
+      expect(find.text('Tax Clearance Approved'), findsNothing);
+      expect(find.text('Utility Maintenance Notice'), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'notifications fetch failure renders explicit retryable error instead of successful empty state',
+    (WidgetTester tester) async {
+      final prefs = await SharedPreferences.getInstance();
+      final storage = StorageService(prefs);
+
+      int fetchCount = 0;
+      final dynamicService = _DynamicDashboardService(
+        storage: storage,
+        onFetch: () async {
+          fetchCount++;
+          if (fetchCount == 1) {
+            return const DashboardData(
+              user: UserModel(
+                id: 1,
+                username: 'resident_juan',
+                email: 'juan@example.com',
+                role: 'RESIDENT',
+                fullName: 'Juan Dela Cruz',
+                isVerified: true,
+              ),
+              hasNotificationsError: true,
+              notificationsErrorMessage: 'Failed to retrieve announcements',
+            );
+          }
+          return DashboardData(
+            user: const UserModel(
+              id: 1,
+              username: 'resident_juan',
+              email: 'juan@example.com',
+              role: 'RESIDENT',
+              fullName: 'Juan Dela Cruz',
+              isVerified: true,
+            ),
+            notifications: [
+              NotificationItemModel(
+                id: '1',
+                title: 'Clearance Ready',
+                category: 'Document Services',
+                timestamp: DateTime.now(),
+                type: NotificationType.approved,
+              ),
+            ],
+          );
+        },
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: AppTheme.lightTheme,
+          home: DashboardScreen(dashboardService: dynamicService),
+        ),
+      );
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      // 1. Verify visible error state in Recent Notifications section
+      expect(find.text('Unable to load notifications'), findsOneWidget);
+      expect(find.text('Failed to retrieve announcements'), findsOneWidget);
+      expect(find.text('No new notifications at this time.'), findsNothing);
+      expect(find.byTooltip('Retry loading notifications'), findsOneWidget);
+
+      // 2. Open Notification Center Sheet and verify it also displays error state
+      final viewAll = find.text('View all');
+      await tester.ensureVisible(viewAll);
+      await tester.tap(viewAll);
+      await tester.pumpAndSettle();
+
+      expect(find.text('Notification Center'), findsOneWidget);
+      expect(find.text('Error'), findsOneWidget);
+      expect(find.text('No recent notifications'), findsNothing);
+
+      // Close modal and retry
+      await tester.tap(find.text('Try again'));
+      await tester.pump();
+      await tester.pumpAndSettle();
+
+      // 3. Verify recovered state after retry
+      expect(find.text('Unable to load notifications'), findsNothing);
+      expect(find.text('Clearance Ready'), findsOneWidget);
+    },
+  );
+}
+
+class _DynamicDashboardService extends DashboardService {
+  final Future<DashboardData> Function() onFetch;
+
+  _DynamicDashboardService({
+    required StorageService storage,
+    required this.onFetch,
+  }) : super(apiClient: ApiClient(), storageService: storage);
+
+  @override
+  Future<DashboardData> fetchDashboardData() => onFetch();
+}
+
+class _EmptyNotificationsDashboardService extends DashboardService {
+  _EmptyNotificationsDashboardService({required StorageService storage})
+      : super(apiClient: ApiClient(), storageService: storage);
+
+  @override
+  Future<DashboardData> fetchDashboardData() async {
+    return const DashboardData(
+      user: UserModel(
+        id: 1,
+        username: 'resident_juan',
+        email: 'juan@example.com',
+        role: 'RESIDENT',
+        fullName: 'Juan Dela Cruz',
+        isVerified: true,
+      ),
+      announcements: [],
+      documentRequests: [],
+      activities: [],
+      notifications: [],
+    );
+  }
 }

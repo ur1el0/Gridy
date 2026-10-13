@@ -10,11 +10,17 @@ class ScheduleData {
   final UserModel? user;
   final List<ActivityScheduleModel> activities;
   final List<DocumentRequestModel> documentRequests;
+  final bool hasActivitiesError;
+  final bool hasAppointmentsError;
+  final String? errorMessage;
 
   const ScheduleData({
     this.user,
     this.activities = const [],
     this.documentRequests = const [],
+    this.hasActivitiesError = false,
+    this.hasAppointmentsError = false,
+    this.errorMessage,
   });
 
   /// Returns activities matching the specific calendar day
@@ -31,21 +37,25 @@ class ScheduleData {
 
   /// Returns user's document requests associated with a specific date
   List<DocumentRequestModel> getAppointmentsForDate(DateTime date) {
-    final dateFiltered = documentRequests.where((doc) {
-      if (doc.createdAt != null) {
-        return doc.createdAt!.year == date.year &&
-            doc.createdAt!.month == date.month &&
-            doc.createdAt!.day == date.day;
+    return documentRequests.where((doc) {
+      final docDate = doc.createdAt ?? doc.updatedAt;
+      if (docDate != null) {
+        return docDate.year == date.year &&
+            docDate.month == date.month &&
+            docDate.day == date.day;
       }
       return false;
     }).toList();
-
-    // If there are specific requests created on this date, return them; otherwise fallback to active pickups
-    if (dateFiltered.isNotEmpty) {
-      return dateFiltered;
-    }
-    return activeAppointments;
   }
+}
+
+/// Custom exception thrown when schedule service fails to fetch critical data
+class ScheduleServiceException implements Exception {
+  final String message;
+  const ScheduleServiceException(this.message);
+
+  @override
+  String toString() => message;
 }
 
 /// Service coordinating community schedule activities and resident appointment data
@@ -64,21 +74,38 @@ class ScheduleService {
     UserModel? currentUser = cachedUser;
     List<ActivityScheduleModel> activities = [];
     List<DocumentRequestModel> documentRequests = [];
+    bool hasActivitiesError = false;
+    bool hasAppointmentsError = false;
 
     final results = await Future.wait([
       _fetchUserProfile(),
-      _fetchActivities(),
-      _fetchDocumentRequests(),
+      _fetchActivities().catchError((_) {
+        hasActivitiesError = true;
+        return <ActivityScheduleModel>[];
+      }),
+      _fetchDocumentRequests().catchError((_) {
+        hasAppointmentsError = true;
+        return <DocumentRequestModel>[];
+      }),
     ]);
 
     if (results[0] != null) currentUser = results[0] as UserModel;
     activities = results[1] as List<ActivityScheduleModel>;
     documentRequests = results[2] as List<DocumentRequestModel>;
 
+    if (hasActivitiesError && hasAppointmentsError) {
+      throw const ScheduleServiceException('Unable to load schedule data from server.');
+    }
+
     return ScheduleData(
       user: currentUser,
       activities: activities,
       documentRequests: documentRequests,
+      hasActivitiesError: hasActivitiesError,
+      hasAppointmentsError: hasAppointmentsError,
+      errorMessage: hasActivitiesError || hasAppointmentsError
+          ? 'Some schedule details could not be updated.'
+          : null,
     );
   }
 
@@ -95,32 +122,30 @@ class ScheduleService {
   }
 
   Future<List<ActivityScheduleModel>> _fetchActivities() async {
-    try {
-      final response = await apiClient.get('/activities/', requiresAuth: true);
-      final dynamic decoded = jsonDecode(utf8.decode(response.bodyBytes));
-      final List<dynamic> list = decoded is Map && decoded.containsKey('results')
-          ? decoded['results'] as List<dynamic>
-          : (decoded is List ? decoded : const []);
-      return list
-          .map((item) => ActivityScheduleModel.fromJson(item as Map<String, dynamic>))
-          .toList();
-    } catch (_) {
-      return [];
+    final response = await apiClient.get('/activities/', requiresAuth: true);
+    if (response.statusCode >= 400) {
+      throw Exception('Activities request failed: ${response.statusCode}');
     }
+    final dynamic decoded = jsonDecode(utf8.decode(response.bodyBytes));
+    final List<dynamic> list = decoded is Map && decoded.containsKey('results')
+        ? decoded['results'] as List<dynamic>
+        : (decoded is List ? decoded : const []);
+    return list
+        .map((item) => ActivityScheduleModel.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 
   Future<List<DocumentRequestModel>> _fetchDocumentRequests() async {
-    try {
-      final response = await apiClient.get('/document-requests/', requiresAuth: true);
-      final dynamic decoded = jsonDecode(utf8.decode(response.bodyBytes));
-      final List<dynamic> list = decoded is Map && decoded.containsKey('results')
-          ? decoded['results'] as List<dynamic>
-          : (decoded is List ? decoded : const []);
-      return list
-          .map((item) => DocumentRequestModel.fromJson(item as Map<String, dynamic>))
-          .toList();
-    } catch (_) {
-      return [];
+    final response = await apiClient.get('/document-requests/', requiresAuth: true);
+    if (response.statusCode >= 400) {
+      throw Exception('Document requests failed: ${response.statusCode}');
     }
+    final dynamic decoded = jsonDecode(utf8.decode(response.bodyBytes));
+    final List<dynamic> list = decoded is Map && decoded.containsKey('results')
+        ? decoded['results'] as List<dynamic>
+        : (decoded is List ? decoded : const []);
+    return list
+        .map((item) => DocumentRequestModel.fromJson(item as Map<String, dynamic>))
+        .toList();
   }
 }
