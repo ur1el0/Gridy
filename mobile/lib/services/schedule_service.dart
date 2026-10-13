@@ -1,5 +1,7 @@
 import 'dart:convert';
+
 import '../core/network/api_client.dart';
+import '../core/network/list_response_parser.dart';
 import '../models/activity_schedule_model.dart';
 import '../models/document_request_model.dart';
 import '../models/user_model.dart';
@@ -25,7 +27,9 @@ class ScheduleData {
   /// Returns user's active document requests / pickup appointments
   List<DocumentRequestModel> get activeAppointments {
     return documentRequests
-        .where((doc) => doc.isReadyForPickup || doc.isProcessing || doc.isPending)
+        .where(
+          (doc) => doc.isReadyForPickup || doc.isProcessing || doc.isPending,
+        )
         .toList();
   }
 
@@ -53,10 +57,7 @@ class ScheduleService {
   final ApiClient apiClient;
   final StorageService storageService;
 
-  ScheduleService({
-    required this.apiClient,
-    required this.storageService,
-  });
+  ScheduleService({required this.apiClient, required this.storageService});
 
   /// Fetches schedule activities and user document appointments concurrently
   Future<ScheduleData> fetchScheduleData() async {
@@ -85,7 +86,9 @@ class ScheduleService {
   Future<UserModel?> _fetchUserProfile() async {
     try {
       final response = await apiClient.get('/auth/me/', requiresAuth: true);
-      final Map<String, dynamic> data = jsonDecode(utf8.decode(response.bodyBytes));
+      final Map<String, dynamic> data = jsonDecode(
+        utf8.decode(response.bodyBytes),
+      );
       final user = UserModel.fromJson(data);
       await storageService.saveUser(user);
       return user;
@@ -97,12 +100,8 @@ class ScheduleService {
   Future<List<ActivityScheduleModel>> _fetchActivities() async {
     try {
       final response = await apiClient.get('/activities/', requiresAuth: true);
-      final dynamic decoded = jsonDecode(utf8.decode(response.bodyBytes));
-      final List<dynamic> list = decoded is Map && decoded.containsKey('results')
-          ? decoded['results'] as List<dynamic>
-          : (decoded is List ? decoded : const []);
-      return list
-          .map((item) => ActivityScheduleModel.fromJson(item as Map<String, dynamic>))
+      return decodeListResponse(utf8.decode(response.bodyBytes))
+          .map(ActivityScheduleModel.fromJson)
           .toList();
     } catch (_) {
       return [];
@@ -111,13 +110,12 @@ class ScheduleService {
 
   Future<List<DocumentRequestModel>> _fetchDocumentRequests() async {
     try {
-      final response = await apiClient.get('/document-requests/', requiresAuth: true);
-      final dynamic decoded = jsonDecode(utf8.decode(response.bodyBytes));
-      final List<dynamic> list = decoded is Map && decoded.containsKey('results')
-          ? decoded['results'] as List<dynamic>
-          : (decoded is List ? decoded : const []);
-      return list
-          .map((item) => DocumentRequestModel.fromJson(item as Map<String, dynamic>))
+      final response = await apiClient.get(
+        '/document-requests/',
+        requiresAuth: true,
+      );
+      return decodeListResponse(utf8.decode(response.bodyBytes))
+          .map(DocumentRequestModel.fromJson)
           .toList();
     } catch (_) {
       return [];

@@ -1,5 +1,7 @@
 import 'dart:convert';
+
 import '../core/network/api_client.dart';
+import '../core/network/list_response_parser.dart';
 import '../models/queue_ticket_model.dart';
 import 'storage_service.dart';
 
@@ -8,10 +10,7 @@ class QueueService {
   final ApiClient apiClient;
   final StorageService storageService;
 
-  QueueService({
-    required this.apiClient,
-    required this.storageService,
-  });
+  QueueService({required this.apiClient, required this.storageService});
 
   /// Fetches real-time queue live status and user active tickets
   Future<QueueLiveStatusModel> fetchQueueStatus() async {
@@ -27,15 +26,17 @@ class QueueService {
       // 1. Process Live Status Endpoint
       final liveStatusRes = responses[0];
       if (liveStatusRes.statusCode == 200) {
-        liveStatusJson = jsonDecode(utf8.decode(liveStatusRes.bodyBytes)) as Map<String, dynamic>;
+        liveStatusJson = jsonDecode(
+          utf8.decode(liveStatusRes.bodyBytes),
+        ) as Map<String, dynamic>;
       }
 
       // 2. Process User's Tickets Endpoint
       final userTicketsRes = responses[1];
       if (userTicketsRes.statusCode == 200) {
-        final data = jsonDecode(utf8.decode(userTicketsRes.bodyBytes));
-        final list = (data is Map<String, dynamic> ? data['results'] as List<dynamic>? : data as List<dynamic>?) ?? [];
-        userTickets = list.map((item) => QueueTicketModel.fromJson(item as Map<String, dynamic>)).toList();
+        userTickets = decodeListResponse(utf8.decode(userTicketsRes.bodyBytes))
+            .map(QueueTicketModel.fromJson)
+            .toList();
       }
     } catch (_) {
       // Fallback handled below
@@ -60,13 +61,11 @@ class QueueService {
     final response = await apiClient.post(
       '/tickets/',
       requiresAuth: true,
-      body: {
-        'service_type': serviceType,
-        'notes': notes,
-      },
+      body: {'service_type': serviceType, 'notes': notes},
     );
 
-    final data = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+    final data =
+        jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
     return QueueTicketModel.fromJson(data);
   }
 

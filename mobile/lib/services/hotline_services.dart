@@ -1,5 +1,7 @@
 import 'dart:convert';
+
 import '../core/network/api_client.dart';
+import '../core/network/list_response_parser.dart';
 import '../models/hotline_model.dart';
 
 class HotlineService {
@@ -11,14 +13,8 @@ class HotlineService {
   Future<List<HotlineModel>> fetchHotlines() async {
     try {
       final response = await apiClient.get('/hotlines/', requiresAuth: true);
-      final dynamic decoded = jsonDecode(utf8.decode(response.bodyBytes));
-
-      final List<dynamic> list = (decoded is Map<String, dynamic>
-          ? decoded['results'] as List<dynamic>?
-          : decoded as List<dynamic>?) ?? [];
-
-      final hotlines = list
-          .map((item) => HotlineModel.fromJson(item as Map<String, dynamic>))
+      final hotlines = decodeListResponse(utf8.decode(response.bodyBytes))
+          .map(HotlineModel.fromJson)
           .toList();
 
       if (hotlines.isNotEmpty) {

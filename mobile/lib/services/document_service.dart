@@ -4,6 +4,7 @@ import 'dart:typed_data';
 import 'package:http/http.dart' as http;
 
 import '../core/network/api_client.dart';
+import '../core/network/list_response_parser.dart';
 import '../models/document_request_model.dart';
 import '../models/payment_recipient_model.dart';
 import 'storage_service.dart';
@@ -22,20 +23,8 @@ class DocumentService {
         '/document-requests/',
         requiresAuth: true,
       );
-      final Map<String, dynamic> data = jsonDecode(
-        utf8.decode(response.bodyBytes),
-      );
-
-      // Handle Django DRF PageNumberPagination by safely extracting the 'results' array
-      final List<dynamic> list = data.containsKey('results')
-          ? data['results']
-          : data.values.toList();
-
-      return list
-          .map(
-            (item) =>
-                DocumentRequestModel.fromJson(item as Map<String, dynamic>),
-          )
+      return decodeListResponse(utf8.decode(response.bodyBytes))
+          .map(DocumentRequestModel.fromJson)
           .toList();
     } catch (e) {
       rethrow;
@@ -74,15 +63,8 @@ class DocumentService {
       '/payment-recipients/',
       requiresAuth: true,
     );
-    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
-    final List<dynamic> results = decoded is Map<String, dynamic>
-        ? (decoded['results'] as List<dynamic>? ?? <dynamic>[])
-        : decoded as List<dynamic>;
-    return results
-        .map(
-          (item) =>
-              PaymentRecipientModel.fromJson(item as Map<String, dynamic>),
-        )
+    return decodeListResponse(utf8.decode(response.bodyBytes))
+        .map(PaymentRecipientModel.fromJson)
         .toList();
   }
 

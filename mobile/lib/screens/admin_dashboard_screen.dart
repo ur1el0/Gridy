@@ -10,7 +10,9 @@ import 'login_screen.dart';
 import 'queue_screen.dart';
 
 class AdminDashboardScreen extends StatefulWidget {
-  const AdminDashboardScreen({super.key});
+  final ApiClient? apiClient;
+
+  const AdminDashboardScreen({super.key, this.apiClient});
 
   @override
   State<AdminDashboardScreen> createState() => _AdminDashboardScreenState();
@@ -37,7 +39,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     final storage = await StorageService.init();
     _currentUser = storage.getUser();
 
-    final apiClient = ApiClient();
+    final apiClient = widget.apiClient ?? ApiClient();
     final token = storage.getAccessToken();
     if (token != null) {
       apiClient.setAuthCredentials(accessToken: token);
@@ -54,7 +56,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
           _pendingDocuments = docs?['pending'] as int? ?? 0;
 
           final queue = data['queue_activity'] as Map<String, dynamic>?;
-          _waitingQueue = queue?['waiting_count'] as int? ?? 0;
+          _waitingQueue = queue?['waiting_in_queue'] as int? ?? 0;
           _servingNow = queue?['serving_now'] as String?;
 
           final issues = data['issue_reports'] as Map<String, dynamic>?;

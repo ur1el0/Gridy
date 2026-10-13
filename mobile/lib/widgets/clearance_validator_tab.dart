@@ -128,7 +128,14 @@ class ClearanceResultCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final isValid = request.isReadyForPickup || request.isReleased;
+    final isReleased = request.isReleased;
+    final verificationLabel = isReleased
+        ? 'VALID & AUTHENTIC'
+        : request.isReadyForPickup
+        ? 'READY FOR PICKUP'
+        : request.isRejected
+        ? 'REJECTED'
+        : 'PENDING APPROVAL';
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
@@ -136,7 +143,7 @@ class ClearanceResultCard extends StatelessWidget {
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: isValid ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+          color: isReleased ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
           width: 1.5,
         ),
         boxShadow: [
@@ -159,7 +166,7 @@ class ClearanceResultCard extends StatelessWidget {
                   vertical: 5,
                 ),
                 decoration: BoxDecoration(
-                  color: isValid
+                  color: isReleased
                       ? const Color(0xFFECFDF5)
                       : const Color(0xFFFFFBEB),
                   borderRadius: BorderRadius.circular(8),
@@ -167,21 +174,21 @@ class ClearanceResultCard extends StatelessWidget {
                 child: Row(
                   children: [
                     Icon(
-                      isValid
+                      isReleased
                           ? Icons.verified_rounded
                           : Icons.pending_actions_rounded,
                       size: 16,
-                      color: isValid
+                      color: isReleased
                           ? const Color(0xFF059669)
                           : const Color(0xFFD97706),
                     ),
                     const SizedBox(width: 6),
                     Text(
-                      isValid ? 'VALID & AUTHENTIC' : 'PENDING APPROVAL',
+                      verificationLabel,
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
-                        color: isValid
+                        color: isReleased
                             ? const Color(0xFF059669)
                             : const Color(0xFFD97706),
                       ),

@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import '../core/network/api_client.dart';
+import '../core/network/list_response_parser.dart';
 
 class AidRequestService {
   final ApiClient apiClient;
@@ -9,11 +10,7 @@ class AidRequestService {
 
   Future<List<Map<String, dynamic>>> fetchRequests() async {
     final response = await apiClient.get('/aid-requests/', requiresAuth: true);
-    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
-    final data = decoded is Map<String, dynamic> && decoded['results'] is List
-        ? decoded['results'] as List<dynamic>
-        : decoded as List<dynamic>;
-    return data.cast<Map<String, dynamic>>();
+    return decodeListResponse(utf8.decode(response.bodyBytes));
   }
 
   Future<Map<String, dynamic>> createRequest({

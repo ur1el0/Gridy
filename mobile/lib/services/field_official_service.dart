@@ -1,5 +1,8 @@
 import 'dart:convert';
+
 import '../core/network/api_client.dart';
+import '../core/network/api_exception.dart';
+import '../core/network/list_response_parser.dart';
 import '../models/document_request_model.dart';
 import 'issue_service.dart';
 import 'storage_service.dart';
@@ -9,23 +12,20 @@ class FieldOfficialService {
   final ApiClient apiClient;
   final StorageService storageService;
 
-  FieldOfficialService({
-    required this.apiClient,
-    required this.storageService,
-  });
+  FieldOfficialService({required this.apiClient, required this.storageService});
 
   /// Advance the live desk queue to the next waiting citizen (POST /tickets/next/)
   Future<Map<String, dynamic>> callNextTicket() async {
-    final response = await apiClient.post(
-      '/tickets/next/',
-      requiresAuth: true,
-    );
+    final response = await apiClient.post('/tickets/next/', requiresAuth: true);
 
     if (response.statusCode == 200) {
-      return jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+      return jsonDecode(utf8.decode(response.bodyBytes))
+          as Map<String, dynamic>;
     } else {
       final errorData = jsonDecode(utf8.decode(response.bodyBytes));
-      final detail = errorData is Map ? errorData['detail'] ?? 'Failed to advance queue.' : 'Queue error.';
+      final detail = errorData is Map
+          ? errorData['detail'] ?? 'Failed to advance queue.'
+          : 'Queue error.';
       throw Exception(detail);
     }
   }
@@ -38,9 +38,13 @@ class FieldOfficialService {
     );
 
     if (response.statusCode == 200) {
-      return jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+      return jsonDecode(utf8.decode(response.bodyBytes))
+          as Map<String, dynamic>;
     }
-    return {'current_ticket': null, 'total_waiting': 0};
+    throw ApiException(
+      'The live queue could not be loaded. Please try again.',
+      statusCode: response.statusCode,
+    );
   }
 
   /// Verifies a physical or digital document clearance by its ID / tracking number
@@ -52,32 +56,26 @@ class FieldOfficialService {
       );
 
       if (response.statusCode == 200) {
-        final data = jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
+        final data =
+            jsonDecode(utf8.decode(response.bodyBytes)) as Map<String, dynamic>;
         return DocumentRequestModel.fromJson(data);
       }
-      return null;
-    } catch (_) {
+      throw ApiException(
+        'The clearance could not be checked. Please try again.',
+        statusCode: response.statusCode,
+      );
+    } on NotFoundException {
       return null;
     }
   }
 
   /// Fetches all active incident reports within the official's barangay jurisdiction
   Future<List<IssueReport>> fetchBarangayIssues() async {
-    try {
-      final response = await apiClient.get(
-        '/reports/',
-        requiresAuth: true,
-      );
+    final response = await apiClient.get('/reports/', requiresAuth: true);
 
-      final dynamic decoded = jsonDecode(utf8.decode(response.bodyBytes));
-      final List<dynamic> list = decoded is Map && decoded.containsKey('results')
-          ? decoded['results'] as List<dynamic>
-          : (decoded is List ? decoded : const []);
-
-      return list.map((item) => IssueReport.fromJson(item as Map<String, dynamic>)).toList();
-    } catch (_) {
-      return [];
-    }
+    return decodeListResponse(utf8.decode(response.bodyBytes))
+        .map(IssueReport.fromJson)
+        .toList();
   }
 
   /// Updates incident report status on-site (e.g. IN_PROGRESS, RESOLVED)

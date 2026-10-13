@@ -14,6 +14,8 @@ class MockFieldOfficialService extends FieldOfficialService {
   MockFieldOfficialService({
     required StorageService storage,
     List<IssueReport>? reports,
+    this.clearanceStatus = 'READY_FOR_PICKUP',
+    this.failFirstReportLoad = false,
   }) : reports =
            reports ??
            [
@@ -35,6 +37,9 @@ class MockFieldOfficialService extends FieldOfficialService {
        );
 
   final List<IssueReport> reports;
+  final String clearanceStatus;
+  final bool failFirstReportLoad;
+  int reportFetchCount = 0;
   int? urgencyUpdatedReportId;
   String? updatedUrgency;
 
@@ -59,7 +64,7 @@ class MockFieldOfficialService extends FieldOfficialService {
     return DocumentRequestModel(
       id: documentId,
       documentType: 'Barangay Clearance',
-      status: 'READY_FOR_PICKUP',
+      status: clearanceStatus,
       purpose: 'Local Employment Verification',
       createdAt: DateTime(2026, 9, 1),
     );
@@ -67,6 +72,10 @@ class MockFieldOfficialService extends FieldOfficialService {
 
   @override
   Future<List<IssueReport>> fetchBarangayIssues() async {
+    reportFetchCount += 1;
+    if (failFirstReportLoad && reportFetchCount == 1) {
+      throw Exception('Network unavailable.');
+    }
     return reports;
   }
 
@@ -140,7 +149,8 @@ void main() {
     await tester.pumpAndSettle();
 
     // Verify Clearance Card Details
-    expect(find.text('VALID & AUTHENTIC'), findsOneWidget);
+    expect(find.text('READY FOR PICKUP'), findsOneWidget);
+    expect(find.text('VALID & AUTHENTIC'), findsNothing);
     expect(find.text('Barangay Clearance'), findsOneWidget);
     expect(find.text('Purpose: Local Employment Verification'), findsOneWidget);
 
@@ -152,6 +162,27 @@ void main() {
     expect(find.text('ENVIRONMENT'), findsOneWidget);
     expect(find.text('In-Progress'), findsOneWidget);
     expect(find.text('Resolve'), findsOneWidget);
+  });
+
+  testWidgets('only released clearances are marked valid and authentic', (
+    WidgetTester tester,
+  ) async {
+    final storage = await StorageService.init();
+    final mockService = MockFieldOfficialService(
+      storage: storage,
+      clearanceStatus: 'RELEASED',
+    );
+
+    await tester.pumpWidget(createFieldOfficialScreenTestWidget(mockService));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Verify Clearance'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField), 'REQ-15');
+    await tester.tap(find.text('Verify'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('VALID & AUTHENTIC'), findsOneWidget);
+    expect(find.text('READY FOR PICKUP'), findsNothing);
   });
 
   testWidgets(
@@ -227,6 +258,32 @@ void main() {
       expect(find.text('MINOR'), findsNWidgets(2));
     },
   );
+
+  testWidgets('field reports show a retry state after a network failure', (
+    WidgetTester tester,
+  ) async {
+    final storage = await StorageService.init();
+    final mockService = MockFieldOfficialService(
+      storage: storage,
+      failFirstReportLoad: true,
+    );
+
+    await tester.pumpWidget(createFieldOfficialScreenTestWidget(mockService));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Field Reports'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Incident reports are unavailable'), findsOneWidget);
+    expect(find.text('Network unavailable.'), findsOneWidget);
+    expect(find.text('No active community issues'), findsNothing);
+
+    await tester.tap(find.text('Try again'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Clogged Drainage on Purok 4'), findsOneWidget);
+    expect(find.text('Incident reports are unavailable'), findsNothing);
+    expect(mockService.reportFetchCount, 2);
+  });
 
   testWidgets(
     'Field staff can change an incident urgency',

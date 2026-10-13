@@ -5,6 +5,7 @@ import '../services/issue_service.dart';
 
 class FieldReportsTab extends StatelessWidget {
   final bool isLoading;
+  final String? errorMessage;
   final List<IssueReport> reports;
   final Future<void> Function() onRefresh;
   final void Function(int reportId, String status) onUpdateStatus;
@@ -13,6 +14,7 @@ class FieldReportsTab extends StatelessWidget {
   const FieldReportsTab({
     super.key,
     required this.isLoading,
+    this.errorMessage,
     required this.reports,
     required this.onRefresh,
     required this.onUpdateStatus,
@@ -25,6 +27,50 @@ class FieldReportsTab extends StatelessWidget {
       return const Center(
         child: CircularProgressIndicator(
           valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryNavy),
+        ),
+      );
+    }
+
+    if (errorMessage != null) {
+      return RefreshIndicator(
+        onRefresh: onRefresh,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(32),
+          child: SizedBox(
+            width: double.infinity,
+            child: Column(
+              children: [
+                const SizedBox(height: 40),
+                const Icon(
+                  Icons.cloud_off_outlined,
+                  size: 48,
+                  color: Color(0xFFB45309),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Incident reports are unavailable',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  errorMessage!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextButton.icon(
+                  onPressed: onRefresh,
+                  icon: const Icon(Icons.refresh_rounded),
+                  label: const Text('Try again'),
+                ),
+              ],
+            ),
+          ),
         ),
       );
     }

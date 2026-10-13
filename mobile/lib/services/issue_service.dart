@@ -1,7 +1,10 @@
 import 'dart:convert';
+
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
+
 import '../core/network/api_client.dart';
+import '../core/network/list_response_parser.dart';
 
 class IssueService {
   final ApiClient apiClient;
@@ -30,7 +33,7 @@ class IssueService {
     if (imageFile != null) {
       final bytes = await imageFile.readAsBytes();
       final multipartFile = http.MultipartFile.fromBytes(
-        'image', 
+        'image',
         bytes,
         filename: imageFile.name,
       );
@@ -41,17 +44,16 @@ class IssueService {
       '/reports/',
       fields: fields,
       files: files,
-      requiresAuth: true, 
+      requiresAuth: true,
     );
   }
 
   /// Fetches the resident's historical issue reports
   Future<List<IssueReport>> getMyIssues() async {
     final response = await apiClient.get('/reports/');
-    final Map<String, dynamic> data = jsonDecode(response.body);
-    
-    final List<dynamic> results = data['results'] ?? [];
-    return results.map((item) => IssueReport.fromJson(item)).toList();
+    return decodeListResponse(utf8.decode(response.bodyBytes))
+        .map(IssueReport.fromJson)
+        .toList();
   }
 }
 

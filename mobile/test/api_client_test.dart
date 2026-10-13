@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
@@ -7,6 +8,70 @@ import 'package:mobile/core/network/api_client.dart';
 import 'package:mobile/core/network/api_exception.dart';
 
 void main() {
+  test(
+    'rebuilds multipart uploads before retrying after token refresh',
+    () async {
+      var uploadAttempts = 0;
+      final uploadBodies = <String>[];
+      final uploadAuthorizationHeaders = <String?>[];
+      final mockClient = MockClient((request) async {
+        if (request.url.path == '/api/v1/auth/token/refresh/') {
+          return http.Response(
+            '{"access":"fresh-access-token"}',
+            200,
+            headers: {
+              'set-cookie': 'refresh_token=fresh-refresh-token; HttpOnly; Path=/; SameSite=Strict',
+            },
+          );
+        }
+
+        expect(request.url.path, '/api/v1/upload/');
+        uploadAttempts += 1;
+        uploadBodies.add(utf8.decode(request.bodyBytes));
+        uploadAuthorizationHeaders.add(request.headers['authorization']);
+      if (uploadAttempts == 1) {
+          return http.Response('{"detail":"expired"}', 401);
+      }
+        return http.Response('{"id":7}', 201);
+      });
+      addTearDown(mockClient.close);
+
+      final apiClient = ApiClient(
+        client: mockClient,
+        baseUrl: 'https://example.test/api/v1',
+      );
+      apiClient.setAuthCredentials(
+        accessToken: 'expired-access-token',
+        cookieHeader: 'refresh_token=old-refresh-token',
+      );
+
+      final response = await apiClient.postMultipart(
+        '/upload/',
+        fields: const {'label': 'proof'},
+        files: [
+          http.MultipartFile.fromBytes(
+            'proof_image',
+            utf8.encode('retry-safe-upload-bytes'),
+            filename: 'proof.jpg',
+          ),
+        ],
+        requiresAuth: true,
+      );
+
+      expect(response.statusCode, 201);
+      expect(uploadAttempts, 2);
+      expect(uploadBodies, hasLength(2));
+      expect(
+        uploadBodies.every((body) => body.contains('retry-safe-upload-bytes')),
+        isTrue,
+      );
+      expect(uploadAuthorizationHeaders, [
+        'Bearer expired-access-token',
+        'Bearer fresh-access-token',
+      ]);
+    },
+  );
+
   test(
     'waits for token persistence before accepting refreshed credentials',
     () async {
@@ -18,8 +83,7 @@ void main() {
           '{"access":"fresh-access-token"}',
           200,
           headers: {
-            'set-cookie':
-                'refresh_token=fresh-refresh-token; HttpOnly; Path=/; SameSite=Strict',
+            'set-cookie': 'refresh_token=fresh-refresh-token; HttpOnly; Path=/; SameSite=Strict',
           },
         ),
       );
@@ -62,8 +126,7 @@ void main() {
         '{"access":"fresh-access-token"}',
         200,
         headers: {
-          'set-cookie':
-              'refresh_token=fresh-refresh-token; HttpOnly; Path=/; SameSite=Strict',
+          'set-cookie': 'refresh_token=fresh-refresh-token; HttpOnly; Path=/; SameSite=Strict',
         },
       ),
     );

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../core/network/api_client.dart';
 import '../core/theme/app_colors.dart';
 import '../models/document_request_model.dart';
@@ -40,6 +41,8 @@ class _FieldOfficialScreenState extends State<FieldOfficialScreen>
   String? _currentTicket;
   int _totalWaiting = 0;
   bool _isCallingTicket = false;
+  bool _isLoadingQueue = false;
+  String? _queueError;
 
   // Clearance Validation State
   final TextEditingController _trackingIdController = TextEditingController();
@@ -50,6 +53,7 @@ class _FieldOfficialScreenState extends State<FieldOfficialScreen>
   // Incident Reports State
   List<IssueReport> _reports = [];
   bool _isLoadingReports = false;
+  String? _reportsError;
 
   @override
   void initState() {
@@ -92,15 +96,28 @@ class _FieldOfficialScreenState extends State<FieldOfficialScreen>
 
   Future<void> _loadQueueStatus() async {
     if (_service == null) return;
+    if (mounted) {
+      setState(() {
+        _isLoadingQueue = true;
+        _queueError = null;
+      });
+    }
     try {
       final data = await _service!.fetchLiveQueueStatus();
       if (mounted) {
         setState(() {
           _currentTicket = data['current_ticket'] as String?;
           _totalWaiting = data['total_waiting'] as int? ?? 0;
+          _queueError = null;
         });
       }
-    } catch (_) {}
+    } catch (error) {
+      if (mounted) {
+        setState(() => _queueError = _messageFor(error));
+      }
+    } finally {
+      if (mounted) setState(() => _isLoadingQueue = false);
+    }
   }
 
   Future<void> _callNextTicket() async {
@@ -113,6 +130,7 @@ class _FieldOfficialScreenState extends State<FieldOfficialScreen>
         setState(() {
           _currentTicket = result['current_ticket'] as String?;
           _totalWaiting = result['remaining_waiting'] as int? ?? 0;
+          _queueError = null;
         });
 
         ScaffoldMessenger.of(context).showSnackBar(
@@ -148,8 +166,7 @@ class _FieldOfficialScreenState extends State<FieldOfficialScreen>
 
     if (docId == null) {
       setState(() {
-        _verificationError =
-            'Please enter a valid numeric ID or tracking number (e.g., REQ-12).';
+        _verificationError = 'Please enter a valid numeric ID or tracking number (e.g., REQ-12).';
         _verifiedClearance = null;
       });
       return;
@@ -171,11 +188,9 @@ class _FieldOfficialScreenState extends State<FieldOfficialScreen>
           }
         });
       }
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
-        setState(
-          () => _verificationError = 'Network error verifying clearance.',
-        );
+        setState(() => _verificationError = _messageFor(error));
       }
     } finally {
       if (mounted) setState(() => _isVerifying = false);
@@ -184,7 +199,10 @@ class _FieldOfficialScreenState extends State<FieldOfficialScreen>
 
   Future<void> _loadBarangayReports() async {
     if (_service == null) return;
-    setState(() => _isLoadingReports = true);
+    setState(() {
+      _isLoadingReports = true;
+      _reportsError = null;
+    });
     try {
       final items = await _service!.fetchBarangayIssues();
       items.sort((first, second) {
@@ -208,11 +226,23 @@ class _FieldOfficialScreenState extends State<FieldOfficialScreen>
         setState(() {
           _reports = items;
           _isLoadingReports = false;
+          _reportsError = null;
         });
       }
-    } catch (_) {
-      if (mounted) setState(() => _isLoadingReports = false);
+    } catch (error) {
+      if (mounted) {
+        setState(() {
+          _reports = [];
+          _reportsError = _messageFor(error);
+          _isLoadingReports = false;
+        });
+      }
     }
+  }
+
+  String _messageFor(Object error) {
+    final message = error.toString().replaceFirst('Exception: ', '').trim();
+    return message.isEmpty ? 'Please try again.' : message;
   }
 
   Future<void> _updateReportStatus(int reportId, String newStatus) async {
@@ -351,6 +381,8 @@ class _FieldOfficialScreenState extends State<FieldOfficialScreen>
                   currentTicket: _currentTicket,
                   totalWaiting: _totalWaiting,
                   isCallingTicket: _isCallingTicket,
+                  isLoading: _isLoadingQueue,
+                  errorMessage: _queueError,
                   onRefresh: _loadQueueStatus,
                   onCallNext: _callNextTicket,
                 ),
@@ -363,6 +395,7 @@ class _FieldOfficialScreenState extends State<FieldOfficialScreen>
                 ),
                 FieldReportsTab(
                   isLoading: _isLoadingReports,
+                  errorMessage: _reportsError,
                   reports: _reports,
                   onRefresh: _loadBarangayReports,
                   onUpdateStatus: _updateReportStatus,

@@ -6,6 +6,8 @@ class QueueTickerTab extends StatelessWidget {
   final String? currentTicket;
   final int totalWaiting;
   final bool isCallingTicket;
+  final bool isLoading;
+  final String? errorMessage;
   final Future<void> Function() onRefresh;
   final VoidCallback onCallNext;
 
@@ -14,12 +16,64 @@ class QueueTickerTab extends StatelessWidget {
     required this.currentTicket,
     required this.totalWaiting,
     required this.isCallingTicket,
+    required this.isLoading,
+    required this.errorMessage,
     required this.onRefresh,
     required this.onCallNext,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (errorMessage != null) {
+      return RefreshIndicator(
+        onRefresh: onRefresh,
+        child: SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          padding: const EdgeInsets.all(32),
+          child: SizedBox(
+            width: double.infinity,
+            child: Column(
+              children: [
+                const SizedBox(height: 56),
+                const Icon(
+                  Icons.cloud_off_outlined,
+                  size: 48,
+                  color: Color(0xFFB45309),
+                ),
+                const SizedBox(height: 12),
+                const Text(
+                  'Queue status is unavailable',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  errorMessage!,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    color: Color(0xFF64748B),
+                    fontSize: 13,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                TextButton.icon(
+                  onPressed: isLoading ? null : onRefresh,
+                  icon: isLoading
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        )
+                      : const Icon(Icons.refresh_rounded),
+                  label: Text(isLoading ? 'Trying again…' : 'Try again'),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    }
+
     return RefreshIndicator(
       onRefresh: onRefresh,
       child: SingleChildScrollView(

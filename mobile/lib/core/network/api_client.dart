@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+
 import 'package:http/http.dart' as http;
+
 import '../config/app_config.dart';
 import 'api_exception.dart';
 
@@ -132,23 +134,17 @@ class ApiClient {
     List<http.MultipartFile>? files,
     bool requiresAuth = true,
   }) async {
-    final request = http.MultipartRequest('POST', _buildUri(endpoint));
-
-    // Add standard headers, but remove Content-Type so the http package
-    // can generate the correct multipart boundary header automatically
-    final headers = _buildHeaders(null, requiresAuth: requiresAuth);
-    headers.remove('Content-Type');
-    request.headers.addAll(headers);
-
-    if (fields != null) {
-      request.fields.addAll(fields);
-    }
-
-    if (files != null) {
-      request.files.addAll(files);
-    }
+    final multipartFields = Map<String, String>.from(fields ?? const {});
+    final multipartFiles = await _snapshotMultipartFiles(files);
 
     return _sendRequest(() async {
+      final request = _buildMultipartRequest(
+        'POST',
+        endpoint,
+        multipartFields,
+        multipartFiles,
+        requiresAuth: requiresAuth,
+      );
       final streamedResponse = await _client.send(request);
       return await http.Response.fromStream(streamedResponse);
     });
@@ -161,24 +157,45 @@ class ApiClient {
     List<http.MultipartFile>? files,
     bool requiresAuth = true,
   }) async {
-    final request = http.MultipartRequest('PATCH', _buildUri(endpoint));
-
-    final headers = _buildHeaders(null, requiresAuth: requiresAuth);
-    headers.remove('Content-Type');
-    request.headers.addAll(headers);
-
-    if (fields != null) {
-      request.fields.addAll(fields);
-    }
-
-    if (files != null) {
-      request.files.addAll(files);
-    }
+    final multipartFields = Map<String, String>.from(fields ?? const {});
+    final multipartFiles = await _snapshotMultipartFiles(files);
 
     return _sendRequest(() async {
+      final request = _buildMultipartRequest(
+        'PATCH',
+        endpoint,
+        multipartFields,
+        multipartFiles,
+        requiresAuth: requiresAuth,
+      );
       final streamedResponse = await _client.send(request);
       return await http.Response.fromStream(streamedResponse);
     });
+  }
+
+  Future<List<_MultipartFileSnapshot>> _snapshotMultipartFiles(
+    List<http.MultipartFile>? files,
+  ) async {
+    if (files == null || files.isEmpty) return const [];
+    return Future.wait(files.map(_MultipartFileSnapshot.fromFile));
+  }
+
+  http.MultipartRequest _buildMultipartRequest(
+    String method,
+    String endpoint,
+    Map<String, String> fields,
+    List<_MultipartFileSnapshot> files, {
+    required bool requiresAuth,
+  }) {
+    final request = http.MultipartRequest(method, _buildUri(endpoint));
+
+    // Let MultipartRequest create a fresh boundary for every attempt.
+    final headers = _buildHeaders(null, requiresAuth: requiresAuth);
+    headers.remove('Content-Type');
+    request.headers.addAll(headers);
+    request.fields.addAll(fields);
+    request.files.addAll(files.map((file) => file.build()));
+    return request;
   }
 
   /// Perform a GET request
@@ -287,7 +304,7 @@ class ApiClient {
     Future<http.Response> Function() requestFn,
   ) async {
     try {
-      final response = await requestFn().timeout(AppConfig.requestTimeout);
+      var response = await requestFn().timeout(AppConfig.requestTimeout);
 
       // Check if response indicates success (2xx)
       if (response.statusCode >= 200 && response.statusCode < 300) {
@@ -300,12 +317,9 @@ class ApiClient {
           _cookieHeader!.isNotEmpty) {
         final refreshed = await refreshAccessToken();
         if (refreshed) {
-          final retriedResponse = await requestFn().timeout(
-            AppConfig.requestTimeout,
-          );
-          if (retriedResponse.statusCode >= 200 &&
-              retriedResponse.statusCode < 300) {
-            return retriedResponse;
+          response = await requestFn().timeout(AppConfig.requestTimeout);
+          if (response.statusCode >= 200 && response.statusCode < 300) {
+            return response;
           }
         }
       }
@@ -403,4 +417,37 @@ class ApiClient {
         );
     }
   }
+}
+
+class _MultipartFileSnapshot {
+  final String field;
+  final String? filename;
+  final http.MediaType contentType;
+  final List<int> bytes;
+
+  const _MultipartFileSnapshot({
+    required this.field,
+    required this.filename,
+    required this.contentType,
+    required this.bytes,
+  });
+
+  static Future<_MultipartFileSnapshot> fromFile(
+    http.MultipartFile file,
+  ) async {
+    final bytes = await file.finalize().toBytes();
+    return _MultipartFileSnapshot(
+      field: file.field,
+      filename: file.filename,
+      contentType: file.contentType,
+      bytes: bytes,
+    );
+  }
+
+  http.MultipartFile build() => http.MultipartFile.fromBytes(
+    field,
+    bytes,
+    filename: filename,
+    contentType: contentType,
+  );
 }
