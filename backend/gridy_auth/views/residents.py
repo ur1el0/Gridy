@@ -18,6 +18,7 @@ from gridy_auth.serializers import (
     ResidentSerializer,
 )
 from gridy_auth.permissions import IsBarangayOfficial
+from gridy_auth.lifecycle import erase_user_account
 from gridy_audit.services import log_action
 from gridy_audit.models import AuditLog
 
@@ -273,16 +274,15 @@ class RejectResidentView(APIView):
             resident_id = resident.id
             resident_user = resident.user
 
-            log_action(
-                user=request.user,
-                action_type=AuditLog.ActionType.USER_ACTION,
-                description=(
+            erase_user_account(
+                user=resident_user,
+                reason=(
                     f"Rejected pending resident account for {resident_name} "
                     f"(ID: {resident_id}). Reason: {rejection_reason}"
                 ),
                 request=request,
+                actor=request.user,
             )
-            resident_user.delete()
 
         return Response(status=status.HTTP_204_NO_CONTENT)
 
@@ -313,6 +313,21 @@ class ResidentViewSet(viewsets.ModelViewSet):
                     ),
                     request=self.request,
                 )
+
+    def perform_destroy(self, instance):
+        resident_name = instance.full_name
+        resident_id = instance.id
+        resident_user = instance.user
+
+        erase_user_account(
+            user=resident_user,
+            reason=(
+                f"Removed resident account for {resident_name} "
+                f"(ID: {resident_id})"
+            ),
+            request=self.request,
+            actor=self.request.user,
+        )
 
     def get_queryset(self):
         user = self.request.user
