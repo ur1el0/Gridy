@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_theme.dart';
 import '../models/notification_item_model.dart';
 
 /// Recent notifications section rendering alert items with status badge indicators
@@ -53,9 +54,9 @@ class RecentNotificationsSection extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFF1F5F9)),
+              color: AppColors.surface,
+              borderRadius: AppRadius.radiusMd,
+              border: Border.all(color: AppColors.borderSubtle, width: 1.0),
             ),
             child: const Center(
               child: Text(
@@ -101,17 +102,17 @@ class _NotificationCard extends StatelessWidget {
 
     switch (notification.type) {
       case NotificationType.approved:
-        iconBgColor = const Color(0xFFE0F2FE);
-        iconColor = const Color(0xFF0284C7);
+        iconBgColor = AppColors.surfaceCyan;
+        iconColor = AppColors.info;
         iconData = Icons.check_circle_outline_rounded;
         break;
       case NotificationType.warning:
-        iconBgColor = const Color(0xFFFEE2E2);
-        iconColor = const Color(0xFFEF4444);
+        iconBgColor = AppColors.surfaceError;
+        iconColor = AppColors.error;
         iconData = Icons.warning_amber_rounded;
         break;
       case NotificationType.info:
-        iconBgColor = const Color(0xFFF1F5F9);
+        iconBgColor = AppColors.surfaceNavy;
         iconColor = AppColors.primaryNavy;
         iconData = Icons.notifications_none_rounded;
         break;
@@ -119,34 +120,34 @@ class _NotificationCard extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.surface,
+        borderRadius: AppRadius.radiusMd,
+        border: Border.all(
+          color: AppColors.borderSubtle,
+          width: 1.0,
+        ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+            color: const Color(0xFF0F172A).withValues(alpha: 0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
-        border: Border.all(
-          color: const Color(0xFFF1F5F9),
-          width: 1.2,
-        ),
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: AppRadius.radiusMd,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: AppRadius.radiusMd,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
             child: Row(
               children: [
                 // Circular Status Badge Icon
                 Container(
-                  width: 42,
-                  height: 42,
+                  width: 38,
+                  height: 38,
                   decoration: BoxDecoration(
                     color: iconBgColor,
                     shape: BoxShape.circle,
@@ -155,11 +156,11 @@ class _NotificationCard extends StatelessWidget {
                     child: Icon(
                       iconData,
                       color: iconColor,
-                      size: 22,
+                      size: 20,
                     ),
                   ),
                 ),
-                const SizedBox(width: 14),
+                const SizedBox(width: 12),
 
                 // Title and Timestamp Subtitle
                 Expanded(
@@ -169,26 +170,31 @@ class _NotificationCard extends StatelessWidget {
                       Text(
                         notification.title,
                         style: const TextStyle(
-                          fontSize: 14.5,
+                          fontSize: 14.0,
                           fontWeight: FontWeight.w700,
                           color: AppColors.textPrimary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
-                      const SizedBox(height: 3),
+                      const SizedBox(height: 2),
                       Text(
                         notification.formattedSubtitle,
                         style: const TextStyle(
-                          fontSize: 12.5,
+                          fontSize: 12.0,
                           fontWeight: FontWeight.w400,
-                          color: AppColors.textMuted,
+                          color: AppColors.textSecondary,
                         ),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                       ),
                     ],
                   ),
+                ),
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  color: AppColors.borderLight,
+                  size: 18,
                 ),
               ],
             ),

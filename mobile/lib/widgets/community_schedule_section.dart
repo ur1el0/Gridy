@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_theme.dart';
 import '../models/activity_schedule_model.dart';
 
 /// Community schedule vertical timeline section matching reference design
@@ -58,14 +59,21 @@ class CommunityScheduleSection extends StatelessWidget {
 
         // Rounded timeline container
         Container(
-          padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
+          padding: const EdgeInsets.symmetric(horizontal: 18.0, vertical: 20.0),
           decoration: BoxDecoration(
-            color: const Color(0xFFF1F5F9).withValues(alpha: 0.65),
-            borderRadius: BorderRadius.circular(20),
+            color: AppColors.surface,
+            borderRadius: AppRadius.radiusMd,
             border: Border.all(
-              color: const Color(0xFFE2E8F0),
+              color: AppColors.borderSubtle,
               width: 1.0,
             ),
+            boxShadow: [
+              BoxShadow(
+                color: const Color(0xFF0F172A).withValues(alpha: 0.02),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
           ),
           child: Column(
             children: List.generate(displayList.length, (index) {
@@ -82,8 +90,8 @@ class CommunityScheduleSection extends StatelessWidget {
                       children: [
                         // Dot Ring Indicator
                         Container(
-                          width: 20,
-                          height: 20,
+                          width: 18,
+                          height: 18,
                           decoration: BoxDecoration(
                             shape: BoxShape.circle,
                             color: isActive
@@ -92,15 +100,15 @@ class CommunityScheduleSection extends StatelessWidget {
                             border: Border.all(
                               color: isActive
                                   ? AppColors.primaryNavy
-                                  : const Color(0xFFCBD5E1),
-                              width: isActive ? 5 : 4,
+                                  : AppColors.borderLight,
+                              width: isActive ? 4 : 3,
                             ),
                           ),
                           child: isActive
                               ? const Center(
                                   child: SizedBox(
-                                    width: 6,
-                                    height: 6,
+                                    width: 4,
+                                    height: 4,
                                     child: DecoratedBox(
                                       decoration: BoxDecoration(
                                         color: Colors.white,
@@ -117,19 +125,19 @@ class CommunityScheduleSection extends StatelessWidget {
                           Expanded(
                             child: Container(
                               width: 1.5,
-                              color: const Color(0xFFCBD5E1),
+                              color: AppColors.borderLight,
                             ),
                           ),
                       ],
                     ),
-                    const SizedBox(width: 16),
+                    const SizedBox(width: 14),
 
                     // Event Details
                     Expanded(
                       child: GestureDetector(
                         onTap: () => onActivityTap?.call(item),
                         child: Padding(
-                          padding: EdgeInsets.only(bottom: isLast ? 0 : 24.0),
+                          padding: EdgeInsets.only(bottom: isLast ? 0 : 20.0),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
@@ -141,11 +149,11 @@ class CommunityScheduleSection extends StatelessWidget {
                                   fontWeight: FontWeight.w800,
                                   color: isActive
                                       ? AppColors.primaryNavy
-                                      : AppColors.textMuted,
+                                      : AppColors.textSecondary,
                                   letterSpacing: 0.8,
                                 ),
                               ),
-                              const SizedBox(height: 4),
+                              const SizedBox(height: 3),
 
                               // Event Title
                               Text(
@@ -160,13 +168,23 @@ class CommunityScheduleSection extends StatelessWidget {
                               const SizedBox(height: 2),
 
                               // Event Location
-                              Text(
-                                item.location,
-                                style: const TextStyle(
-                                  fontSize: 12.5,
-                                  fontWeight: FontWeight.w400,
-                                  color: AppColors.textMuted,
-                                ),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.location_on_outlined,
+                                    size: 13,
+                                    color: AppColors.textSecondary,
+                                  ),
+                                  const SizedBox(width: 3),
+                                  Text(
+                                    item.location,
+                                    style: const TextStyle(
+                                      fontSize: 12.5,
+                                      fontWeight: FontWeight.w400,
+                                      color: AppColors.textSecondary,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ],
                           ),

@@ -23,9 +23,29 @@ class AppColors {
 
   // Borders & Dividers
   static const Color borderLight = Color(0xFFCBD5E1);
+  static const Color borderSubtle = Color(0xFFE2E8F0);
   static const Color borderFocused = Color(0xFF082B66);
 
   // Status
   static const Color error = Color(0xFFEF4444);
   static const Color success = Color(0xFF10B981);
+  static const Color warning = Color(0xFFD97706);
+  static const Color warningLight = Color(0xFFF59E0B);
+  static const Color info = Color(0xFF0284C7);
+
+  // Surface Tints (Soft status pill & badge backgrounds)
+  static const Color surfaceSuccess = Color(0xFFECFDF5);
+  static const Color surfaceWarning = Color(0xFFFFFBEB);
+  static const Color surfaceError = Color(0xFFFEF2F2);
+  static const Color surfaceCyan = Color(0xFFF0F9FF);
+  static const Color surfaceNavy = Color(0xFFEEF2F9);
+  static const Color surfaceCardMuted = Color(0xFFF8FAFC);
+
+  // High-contrast text on status tint surfaces (WCAG AA >= 4.5:1)
+  static const Color textSuccess = Color(0xFF065F46);
+  static const Color textWarning = Color(0xFF92400E);
+  static const Color textError = Color(0xFF991B1B);
+  static const Color textInfo = Color(0xFF075985);
+  static const Color textOnNavy = Color(0xFFFFFFFF);
+  static const Color textOnNavyMuted = Color(0xFF94A3B8);
 }

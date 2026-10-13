@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_theme.dart';
 
 class QueueTickerTab extends StatelessWidget {
   final String? currentTicket;
@@ -29,7 +30,7 @@ class QueueTickerTab extends StatelessWidget {
         onRefresh: onRefresh,
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(32),
+          padding: const EdgeInsets.all(AppSpacing.xl),
           child: SizedBox(
             width: double.infinity,
             child: Column(
@@ -38,20 +39,20 @@ class QueueTickerTab extends StatelessWidget {
                 const Icon(
                   Icons.cloud_off_outlined,
                   size: 48,
-                  color: Color(0xFFB45309),
+                  color: AppColors.warning,
                 ),
                 const SizedBox(height: 12),
                 const Text(
                   'Queue status is unavailable',
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: AppColors.textPrimary),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   errorMessage!,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
-                    color: Color(0xFF64748B),
+                    color: AppColors.textSecondary,
                     fontSize: 13,
                   ),
                 ),
@@ -78,20 +79,21 @@ class QueueTickerTab extends StatelessWidget {
       onRefresh: onRefresh,
       child: SingleChildScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
-        padding: const EdgeInsets.all(20),
+        padding: const EdgeInsets.all(AppSpacing.md),
         child: Column(
           children: [
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 20),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(24),
-                boxShadow: [
+                color: AppColors.surface,
+                borderRadius: AppRadius.radiusLg,
+                border: Border.all(color: AppColors.borderSubtle),
+                boxShadow: const [
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.04),
-                    blurRadius: 12,
-                    offset: const Offset(0, 4),
+                    color: Color(0x08000000),
+                    blurRadius: 8,
+                    offset: Offset(0, 2),
                   ),
                 ],
               ),
@@ -102,15 +104,15 @@ class QueueTickerTab extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.w800,
-                      color: Color(0xFF64748B),
-                      letterSpacing: 1.5,
+                      color: AppColors.textSecondary,
+                      letterSpacing: 1.2,
                     ),
                   ),
                   const SizedBox(height: 12),
                   Text(
                     currentTicket ?? '--',
                     style: const TextStyle(
-                      fontSize: 54,
+                      fontSize: 52,
                       fontWeight: FontWeight.w900,
                       color: AppColors.primaryNavy,
                       letterSpacing: -1,
@@ -123,15 +125,15 @@ class QueueTickerTab extends StatelessWidget {
                       vertical: 8,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF8FAFC),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(color: const Color(0xFFE2E8F0)),
+                      color: AppColors.surfaceCardMuted,
+                      borderRadius: AppRadius.radiusPill,
+                      border: Border.all(color: AppColors.borderSubtle),
                     ),
                     child: Text(
                       'Waiting in queue: $totalWaiting',
                       style: const TextStyle(
                         fontWeight: FontWeight.w700,
-                        color: Color(0xFF475569),
+                        color: AppColors.textSecondary,
                         fontSize: 13,
                       ),
                     ),
@@ -142,7 +144,7 @@ class QueueTickerTab extends StatelessWidget {
             const SizedBox(height: 24),
             SizedBox(
               width: double.infinity,
-              height: 56,
+              height: 52,
               child: ElevatedButton.icon(
                 onPressed: isCallingTicket ? null : onCallNext,
                 icon: isCallingTicket
@@ -162,16 +164,16 @@ class QueueTickerTab extends StatelessWidget {
                   isCallingTicket ? 'Calling next...' : 'Call Next Ticket',
                   style: const TextStyle(
                     fontSize: 16,
-                    fontWeight: FontWeight.w800,
+                    fontWeight: FontWeight.w700,
                     color: Colors.white,
                   ),
                 ),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryNavy,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: AppRadius.radiusMd,
                   ),
-                  elevation: 2,
+                  elevation: 0,
                 ),
               ),
             ),

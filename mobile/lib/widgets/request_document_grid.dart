@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_theme.dart';
 
 /// Item definition for the Request New catalog
 class RequestDocumentItem {
@@ -36,22 +37,22 @@ class RequestDocumentGrid extends StatelessWidget {
       title: 'Barangay\nClearance',
       subtitle: 'Standard residency proof',
       icon: Icons.verified_user_outlined,
-      iconBgColor: Color(0xFFEEF2FF),
-      iconColor: Color(0xFF4F46E5),
+      iconBgColor: AppColors.surfaceNavy,
+      iconColor: AppColors.primaryNavy,
     ),
     RequestDocumentItem(
       title: 'Certificate of\nIndigency',
       subtitle: 'For social service aid',
       icon: Icons.volunteer_activism_outlined,
-      iconBgColor: Color(0xFFFFEDD5),
+      iconBgColor: AppColors.surfaceWarning,
       iconColor: Color(0xFFEA580C),
     ),
     RequestDocumentItem(
       title: 'Residency\nCertificate',
       subtitle: 'Address verification',
       icon: Icons.location_on_outlined,
-      iconBgColor: Color(0xFFF1F5F9),
-      iconColor: Color(0xFF475569),
+      iconBgColor: AppColors.surfaceCardMuted,
+      iconColor: AppColors.textSecondary,
     ),
     RequestDocumentItem(
       title: 'Business Permit',
@@ -97,22 +98,22 @@ class RequestDocumentGrid extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 13.5,
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF2563EB),
+                  color: AppColors.primaryNavy,
                 ),
               ),
             ),
           ],
         ),
-        const SizedBox(height: 14),
+        const SizedBox(height: 12),
 
         if (items.isEmpty)
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: const Color(0xFFF1F5F9), width: 1.2),
+              color: AppColors.surface,
+              borderRadius: AppRadius.radiusMd,
+              border: Border.all(color: AppColors.borderSubtle, width: 1.0),
             ),
             child: const Center(
               child: Text(
@@ -132,9 +133,9 @@ class RequestDocumentGrid extends StatelessWidget {
             itemCount: items.length,
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: 2,
-              crossAxisSpacing: 14,
-              mainAxisSpacing: 14,
-              childAspectRatio: 1.05,
+              crossAxisSpacing: 12,
+              mainAxisSpacing: 12,
+              childAspectRatio: 1.0,
             ),
             itemBuilder: (context, index) {
               final item = items[index];
@@ -165,45 +166,45 @@ class _RequestCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        color: AppColors.surface,
+        borderRadius: AppRadius.radiusMd,
+        border: Border.all(
+          color: AppColors.borderSubtle,
+          width: 1.0,
+        ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+            color: const Color(0xFF0F172A).withValues(alpha: 0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
-        border: Border.all(
-          color: const Color(0xFFF1F5F9),
-          width: 1.2,
-        ),
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: AppRadius.radiusMd,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: AppRadius.radiusMd,
           child: Padding(
-            padding: const EdgeInsets.all(16.0),
+            padding: const EdgeInsets.all(14.0),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 // Icon pill box
                 Container(
-                  width: 42,
-                  height: 42,
+                  width: 40,
+                  height: 40,
                   decoration: BoxDecoration(
                     color: item.iconBgColor,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: AppRadius.radiusSm,
                   ),
                   child: Center(
                     child: Icon(
                       item.icon,
                       color: item.iconColor,
-                      size: 22,
+                      size: 20,
                     ),
                   ),
                 ),
@@ -222,13 +223,13 @@ class _RequestCard extends StatelessWidget {
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 3),
                     Text(
                       item.subtitle,
                       style: const TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w500,
-                        color: AppColors.textMuted,
+                        color: AppColors.textSecondary,
                       ),
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

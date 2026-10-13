@@ -155,7 +155,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     final eventDates = _data.activities.map((a) => a.eventDatetime).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.background,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(64),
         child: SafeArea(

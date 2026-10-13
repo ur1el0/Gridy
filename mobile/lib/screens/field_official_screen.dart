@@ -312,9 +312,9 @@ class _FieldOfficialScreenState extends State<FieldOfficialScreen>
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F5F9),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF091B35),
+        backgroundColor: AppColors.primaryNavy,
         elevation: 0,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -323,7 +323,7 @@ class _FieldOfficialScreenState extends State<FieldOfficialScreen>
               'Field Operations',
               style: TextStyle(
                 fontSize: 18,
-                fontWeight: FontWeight.w900,
+                fontWeight: FontWeight.w800,
                 color: Colors.white,
               ),
             ),
@@ -331,7 +331,7 @@ class _FieldOfficialScreenState extends State<FieldOfficialScreen>
               _currentUser?.roleDisplay ?? 'Barangay Official',
               style: const TextStyle(
                 fontSize: 12,
-                color: Color(0xFF38BDF8),
+                color: AppColors.cyanAccent,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -346,10 +346,10 @@ class _FieldOfficialScreenState extends State<FieldOfficialScreen>
         ],
         bottom: TabBar(
           controller: _tabController,
-          indicatorColor: const Color(0xFF38BDF8),
+          indicatorColor: AppColors.cyanAccent,
           indicatorWeight: 3,
           labelColor: Colors.white,
-          unselectedLabelColor: const Color(0xFF94A3B8),
+          unselectedLabelColor: AppColors.textOnNavyMuted,
           tabs: const [
             Tab(
               icon: Icon(Icons.confirmation_number_outlined),

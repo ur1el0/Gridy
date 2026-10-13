@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_theme.dart';
 import '../models/document_request_model.dart';
 
 /// Appointment card displayed in the "MY APPOINTMENTS" section matching reference UI
@@ -26,17 +27,17 @@ class AppointmentScheduleCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(20),
+          color: AppColors.surface,
+          borderRadius: AppRadius.radiusLg,
           border: Border.all(
-            color: const Color(0xFFF1F5F9),
-            width: 1.5,
+            color: AppColors.borderSubtle,
+            width: 1.0,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF0F172A).withValues(alpha: 0.04),
-              blurRadius: 16,
-              offset: const Offset(0, 4),
+              color: Colors.black.withValues(alpha: 0.03),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
             ),
           ],
         ),
@@ -74,8 +75,8 @@ class AppointmentScheduleCard extends StatelessWidget {
                   width: 42,
                   height: 42,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF),
-                    borderRadius: BorderRadius.circular(12),
+                    color: AppColors.surfaceCyan,
+                    borderRadius: AppRadius.radiusMd,
                   ),
                   child: const Center(
                     child: Icon(

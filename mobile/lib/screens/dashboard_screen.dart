@@ -114,7 +114,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final UserModel? user = _data.user;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.background,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(64),
         child: SafeArea(

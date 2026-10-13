@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_theme.dart';
 
 /// Horizontal calendar date selector strip matching reference UI
 class CalendarDayStrip extends StatelessWidget {
@@ -142,18 +143,18 @@ class CalendarDayStrip extends StatelessWidget {
                   duration: const Duration(milliseconds: 200),
                   width: 58,
                   decoration: BoxDecoration(
-                    color: isSelected ? AppColors.primaryNavy : const Color(0xFFF1F5F9),
-                    borderRadius: BorderRadius.circular(18),
+                    color: isSelected ? AppColors.primaryNavy : AppColors.surfaceCardMuted,
+                    borderRadius: AppRadius.radiusMd,
                     border: Border.all(
-                      color: isSelected ? AppColors.primaryNavy : const Color(0xFFE2E8F0),
+                      color: isSelected ? AppColors.primaryNavy : AppColors.borderSubtle,
                       width: 1.0,
                     ),
                     boxShadow: isSelected
                         ? [
                             BoxShadow(
-                              color: AppColors.primaryNavy.withValues(alpha: 0.25),
-                              blurRadius: 10,
-                              offset: const Offset(0, 4),
+                              color: AppColors.primaryNavy.withValues(alpha: 0.18),
+                              blurRadius: 8,
+                              offset: const Offset(0, 3),
                             ),
                           ]
                         : null,

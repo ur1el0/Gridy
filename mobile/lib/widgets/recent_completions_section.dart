@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_theme.dart';
 import '../models/queue_ticket_model.dart';
 
 /// Section listing recently serviced and completed queue tickets
@@ -26,7 +27,7 @@ class RecentCompletionsSection extends StatelessWidget {
             const Text(
               'Recent Completions',
               style: TextStyle(
-                color: Color(0xFF0F172A),
+                color: AppColors.textPrimary,
                 fontSize: 18,
                 fontWeight: FontWeight.w800,
                 letterSpacing: -0.3,
@@ -48,7 +49,7 @@ class RecentCompletionsSection extends StatelessWidget {
           ],
         ),
 
-        const SizedBox(height: 14),
+        const SizedBox(height: 12),
 
         // List of Completed Ticket Cards
         if (completedTickets.isEmpty)
@@ -56,14 +57,15 @@ class RecentCompletionsSection extends StatelessWidget {
             width: double.infinity,
             padding: const EdgeInsets.all(20.0),
             decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(16),
+              color: AppColors.surface,
+              borderRadius: AppRadius.radiusMd,
+              border: Border.all(color: AppColors.borderSubtle, width: 1.0),
             ),
             child: const Center(
               child: Text(
                 'No completed queue tickets yet today',
                 style: TextStyle(
-                  color: Color(0xFF64748B),
+                  color: AppColors.textMuted,
                   fontSize: 13.5,
                   fontWeight: FontWeight.w500,
                 ),
@@ -73,16 +75,17 @@ class RecentCompletionsSection extends StatelessWidget {
         else
           ...completedTickets.take(4).map((ticket) {
             return Container(
-              margin: const EdgeInsets.only(bottom: 10),
+              margin: const EdgeInsets.only(bottom: 8),
               padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 12.0),
               decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(18),
+                color: AppColors.surface,
+                borderRadius: AppRadius.radiusMd,
+                border: Border.all(color: AppColors.borderSubtle, width: 1.0),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF0F172A).withValues(alpha: 0.03),
-                    blurRadius: 10,
-                    offset: const Offset(0, 3),
+                    color: const Color(0xFF0F172A).withValues(alpha: 0.02),
+                    blurRadius: 6,
+                    offset: const Offset(0, 2),
                   ),
                 ],
               ),
@@ -93,24 +96,24 @@ class RecentCompletionsSection extends StatelessWidget {
                     width: 52,
                     height: 38,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFEDF3FA),
-                      borderRadius: BorderRadius.circular(10),
+                      color: AppColors.surfaceNavy,
+                      borderRadius: AppRadius.radiusSm,
+                      border: Border.all(color: const Color(0xFFC7D2FE), width: 1.0),
                     ),
                     alignment: Alignment.center,
                     child: Text(
                       ticket.ticketNumber,
                       style: const TextStyle(
                         color: AppColors.primaryNavy,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w800,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w900,
                         letterSpacing: -0.2,
                       ),
                     ),
                   ),
-
                   const SizedBox(width: 14),
 
-                  // Middle Service Info & Time
+                  // Middle Service Description & Timestamp
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -118,8 +121,8 @@ class RecentCompletionsSection extends StatelessWidget {
                         Text(
                           ticket.serviceType,
                           style: const TextStyle(
-                            color: Color(0xFF0F172A),
-                            fontSize: 14.5,
+                            color: AppColors.textPrimary,
+                            fontSize: 13.5,
                             fontWeight: FontWeight.w700,
                           ),
                           maxLines: 1,
@@ -127,22 +130,22 @@ class RecentCompletionsSection extends StatelessWidget {
                         ),
                         const SizedBox(height: 2),
                         Text(
-                          ticket.completedTimeAgo,
+                          ticket.formattedUpdatedAt,
                           style: const TextStyle(
-                            color: Color(0xFF64748B),
-                            fontSize: 12,
-                            fontWeight: FontWeight.w500,
+                            color: AppColors.textSecondary,
+                            fontSize: 11.5,
+                            fontWeight: FontWeight.w400,
                           ),
                         ),
                       ],
                     ),
                   ),
 
-                  // Right Completion Indicator Icon
+                  // Right Green Checkmark Status Icon
                   const Icon(
-                    Icons.check_circle_outline_rounded,
-                    color: Color(0xFF10B981),
-                    size: 22,
+                    Icons.check_circle_rounded,
+                    color: AppColors.success,
+                    size: 20,
                   ),
                 ],
               ),

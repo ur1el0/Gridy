@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_theme.dart';
 import '../models/document_request_model.dart';
 
 class ClearanceValidatorTab extends StatelessWidget {
@@ -22,7 +23,7 @@ class ClearanceValidatorTab extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SingleChildScrollView(
-      padding: const EdgeInsets.all(20),
+      padding: const EdgeInsets.all(AppSpacing.md),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -30,14 +31,14 @@ class ClearanceValidatorTab extends StatelessWidget {
             'Clearance Authenticity Validator',
             style: TextStyle(
               fontSize: 18,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w800,
               color: AppColors.textPrimary,
             ),
           ),
           const SizedBox(height: 6),
           const Text(
             'Enter the Document Tracking ID printed on the resident certificate to verify validity.',
-            style: TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+            style: TextStyle(fontSize: 13, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 16),
           Row(
@@ -48,14 +49,18 @@ class ClearanceValidatorTab extends StatelessWidget {
                   decoration: InputDecoration(
                     hintText: 'e.g. 12 or REQ-12',
                     filled: true,
-                    fillColor: Colors.white,
+                    fillColor: AppColors.surface,
                     contentPadding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 14,
                     ),
                     border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(14),
-                      borderSide: const BorderSide(color: Color(0xFFCBD5E1)),
+                      borderRadius: AppRadius.radiusMd,
+                      borderSide: const BorderSide(color: AppColors.borderLight),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: AppRadius.radiusMd,
+                      borderSide: const BorderSide(color: AppColors.borderLight),
                     ),
                   ),
                   keyboardType: TextInputType.text,
@@ -67,12 +72,13 @@ class ClearanceValidatorTab extends StatelessWidget {
                 onPressed: isVerifying ? null : onVerify,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryNavy,
+                  elevation: 0,
                   padding: const EdgeInsets.symmetric(
                     horizontal: 20,
                     vertical: 15,
                   ),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                  shape: const RoundedRectangleBorder(
+                    borderRadius: AppRadius.radiusMd,
                   ),
                 ),
                 child: isVerifying
@@ -100,14 +106,14 @@ class ClearanceValidatorTab extends StatelessWidget {
               width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
-                color: const Color(0xFFFEF2F2),
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: const Color(0xFFFCA5A5)),
+                color: AppColors.surfaceError,
+                borderRadius: AppRadius.radiusMd,
+                border: Border.all(color: AppColors.error.withValues(alpha: 0.3)),
               ),
               child: Text(
                 verificationError!,
                 style: const TextStyle(
-                  color: Color(0xFFDC2626),
+                  color: AppColors.textError,
                   fontWeight: FontWeight.w600,
                   fontSize: 13.5,
                 ),
@@ -140,17 +146,17 @@ class ClearanceResultCard extends StatelessWidget {
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
+        color: AppColors.surface,
+        borderRadius: AppRadius.radiusLg,
         border: Border.all(
-          color: isReleased ? const Color(0xFF10B981) : const Color(0xFFF59E0B),
+          color: isReleased ? AppColors.success : AppColors.warning,
           width: 1.5,
         ),
-        boxShadow: [
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+            color: Color(0x08000000),
+            blurRadius: 8,
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -167,9 +173,9 @@ class ClearanceResultCard extends StatelessWidget {
                 ),
                 decoration: BoxDecoration(
                   color: isReleased
-                      ? const Color(0xFFECFDF5)
-                      : const Color(0xFFFFFBEB),
-                  borderRadius: BorderRadius.circular(8),
+                      ? AppColors.surfaceSuccess
+                      : AppColors.surfaceWarning,
+                  borderRadius: AppRadius.radiusSm,
                 ),
                 child: Row(
                   children: [
@@ -179,8 +185,8 @@ class ClearanceResultCard extends StatelessWidget {
                           : Icons.pending_actions_rounded,
                       size: 16,
                       color: isReleased
-                          ? const Color(0xFF059669)
-                          : const Color(0xFFD97706),
+                          ? AppColors.textSuccess
+                          : AppColors.textWarning,
                     ),
                     const SizedBox(width: 6),
                     Text(
@@ -189,8 +195,8 @@ class ClearanceResultCard extends StatelessWidget {
                         fontSize: 11,
                         fontWeight: FontWeight.w800,
                         color: isReleased
-                            ? const Color(0xFF059669)
-                            : const Color(0xFFD97706),
+                            ? AppColors.textSuccess
+                            : AppColors.textWarning,
                       ),
                     ),
                   ],
@@ -200,7 +206,7 @@ class ClearanceResultCard extends StatelessWidget {
                 request.formattedTrackingId,
                 style: const TextStyle(
                   fontWeight: FontWeight.w700,
-                  color: Color(0xFF64748B),
+                  color: AppColors.textMuted,
                   fontSize: 12,
                 ),
               ),
@@ -211,7 +217,7 @@ class ClearanceResultCard extends StatelessWidget {
             request.documentType,
             style: const TextStyle(
               fontSize: 18,
-              fontWeight: FontWeight.w900,
+              fontWeight: FontWeight.w800,
               color: AppColors.primaryNavy,
             ),
           ),
@@ -222,18 +228,18 @@ class ClearanceResultCard extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 13.5,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF334155),
+                color: AppColors.textPrimary,
               ),
             ),
           ],
           const SizedBox(height: 8),
           Text(
             'Status: ${request.statusDisplay}',
-            style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
           ),
           Text(
             'Requested Date: ${request.formattedRequestedDate}',
-            style: const TextStyle(fontSize: 13, color: Color(0xFF64748B)),
+            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
           ),
           if (request.orNumber != null && request.orNumber!.isNotEmpty) ...[
             const SizedBox(height: 4),
@@ -253,7 +259,7 @@ class ClearanceResultCard extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: Color(0xFF334155),
+                color: AppColors.textPrimary,
               ),
             ),
           ],
@@ -264,7 +270,7 @@ class ClearanceResultCard extends StatelessWidget {
               style: TextStyle(
                 fontSize: 12.5,
                 fontWeight: FontWeight.w500,
-                color: Color(0xFF64748B),
+                color: AppColors.textSecondary,
               ),
             ),
           ],

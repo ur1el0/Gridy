@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_theme.dart';
 import '../models/document_request_model.dart';
 
 /// Card widget representing an individual document request in "My Document Requests"
@@ -16,42 +17,46 @@ class DocumentRequestCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 12),
+      margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
+        color: AppColors.surface,
+        borderRadius: AppRadius.radiusMd,
+        border: Border.all(
+          color: AppColors.borderSubtle,
+          width: 1.0,
+        ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
+            color: const Color(0xFF0F172A).withValues(alpha: 0.02),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
           ),
         ],
-        border: Border.all(
-          color: const Color(0xFFF1F5F9),
-          width: 1.2,
-        ),
       ),
       child: Material(
         color: Colors.transparent,
-        borderRadius: BorderRadius.circular(18),
+        borderRadius: AppRadius.radiusMd,
         child: InkWell(
           onTap: onTap,
-          borderRadius: BorderRadius.circular(18),
+          borderRadius: AppRadius.radiusMd,
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 14.0),
             child: Row(
               children: [
                 // Left circular icon badge
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFF8FAFC),
+                    color: request.isReleased
+                        ? AppColors.surfaceSuccess
+                        : AppColors.surfaceNavy,
                     shape: BoxShape.circle,
                     border: Border.all(
-                      color: const Color(0xFFE2E8F0),
-                      width: 1.2,
+                      color: request.isReleased
+                          ? const Color(0xFFA7F3D0)
+                          : const Color(0xFFC7D2FE),
+                      width: 1.0,
                     ),
                   ),
                   child: Center(
@@ -60,9 +65,9 @@ class DocumentRequestCard extends StatelessWidget {
                           ? Icons.check_circle_outline_rounded
                           : Icons.article_outlined,
                       color: request.isReleased
-                          ? const Color(0xFF64748B)
-                          : const Color(0xFF1E3A8A),
-                      size: 22,
+                          ? AppColors.textSuccess
+                          : AppColors.primaryNavy,
+                      size: 20,
                     ),
                   ),
                 ),
@@ -117,7 +122,7 @@ class DocumentRequestCard extends StatelessWidget {
                       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                       decoration: BoxDecoration(
                         color: request.statusBadgeBgColor,
-                        borderRadius: BorderRadius.circular(8),
+                        borderRadius: AppRadius.radiusPill,
                       ),
                       child: Text(
                         request.statusBadgeLabel,
@@ -129,10 +134,10 @@ class DocumentRequestCard extends StatelessWidget {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 14),
+                    const SizedBox(height: 12),
                     const Icon(
                       Icons.chevron_right_rounded,
-                      color: Color(0xFF94A3B8),
+                      color: AppColors.borderLight,
                       size: 20,
                     ),
                   ],

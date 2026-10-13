@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import '../core/network/api_client.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_theme.dart';
 import '../models/user_model.dart';
 import '../services/storage_service.dart';
 import 'dashboard_screen.dart';
@@ -84,20 +85,20 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        backgroundColor: const Color(0xFF091B35),
+        backgroundColor: AppColors.primaryNavy,
         elevation: 0,
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
               'Executive Console',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900, color: Colors.white),
+              style: TextStyle(fontSize: 18, fontWeight: FontWeight.w800, color: Colors.white),
             ),
             Text(
               _currentUser?.fullName.isNotEmpty == true ? _currentUser!.fullName : 'Barangay Captain',
-              style: const TextStyle(fontSize: 12, color: Color(0xFF38BDF8), fontWeight: FontWeight.w600),
+              style: const TextStyle(fontSize: 12, color: AppColors.cyanAccent, fontWeight: FontWeight.w600),
             ),
           ],
         ),
@@ -116,7 +117,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
               color: AppColors.primaryNavy,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(20.0),
+                padding: const EdgeInsets.all(AppSpacing.md),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -124,9 +125,9 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
-                        color: Colors.white,
-                        borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: const Color(0xFFE2E8F0)),
+                        color: AppColors.surface,
+                        borderRadius: AppRadius.radiusMd,
+                        border: Border.all(color: AppColors.borderSubtle),
                       ),
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -159,14 +160,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     // Executive Metric Cards (Aligned with Web Admin)
                     const Text(
                       'OVERVIEW METRICS',
-                      style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B), letterSpacing: 1.2),
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.textSecondary, letterSpacing: 1.1),
                     ),
                     const SizedBox(height: 12),
 
                     GridView.count(
                       crossAxisCount: 2,
-                      crossAxisSpacing: 14,
-                      mainAxisSpacing: 14,
+                      crossAxisSpacing: 12,
+                      mainAxisSpacing: 12,
                       shrinkWrap: true,
                       physics: const NeverScrollableScrollPhysics(),
                       children: [
@@ -175,29 +176,29 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                           value: '$_totalResidents',
                           icon: Icons.people_alt_outlined,
                           iconColor: const Color(0xFF0284C7),
-                          bgColor: const Color(0xFFF0F9FF),
+                          bgColor: AppColors.surfaceCyan,
                         ),
                         _buildMetricCard(
                           title: 'Pending Docs',
                           value: '$_pendingDocuments',
                           icon: Icons.assignment_outlined,
                           iconColor: const Color(0xFFF59E0B),
-                          bgColor: const Color(0xFFFFFBEB),
+                          bgColor: AppColors.surfaceWarning,
                         ),
                         _buildMetricCard(
                           title: 'Waiting Queue',
                           value: '$_waitingQueue',
                           subtitle: _servingNow != null ? 'Serving: $_servingNow' : null,
                           icon: Icons.confirmation_number_outlined,
-                          iconColor: const Color(0xFF10B981),
-                          bgColor: const Color(0xFFECFDF5),
+                          iconColor: AppColors.success,
+                          bgColor: AppColors.surfaceSuccess,
                         ),
                         _buildMetricCard(
                           title: 'Active Reports',
                           value: '$_pendingIssues',
                           icon: Icons.warning_amber_rounded,
-                          iconColor: const Color(0xFFEF4444),
-                          bgColor: const Color(0xFFFEF2F2),
+                          iconColor: AppColors.error,
+                          bgColor: AppColors.surfaceError,
                         ),
                       ],
                     ),
@@ -207,13 +208,13 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                     // Executive Management Actions
                     const Text(
                       'EXECUTIVE OPERATIONS',
-                      style: TextStyle(fontSize: 11.5, fontWeight: FontWeight.w800, color: Color(0xFF64748B), letterSpacing: 1.2),
+                      style: TextStyle(fontSize: 12, fontWeight: FontWeight.w800, color: AppColors.textSecondary, letterSpacing: 1.1),
                     ),
                     const SizedBox(height: 12),
 
                     _buildActionTile(
                       icon: Icons.shield_rounded,
-                      iconBg: const Color(0xFF091B35),
+                      iconBg: AppColors.primaryNavy,
                       title: 'Field Operations Desk',
                       subtitle: 'Advance queue ticker, verify clearance QR, triage incidents',
                       onTap: () {
@@ -256,14 +257,14 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFFF1F5F9)),
-        boxShadow: [
+        color: AppColors.surface,
+        borderRadius: AppRadius.radiusMd,
+        border: Border.all(color: AppColors.borderSubtle),
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
-            blurRadius: 8,
-            offset: const Offset(0, 3),
+            color: Color(0x08000000),
+            blurRadius: 4,
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -273,7 +274,7 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
         children: [
           Container(
             padding: const EdgeInsets.all(8),
-            decoration: BoxDecoration(color: bgColor, borderRadius: BorderRadius.circular(10)),
+            decoration: BoxDecoration(color: bgColor, borderRadius: AppRadius.radiusSm),
             child: Icon(icon, color: iconColor, size: 20),
           ),
           Column(
@@ -281,12 +282,12 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
             children: [
               Text(
                 value,
-                style: const TextStyle(fontSize: 26, fontWeight: FontWeight.w900, color: AppColors.primaryNavy),
+                style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900, color: AppColors.textPrimary),
               ),
               const SizedBox(height: 2),
               Text(
                 title,
-                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+                style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.textSecondary),
               ),
               if (subtitle != null) ...[
                 const SizedBox(height: 2),
@@ -311,19 +312,19 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
   }) {
     return InkWell(
       onTap: onTap,
-      borderRadius: BorderRadius.circular(16),
+      borderRadius: AppRadius.radiusMd,
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFE2E8F0)),
+          color: AppColors.surface,
+          borderRadius: AppRadius.radiusMd,
+          border: Border.all(color: AppColors.borderSubtle),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: iconBg, borderRadius: BorderRadius.circular(12)),
+              decoration: BoxDecoration(color: iconBg, borderRadius: AppRadius.radiusSm),
               child: Icon(icon, color: Colors.white, size: 22),
             ),
             const SizedBox(width: 14),
@@ -333,11 +334,11 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> {
                 children: [
                   Text(title, style: const TextStyle(fontSize: 14.5, fontWeight: FontWeight.w800, color: AppColors.textPrimary)),
                   const SizedBox(height: 2),
-                  Text(subtitle, style: const TextStyle(fontSize: 11.5, color: Color(0xFF64748B))),
+                  Text(subtitle, style: const TextStyle(fontSize: 12, color: AppColors.textSecondary)),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: Color(0xFF94A3B8)),
+            const Icon(Icons.arrow_forward_ios_rounded, size: 14, color: AppColors.textMuted),
           ],
         ),
       ),

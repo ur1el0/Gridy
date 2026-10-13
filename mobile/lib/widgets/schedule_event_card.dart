@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_theme.dart';
 import '../models/activity_schedule_model.dart';
 
 /// Event card displayed in the "Upcoming Events" section matching reference UI
@@ -24,12 +25,19 @@ class ScheduleEventCard extends StatelessWidget {
         width: double.infinity,
         padding: const EdgeInsets.all(20),
         decoration: BoxDecoration(
-          color: const Color(0xFFF8FAFC),
-          borderRadius: BorderRadius.circular(20),
+          color: AppColors.surface,
+          borderRadius: AppRadius.radiusLg,
           border: Border.all(
-            color: const Color(0xFFE2E8F0),
+            color: AppColors.borderSubtle,
             width: 1.0,
           ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.02),
+              blurRadius: 6,
+              offset: const Offset(0, 2),
+            ),
+          ],
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -54,14 +62,14 @@ class ScheduleEventCard extends StatelessWidget {
                   width: 44,
                   height: 44,
                   decoration: BoxDecoration(
-                    color: const Color(0xFFCBD5E1),
-                    borderRadius: BorderRadius.circular(12),
+                    color: AppColors.surfaceNavy,
+                    borderRadius: AppRadius.radiusMd,
                   ),
                   child: Center(
                     child: Icon(
                       _getEventIcon(activity.title),
                       size: 22,
-                      color: const Color(0xFF475569),
+                      color: AppColors.primaryNavy,
                     ),
                   ),
                 ),
@@ -137,15 +145,15 @@ class ScheduleEventCard extends StatelessWidget {
               child: ElevatedButton(
                 onPressed: onAddToCalendar,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.white,
+                  backgroundColor: AppColors.surfaceCardMuted,
                   foregroundColor: AppColors.primaryNavy,
                   elevation: 0,
                   side: const BorderSide(
-                    color: Color(0xFFE2E8F0),
+                    color: AppColors.borderSubtle,
                     width: 1.0,
                   ),
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: AppRadius.radiusMd,
                   ),
                   padding: const EdgeInsets.symmetric(vertical: 12),
                 ),

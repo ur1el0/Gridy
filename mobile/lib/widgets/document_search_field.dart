@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_theme.dart';
 
 class DocumentSearchField extends StatelessWidget {
   final TextEditingController controller;
@@ -20,9 +20,9 @@ class DocumentSearchField extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFFF1F5F9),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: const Color(0xFFE2E8F0)),
+        color: AppColors.surface,
+        borderRadius: AppRadius.radiusMd,
+        border: Border.all(color: AppColors.borderSubtle, width: 1.0),
       ),
       child: TextField(
         controller: controller,
@@ -36,13 +36,13 @@ class DocumentSearchField extends StatelessWidget {
           hintText: 'Search for certificates or permits...',
           hintStyle: const TextStyle(
             fontSize: 14,
-            fontWeight: FontWeight.w500,
-            color: Color(0xFF94A3B8),
+            fontWeight: FontWeight.w400,
+            color: AppColors.textHint,
           ),
           prefixIcon: const Icon(
             Icons.search_rounded,
-            color: Color(0xFF64748B),
-            size: 22,
+            color: AppColors.textSecondary,
+            size: 20,
           ),
           suffixIcon: query.isNotEmpty
               ? IconButton(
@@ -50,7 +50,7 @@ class DocumentSearchField extends StatelessWidget {
                   icon: const Icon(
                     Icons.clear_rounded,
                     size: 18,
-                    color: Color(0xFF64748B),
+                    color: AppColors.textSecondary,
                   ),
                   onPressed: onClear,
                 )
@@ -58,7 +58,7 @@ class DocumentSearchField extends StatelessWidget {
           border: InputBorder.none,
           contentPadding: const EdgeInsets.symmetric(
             horizontal: 16,
-            vertical: 14,
+            vertical: 13,
           ),
         ),
       ),

@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
 import '../core/network/api_client.dart';
+import '../core/theme/app_colors.dart';
+import '../core/theme/app_theme.dart';
 import '../services/issue_service.dart';
 import '../services/storage_service.dart';
+import '../widgets/status_badge.dart';
 
 class MyIssuesScreen extends StatefulWidget {
   const MyIssuesScreen({super.key});
@@ -41,20 +44,6 @@ class _MyIssuesScreenState extends State<MyIssuesScreen> {
     }
   }
 
-  // Premium Tailwind UI Color Palette for Statuses
-  Color _getStatusColor(String status) {
-    switch (status.toUpperCase()) {
-      case 'RESOLVED':
-        return const Color(0xFF10B981); // Emerald 500
-      case 'IN_PROGRESS':
-        return const Color(0xFF3B82F6); // Blue 500
-      case 'REJECTED':
-        return const Color(0xFFEF4444); // Red 500
-      default:
-        return const Color(0xFFF59E0B); // Amber 500
-    }
-  }
-
   // Helper to format the ISO timestamp from Django
   String _formatDate(String isoString) {
     try {
@@ -69,40 +58,58 @@ class _MyIssuesScreenState extends State<MyIssuesScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC), // slate-50 background
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text(
           'My Report History',
-          style: TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF0F172A), fontSize: 20),
+          style: TextStyle(
+            fontWeight: FontWeight.bold,
+            color: AppColors.textPrimary,
+            fontSize: 18,
+          ),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
         elevation: 0,
-        iconTheme: const IconThemeData(color: Color(0xFF0F172A)),
+        scrolledUnderElevation: 0,
+        iconTheme: const IconThemeData(color: AppColors.primaryNavy),
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(1),
-          child: Container(color: const Color(0xFFE2E8F0), height: 1), // subtle bottom border
+          child: Container(color: AppColors.borderSubtle, height: 1),
         ),
       ),
       body: _issueService == null
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryNavy),
+              ),
+            )
           : RefreshIndicator(
               onRefresh: _refresh,
-              color: const Color(0xFF2563EB),
+              color: AppColors.primaryNavy,
               child: FutureBuilder<List<IssueReport>>(
                 future: _issuesFuture,
                 builder: (context, snapshot) {
                   if (snapshot.connectionState == ConnectionState.waiting) {
-                    return const Center(child: CircularProgressIndicator(color: Color(0xFF2563EB)));
+                    return const Center(
+                      child: CircularProgressIndicator(
+                        valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryNavy),
+                      ),
+                    );
                   } else if (snapshot.hasError) {
-                    return Center(child: Text('Error: ${snapshot.error}', style: const TextStyle(color: Colors.red)));
-                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
                     return Center(
+                      child: Text(
+                        'Error: ${snapshot.error}',
+                        style: const TextStyle(color: AppColors.error),
+                      ),
+                    );
+                  } else if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                    return const Center(
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(Icons.assignment_outlined, size: 64, color: Color(0xFFCBD5E1)),
-                          const SizedBox(height: 16),
-                          Text('No reports submitted yet.', style: TextStyle(color: Color(0xFF64748B), fontSize: 16)),
+                          Icon(Icons.assignment_outlined, size: 64, color: AppColors.borderLight),
+                          SizedBox(height: 16),
+                          Text('No reports submitted yet.', style: TextStyle(color: AppColors.textSecondary, fontSize: 16)),
                         ],
                       ),
                     );
@@ -114,21 +121,13 @@ class _MyIssuesScreenState extends State<MyIssuesScreen> {
                     itemCount: issues.length,
                     itemBuilder: (context, index) {
                       final issue = issues[index];
-                      final statusColor = _getStatusColor(issue.status);
 
                       return Container(
                         margin: const EdgeInsets.only(bottom: 16),
                         decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: const Color(0xFFE2E8F0)),
-                          boxShadow: [
-                            BoxShadow(
-                              color: const Color(0xFF0F172A).withValues(alpha: 0.04),
-                              blurRadius: 12,
-                              offset: const Offset(0, 4),
-                            ),
-                          ],
+                          color: AppColors.surface,
+                          borderRadius: AppRadius.radiusLg,
+                          border: Border.all(color: AppColors.borderSubtle),
                         ),
                         child: Padding(
                           padding: const EdgeInsets.all(16),
@@ -142,24 +141,13 @@ class _MyIssuesScreenState extends State<MyIssuesScreen> {
                                   Text(
                                     _formatDate(issue.createdAt),
                                     style: const TextStyle(
-                                      color: Color(0xFF64748B),
+                                      color: AppColors.textMuted,
                                       fontSize: 12,
                                       fontWeight: FontWeight.w600,
                                       letterSpacing: 0.5,
                                     ),
                                   ),
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                                    decoration: BoxDecoration(
-                                      color: statusColor.withValues(alpha: 0.1),
-                                      borderRadius: BorderRadius.circular(20),
-                                      border: Border.all(color: statusColor.withValues(alpha: 0.2)),
-                                    ),
-                                    child: Text(
-                                      issue.status.replaceAll('_', ' '),
-                                      style: TextStyle(color: statusColor, fontWeight: FontWeight.bold, fontSize: 10),
-                                    ),
-                                  ),
+                                  StatusBadge.fromStatus(issue.status),
                                 ],
                               ),
                               const SizedBox(height: 12),
@@ -167,14 +155,14 @@ class _MyIssuesScreenState extends State<MyIssuesScreen> {
                               // Title
                               Text(
                                 issue.title,
-                                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF0F172A)),
+                                style: const TextStyle(fontSize: 17, fontWeight: FontWeight.bold, color: AppColors.textPrimary),
                               ),
                               const SizedBox(height: 6),
                               
                               // Description
                               Text(
                                 issue.description,
-                                style: const TextStyle(color: Color(0xFF475569), height: 1.4, fontSize: 14),
+                                style: const TextStyle(color: AppColors.textSecondary, height: 1.4, fontSize: 14),
                               ),
                               
                                                             // Optional Image

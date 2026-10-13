@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_theme.dart';
 
-/// Floating pill bottom navigation bar matching reference design
+/// Floating pill bottom navigation bar with accessible semantics
 class CustomBottomNav extends StatelessWidget {
   final int currentIndex;
   final Function(int) onTap;
@@ -15,55 +16,60 @@ class CustomBottomNav extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white,
+        color: AppColors.surface,
         borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+        ),
+        border: const Border(
+          top: BorderSide(color: AppColors.borderSubtle, width: 1.0),
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.08),
-            blurRadius: 20,
-            offset: const Offset(0, -4),
+            color: const Color(0xFF0F172A).withValues(alpha: 0.05),
+            blurRadius: 12,
+            offset: const Offset(0, -3),
           ),
         ],
       ),
       child: SafeArea(
         top: false,
-        child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _NavItem(
-              index: 0,
-              selectedIndex: currentIndex,
-              icon: Icons.grid_view_rounded,
-              label: 'DASHBOARD',
-              onTap: () => onTap(0),
-            ),
-            _NavItem(
-              index: 1,
-              selectedIndex: currentIndex,
-              icon: Icons.confirmation_number_outlined,
-              label: 'QUEUE',
-              onTap: () => onTap(1),
-            ),
-            _NavItem(
-              index: 2,
-              selectedIndex: currentIndex,
-              icon: Icons.description_outlined,
-              label: 'DOCUMENTS',
-              onTap: () => onTap(2),
-            ),
-            _NavItem(
-              index: 3,
-              selectedIndex: currentIndex,
-              icon: Icons.calendar_today_outlined,
-              label: 'SCHEDULE',
-              onTap: () => onTap(3),
-            ),
-          ],
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _NavItem(
+                index: 0,
+                selectedIndex: currentIndex,
+                icon: Icons.grid_view_rounded,
+                label: 'DASHBOARD',
+                onTap: () => onTap(0),
+              ),
+              _NavItem(
+                index: 1,
+                selectedIndex: currentIndex,
+                icon: Icons.confirmation_number_outlined,
+                label: 'QUEUE',
+                onTap: () => onTap(1),
+              ),
+              _NavItem(
+                index: 2,
+                selectedIndex: currentIndex,
+                icon: Icons.description_outlined,
+                label: 'DOCUMENTS',
+                onTap: () => onTap(2),
+              ),
+              _NavItem(
+                index: 3,
+                selectedIndex: currentIndex,
+                icon: Icons.calendar_today_outlined,
+                label: 'SCHEDULE',
+                onTap: () => onTap(3),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -92,15 +98,15 @@ class _NavItem extends StatelessWidget {
     final Widget visualItem;
 
     if (isSelected) {
-      // Active tab: Solid dark navy capsule pill
+      // Active tab: Solid dark navy capsule pill with clean elevation
       visualItem = GestureDetector(
         excludeFromSemantics: true,
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
           decoration: BoxDecoration(
             color: AppColors.primaryNavy,
-            borderRadius: BorderRadius.circular(14),
+            borderRadius: AppRadius.radiusMd,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -127,7 +133,7 @@ class _NavItem extends StatelessWidget {
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

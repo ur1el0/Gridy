@@ -48,6 +48,9 @@ class QueueTicketModel {
     }
   }
 
+  /// Alias for human-friendly updated timestamp
+  String get formattedUpdatedAt => completedTimeAgo;
+
   factory QueueTicketModel.fromJson(Map<String, dynamic> json) {
     return QueueTicketModel(
       id: json['ticket_id'] as int? ?? json['id'] as int? ?? 0,

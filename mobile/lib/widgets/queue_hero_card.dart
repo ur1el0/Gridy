@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../core/theme/app_colors.dart';
+import '../core/theme/app_theme.dart';
 
 /// Primary hero card displaying the currently served queue ticket at the counter
 class QueueHeroCard extends StatelessWidget {
@@ -17,15 +19,26 @@ class QueueHeroCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 26.0),
+      padding: const EdgeInsets.symmetric(horizontal: 22.0, vertical: 22.0),
       decoration: BoxDecoration(
-        color: const Color(0xFF0A3E82),
-        borderRadius: BorderRadius.circular(26),
+        borderRadius: AppRadius.radiusLg,
+        gradient: const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            AppColors.primaryNavy,
+            AppColors.primaryNavyDark,
+          ],
+        ),
+        border: Border.all(
+          color: const Color(0xFF1E3A8A),
+          width: 1.0,
+        ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF0A3E82).withValues(alpha: 0.25),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
+            color: AppColors.primaryNavy.withValues(alpha: 0.15),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
@@ -38,10 +51,14 @@ class QueueHeroCard extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                 decoration: BoxDecoration(
-                  color: Colors.white.withValues(alpha: 0.18),
-                  borderRadius: BorderRadius.circular(20),
+                  color: Colors.white.withValues(alpha: 0.16),
+                  borderRadius: AppRadius.radiusPill,
+                  border: Border.all(
+                    color: Colors.white.withValues(alpha: 0.2),
+                    width: 1.0,
+                  ),
                 ),
                 child: const Text(
                   'CURRENTLY AT COUNTER',
@@ -55,20 +72,20 @@ class QueueHeroCard extends StatelessWidget {
               ),
               const Icon(
                 Icons.sensors_rounded,
-                color: Colors.white,
-                size: 24,
+                color: Color(0xFF38BDF8), // Cyan live pulse accent
+                size: 22,
               ),
             ],
           ),
 
-          const SizedBox(height: 22),
+          const SizedBox(height: 18),
 
           // Main Serving Ticket Identifier
           Text(
             currentTicket ?? '---',
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 54,
+              fontSize: 52,
               fontWeight: FontWeight.w900,
               letterSpacing: -1.2,
               height: 1.0,
@@ -83,7 +100,7 @@ class QueueHeroCard extends StatelessWidget {
             style: const TextStyle(
               color: Colors.white,
               fontSize: 16,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
               letterSpacing: 0.1,
             ),
           ),
@@ -95,15 +112,15 @@ class QueueHeroCard extends StatelessWidget {
             children: [
               Icon(
                 Icons.location_on_outlined,
-                color: Colors.white.withValues(alpha: 0.75),
+                color: Colors.white.withValues(alpha: 0.8),
                 size: 15,
               ),
               const SizedBox(width: 4),
               Text(
                 location,
                 style: TextStyle(
-                  color: Colors.white.withValues(alpha: 0.8),
-                  fontSize: 13.5,
+                  color: Colors.white.withValues(alpha: 0.85),
+                  fontSize: 12.5,
                   fontWeight: FontWeight.w500,
                 ),
               ),

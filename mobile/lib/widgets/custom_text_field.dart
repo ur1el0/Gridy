@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_theme.dart';
 
 class CustomTextField extends StatelessWidget {
   final String label;
@@ -12,7 +13,11 @@ class CustomTextField extends StatelessWidget {
   final TextInputAction textInputAction;
   final String? Function(String?)? validator;
   final void Function(String)? onFieldSubmitted;
+  final void Function(String)? onChanged;
   final bool enabled;
+  final int maxLines;
+  final bool readOnly;
+  final VoidCallback? onTap;
 
   const CustomTextField({
     super.key,
@@ -26,7 +31,11 @@ class CustomTextField extends StatelessWidget {
     this.textInputAction = TextInputAction.next,
     this.validator,
     this.onFieldSubmitted,
+    this.onChanged,
     this.enabled = true,
+    this.maxLines = 1,
+    this.readOnly = false,
+    this.onTap,
   });
 
   @override
@@ -38,17 +47,21 @@ class CustomTextField extends StatelessWidget {
         Text(
           label.toUpperCase(),
           style: const TextStyle(
-            fontSize: 12,
+            fontSize: 11.5,
             fontWeight: FontWeight.w700,
             color: AppColors.textLabel,
             letterSpacing: 0.8,
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 7),
         Container(
           decoration: BoxDecoration(
-            color: AppColors.inputBackground,
-            borderRadius: BorderRadius.circular(12),
+            color: enabled ? AppColors.inputBackground : const Color(0xFFF1F5F9),
+            borderRadius: AppRadius.radiusMd,
+            border: Border.all(
+              color: AppColors.borderSubtle,
+              width: 1.0,
+            ),
           ),
           child: Semantics(
             label: label.toUpperCase(),
@@ -59,7 +72,11 @@ class CustomTextField extends StatelessWidget {
               textInputAction: textInputAction,
               validator: validator,
               onFieldSubmitted: onFieldSubmitted,
+              onChanged: onChanged,
               enabled: enabled,
+              maxLines: maxLines,
+              readOnly: readOnly,
+              onTap: onTap,
               style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w500,
@@ -68,7 +85,7 @@ class CustomTextField extends StatelessWidget {
               decoration: InputDecoration(
                 hintText: hintText,
                 hintStyle: const TextStyle(
-                  fontSize: 15,
+                  fontSize: 14.5,
                   fontWeight: FontWeight.w400,
                   color: AppColors.textHint,
                 ),
@@ -77,9 +94,12 @@ class CustomTextField extends StatelessWidget {
                     : null,
                 suffixIcon: suffixIcon,
                 border: InputBorder.none,
+                enabledBorder: InputBorder.none,
+                focusedBorder: InputBorder.none,
+                errorBorder: InputBorder.none,
                 contentPadding: const EdgeInsets.symmetric(
                   horizontal: 16,
-                  vertical: 16,
+                  vertical: 14,
                 ),
               ),
             ),

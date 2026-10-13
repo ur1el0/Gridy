@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_theme.dart';
 import '../services/issue_service.dart';
 
 class FieldReportsTab extends StatelessWidget {
@@ -142,15 +143,16 @@ class _FieldReportCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final isResolved = report.status.toUpperCase() == 'RESOLVED';
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(18),
-        boxShadow: [
+        color: AppColors.surface,
+        borderRadius: AppRadius.radiusMd,
+        border: Border.all(color: AppColors.borderSubtle),
+        boxShadow: const [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.03),
+            color: Color(0x08000000),
             blurRadius: 8,
-            offset: const Offset(0, 3),
+            offset: Offset(0, 2),
           ),
         ],
       ),
@@ -164,9 +166,9 @@ class _FieldReportCard extends StatelessWidget {
                 padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
                 decoration: BoxDecoration(
                   color: isResolved
-                      ? const Color(0xFFECFDF5)
-                      : const Color(0xFFFEF3C7),
-                  borderRadius: BorderRadius.circular(6),
+                      ? AppColors.surfaceSuccess
+                      : AppColors.surfaceWarning,
+                  borderRadius: AppRadius.radiusSm,
                 ),
                 child: Text(
                   report.status.toUpperCase(),
@@ -174,8 +176,8 @@ class _FieldReportCard extends StatelessWidget {
                     fontSize: 10.5,
                     fontWeight: FontWeight.w800,
                     color: isResolved
-                        ? const Color(0xFF059669)
-                        : const Color(0xFFD97706),
+                        ? AppColors.textSuccess
+                        : AppColors.textWarning,
                   ),
                 ),
               ),
@@ -184,7 +186,7 @@ class _FieldReportCard extends StatelessWidget {
                 style: const TextStyle(
                   fontSize: 11.5,
                   fontWeight: FontWeight.w600,
-                  color: Color(0xFF64748B),
+                  color: AppColors.textSecondary,
                 ),
               ),
             ],
@@ -222,7 +224,7 @@ class _FieldReportCard extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             report.description,
-            style: const TextStyle(fontSize: 13, color: Color(0xFF475569)),
+            style: const TextStyle(fontSize: 13, color: AppColors.textSecondary),
           ),
           const SizedBox(height: 10),
           Row(
@@ -239,7 +241,7 @@ class _FieldReportCard extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
-                    color: Color(0xFF64748B),
+                    color: AppColors.textSecondary,
                   ),
                 ),
               ),
@@ -257,8 +259,9 @@ class _FieldReportCard extends StatelessWidget {
                       horizontal: 12,
                       vertical: 6,
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                    side: const BorderSide(color: AppColors.borderLight),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: AppRadius.radiusSm,
                     ),
                   ),
                   child: const Text(
@@ -270,13 +273,14 @@ class _FieldReportCard extends StatelessWidget {
                 ElevatedButton(
                   onPressed: () => onUpdateStatus(report.id, 'RESOLVED'),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF10B981),
+                    backgroundColor: AppColors.success,
+                    elevation: 0,
                     padding: const EdgeInsets.symmetric(
                       horizontal: 12,
                       vertical: 6,
                     ),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
+                    shape: const RoundedRectangleBorder(
+                      borderRadius: AppRadius.radiusSm,
                     ),
                   ),
                   child: const Text(
@@ -315,7 +319,7 @@ class _UrgencyBadge extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
         color: color.withValues(alpha: 0.1),
-        borderRadius: BorderRadius.circular(6),
+        borderRadius: AppRadius.radiusSm,
       ),
       child: Text(
         normalized,

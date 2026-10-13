@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/network/api_client.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_theme.dart';
 import '../services/aid_request_service.dart';
 import '../services/storage_service.dart';
 
@@ -106,114 +107,181 @@ class _AidRequestsScreenState extends State<AidRequestsScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.background,
       appBar: AppBar(
-        title: const Text('Barangay Assistance'),
+        title: const Text(
+          'Barangay Assistance',
+          style: TextStyle(
+            fontSize: 18,
+            fontWeight: FontWeight.w800,
+            color: AppColors.textPrimary,
+          ),
+        ),
         foregroundColor: AppColors.textPrimary,
-        backgroundColor: Colors.white,
+        backgroundColor: AppColors.surface,
+        elevation: 0,
+        scrolledUnderElevation: 0,
       ),
       body: _isLoading
-          ? const Center(child: CircularProgressIndicator())
+          ? const Center(
+              child: CircularProgressIndicator(
+                valueColor: AlwaysStoppedAnimation<Color>(AppColors.primaryNavy),
+              ),
+            )
           : RefreshIndicator(
               onRefresh: _loadRequests,
+              color: AppColors.primaryNavy,
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  Card(
-                    child: Padding(
-                      padding: const EdgeInsets.all(16),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Request assistance',
-                            style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
+                  Container(
+                    decoration: BoxDecoration(
+                      color: AppColors.surface,
+                      borderRadius: AppRadius.radiusLg,
+                      border: Border.all(color: AppColors.borderSubtle, width: 1.0),
+                    ),
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        const Text(
+                          'Request assistance',
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        const Text(
+                          'Barangay staff will review your request manually. Submission does not guarantee approval.',
+                          style: TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 13.5,
+                            height: 1.35,
+                          ),
+                        ),
+                        const SizedBox(height: 16),
+                        DropdownButtonFormField<String>(
+                          initialValue: _assistanceType,
+                          decoration: const InputDecoration(
+                            labelText: 'Type of assistance',
+                            filled: true,
+                            fillColor: AppColors.inputBackground,
+                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                            border: OutlineInputBorder(
+                              borderRadius: AppRadius.radiusMd,
+                              borderSide: BorderSide(color: AppColors.borderSubtle),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: AppRadius.radiusMd,
+                              borderSide: BorderSide(color: AppColors.borderSubtle),
                             ),
                           ),
-                          const SizedBox(height: 8),
-                          const Text(
-                            'Barangay staff will review your request manually. Submission does not guarantee approval.',
-                            style: TextStyle(
-                              color: AppColors.textMuted,
-                              height: 1.35,
+                          items: _assistanceTypes
+                              .map(
+                                (type) => DropdownMenuItem(
+                                  value: type,
+                                  child: Text(type),
+                                ),
+                              )
+                              .toList(),
+                          onChanged: (value) {
+                            if (value != null) {
+                              setState(() => _assistanceType = value);
+                            }
+                          },
+                        ),
+                        const SizedBox(height: 14),
+                        TextField(
+                          controller: _reasonController,
+                          maxLength: 2000,
+                          maxLines: 4,
+                          decoration: const InputDecoration(
+                            labelText: 'Reason for request',
+                            alignLabelWithHint: true,
+                            filled: true,
+                            fillColor: AppColors.inputBackground,
+                            border: OutlineInputBorder(
+                              borderRadius: AppRadius.radiusMd,
+                              borderSide: BorderSide(color: AppColors.borderSubtle),
+                            ),
+                            enabledBorder: OutlineInputBorder(
+                              borderRadius: AppRadius.radiusMd,
+                              borderSide: BorderSide(color: AppColors.borderSubtle),
                             ),
                           ),
-                          const SizedBox(height: 14),
-                          DropdownButtonFormField<String>(
-                            initialValue: _assistanceType,
-                            decoration: const InputDecoration(
-                              labelText: 'Type of assistance',
-                            ),
-                            items: _assistanceTypes
-                                .map(
-                                  (type) => DropdownMenuItem(
-                                    value: type,
-                                    child: Text(type),
-                                  ),
-                                )
-                                .toList(),
-                            onChanged: (value) {
-                              if (value != null) {
-                                setState(() => _assistanceType = value);
-                              }
-                            },
-                          ),
-                          const SizedBox(height: 12),
-                          TextField(
-                            controller: _reasonController,
-                            maxLength: 2000,
-                            maxLines: 4,
-                            decoration: const InputDecoration(
-                              labelText: 'Reason for request',
-                              alignLabelWithHint: true,
-                              border: OutlineInputBorder(),
-                            ),
-                          ),
-                          SizedBox(
-                            width: double.infinity,
-                            child: FilledButton.icon(
-                              onPressed: _isSubmitting ? null : _submitRequest,
-                              icon: _isSubmitting
-                                  ? const SizedBox.square(
-                                      dimension: 16,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                      ),
-                                    )
-                                  : const Icon(Icons.send_outlined),
-                              label: Text(
-                                _isSubmitting
-                                    ? 'Submitting…'
-                                    : 'Submit for review',
+                        ),
+                        const SizedBox(height: 4),
+                        SizedBox(
+                          width: double.infinity,
+                          child: ElevatedButton.icon(
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: AppColors.primaryNavy,
+                              foregroundColor: Colors.white,
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                              shape: const RoundedRectangleBorder(
+                                borderRadius: AppRadius.radiusMd,
                               ),
+                              elevation: 0,
+                            ),
+                            onPressed: _isSubmitting ? null : _submitRequest,
+                            icon: _isSubmitting
+                                ? const SizedBox.square(
+                                    dimension: 16,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                                    ),
+                                  )
+                                : const Icon(Icons.send_outlined, size: 18),
+                            label: Text(
+                              _isSubmitting
+                                  ? 'Submitting…'
+                                  : 'Submit for review',
+                              style: const TextStyle(fontWeight: FontWeight.w700),
                             ),
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-                  const SizedBox(height: 20),
+                  const SizedBox(height: 24),
                   const Text(
                     'Your requests',
-                    style: TextStyle(fontSize: 17, fontWeight: FontWeight.bold),
+                    style: TextStyle(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 10),
                   if (_requests.isEmpty)
-                    const Card(
-                      child: Padding(
-                        padding: EdgeInsets.all(18),
+                    Container(
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: AppColors.surface,
+                        borderRadius: AppRadius.radiusMd,
+                        border: Border.all(color: AppColors.borderSubtle, width: 1.0),
+                      ),
+                      child: const Center(
                         child: Text(
                           'No assistance requests have been submitted.',
+                          style: TextStyle(color: AppColors.textSecondary),
                         ),
                       ),
                     ),
                   ..._requests.map(
-                    (request) => Card(
-                      margin: const EdgeInsets.only(bottom: 10),
-                      child: Padding(
-                        padding: const EdgeInsets.all(14),
+                    (request) {
+                      final status = request['status']?.toString() ?? 'PENDING';
+                      return Container(
+                        margin: const EdgeInsets.only(bottom: 12),
+                        padding: const EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: AppColors.surface,
+                          borderRadius: AppRadius.radiusMd,
+                          border: Border.all(color: AppColors.borderSubtle, width: 1.0),
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
@@ -226,32 +294,67 @@ class _AidRequestsScreenState extends State<AidRequestsScreen> {
                                         'Assistance request',
                                     style: const TextStyle(
                                       fontWeight: FontWeight.bold,
+                                      fontSize: 15,
+                                      color: AppColors.textPrimary,
                                     ),
                                   ),
                                 ),
-                                Text(
-                                  _statusLabel(
-                                    request['status']?.toString() ?? 'PENDING',
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                                  decoration: BoxDecoration(
+                                    color: status == 'APPROVED'
+                                        ? AppColors.surfaceSuccess
+                                        : (status == 'DECLINED'
+                                            ? AppColors.surfaceError
+                                            : AppColors.surfaceWarning),
+                                    borderRadius: AppRadius.radiusPill,
+                                  ),
+                                  child: Text(
+                                    _statusLabel(status),
+                                    style: TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w700,
+                                      color: status == 'APPROVED'
+                                          ? AppColors.textSuccess
+                                          : (status == 'DECLINED'
+                                              ? AppColors.textError
+                                              : AppColors.textWarning),
+                                    ),
                                   ),
                                 ),
                               ],
                             ),
                             const SizedBox(height: 8),
-                            Text(request['reason']?.toString() ?? ''),
+                            Text(
+                              request['reason']?.toString() ?? '',
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 13.5,
+                              ),
+                            ),
                             if ((request['staff_notes']?.toString() ?? '')
                                 .isNotEmpty) ...[
-                              const SizedBox(height: 8),
-                              Text(
-                                'Staff note: ${request['staff_notes']}',
-                                style: const TextStyle(
-                                  color: AppColors.textMuted,
+                              const SizedBox(height: 10),
+                              Container(
+                                padding: const EdgeInsets.all(10),
+                                decoration: BoxDecoration(
+                                  color: AppColors.surfaceNavy,
+                                  borderRadius: AppRadius.radiusSm,
+                                ),
+                                child: Text(
+                                  'Staff note: ${request['staff_notes']}',
+                                  style: const TextStyle(
+                                    color: AppColors.primaryNavy,
+                                    fontSize: 12.5,
+                                    fontWeight: FontWeight.w500,
+                                  ),
                                 ),
                               ),
                             ],
                           ],
                         ),
-                      ),
-                    ),
+                      );
+                    },
                   ),
                 ],
               ),
