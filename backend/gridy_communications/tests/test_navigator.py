@@ -434,7 +434,33 @@ class NavigatorAPITestCase(APITestCase):
         self.assertEqual(response.data["status"], "answered")
         self.assertEqual(len(response.data["sources"]), 1)
         self.assertEqual(response.data["sources"][0]["id"], "statutory:first_time_jobseeker")
+        self.assertEqual(response.data["sources"][0]["category"], "statutory")
         self.assertIn("11261", response.data["sources"][0]["reference"])
+
+    @override_settings(PUBLIC_NAVIGATOR_ENABLED=True, GEMINI_API_KEY="test-key")
+    @patch("gridy_communications.views.get_navigator_provider")
+    def test_administrative_policy_answer_succeeds_with_matching_citation(self, mock_get_provider):
+        """Inquiries regarding administrative policy documents succeed with matching category citation IDs (REV-21)."""
+        mock_provider = mock_get_provider.return_value
+        mock_provider.is_configured.return_value = True
+        mock_provider.generate_answer.return_value = {
+            "status": "answered",
+            "answer": "Ang Certificate of Indigency ay ibinibigay batay sa lokal na patakaran at panuntunan sa social welfare.",
+            "reason": None,
+            "cited_sources": ["administrative_policy:certificate_of_indigency"],
+        }
+
+        self.client.force_login(self.resident_user_a)
+        response = self.client.post(self.canonical_url, {"query": "Ano ang requirements para sa Certificate of Indigency?"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["status"], "answered")
+        self.assertEqual(len(response.data["sources"]), 1)
+        source = response.data["sources"][0]
+        self.assertEqual(source["id"], "administrative_policy:certificate_of_indigency")
+        self.assertEqual(source["category"], "administrative_policy")
+        self.assertEqual(source["title"], "Certificate of Indigency")
+        self.assertIn("Social Welfare", source["reference"])
 
     @override_settings(PUBLIC_NAVIGATOR_ENABLED=True, GEMINI_API_KEY="test-key")
     @patch("gridy_communications.views.get_navigator_provider")
@@ -1300,18 +1326,20 @@ class NavigatorAPITestCase(APITestCase):
         self.assertIn("Barangay Hall", bc["content"])
 
         # 3. Certificate of Indigency (Local administrative policy, not statutory)
-        self.assertIn("statutory:certificate_of_indigency", catalog_map)
-        ind = catalog_map["statutory:certificate_of_indigency"]
+        self.assertIn("administrative_policy:certificate_of_indigency", catalog_map)
+        ind = catalog_map["administrative_policy:certificate_of_indigency"]
         self.assertEqual(ind["category"], "administrative_policy")
+        self.assertEqual(ind["id"].split(":")[0], "administrative_policy")
         self.assertIn("Social Welfare", ind["reference"])
         self.assertIn("administrative policy", ind["content"].lower())
         self.assertIn("rather than a national statutory mandate", ind["content"])
         self.assertIn("Barangay Hall", ind["content"])
 
         # 4. Certificate of Residency (Local administrative policy, not statutory)
-        self.assertIn("statutory:certificate_of_residency", catalog_map)
-        res = catalog_map["statutory:certificate_of_residency"]
+        self.assertIn("administrative_policy:certificate_of_residency", catalog_map)
+        res = catalog_map["administrative_policy:certificate_of_residency"]
         self.assertEqual(res["category"], "administrative_policy")
+        self.assertEqual(res["id"].split(":")[0], "administrative_policy")
         self.assertIn("Administrative Policy", res["reference"])
         self.assertIn("administrative policy", res["content"].lower())
         self.assertIn("rather than a national statutory mandate", res["content"])
@@ -1329,20 +1357,28 @@ class NavigatorAPITestCase(APITestCase):
         self.assertNotIn("commonly scaled", bus["content"].lower())
         self.assertIn("Barangay Hall", bus["content"])
 
+        # Verify all catalog entry IDs strictly match their declared category prefix (REV-21)
+        for entry in STATUTORY_CATALOG:
+            self.assertEqual(entry["id"].split(":")[0], entry["category"])
+
     @override_settings(PUBLIC_NAVIGATOR_ENABLED=True, GEMINI_API_KEY="test-key")
     @patch("gridy_communications.views.get_navigator_provider")
     def test_privacy_guard_strengthened_screening_and_controls(self, mock_get_provider):
         """Verifies strengthened query screening (IDs, passport, billing, GCash/Maya) and legitimate controls (REV-16)."""
         self.client.force_login(self.resident_user_a)
 
-        # 1. Government IDs and Passport values
+        # 1. Government IDs and Passport values (including case-insensitive passport detection, REV-20)
         gov_probes = [
             ("PhilSys number: 1234-5678-9012-3456", "privacy_guard_gov_id"),
             ("My SSS is 12-3456789-0", "privacy_guard_gov_id"),
             ("PhilHealth no. 12-345678901-2", "privacy_guard_gov_id"),
             ("Driver's License N01-12-123456", "privacy_guard_gov_id"),
             ("My passport is P1234567A", "privacy_guard_doc_submission"),
+            ("My passport is p1234567a", "privacy_guard_doc_submission"),
+            ("Here is p1234567a", "privacy_guard_gov_id"),
+            ("p1234567a", "privacy_guard_gov_id"),
             ("passport no: P12345678", "privacy_guard_gov_id"),
+            ("passport no: p12345678", "privacy_guard_gov_id"),
             ("TIN: 123-456-789-000", "privacy_guard_gov_id"),
         ]
         for query_text, expected_reason in gov_probes:
@@ -1456,11 +1492,27 @@ class NavigatorAPITestCase(APITestCase):
             navigator_ai_enabled=True,
             created_by=self.official_a,
         )
-        # Activity with passport format
+        # Activity with uppercase passport format
         act_passport = ActivitySchedule.objects.create(
             title="Lost Document Notification",
             description="Found lost passport P1234567A near the basketball court.",
             location="Barangay Police Desk",
+            event_datetime=future_dt,
+            navigator_ai_enabled=True,
+            created_by=self.official_a,
+        )
+        # Announcement with lowercase passport format (REV-20)
+        ann_passport_lower = Announcement.objects.create(
+            title="Lost and Found Notice",
+            content="Found unclaimed passport p1234567a at the health center.",
+            navigator_ai_enabled=True,
+            created_by=self.official_a,
+        )
+        # Activity with lowercase passport format (REV-20)
+        act_passport_lower = ActivitySchedule.objects.create(
+            title="Claim Notice",
+            description="Owner of passport p9876543b may claim at hall desk.",
+            location="Barangay Hall",
             event_datetime=future_dt,
             navigator_ai_enabled=True,
             created_by=self.official_a,
@@ -1482,12 +1534,16 @@ class NavigatorAPITestCase(APITestCase):
         self.assertNotIn("998877665544", logged_text)
         self.assertNotIn("1234567890", logged_text)
         self.assertNotIn("P1234567A", logged_text)
+        self.assertNotIn("p1234567a", logged_text)
+        self.assertNotIn("p9876543b", logged_text)
 
         # Omitted sensitive records
         self.assertNotIn(f"announcement:{ann_philhealth.id}", sources)
         self.assertNotIn(f"announcement:{ann_gcash.id}", sources)
+        self.assertNotIn(f"announcement:{ann_passport_lower.id}", sources)
         self.assertNotIn(f"activity:{act_billing.id}", sources)
         self.assertNotIn(f"activity:{act_passport.id}", sources)
+        self.assertNotIn(f"activity:{act_passport_lower.id}", sources)
 
         # Clean announcement retained
         self.assertIn(f"announcement:{ann_clean.id}", sources)
@@ -1495,6 +1551,11 @@ class NavigatorAPITestCase(APITestCase):
         # Intentionally public statutory catalog entries retained
         self.assertIn("statutory:first_time_jobseeker", sources)
         self.assertIn("statutory:barangay_clearance", sources)
+        self.assertIn("statutory:business_clearance", sources)
+
+        # Intentionally public administrative policy entries retained with correct category IDs (REV-21)
+        self.assertIn("administrative_policy:certificate_of_indigency", sources)
+        self.assertIn("administrative_policy:certificate_of_residency", sources)
 
         # Intentionally public emergency hotline retained
         hotline = EmergencyHotline.objects.create(
@@ -1575,3 +1636,73 @@ class NavigatorAPITestCase(APITestCase):
         self.assertNotIn("www.", prompt)
         self.assertNotIn("?ref=", prompt)
         self.assertNotIn("](http", prompt)
+
+    @override_settings(PUBLIC_NAVIGATOR_ENABLED=True, GEMINI_API_KEY="test-key")
+    @patch("gridy_communications.views.get_navigator_provider")
+    def test_sensitive_queries_and_source_text_are_never_logged(self, mock_get_provider):
+        """Verifies via log interception that sensitive query text and suspect source text are never logged (REV-22)."""
+        import logging
+
+        class MemoryLogHandler(logging.Handler):
+            def __init__(self):
+                super().__init__()
+                self.records = []
+
+            def emit(self, record):
+                try:
+                    self.records.append(self.format(record))
+                except Exception:
+                    self.records.append(record.getMessage())
+
+        # Attach handler to root logger to capture all application and framework logs
+        root_logger = logging.getLogger()
+        handler = MemoryLogHandler()
+        original_level = root_logger.level
+        root_logger.setLevel(logging.DEBUG)
+        root_logger.addHandler(handler)
+
+        try:
+            self.client.force_login(self.resident_user_a)
+
+            # 1. Sensitive queries sent to the endpoint
+            sensitive_queries = [
+                ("My passport is p1234567a", "p1234567a"),
+                ("passport no: P12345678", "P12345678"),
+                ("PhilSys number: 1234-5678-9012-3456", "1234-5678-9012-3456"),
+                ("My SSS is 12-3456789-0", "12-3456789-0"),
+                ("Meralco account no: 1234567890", "1234567890"),
+                ("GCash ref: 998877665544", "998877665544"),
+            ]
+
+            for query_text, secret_value in sensitive_queries:
+                handler.records.clear()
+                cache.clear()
+                response = self.client.post(self.canonical_url, {"query": query_text})
+                self.assertEqual(response.status_code, status.HTTP_200_OK)
+                self.assertEqual(response.data["status"], "abstained")
+
+                # Verify secret value and full raw query are strictly absent from captured logs
+                captured_text = " ".join(handler.records)
+                self.assertNotIn(query_text, captured_text)
+                self.assertNotIn(secret_value, captured_text)
+
+            # 2. Source retrieval screening logs only record IDs, never suspect source content
+            ann_suspect = Announcement.objects.create(
+                title="Passport Notice",
+                content="Unclaimed passport p1234567a found at desk.",
+                navigator_ai_enabled=True,
+                created_by=self.official_a,
+            )
+            handler.records.clear()
+            sources = retrieve_public_sources(self.barangay_a.id)
+            self.assertNotIn(f"announcement:{ann_suspect.id}", sources)
+
+            retrieval_logs = " ".join(handler.records)
+            self.assertNotIn("p1234567a", retrieval_logs)
+            self.assertNotIn("Unclaimed passport", retrieval_logs)
+            # Confirms log contains record ID reference without raw sensitive text
+            self.assertIn(f"announcement {ann_suspect.id}", retrieval_logs)
+
+        finally:
+            root_logger.removeHandler(handler)
+            root_logger.setLevel(original_level)

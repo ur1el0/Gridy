@@ -42,7 +42,7 @@ STATUTORY_CATALOG = [
         ),
     },
     {
-        "id": "statutory:certificate_of_indigency",
+        "id": "administrative_policy:certificate_of_indigency",
         "title": "Certificate of Indigency",
         "category": "administrative_policy",
         "reference": "Barangay Administrative Policy & Local Social Welfare Guidelines",
@@ -57,7 +57,7 @@ STATUTORY_CATALOG = [
         ),
     },
     {
-        "id": "statutory:certificate_of_residency",
+        "id": "administrative_policy:certificate_of_residency",
         "title": "Certificate of Residency",
         "category": "administrative_policy",
         "reference": "Barangay Administrative Policy & Local Sangguniang Barangay Ordinance",

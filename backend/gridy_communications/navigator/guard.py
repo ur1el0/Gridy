@@ -28,7 +28,7 @@ GOV_ID_PATTERNS = [
     re.compile(r'\b\d{2}[-\s]?\d{7}[-\s]?\d{1}\b'),              # SSS number (XX-XXXXXXX-X)
     re.compile(r'\b\d{2}[-\s]?\d{9}[-\s]?\d{1}\b'),              # PhilHealth 12-digit
     re.compile(r'\b[A-Z]\d{2}[-\s]?\d{2}[-\s]?\d{6}\b', re.IGNORECASE),  # PH Driver's License (e.g. N01-12-123456)
-    re.compile(r'\b[A-PR-WY]\d{7}[A-Z0-9]\b'),                   # PH Passport number (e.g. P1234567A, P12345678)
+    re.compile(r'\b[A-PR-WY]\d{7}[A-Z0-9]\b', re.IGNORECASE),   # PH Passport number (e.g. P1234567A, p1234567a, P12345678, p12345678)
     re.compile(r'\b\d{3}[-\s]?\d{3}[-\s]?\d{3}(?:[-\s]?\d{3})?\b'),  # TIN
     re.compile(r'\b(?:philsys|national id|sss|tin|gsis|passport|pasaporte|voter[\'s]? id|prc license|driver[\'s]? license|philhealth|umid|postal id|cedula|ctc)\s*(?:(?:number|no\.?|#)\s*(?:is|:)?|(?:is|:))\s*[\w\d-]*\d[\w\d-]*\b', re.IGNORECASE),
 ]
@@ -208,7 +208,7 @@ SENSITIVE_SOURCE_PATTERNS = [
     re.compile(r'\b\d{2}[-\s]?\d{7}[-\s]?\d{1}\b'),              # SSS
     re.compile(r'\b\d{2}[-\s]?\d{9}[-\s]?\d{1}\b'),              # PhilHealth 12-digit
     re.compile(r'\b[A-Z]\d{2}[-\s]?\d{2}[-\s]?\d{6}\b', re.IGNORECASE),  # PH Driver's License
-    re.compile(r'\b[A-PR-WY]\d{7}[A-Z0-9]\b'),                   # PH Passport format
+    re.compile(r'\b[A-PR-WY]\d{7}[A-Z0-9]\b', re.IGNORECASE),   # PH Passport format
     re.compile(r'\b\d{3}[-\s]?\d{3}[-\s]?\d{3}(?:[-\s]?\d{3})?\b'),  # TIN
     re.compile(r'\b(?:philsys|national id|sss|tin|gsis|passport|pasaporte|voter[\'s]? id|prc license|driver[\'s]? license|philhealth|umid|postal id|cedula|ctc)\s*(?:(?:number|no\.?|#)\s*(?:is|:)?|(?:is|:))\s*[\w\d-]*\d[\w\d-]*\b', re.IGNORECASE),
     re.compile(r'\b(?:meralco|maynilad|manila\s+water|electric\s+bill|water\s+bill|utility|billing)\s*(?:account|acc\.?|acct\.?|meter|cust(?:omer)?)\s*(?:(?:no\.?|number|#)\s*(?:is|:)?|(?:is|:))\s*[\w\d-]*\d[\w\d-]*\b', re.IGNORECASE),
