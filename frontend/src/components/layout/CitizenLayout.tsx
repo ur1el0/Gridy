@@ -9,12 +9,15 @@ import {
     ShieldCheck, 
     Building2,
     HandHeart,
+    Sparkles,
 } from 'lucide-react';
 import kapitBayanSymbol from '../../assets/kapitbayan/symbol.png';
+import { PublicNavigatorDrawer } from '../navigator/PublicNavigatorDrawer';
 
 export const CitizenLayout: React.FC = () => {
     const { user, logout } = useAuth();
     const navigate = useNavigate();
+    const [isNavigatorOpen, setIsNavigatorOpen] = React.useState(false);
 
     const handleLogout = async () => {
         await logout();
@@ -134,6 +137,23 @@ export const CitizenLayout: React.FC = () => {
             <main className="flex-1 max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <Outlet />
             </main>
+
+            {/* Floating "Ask Barangay" Launcher Button */}
+            <button
+                type="button"
+                onClick={() => setIsNavigatorOpen(true)}
+                aria-haspopup="dialog"
+                className="fixed bottom-6 right-6 z-40 flex items-center gap-2.5 px-4 py-3 min-h-[44px] rounded-full bg-primary text-primary-foreground shadow-lg hover:shadow-xl hover:bg-primary/95 transition-all border border-white/20 group cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+            >
+                <Sparkles className="w-5 h-5 text-amber-300 group-hover:scale-110 transition-transform" aria-hidden="true" />
+                <span className="text-sm font-bold tracking-tight">Ask Barangay</span>
+            </button>
+
+            {/* Public Information AI Navigator Drawer */}
+            <PublicNavigatorDrawer
+                isOpen={isNavigatorOpen}
+                onClose={() => setIsNavigatorOpen(false)}
+            />
 
             {/* Footer */}
             <footer className="border-t border-slate-200 bg-white/60 py-4 text-center text-xs text-slate-500">
