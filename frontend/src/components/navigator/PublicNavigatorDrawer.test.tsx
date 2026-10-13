@@ -215,8 +215,9 @@ describe('PublicNavigatorDrawer', () => {
     });
 
     it('shows a connection alert on network failure and allows retry', async () => {
+        const networkError = new AxiosError('Network Error', 'ERR_NETWORK');
         vi.mocked(submitNavigatorQuery)
-            .mockRejectedValueOnce(new Error('Network Error'))
+            .mockRejectedValueOnce(networkError)
             .mockResolvedValueOnce(answered);
         renderOpen();
 
@@ -229,6 +230,45 @@ describe('PublicNavigatorDrawer', () => {
 
         expect(await screen.findByText(answered.answer)).toBeInTheDocument();
         expect(submitNavigatorQuery).toHaveBeenNthCalledWith(2, 'Clearance requirements');
+    });
+
+    it('offers retry for transport timeout (ECONNABORTED)', async () => {
+        const timeoutError = new AxiosError('timeout of 8000ms exceeded', 'ECONNABORTED');
+        vi.mocked(submitNavigatorQuery)
+            .mockRejectedValueOnce(timeoutError)
+            .mockResolvedValueOnce(answered);
+        renderOpen();
+
+        ask('Clearance requirements');
+
+        expect(await screen.findByRole('alert')).toHaveTextContent(/could not reach the assistant/i);
+        expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
+
+        fireEvent.click(screen.getByRole('button', { name: 'Try again' }));
+
+        expect(await screen.findByText(answered.answer)).toBeInTheDocument();
+        expect(submitNavigatorQuery).toHaveBeenNthCalledWith(2, 'Clearance requirements');
+    });
+
+    it('does not offer retry for an unrecognized or non-axios error', async () => {
+        vi.mocked(submitNavigatorQuery).mockRejectedValueOnce(new Error('Unrecognized runtime error'));
+        renderOpen();
+
+        ask('Failing question');
+
+        expect(await screen.findByRole('alert')).toHaveTextContent(/could not reach the assistant/i);
+        expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument();
+    });
+
+    it('does not offer retry for request cancellation', async () => {
+        const cancelError = new AxiosError('canceled', 'ERR_CANCELED');
+        vi.mocked(submitNavigatorQuery).mockRejectedValueOnce(cancelError);
+        renderOpen();
+
+        ask('Cancelled question');
+
+        expect(await screen.findByRole('alert')).toHaveTextContent(/could not reach the assistant/i);
+        expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument();
     });
 
     it('offers retry for transient HTTP 5xx server errors', async () => {

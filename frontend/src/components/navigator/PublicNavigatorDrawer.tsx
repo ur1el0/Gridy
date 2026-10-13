@@ -26,15 +26,32 @@ interface PublicNavigatorDrawerProps {
     onClose: () => void;
 }
 
+const RETRYABLE_NETWORK_CODES = new Set([
+    'ERR_NETWORK',
+    'ECONNABORTED',
+    'ETIMEDOUT',
+]);
+
 function isRequestErrorRetryable(error: unknown): boolean {
     if (!axios.isAxiosError(error)) {
-        return true;
+        return false;
     }
+
+    if (axios.isCancel(error) || error.code === 'ERR_CANCELED') {
+        return false;
+    }
+
     const status = error.response?.status;
-    if (status === undefined) {
+    if (typeof status === 'number') {
+        return status === 429 || (status >= 500 && status <= 599);
+    }
+
+    if (error.code && RETRYABLE_NETWORK_CODES.has(error.code)) {
         return true;
     }
-    return status === 429 || status >= 500;
+
+    const message = error.message?.toLowerCase() ?? '';
+    return message.includes('network error') || message.includes('timeout');
 }
 
 function getRequestErrorMessage(error: unknown): string {
