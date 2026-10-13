@@ -216,8 +216,11 @@ class PendingResidentsView(ListAPIView):
     def get_queryset(self):
         user = self.request.user
         if user.role == User.Role.DILG_ADMIN:
-            return Resident.objects.filter(is_verified=False)
-        return Resident.objects.filter(is_verified=False, user__barangay=user.barangay)
+            return Resident.objects.filter(is_verified=False).order_by("pk")
+        return Resident.objects.filter(
+            is_verified=False,
+            user__barangay=user.barangay,
+        ).order_by("pk")
 
 
 class VerifyResidentView(APIView):

@@ -55,11 +55,29 @@ export const Register: React.FC = () => {
         setLoadingBarangays(true);
 
         try {
-            const response = await axiosPublic.get('/auth/public/barangays/');
-            const data = Array.isArray(response.data) ? response.data : response.data?.results;
-            if (!Array.isArray(data)) {
-                throw new Error('Unexpected approved barangays response');
+            const data: PublicBarangay[] = [];
+            let page = 1;
+            let hasNextPage = true;
+
+            while (hasNextPage) {
+                const endpoint = page === 1
+                    ? '/auth/public/barangays/'
+                    : `/auth/public/barangays/?page=${page}`;
+                const response = await axiosPublic.get(endpoint);
+                if (requestId !== barangayRequestId.current) return;
+
+                const pageData = Array.isArray(response.data)
+                    ? response.data
+                    : response.data?.results;
+                if (!Array.isArray(pageData)) {
+                    throw new Error('Unexpected approved barangays response');
+                }
+
+                data.push(...pageData);
+                hasNextPage = !Array.isArray(response.data) && Boolean(response.data.next);
+                page += 1;
             }
+
             if (requestId !== barangayRequestId.current) return;
             setBarangays(data);
             setBarangayDirectoryError('');

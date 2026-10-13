@@ -11,6 +11,13 @@ class PublicBarangaySerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class PublicBarangayDirectoryPageSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    next = serializers.URLField(allow_null=True)
+    previous = serializers.URLField(allow_null=True)
+    results = PublicBarangaySerializer(many=True)
+
+
 class BarangayApplicationCreateSerializer(serializers.ModelSerializer):
     class Meta:
         model = BarangayApplication

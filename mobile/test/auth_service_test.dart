@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -42,6 +44,54 @@ void main() {
       );
     },
   );
+
+  test('loads every page of the approved barangay directory', () async {
+    SharedPreferences.setMockInitialValues({});
+    final preferences = await SharedPreferences.getInstance();
+    final mockClient = MockClient((request) async {
+      final page = request.url.queryParameters['page'];
+      if (page == null) {
+        return http.Response(
+          jsonEncode({
+            'count': 2,
+            'next': 'https://kapitbayan.test/api/v1/auth/public/barangays/?page=2',
+            'previous': null,
+            'results': [
+              {'id': 8, 'name': 'Barangay Mabini', 'municipality': 'Lucena City', 'province': 'Quezon'},
+            ],
+          }),
+          200,
+          headers: {'content-type': 'application/json'},
+        );
+      }
+
+      expect(page, '2');
+      return http.Response(
+        jsonEncode({
+          'count': 2,
+          'next': null,
+          'previous': 'https://kapitbayan.test/api/v1/auth/public/barangays/',
+          'results': [
+            {'id': 9, 'name': 'Barangay Ibabang Dupay', 'municipality': 'Lucena City', 'province': 'Quezon'},
+          ],
+        }),
+        200,
+        headers: {'content-type': 'application/json'},
+      );
+    });
+    addTearDown(mockClient.close);
+    final service = AuthService(
+      apiClient: ApiClient(
+        client: mockClient,
+        baseUrl: 'https://kapitbayan.test/api/v1',
+      ),
+      storageService: StorageService(preferences),
+    );
+
+    final barangays = await service.fetchBarangays();
+
+    expect(barangays.map((barangay) => barangay.id), [8, 9]);
+  });
 
   test(
     'sends privacy consent and version with resident registration',

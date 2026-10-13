@@ -109,13 +109,18 @@ describe('PublicAnnouncements', () => {
 
     it('shows public post details and directs transactions back to KapitBayan', async () => {
         vi.mocked(axiosPublic.get).mockResolvedValue({
-            data: [{
-                id: 3,
-                title: 'Barangay hall schedule',
-                content: 'The office opens at 8 AM on Monday.',
-                is_pinned: true,
-                created_at: '2026-10-08T00:00:00Z',
-            }],
+            data: {
+                count: 1,
+                next: null,
+                previous: null,
+                results: [{
+                    id: 3,
+                    title: 'Barangay hall schedule',
+                    content: 'The office opens at 8 AM on Monday.',
+                    is_pinned: true,
+                    created_at: '2026-10-08T00:00:00Z',
+                }],
+            },
         } as never);
 
         renderPublicAnnouncements();

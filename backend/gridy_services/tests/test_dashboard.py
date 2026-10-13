@@ -53,3 +53,28 @@ class DashboardSummaryAPITests(ServiceAPIBaseTestCase):
         self.assertEqual(response.data["document_requests"]["pending"], 1)
         self.assertEqual(response.data["issue_reports"]["urgency_breakdown"]["hazard"], 1)
         self.assertEqual(response.data["queue_activity"]["serving_now"], "T001")
+
+    def test_dashboard_summary_uses_real_zeroes_and_empty_demographics(self):
+        self.client.force_login(self.official)
+
+        response = self.client.get("/api/v1/dashboard/summary/")
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["document_requests"]["total"], 0)
+        self.assertEqual(response.data["document_requests"]["total_revenue"], 0.0)
+        self.assertEqual(response.data["issue_reports"]["total"], 0)
+        self.assertEqual(
+            response.data["issue_reports"]["category_breakdown"],
+            {
+                "peace_and_order": 0,
+                "public_health": 0,
+                "infrastructure": 0,
+                "environment": 0,
+                "other": 0,
+            },
+        )
+        self.assertEqual(response.data["demographics"]["purok_distribution"], {})
+        self.assertEqual(
+            response.data["demographics"]["age_demographics"],
+            {"youth": 0, "young_adult": 1, "adult": 0, "senior": 0},
+        )

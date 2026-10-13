@@ -28,6 +28,13 @@ class PublicAnnouncementSerializer(serializers.ModelSerializer):
         read_only_fields = fields
 
 
+class PublicAnnouncementPageSerializer(serializers.Serializer):
+    count = serializers.IntegerField()
+    next = serializers.URLField(allow_null=True)
+    previous = serializers.URLField(allow_null=True)
+    results = PublicAnnouncementSerializer(many=True)
+
+
 class ActivityScheduleSerializer(serializers.ModelSerializer):
     class Meta:
         model = ActivitySchedule

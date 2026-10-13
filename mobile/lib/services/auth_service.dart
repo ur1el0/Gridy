@@ -76,14 +76,30 @@ class AuthService {
 
   /// Lists approved barangays available for resident registration.
   Future<List<BarangayModel>> fetchBarangays() async {
-    final response = await apiClient.get(
-      '/auth/public/barangays/',
-      requiresAuth: false,
-    );
-    final decoded = jsonDecode(utf8.decode(response.bodyBytes));
-    final List<dynamic> results = decoded is Map<String, dynamic>
-        ? (decoded['results'] as List<dynamic>? ?? <dynamic>[])
-        : decoded as List<dynamic>;
+    final List<dynamic> results = [];
+    var page = 1;
+    var hasNextPage = true;
+
+    while (hasNextPage) {
+      final endpoint = page == 1
+          ? '/auth/public/barangays/'
+          : '/auth/public/barangays/?page=$page';
+      final response = await apiClient.get(endpoint, requiresAuth: false);
+      final decoded = jsonDecode(utf8.decode(response.bodyBytes));
+
+      if (decoded is List<dynamic>) {
+        results.addAll(decoded);
+        hasNextPage = false;
+      } else if (decoded is Map<String, dynamic> &&
+          decoded['results'] is List<dynamic>) {
+        results.addAll(decoded['results'] as List<dynamic>);
+        hasNextPage = decoded['next'] != null;
+        page += 1;
+      } else {
+        throw const FormatException('Unexpected barangay directory response');
+      }
+    }
+
     return results
         .map((item) => BarangayModel.fromJson(item as Map<String, dynamic>))
         .toList();

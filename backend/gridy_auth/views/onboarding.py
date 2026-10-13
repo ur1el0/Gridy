@@ -6,6 +6,7 @@ from django.shortcuts import get_object_or_404
 from django.utils import timezone
 from django.utils.text import slugify
 from drf_spectacular.utils import extend_schema
+from config.pagination import StandardResultsSetPagination
 from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
@@ -21,6 +22,7 @@ from gridy_auth.serializers.onboarding import (
     BarangayApplicationCreateSerializer,
     BarangayApplicationReadSerializer,
     BarangayApplicationReviewSerializer,
+    PublicBarangayDirectoryPageSerializer,
     PublicBarangaySerializer,
 )
 from gridy_auth.tasks import send_barangay_approval_email
@@ -30,10 +32,15 @@ from gridy_auth.tasks import send_barangay_approval_email
 class PublicBarangayDirectoryView(APIView):
     permission_classes = [permissions.AllowAny]
 
-    @extend_schema(responses=PublicBarangaySerializer(many=True))
+    @extend_schema(responses=PublicBarangayDirectoryPageSerializer)
     def get(self, request):
-        barangays = Barangay.objects.all().order_by("province", "municipality", "name")
-        return Response(PublicBarangaySerializer(barangays, many=True).data)
+        barangays = Barangay.objects.all().order_by(
+            "province", "municipality", "name", "pk"
+        )
+        paginator = StandardResultsSetPagination()
+        page = paginator.paginate_queryset(barangays, request, view=self)
+        serializer = PublicBarangaySerializer(page, many=True)
+        return paginator.get_paginated_response(serializer.data)
 
 
 @extend_schema(tags=["Barangay Onboarding"])

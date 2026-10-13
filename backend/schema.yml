@@ -14,6 +14,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       tags:
       - api
       security:
@@ -164,6 +170,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       tags:
@@ -341,6 +353,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       tags:
       - api
       security:
@@ -441,6 +459,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       tags:
@@ -598,6 +622,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       tags:
       - Barangay Settings
       security:
@@ -609,6 +639,117 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedBarangayList'
+          description: ''
+  /api/v1/auth/barangay-applications/:
+    get:
+      operationId: api_v1_auth_barangay_applications_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - Barangay Onboarding
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedBarangayApplicationReadList'
+          description: ''
+    post:
+      operationId: api_v1_auth_barangay_applications_create
+      tags:
+      - Barangay Onboarding
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BarangayApplicationCreate'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BarangayApplicationCreate'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BarangayApplicationCreate'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BarangayApplicationCreate'
+          description: ''
+  /api/v1/auth/barangay-applications/{id}/:
+    get:
+      operationId: api_v1_auth_barangay_applications_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this barangay application.
+        required: true
+      tags:
+      - Barangay Onboarding
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BarangayApplicationRead'
+          description: ''
+  /api/v1/auth/barangay-applications/{id}/review/:
+    post:
+      operationId: api_v1_auth_barangay_applications_review_create
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this barangay application.
+        required: true
+      tags:
+      - Barangay Onboarding
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/BarangayApplicationReview'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/BarangayApplicationReview'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/BarangayApplicationReview'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BarangayApplicationReview'
           description: ''
   /api/v1/auth/barangay/{id}/:
     get:
@@ -668,6 +809,14 @@ paths:
   /api/v1/auth/import-residents/:
     post:
       operationId: api_v1_auth_import_residents_create
+      description: Bulk imports residents from a historical Registry of Barangay Inhabitants
+        (RBI) CSV file (Barangay Official only). Unlike resident self-service registration,
+        historical RBI records do not require uploaded proof images; the authorized
+        official's import serves as an administrative residency attestation. Imported
+        resident accounts are assigned to the official's barangay, marked as pre-verified
+        (is_verified=True), and provisioned without usable passwords. Durably logs
+        audit provenance linked to the importing official, the CSV file, and the imported
+        resident records.
       summary: Bulk Import Residents from CSV
       tags:
       - api
@@ -694,6 +843,13 @@ paths:
                 $ref: '#/components/schemas/ResidentImportResponse'
           description: ''
         '400':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '403':
           content:
             application/json:
               schema:
@@ -757,13 +913,13 @@ paths:
       - User Profile
       requestBody:
         content:
-          application/json:
+          multipart/form-data:
             schema:
               $ref: '#/components/schemas/PatchedUser'
           application/x-www-form-urlencoded:
             schema:
               $ref: '#/components/schemas/PatchedUser'
-          multipart/form-data:
+          application/json:
             schema:
               $ref: '#/components/schemas/PatchedUser'
       security:
@@ -864,6 +1020,12 @@ paths:
         description: A page number within the paginated result set.
         schema:
           type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
       tags:
       - api
       security:
@@ -876,9 +1038,30 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedResidentList'
           description: ''
+  /api/v1/auth/public/barangays/:
+    get:
+      operationId: api_v1_auth_public_barangays_retrieve
+      tags:
+      - Barangay Directory
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublicBarangayDirectoryPage'
+          description: ''
   /api/v1/auth/register/:
     post:
       operationId: api_v1_auth_register_create
+      description: 'Resident registration requires at least one valid uploaded image:
+        a PhilSys ID photo, a secondary ID photo, or a utility/residency proof photo.
+        A typed PhilSys ID number alone does not satisfy this requirement. For historical
+        administrative bulk ingestion without digital proof images, authorized barangay
+        officials must use the RBI CSV import endpoint (/api/v1/auth/import-residents/).'
       tags:
       - Authentication
       requestBody:
@@ -907,30 +1090,23 @@ paths:
   /api/v1/auth/register/admin/:
     post:
       operationId: api_v1_auth_register_admin_create
+      description: Direct administrative registration via passkey is disabled under
+        ADR 011. Barangay administrators must be provisioned through verified DILG
+        onboarding applications.
+      summary: Public Admin Registration (Disabled)
       tags:
       - Authentication
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/AdminRegister'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/AdminRegister'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/AdminRegister'
-        required: true
       security:
       - jwtAuth: []
       - cookieAuth: []
       - {}
       responses:
-        '201':
+        '403':
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/User'
+                type: object
+                additionalProperties: {}
           description: ''
   /api/v1/auth/reject-resident/{id}/:
     delete:
@@ -967,13 +1143,19 @@ paths:
   /api/v1/auth/resident/:
     get:
       operationId: api_v1_auth_resident_list
-      description: CRUD endpoint for verified residents. Only Barangay Officials can
-        access this full directory.
+      description: Directory endpoint for verified residents. Supports list, retrieve,
+        update, and delete.
       parameters:
       - name: page
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       tags:
@@ -988,39 +1170,11 @@ paths:
               schema:
                 $ref: '#/components/schemas/PaginatedResidentList'
           description: ''
-    post:
-      operationId: api_v1_auth_resident_create
-      description: CRUD endpoint for verified residents. Only Barangay Officials can
-        access this full directory.
-      tags:
-      - api
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/Resident'
-          application/x-www-form-urlencoded:
-            schema:
-              $ref: '#/components/schemas/Resident'
-          multipart/form-data:
-            schema:
-              $ref: '#/components/schemas/Resident'
-        required: true
-      security:
-      - jwtAuth: []
-      - cookieAuth: []
-      responses:
-        '201':
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Resident'
-          description: ''
   /api/v1/auth/resident/{id}/:
     get:
       operationId: api_v1_auth_resident_retrieve
-      description: CRUD endpoint for verified residents. Only Barangay Officials can
-        access this full directory.
+      description: Directory endpoint for verified residents. Supports list, retrieve,
+        update, and delete.
       parameters:
       - in: path
         name: id
@@ -1041,8 +1195,8 @@ paths:
           description: ''
     put:
       operationId: api_v1_auth_resident_update
-      description: CRUD endpoint for verified residents. Only Barangay Officials can
-        access this full directory.
+      description: Directory endpoint for verified residents. Supports list, retrieve,
+        update, and delete.
       parameters:
       - in: path
         name: id
@@ -1075,8 +1229,8 @@ paths:
           description: ''
     patch:
       operationId: api_v1_auth_resident_partial_update
-      description: CRUD endpoint for verified residents. Only Barangay Officials can
-        access this full directory.
+      description: Directory endpoint for verified residents. Supports list, retrieve,
+        update, and delete.
       parameters:
       - in: path
         name: id
@@ -1108,8 +1262,8 @@ paths:
           description: ''
     delete:
       operationId: api_v1_auth_resident_destroy
-      description: CRUD endpoint for verified residents. Only Barangay Officials can
-        access this full directory.
+      description: Directory endpoint for verified residents. Supports list, retrieve,
+        update, and delete.
       parameters:
       - in: path
         name: id
@@ -1155,6 +1309,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       tags:
@@ -1273,6 +1433,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       tags:
@@ -1427,7 +1593,11 @@ paths:
       - cookieAuth: []
       responses:
         '200':
-          description: No response body
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedDILGAnalytics'
+          description: ''
   /api/v1/document-requests/:
     get:
       operationId: api_v1_document_requests_list
@@ -1436,6 +1606,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       tags:
@@ -1602,6 +1778,28 @@ paths:
               schema:
                 $ref: '#/components/schemas/DocumentRequest'
           description: ''
+  /api/v1/document-requests/{id}/payment-proof/:
+    get:
+      operationId: api_v1_document_requests_payment_proof_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this document request.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentRequest'
+          description: ''
   /api/v1/document-requests/{id}/payment-reference/:
     post:
       operationId: api_v1_document_requests_payment_reference_create
@@ -1616,13 +1814,13 @@ paths:
       - api
       requestBody:
         content:
-          application/json:
+          multipart/form-data:
             schema:
               $ref: '#/components/schemas/DocumentRequest'
           application/x-www-form-urlencoded:
             schema:
               $ref: '#/components/schemas/DocumentRequest'
-          multipart/form-data:
+          application/json:
             schema:
               $ref: '#/components/schemas/DocumentRequest'
         required: true
@@ -1702,6 +1900,27 @@ paths:
               schema:
                 $ref: '#/components/schemas/DocumentRequest'
           description: ''
+  /api/v1/documents/{id}/payment-proof/:
+    get:
+      operationId: api_v1_documents_payment_proof_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/DocumentRequest'
+          description: ''
   /api/v1/faqs/:
     get:
       operationId: api_v1_faqs_list
@@ -1710,6 +1929,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       tags:
@@ -1881,6 +2106,51 @@ paths:
                 type: object
                 additionalProperties: {}
           description: ''
+  /api/v1/health/live/:
+    get:
+      operationId: api_v1_health_live_retrieve
+      description: Confirm that the Django application can serve requests without
+        checking external dependencies.
+      summary: Check Application Liveness
+      tags:
+      - api
+      security:
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+  /api/v1/health/ready/:
+    get:
+      operationId: api_v1_health_ready_retrieve
+      description: Verify backend database and cache connectivity and measure execution
+        latencies.
+      summary: Check System Health Telemetry
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      - {}
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
+        '503':
+          content:
+            application/json:
+              schema:
+                type: object
+                additionalProperties: {}
+          description: ''
   /api/v1/hotlines/:
     get:
       operationId: api_v1_hotlines_list
@@ -1889,6 +2159,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       tags:
@@ -2033,9 +2309,117 @@ paths:
       responses:
         '204':
           description: No response body
+  /api/v1/payment-recipients/:
+    get:
+      operationId: api_v1_payment_recipients_list
+      parameters:
+      - name: page
+        required: false
+        in: query
+        description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
+        schema:
+          type: integer
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaginatedPaymentRecipientList'
+          description: ''
+    post:
+      operationId: api_v1_payment_recipients_create
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentRecipient'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PaymentRecipient'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PaymentRecipient'
+        required: true
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '201':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentRecipient'
+          description: ''
+  /api/v1/payment-recipients/{id}/:
+    get:
+      operationId: api_v1_payment_recipients_retrieve
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this payment recipient.
+        required: true
+      tags:
+      - api
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentRecipient'
+          description: ''
+    patch:
+      operationId: api_v1_payment_recipients_partial_update
+      parameters:
+      - in: path
+        name: id
+        schema:
+          type: integer
+        description: A unique integer value identifying this payment recipient.
+        required: true
+      tags:
+      - api
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PatchedPaymentRecipient'
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/PatchedPaymentRecipient'
+          multipart/form-data:
+            schema:
+              $ref: '#/components/schemas/PatchedPaymentRecipient'
+      security:
+      - jwtAuth: []
+      - cookieAuth: []
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentRecipient'
+          description: ''
   /api/v1/public/barangays/{barangay_id}/announcements/:
     get:
-      operationId: api_v1_public_barangays_announcements_list
+      operationId: api_v1_public_barangays_announcements_retrieve
       parameters:
       - in: path
         name: barangay_id
@@ -2053,9 +2437,7 @@ paths:
           content:
             application/json:
               schema:
-                type: array
-                items:
-                  $ref: '#/components/schemas/PublicAnnouncement'
+                $ref: '#/components/schemas/PublicAnnouncementPage'
           description: ''
   /api/v1/public/barangays/{barangay_id}/queue-status/:
     get:
@@ -2088,6 +2470,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       tags:
@@ -2240,6 +2628,12 @@ paths:
         required: false
         in: query
         description: A page number within the paginated result set.
+        schema:
+          type: integer
+      - name: page_size
+        required: false
+        in: query
+        description: Number of results to return per page.
         schema:
           type: integer
       tags:
@@ -2619,44 +3013,22 @@ components:
       - message
       - title
       - user
-    AdminRegister:
+    AgeDemographics:
       type: object
       properties:
-        username:
-          type: string
-          writeOnly: true
-          maxLength: 150
-        full_name:
-          type: string
-          writeOnly: true
-          maxLength: 255
-        barangay_id:
+        youth:
           type: integer
-          writeOnly: true
-          nullable: true
-        email:
-          type: string
-          format: email
-          writeOnly: true
-        password:
-          type: string
-          writeOnly: true
-        confirm_password:
-          type: string
-          writeOnly: true
-        affirmation:
-          type: boolean
-          writeOnly: true
-          default: false
-        passkey:
-          type: string
-          writeOnly: true
+        young_adult:
+          type: integer
+        adult:
+          type: integer
+        senior:
+          type: integer
       required:
-      - confirm_password
-      - email
-      - full_name
-      - passkey
-      - password
+      - adult
+      - senior
+      - young_adult
+      - youth
     AidRequest:
       type: object
       properties:
@@ -2746,7 +3118,13 @@ components:
           readOnly: true
         name:
           type: string
-          maxLength: 255
+          readOnly: true
+        municipality:
+          type: string
+          readOnly: true
+        province:
+          type: string
+          readOnly: true
         logo:
           type: string
           format: uri
@@ -2771,7 +3149,160 @@ components:
           maxLength: 7
       required:
       - id
+      - municipality
       - name
+      - province
+    BarangayApplicationCreate:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          maxLength: 255
+        municipality:
+          type: string
+          maxLength: 120
+        province:
+          type: string
+          maxLength: 120
+        applicant_name:
+          type: string
+          maxLength: 255
+        applicant_position:
+          type: string
+          maxLength: 120
+        applicant_email:
+          type: string
+          format: email
+          maxLength: 254
+        applicant_phone:
+          type: string
+          maxLength: 30
+      required:
+      - applicant_email
+      - applicant_name
+      - applicant_phone
+      - applicant_position
+      - id
+      - municipality
+      - name
+      - province
+    BarangayApplicationRead:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        municipality:
+          type: string
+          readOnly: true
+        province:
+          type: string
+          readOnly: true
+        applicant_name:
+          type: string
+          readOnly: true
+        applicant_position:
+          type: string
+          readOnly: true
+        applicant_email:
+          type: string
+          format: email
+          readOnly: true
+        applicant_phone:
+          type: string
+          readOnly: true
+        status:
+          allOf:
+          - $ref: '#/components/schemas/BarangayApplicationReadStatusEnum'
+          readOnly: true
+        review_note:
+          type: string
+          readOnly: true
+        reviewed_by_name:
+          type: string
+          readOnly: true
+          nullable: true
+        reviewed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+        barangay_name:
+          type: string
+          readOnly: true
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - applicant_email
+      - applicant_name
+      - applicant_phone
+      - applicant_position
+      - barangay_name
+      - created_at
+      - id
+      - municipality
+      - name
+      - province
+      - review_note
+      - reviewed_at
+      - reviewed_by_name
+      - status
+    BarangayApplicationReadStatusEnum:
+      enum:
+      - PENDING
+      - APPROVED
+      - REJECTED
+      type: string
+      description: |-
+        * `PENDING` - Pending review
+        * `APPROVED` - Approved
+        * `REJECTED` - Rejected
+    BarangayApplicationReview:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/BarangayApplicationReviewStatusEnum'
+        review_note:
+          type: string
+          maxLength: 1000
+      required:
+      - status
+    BarangayApplicationReviewStatusEnum:
+      enum:
+      - APPROVED
+      - REJECTED
+      type: string
+      description: |-
+        * `APPROVED` - APPROVED
+        * `REJECTED` - REJECTED
+    CategoryBreakdown:
+      type: object
+      properties:
+        peace_and_order:
+          type: integer
+        public_health:
+          type: integer
+        infrastructure:
+          type: integer
+        environment:
+          type: integer
+        other:
+          type: integer
+      required:
+      - environment
+      - infrastructure
+      - other
+      - peace_and_order
+      - public_health
     CustomTokenObtainPair:
       type: object
       properties:
@@ -2784,6 +3315,36 @@ components:
       required:
       - password
       - username
+    DILGAnalyticsRow:
+      type: object
+      properties:
+        barangay_name:
+          type: string
+        residents:
+          type: object
+          additionalProperties:
+            type: integer
+        documents:
+          type: object
+          additionalProperties:
+            type: integer
+        queue:
+          type: object
+          additionalProperties:
+            type: integer
+        scenarios:
+          type: object
+          additionalProperties:
+            type: integer
+        night_time_incidents:
+          type: integer
+      required:
+      - barangay_name
+      - documents
+      - night_time_incidents
+      - queue
+      - residents
+      - scenarios
     DashboardSummary:
       type: object
       properties:
@@ -2794,12 +3355,27 @@ components:
           $ref: '#/components/schemas/DocumentStats'
         issue_reports:
           $ref: '#/components/schemas/IssueStats'
+        demographics:
+          $ref: '#/components/schemas/Demographics'
         queue_activity:
           $ref: '#/components/schemas/QueueActivity'
       required:
+      - demographics
       - document_requests
       - issue_reports
       - queue_activity
+    Demographics:
+      type: object
+      properties:
+        purok_distribution:
+          type: object
+          additionalProperties:
+            type: integer
+        age_demographics:
+          $ref: '#/components/schemas/AgeDemographics'
+      required:
+      - age_demographics
+      - purok_distribution
     DocumentRequest:
       type: object
       properties:
@@ -2853,9 +3429,51 @@ components:
           pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
           readOnly: true
           description: Clearance issuance fee in PHP
+        fee_assessment_status:
+          allOf:
+          - $ref: '#/components/schemas/FeeAssessmentStatusEnum'
+          readOnly: true
+          description: |-
+            Explicit provenance of clearance fee determination.
+
+            * `AWAITING_ASSESSMENT` - Awaiting Assessment
+            * `ASSESSED` - Staff-Assessed Fee
+            * `WAIVED` - Staff-Approved Waiver
+            * `STATUTORY_EXEMPT` - Statutory Exemption
+        fee_assessed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: Timestamp when the clearance fee was assessed or waived.
+        fee_waiver_reason:
+          type: string
+          readOnly: true
+          description: Mandatory written justification when an ordinary fee is waived
+            by staff.
+        fee_assessed_by_name:
+          type: string
+          nullable: true
+          readOnly: true
         payment_method:
           allOf:
           - $ref: '#/components/schemas/PaymentMethodEnum'
+          readOnly: true
+        payment_recipient:
+          type: integer
+          nullable: true
+          readOnly: true
+        payment_recipient_name_snapshot:
+          type: string
+          nullable: true
+          readOnly: true
+        payment_recipient_identifier_snapshot:
+          type: string
+          nullable: true
+          readOnly: true
+        payment_instructions_snapshot:
+          type: string
+          nullable: true
           readOnly: true
         payment_reference:
           type: string
@@ -2866,6 +3484,14 @@ components:
           readOnly: true
         payment_review_note:
           type: string
+          readOnly: true
+        payment_proof_url:
+          type: string
+          nullable: true
+          readOnly: true
+        payment_transacted_at:
+          type: string
+          format: date-time
           readOnly: true
         created_at:
           type: string
@@ -2880,13 +3506,23 @@ components:
       - created_at
       - document_type
       - fee_amount
+      - fee_assessed_at
+      - fee_assessed_by_name
+      - fee_assessment_status
+      - fee_waiver_reason
       - id
       - is_walkin
       - or_number
+      - payment_instructions_snapshot
       - payment_method
+      - payment_proof_url
+      - payment_recipient
+      - payment_recipient_identifier_snapshot
+      - payment_recipient_name_snapshot
       - payment_reference
       - payment_review_note
       - payment_status
+      - payment_transacted_at
       - purok
       - request_id
       - requester_name
@@ -3018,6 +3654,18 @@ components:
       - created_at
       - id
       - token
+    FeeAssessmentStatusEnum:
+      enum:
+      - AWAITING_ASSESSMENT
+      - ASSESSED
+      - WAIVED
+      - STATUTORY_EXEMPT
+      type: string
+      description: |-
+        * `AWAITING_ASSESSMENT` - Awaiting Assessment
+        * `ASSESSED` - Staff-Assessed Fee
+        * `WAIVED` - Staff-Approved Waiver
+        * `STATUTORY_EXEMPT` - Statutory Exemption
     FileUpload:
       type: object
       properties:
@@ -3027,6 +3675,16 @@ components:
           description: CSV file containing resident accounts to import.
       required:
       - file
+    IncidentTiming:
+      type: object
+      properties:
+        day_time:
+          type: integer
+        night_time:
+          type: integer
+      required:
+      - day_time
+      - night_time
     IssueReport:
       type: object
       properties:
@@ -3113,10 +3771,19 @@ components:
           type: integer
         urgency_breakdown:
           $ref: '#/components/schemas/UrgencyBreakdown'
+        category_breakdown:
+          $ref: '#/components/schemas/CategoryBreakdown'
+        scenario_breakdown:
+          $ref: '#/components/schemas/CategoryBreakdown'
+        incident_timing:
+          $ref: '#/components/schemas/IncidentTiming'
       required:
+      - category_breakdown
       - in_progress
+      - incident_timing
       - pending
       - resolved
+      - scenario_breakdown
       - total
       - urgency_breakdown
     NotificationTypeEnum:
@@ -3223,6 +3890,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Announcement'
+    PaginatedBarangayApplicationReadList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/BarangayApplicationRead'
     PaginatedBarangayList:
       type: object
       required:
@@ -3246,6 +3936,28 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Barangay'
+    PaginatedDILGAnalytics:
+      type: object
+      properties:
+        count:
+          type: integer
+        next:
+          type: string
+          format: uri
+          nullable: true
+        previous:
+          type: string
+          format: uri
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/DILGAnalyticsRow'
+      required:
+      - count
+      - next
+      - previous
+      - results
     PaginatedDocumentRequestList:
       type: object
       required:
@@ -3361,6 +4073,29 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/IssueReport'
+    PaginatedPaymentRecipientList:
+      type: object
+      required:
+      - count
+      - results
+      properties:
+        count:
+          type: integer
+          example: 123
+        next:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=4
+        previous:
+          type: string
+          nullable: true
+          format: uri
+          example: http://api.example.org/accounts/?page=2
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PaymentRecipient'
     PaginatedQueueTicketList:
       type: object
       required:
@@ -3549,7 +4284,13 @@ components:
           readOnly: true
         name:
           type: string
-          maxLength: 255
+          readOnly: true
+        municipality:
+          type: string
+          readOnly: true
+        province:
+          type: string
+          readOnly: true
         logo:
           type: string
           format: uri
@@ -3625,9 +4366,51 @@ components:
           pattern: ^-?\d{0,6}(?:\.\d{0,2})?$
           readOnly: true
           description: Clearance issuance fee in PHP
+        fee_assessment_status:
+          allOf:
+          - $ref: '#/components/schemas/FeeAssessmentStatusEnum'
+          readOnly: true
+          description: |-
+            Explicit provenance of clearance fee determination.
+
+            * `AWAITING_ASSESSMENT` - Awaiting Assessment
+            * `ASSESSED` - Staff-Assessed Fee
+            * `WAIVED` - Staff-Approved Waiver
+            * `STATUTORY_EXEMPT` - Statutory Exemption
+        fee_assessed_at:
+          type: string
+          format: date-time
+          readOnly: true
+          nullable: true
+          description: Timestamp when the clearance fee was assessed or waived.
+        fee_waiver_reason:
+          type: string
+          readOnly: true
+          description: Mandatory written justification when an ordinary fee is waived
+            by staff.
+        fee_assessed_by_name:
+          type: string
+          nullable: true
+          readOnly: true
         payment_method:
           allOf:
           - $ref: '#/components/schemas/PaymentMethodEnum'
+          readOnly: true
+        payment_recipient:
+          type: integer
+          nullable: true
+          readOnly: true
+        payment_recipient_name_snapshot:
+          type: string
+          nullable: true
+          readOnly: true
+        payment_recipient_identifier_snapshot:
+          type: string
+          nullable: true
+          readOnly: true
+        payment_instructions_snapshot:
+          type: string
+          nullable: true
           readOnly: true
         payment_reference:
           type: string
@@ -3638,6 +4421,14 @@ components:
           readOnly: true
         payment_review_note:
           type: string
+          readOnly: true
+        payment_proof_url:
+          type: string
+          nullable: true
+          readOnly: true
+        payment_transacted_at:
+          type: string
+          format: date-time
           readOnly: true
         created_at:
           type: string
@@ -3747,6 +4538,35 @@ components:
         reporter:
           type: integer
           readOnly: true
+    PatchedPaymentRecipient:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        provider:
+          $ref: '#/components/schemas/ProviderEnum'
+        provider_label:
+          type: string
+          readOnly: true
+        display_name:
+          type: string
+          maxLength: 100
+        recipient_name:
+          type: string
+          maxLength: 255
+        recipient_identifier:
+          type: string
+          maxLength: 100
+        instructions:
+          type: string
+          maxLength: 1000
+        is_active:
+          type: boolean
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
     PatchedQueueTicket:
       type: object
       properties:
@@ -3833,6 +4653,10 @@ components:
           type: string
           format: uri
           nullable: true
+        remove_philsys_id_photo:
+          type: boolean
+          writeOnly: true
+          default: false
         secondary_id_type:
           type: string
           nullable: true
@@ -3843,6 +4667,10 @@ components:
           type: string
           format: uri
           nullable: true
+        remove_secondary_id_photo:
+          type: boolean
+          writeOnly: true
+          default: false
         utility_billing_type:
           type: string
           nullable: true
@@ -3853,6 +4681,10 @@ components:
           type: string
           format: uri
           nullable: true
+        remove_utility_billing_photo:
+          type: boolean
+          writeOnly: true
+          default: false
     PatchedUser:
       type: object
       properties:
@@ -3887,10 +4719,53 @@ components:
       enum:
       - CASH
       - GCASH
+      - MAYA
+      - BANK
+      - OTHER
       type: string
       description: |-
         * `CASH` - Cash
         * `GCASH` - GCash
+        * `MAYA` - Maya
+        * `BANK` - Bank transfer
+        * `OTHER` - Other
+    PaymentRecipient:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        provider:
+          $ref: '#/components/schemas/ProviderEnum'
+        provider_label:
+          type: string
+          readOnly: true
+        display_name:
+          type: string
+          maxLength: 100
+        recipient_name:
+          type: string
+          maxLength: 255
+        recipient_identifier:
+          type: string
+          maxLength: 100
+        instructions:
+          type: string
+          maxLength: 1000
+        is_active:
+          type: boolean
+        updated_at:
+          type: string
+          format: date-time
+          readOnly: true
+      required:
+      - display_name
+      - id
+      - provider
+      - provider_label
+      - recipient_identifier
+      - recipient_name
+      - updated_at
     PaymentStatusEnum:
       enum:
       - NOT_REQUIRED
@@ -3913,6 +4788,18 @@ components:
       description: |-
         * `regular` - Regular
         * `priority` - Priority/Senior/PWD/Pregnant
+    ProviderEnum:
+      enum:
+      - GCASH
+      - MAYA
+      - BANK
+      - OTHER
+      type: string
+      description: |-
+        * `GCASH` - GCash
+        * `MAYA` - Maya
+        * `BANK` - Bank transfer
+        * `OTHER` - Other
     PublicAnnouncement:
       type: object
       properties:
@@ -3938,6 +4825,74 @@ components:
       - id
       - is_pinned
       - title
+    PublicAnnouncementPage:
+      type: object
+      properties:
+        count:
+          type: integer
+        next:
+          type: string
+          format: uri
+          nullable: true
+        previous:
+          type: string
+          format: uri
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicAnnouncement'
+      required:
+      - count
+      - next
+      - previous
+      - results
+    PublicBarangay:
+      type: object
+      properties:
+        id:
+          type: integer
+          readOnly: true
+        name:
+          type: string
+          readOnly: true
+        municipality:
+          type: string
+          readOnly: true
+        province:
+          type: string
+          readOnly: true
+        primary_color:
+          type: string
+          readOnly: true
+      required:
+      - id
+      - municipality
+      - name
+      - primary_color
+      - province
+    PublicBarangayDirectoryPage:
+      type: object
+      properties:
+        count:
+          type: integer
+        next:
+          type: string
+          format: uri
+          nullable: true
+        previous:
+          type: string
+          format: uri
+          nullable: true
+        results:
+          type: array
+          items:
+            $ref: '#/components/schemas/PublicBarangay'
+      required:
+      - count
+      - next
+      - previous
+      - results
     PublicQueueStatus:
       type: object
       properties:
@@ -3964,17 +4919,14 @@ components:
     QueueActivity:
       type: object
       properties:
-        total_today:
-          type: integer
         serving_now:
           type: string
           nullable: true
-        waiting_count:
+        waiting_in_queue:
           type: integer
       required:
       - serving_now
-      - total_today
-      - waiting_count
+      - waiting_in_queue
     QueueTicket:
       type: object
       properties:
@@ -4113,8 +5065,8 @@ components:
           writeOnly: true
         barangay_id:
           type: integer
+          minimum: 1
           writeOnly: true
-          nullable: true
         guardian_id:
           type: string
           writeOnly: true
@@ -4150,6 +5102,7 @@ components:
           writeOnly: true
           maxLength: 64
       required:
+      - barangay_id
       - birth_date
       - full_name
       - password
@@ -4201,6 +5154,10 @@ components:
           type: string
           format: uri
           nullable: true
+        remove_philsys_id_photo:
+          type: boolean
+          writeOnly: true
+          default: false
         secondary_id_type:
           type: string
           nullable: true
@@ -4211,6 +5168,10 @@ components:
           type: string
           format: uri
           nullable: true
+        remove_secondary_id_photo:
+          type: boolean
+          writeOnly: true
+          default: false
         utility_billing_type:
           type: string
           nullable: true
@@ -4221,6 +5182,10 @@ components:
           type: string
           format: uri
           nullable: true
+        remove_utility_billing_photo:
+          type: boolean
+          writeOnly: true
+          default: false
       required:
       - birth_date
       - email
@@ -4272,6 +5237,10 @@ components:
           type: string
           format: uri
           nullable: true
+        remove_philsys_id_photo:
+          type: boolean
+          writeOnly: true
+          default: false
         secondary_id_type:
           type: string
           nullable: true
@@ -4282,6 +5251,10 @@ components:
           type: string
           format: uri
           nullable: true
+        remove_secondary_id_photo:
+          type: boolean
+          writeOnly: true
+          default: false
         utility_billing_type:
           type: string
           nullable: true
@@ -4292,6 +5265,10 @@ components:
           type: string
           format: uri
           nullable: true
+        remove_utility_billing_photo:
+          type: boolean
+          writeOnly: true
+          default: false
       required:
       - birth_date
       - full_name
@@ -4354,19 +5331,19 @@ components:
     UrgencyBreakdown:
       type: object
       properties:
-        low:
+        minor:
           type: integer
-        medium:
+        moderate:
           type: integer
-        high:
+        hazard:
           type: integer
-        urgent:
+        emergency:
           type: integer
       required:
-      - high
-      - low
-      - medium
-      - urgent
+      - emergency
+      - hazard
+      - minor
+      - moderate
     UrgencyEnum:
       enum:
       - MINOR

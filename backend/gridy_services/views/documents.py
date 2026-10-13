@@ -1,3 +1,5 @@
+import json
+
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
@@ -30,6 +32,33 @@ from gridy_audit.services import log_action
 from gridy_audit.models import AuditLog
 from rest_framework.exceptions import PermissionDenied, ValidationError
 from ..fee_policy import FEE_EXEMPT_DOCUMENT_TYPES, check_ra11261_eligibility
+
+DOCUMENT_STATUS_TRANSITIONS = {
+    DocumentRequest.Status.PENDING: {
+        DocumentRequest.Status.PROCESSING,
+        DocumentRequest.Status.REJECTED,
+    },
+    DocumentRequest.Status.PROCESSING: {
+        DocumentRequest.Status.READY_FOR_PICKUP,
+    },
+    DocumentRequest.Status.READY_FOR_PICKUP: {
+        DocumentRequest.Status.RELEASED,
+    },
+    DocumentRequest.Status.REJECTED: set(),
+    DocumentRequest.Status.RELEASED: set(),
+}
+
+
+def _document_validation_audit_state(document_request):
+    return {
+        "status": document_request.status,
+        "fee_amount": format(document_request.fee_amount, ".2f"),
+        "fee_assessment_status": document_request.fee_assessment_status,
+        "or_number": document_request.or_number,
+        "payment_method": document_request.payment_method,
+        "payment_status": document_request.payment_status,
+    }
+
 
 class DocumentRequestViewSet(viewsets.ModelViewSet):
     serializer_class = DocumentRequestSerializer
@@ -210,9 +239,11 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=['patch'], permission_classes=[IsBarangayOfficialOrField])
     def validate(self, request, pk=None):
         with transaction.atomic():
-            document_request = DocumentRequest.objects.select_for_update().get(
-                pk=self.get_object().pk
+            scoped_document_request = self.get_object()
+            document_request = self.get_queryset().select_for_update().get(
+                pk=scoped_document_request.pk
             )
+            before_values = _document_validation_audit_state(document_request)
             initial_fee_assessment_status = document_request.fee_assessment_status
             serializer = DocumentRequestReviewSerializer(
                 document_request,
@@ -220,6 +251,19 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
                 partial=True,
             )
             serializer.is_valid(raise_exception=True)
+            requested_status = serializer.validated_data.get(
+                "status", document_request.status
+            )
+            if requested_status != document_request.status and requested_status not in (
+                DOCUMENT_STATUS_TRANSITIONS.get(document_request.status, set())
+            ):
+                raise ValidationError({
+                    "status": (
+                        f"Invalid document status transition from "
+                        f"{document_request.status} to {requested_status}."
+                    )
+                })
+
             document_request = serializer.save()
             doc_type_clean = " ".join((document_request.document_type or "").split()).casefold()
             is_statutory = doc_type_clean in FEE_EXEMPT_DOCUMENT_TYPES
@@ -401,6 +445,12 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
                 if document_request.user
                 else document_request.walkin_name
             )
+            after_values = _document_validation_audit_state(document_request)
+            audit_changes = {
+                field: {"before": before_values[field], "after": after_values[field]}
+                for field in before_values
+                if before_values[field] != after_values[field]
+            }
 
             log_action(
                 user=request.user,
@@ -408,7 +458,8 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
                 description=(
                     f"Validated document request #{document_request.id} "
                     f"({document_request.document_type}) for {recipient_desc} "
-                    f"as {document_request.get_status_display()}."
+                    f"as {document_request.get_status_display()}. "
+                    f"Audit changes: {json.dumps(audit_changes, sort_keys=True)}"
                 ),
                 request=request
             )

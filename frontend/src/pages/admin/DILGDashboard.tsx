@@ -28,8 +28,29 @@ export function DILGDashboard() {
     const fetchAnalytics = useCallback(async (isRetry = false) => {
         if (isRetry) setRetrying(true);
         try {
-            const response = await axiosPrivate.get('/dilg-analytics/');
-            setData(response.data);
+            const analytics: AnalyticsData[] = [];
+            let page = 1;
+            let hasNextPage = true;
+
+            while (hasNextPage) {
+                const endpoint = page === 1
+                    ? '/dilg-analytics/'
+                    : `/dilg-analytics/?page=${page}`;
+                const response = await axiosPrivate.get(endpoint);
+                const pageData = Array.isArray(response.data)
+                    ? response.data
+                    : response.data?.results;
+
+                if (!Array.isArray(pageData)) {
+                    throw new Error('Unexpected DILG analytics response');
+                }
+
+                analytics.push(...pageData);
+                hasNextPage = !Array.isArray(response.data) && Boolean(response.data.next);
+                page += 1;
+            }
+
+            setData(analytics);
             setLoadError(false);
         } catch (error) {
             console.error("Failed to fetch DILG Analytics", error);

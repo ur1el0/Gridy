@@ -1,25 +1,32 @@
 from django.db.models import Count, Q
-from rest_framework import permissions, status
-from rest_framework.response import Response
+from drf_spectacular.utils import extend_schema
+from rest_framework import permissions
 from rest_framework.views import APIView
+
+from config.pagination import StandardResultsSetPagination
 
 from gridy_auth.models import Barangay, Resident
 from gridy_auth.permissions import IsDILGAdmin
 from gridy_reports.models import IssueReport
 
 from .models import DocumentRequest, QueueTicket
+from .serializers.dashboard import PaginatedDILGAnalyticsSerializer
 
 
 class DILGAnalyticsView(APIView):
     permission_classes = [permissions.IsAuthenticated, IsDILGAdmin]
+    pagination_class = StandardResultsSetPagination
 
+    @extend_schema(responses=PaginatedDILGAnalyticsSerializer)
     def get(self, request):
-        barangays = list(
-            Barangay.objects.all().order_by("name").values("id", "name")
+        paginator = self.pagination_class()
+        page = paginator.paginate_queryset(
+            Barangay.objects.all().order_by("name", "pk"),
+            request,
+            view=self,
         )
+        barangays = [{"id": barangay.pk, "name": barangay.name} for barangay in page]
         barangay_ids = [barangay["id"] for barangay in barangays]
-        if not barangay_ids:
-            return Response([], status=status.HTTP_200_OK)
 
         residents_by_barangay = {
             aggregate["user__barangay_id"]: aggregate
@@ -142,4 +149,4 @@ class DILGAnalyticsView(APIView):
                 }
             )
 
-        return Response(analytics_data, status=status.HTTP_200_OK)
+        return paginator.get_paginated_response(analytics_data)

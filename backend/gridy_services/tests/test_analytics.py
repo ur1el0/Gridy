@@ -129,7 +129,9 @@ class DILGAnalyticsAPITests(APITestCase):
         res = self.client.get(self.url)
         self.assertEqual(res.status_code, status.HTTP_200_OK)
 
-        data_by_barangay = {item["barangay_name"]: item for item in res.data}
+        data_by_barangay = {
+            item["barangay_name"]: item for item in res.data["results"]
+        }
         self.assertIn("Barangay Analytics A", data_by_barangay)
         self.assertIn("Barangay Analytics B", data_by_barangay)
 
@@ -207,11 +209,11 @@ class DILGAnalyticsAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(
-            [item["barangay_name"] for item in response.data],
+            [item["barangay_name"] for item in response.data["results"]],
             sorted([self.barangay_a.name, self.barangay_b.name]),
         )
         self.assertEqual(
-            set(response.data[0]),
+            set(response.data["results"][0]),
             {
                 "barangay_name",
                 "residents",
@@ -221,7 +223,9 @@ class DILGAnalyticsAPITests(APITestCase):
                 "night_time_incidents",
             },
         )
-        data_by_barangay = {item["barangay_name"]: item for item in response.data}
+        data_by_barangay = {
+            item["barangay_name"]: item for item in response.data["results"]
+        }
         a_data = data_by_barangay[self.barangay_a.name]
         self.assertEqual(a_data["residents"], {"total": 1, "verified": 1})
         self.assertEqual(a_data["documents"], {"pending": 0, "released": 0})
@@ -254,6 +258,18 @@ class DILGAnalyticsAPITests(APITestCase):
         )
         self.assertEqual(b_data["night_time_incidents"], 0)
 
+    def test_dilg_analytics_returns_standard_page_size_results(self):
+        self.client.force_authenticate(user=self.dilg_admin)
+
+        response = self.client.get(self.url, {"page": 2, "page_size": 1})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(set(response.data), {"count", "next", "previous", "results"})
+        self.assertEqual(response.data["count"], 2)
+        self.assertEqual(len(response.data["results"]), 1)
+        self.assertIsNotNone(response.data["previous"])
+        self.assertIsNone(response.data["next"])
+
     def test_document_counts_keep_or_attribution_and_deduplicate_same_barangay(self):
         DocumentRequest.objects.create(
             user=self.resident_a,
@@ -278,7 +294,9 @@ class DILGAnalyticsAPITests(APITestCase):
         response = self.client.get(self.url)
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        data_by_barangay = {item["barangay_name"]: item for item in response.data}
+        data_by_barangay = {
+            item["barangay_name"]: item for item in response.data["results"]
+        }
         self.assertEqual(
             data_by_barangay[self.barangay_a.name]["documents"],
             {"pending": 2, "released": 0},
@@ -302,6 +320,6 @@ class DILGAnalyticsAPITests(APITestCase):
             large_scope_response = self.client.get(self.url)
         self.assertEqual(large_scope_response.status_code, status.HTTP_200_OK)
 
-        self.assertEqual(len(small_scope_queries), 5)
+        self.assertEqual(len(small_scope_queries), 6)
         self.assertEqual(len(small_scope_queries), len(large_scope_queries))
-        self.assertLessEqual(len(large_scope_queries), 5)
+        self.assertLessEqual(len(large_scope_queries), 6)

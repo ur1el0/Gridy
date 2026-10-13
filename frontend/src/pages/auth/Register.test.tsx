@@ -15,6 +15,37 @@ afterEach(() => {
 });
 
 describe('Register Component (Dual-Mode)', () => {
+    it('loads all pages from the paginated approved barangay directory', async () => {
+        vi.mocked(axiosPublic.get)
+            .mockResolvedValueOnce({
+                data: {
+                    count: 2,
+                    next: 'http://test.local/api/v1/auth/public/barangays/?page=2',
+                    previous: null,
+                    results: [{ id: 2, name: 'Barangay Ibabang Dupay', municipality: 'Lucena City', province: 'Quezon' }],
+                },
+            } as never)
+            .mockResolvedValueOnce({
+                data: {
+                    count: 2,
+                    next: null,
+                    previous: 'http://test.local/api/v1/auth/public/barangays/',
+                    results: [{ id: 3, name: 'Barangay Gulang-Gulang', municipality: 'Lucena City', province: 'Quezon' }],
+                },
+            } as never);
+
+        render(
+            <BrowserRouter>
+                <Register />
+            </BrowserRouter>,
+        );
+
+        expect(await screen.findByRole('option', { name: /Barangay Ibabang Dupay/ })).toBeInTheDocument();
+        expect(screen.getByRole('option', { name: /Barangay Gulang-Gulang/ })).toBeInTheDocument();
+        expect(axiosPublic.get).toHaveBeenNthCalledWith(1, '/auth/public/barangays/');
+        expect(axiosPublic.get).toHaveBeenNthCalledWith(2, '/auth/public/barangays/?page=2');
+    });
+
     it('renders Resident Registration by default with resident fields and LGU service highlights', () => {
         render(
             <BrowserRouter>

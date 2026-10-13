@@ -88,6 +88,12 @@ class PublicAnnouncementAPITests(APITestCase):
         announcement = Announcement.objects.create(
             title="Office schedule",
             content="The barangay hall opens at 8 AM.",
+            is_pinned=True,
+            created_by=first_admin,
+        )
+        second_announcement = Announcement.objects.create(
+            title="Clinic schedule",
+            content="The health center opens at 9 AM.",
             created_by=first_admin,
         )
         Announcement.objects.create(
@@ -97,12 +103,22 @@ class PublicAnnouncementAPITests(APITestCase):
         )
 
         response = self.client.get(
-            reverse("public-announcements", args=[first_barangay.pk])
+            reverse("public-announcements", args=[first_barangay.pk]),
+            {"page_size": 1},
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(response.data), 1)
-        self.assertEqual(response.data[0]["id"], announcement.pk)
-        self.assertEqual(response.data[0]["title"], "Office schedule")
-        self.assertNotIn("created_by", response.data[0])
-        self.assertNotIn("image", response.data[0])
+        self.assertEqual(response.data["count"], 2)
+        self.assertIsNotNone(response.data["next"])
+        first_result = response.data["results"][0]
+        self.assertEqual(first_result["id"], announcement.pk)
+        self.assertEqual(first_result["title"], "Office schedule")
+        self.assertNotIn("created_by", first_result)
+        self.assertNotIn("image", first_result)
+
+        second_page = self.client.get(
+            reverse("public-announcements", args=[first_barangay.pk]),
+            {"page": 2, "page_size": 1},
+        )
+        self.assertEqual(second_page.status_code, status.HTTP_200_OK)
+        self.assertEqual(second_page.data["results"][0]["id"], second_announcement.pk)

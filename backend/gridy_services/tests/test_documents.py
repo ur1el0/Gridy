@@ -16,6 +16,27 @@ class DocumentRequestAPITests(ServiceAPIBaseTestCase):
         self.resident.save(update_fields=["barangay"])
         return barangay
 
+    def test_document_request_list_supports_standard_page_and_page_size_parameters(self):
+        barangay = self._assign_shared_barangay()
+        for index in range(3):
+            DocumentRequest.objects.create(
+                user=self.resident,
+                barangay=barangay,
+                document_type=f"Paginated request {index}",
+            )
+        self.client.force_login(self.official)
+
+        response = self.client.get(
+            reverse("document-request-list"), {"page": 2, "page_size": 2}
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(set(response.data), {"count", "next", "previous", "results"})
+        self.assertEqual(response.data["count"], 3)
+        self.assertIsNone(response.data["next"])
+        self.assertIsNotNone(response.data["previous"])
+        self.assertEqual(len(response.data["results"]), 1)
+
     def test_resident_can_create_document_request(self):
         self.client.force_login(self.resident)
         url = reverse('document-request-list')

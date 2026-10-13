@@ -5,6 +5,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.exceptions import PermissionDenied
 from drf_spectacular.utils import extend_schema
+from config.pagination import StandardResultsSetPagination
 from gridy_auth.models import User
 from gridy_auth.permissions import IsBarangayOfficial, IsDILGAdmin
 from gridy_communications.models import (
@@ -17,6 +18,7 @@ from gridy_communications.models import (
 )
 from gridy_communications.serializers import (
     AnnouncementSerializer,
+    PublicAnnouncementPageSerializer,
     PublicAnnouncementSerializer,
     ActivityScheduleSerializer,
     FCMDeviceSerializer,
@@ -32,18 +34,19 @@ logger = logging.getLogger(__name__)
 class PublicAnnouncementListView(APIView):
     permission_classes = [permissions.AllowAny]
 
-    @extend_schema(responses=PublicAnnouncementSerializer(many=True))
+    @extend_schema(responses=PublicAnnouncementPageSerializer)
     def get(self, request, barangay_id):
         announcements = Announcement.objects.filter(
             created_by__barangay_id=barangay_id,
-        ).order_by("-is_pinned", "-created_at")[:50]
-        return Response(
-            PublicAnnouncementSerializer(
-                announcements,
-                many=True,
-                context={"request": request},
-            ).data
+        ).order_by("-is_pinned", "-created_at", "-pk")
+        paginator = StandardResultsSetPagination()
+        page = paginator.paginate_queryset(announcements, request, view=self)
+        serializer = PublicAnnouncementSerializer(
+            page,
+            many=True,
+            context={"request": request},
         )
+        return paginator.get_paginated_response(serializer.data)
 
 class ActivityScheduleViewSet(viewsets.ModelViewSet):
     serializer_class = ActivityScheduleSerializer

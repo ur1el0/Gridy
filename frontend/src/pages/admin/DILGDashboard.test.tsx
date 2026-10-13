@@ -52,4 +52,44 @@ describe('DILGDashboard', () => {
         expect(screen.getByText('Service Load by Barangay')).toBeInTheDocument();
         expect(screen.queryByRole('alert')).not.toBeInTheDocument();
     });
+
+    it('loads all pages of paginated barangay analytics', async () => {
+        const row = (barangay_name: string) => ({
+            barangay_name,
+            residents: { total: 25, verified: 20 },
+            documents: { pending: 3, released: 10 },
+            queue: { priority: 1, regular: 2 },
+            scenarios: {
+                peace_and_order: 1,
+                public_health: 2,
+                infrastructure: 3,
+                environment: 4,
+                other: 5,
+            },
+            night_time_incidents: 1,
+        });
+        vi.mocked(axiosPrivate.get)
+            .mockResolvedValueOnce({
+                data: {
+                    count: 2,
+                    next: 'http://test.local/api/v1/dilg-analytics/?page=2',
+                    previous: null,
+                    results: [row('Barangay First')],
+                },
+            })
+            .mockResolvedValueOnce({
+                data: {
+                    count: 2,
+                    next: null,
+                    previous: 'http://test.local/api/v1/dilg-analytics/',
+                    results: [row('Barangay Second')],
+                },
+            });
+
+        render(<DILGDashboard />);
+
+        expect(await screen.findByText('Population by Barangay')).toBeInTheDocument();
+        expect(axiosPrivate.get).toHaveBeenNthCalledWith(1, '/dilg-analytics/');
+        expect(axiosPrivate.get).toHaveBeenNthCalledWith(2, '/dilg-analytics/?page=2');
+    });
 });

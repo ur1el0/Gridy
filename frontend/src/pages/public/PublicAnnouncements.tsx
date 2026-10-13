@@ -24,7 +24,16 @@ export const PublicAnnouncements: React.FC = () => {
         if (isRetry) setRetrying(true);
         try {
             const response = await axiosPublic.get(`/public/barangays/${barangayId}/announcements/`);
-            setAnnouncements(response.data);
+            const payload: unknown = response.data;
+            const results = Array.isArray(payload)
+                ? payload
+                : payload && typeof payload === 'object'
+                    ? (payload as { results?: unknown }).results
+                    : undefined;
+            if (!Array.isArray(results)) {
+                throw new Error('Unexpected announcements response');
+            }
+            setAnnouncements(results as PublicAnnouncement[]);
             setFailed(false);
         } catch {
             setFailed(true);
