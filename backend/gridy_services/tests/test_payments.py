@@ -63,6 +63,7 @@ class DocumentPaymentWorkflowTests(APITestCase):
             "purpose": "Employment",
             "status": DocumentRequest.Status.READY_FOR_PICKUP,
             "fee_amount": "50.00",
+            "fee_assessment_status": DocumentRequest.FeeAssessmentStatus.ASSESSED,
             "payment_status": DocumentRequest.PaymentStatus.UNPAID,
         }
         values.update(overrides)

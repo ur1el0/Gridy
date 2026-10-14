@@ -108,6 +108,37 @@ class DocumentRequest(models.Model):
     # Official Receipt (OR) & Fee Auditing
     or_number = models.CharField(max_length=50, blank=True, null=True, help_text="Official Receipt Number issued by Barangay Treasurer")
     fee_amount = models.DecimalField(max_digits=8, decimal_places=2, default=0.00, help_text="Clearance issuance fee in PHP")
+
+    class FeeAssessmentStatus(models.TextChoices):
+        AWAITING_ASSESSMENT = "AWAITING_ASSESSMENT", "Awaiting Assessment"
+        ASSESSED = "ASSESSED", "Staff-Assessed Fee"
+        WAIVED = "WAIVED", "Staff-Approved Waiver"
+        STATUTORY_EXEMPT = "STATUTORY_EXEMPT", "Statutory Exemption"
+
+    fee_assessment_status = models.CharField(
+        max_length=25,
+        choices=FeeAssessmentStatus.choices,
+        default=FeeAssessmentStatus.AWAITING_ASSESSMENT,
+        help_text="Explicit provenance of clearance fee determination.",
+    )
+    fee_assessed_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="assessed_document_requests",
+        help_text="Barangay staff member who assessed or waived the clearance fee.",
+    )
+    fee_assessed_at = models.DateTimeField(
+        blank=True,
+        null=True,
+        help_text="Timestamp when the clearance fee was assessed or waived.",
+    )
+    fee_waiver_reason = models.TextField(
+        blank=True,
+        help_text="Mandatory written justification when an ordinary fee is waived by staff.",
+    )
+
     payment_method = models.CharField(
         max_length=12,
         choices=PaymentMethod.choices,

@@ -223,4 +223,81 @@ describe('ReviewDocumentModal', () => {
             'Amount on screenshot shows 25 instead of 50',
         );
     });
+
+    it('renders awaiting assessment badge and blocks transition when fee is not assessed', () => {
+        const unassessedRequest: DocumentRequest = {
+            ...baseRequest,
+            status: 'PROCESSING',
+            fee_amount: 0,
+            fee_assessment_status: 'AWAITING_ASSESSMENT',
+            payment_status: 'NOT_REQUIRED',
+            payment_method: '',
+        };
+        render(<ReviewDocumentModal {...defaultProps} selectedRequest={unassessedRequest} />);
+
+        expect(screen.getByText('Awaiting Assessment')).toBeInTheDocument();
+
+        // Clear fee input to 0
+        const feeInput = screen.getByPlaceholderText('50.00');
+        fireEvent.change(feeInput, { target: { value: '0' } });
+
+        const readyBtn = screen.getByRole('button', { name: 'Mark Ready for Pickup' });
+        fireEvent.click(readyBtn);
+
+        expect(toast.error).toHaveBeenCalledWith('Document fee must be assessed or explicitly waived before marking ready for pickup.');
+        expect(defaultProps.handleStatusUpdate).not.toHaveBeenCalled();
+    });
+
+    it('allows staff to waive fee with written justification', () => {
+        const unassessedRequest: DocumentRequest = {
+            ...baseRequest,
+            status: 'PROCESSING',
+            fee_amount: 0,
+            fee_assessment_status: 'AWAITING_ASSESSMENT',
+            payment_status: 'NOT_REQUIRED',
+            payment_method: '',
+        };
+        render(<ReviewDocumentModal {...defaultProps} selectedRequest={unassessedRequest} />);
+
+        const waiveCheckbox = screen.getByRole('checkbox', { name: /waive clearance fee for resident/i });
+        fireEvent.click(waiveCheckbox);
+
+        // Try to submit with empty justification
+        const readyBtn = screen.getByRole('button', { name: 'Mark Ready for Pickup' });
+        fireEvent.click(readyBtn);
+        expect(toast.error).toHaveBeenCalledWith('A written justification is required to waive clearance fees.');
+        expect(defaultProps.handleStatusUpdate).not.toHaveBeenCalled();
+
+        // Provide written justification
+        const reasonTextarea = screen.getByPlaceholderText(/State mandatory reason for fee waiver/i);
+        fireEvent.change(reasonTextarea, { target: { value: 'Endorsed by Punong Barangay as indigent resident' } });
+
+        fireEvent.click(readyBtn);
+        expect(defaultProps.handleStatusUpdate).toHaveBeenCalledWith(
+            'READY_FOR_PICKUP',
+            '',
+            '0.00',
+            '',
+            'Endorsed by Punong Barangay as indigent resident',
+        );
+    });
+
+    it('renders staff waiver badge and displays existing waiver justification', () => {
+        const waivedRequest: DocumentRequest = {
+            ...baseRequest,
+            status: 'READY_FOR_PICKUP',
+            fee_amount: 0,
+            fee_assessment_status: 'WAIVED',
+            fee_assessed_by_name: 'Kagawad Juan',
+            fee_assessed_at: '2026-10-13T10:00:00Z',
+            fee_waiver_reason: 'Indigency referral from social welfare',
+            payment_status: 'NOT_REQUIRED',
+            payment_method: '',
+        };
+        render(<ReviewDocumentModal {...defaultProps} selectedRequest={waivedRequest} />);
+
+        expect(screen.getByText('Staff Waiver')).toBeInTheDocument();
+        expect(screen.getByText(/Assessment by:/)).toBeInTheDocument();
+        expect(screen.getByText('Kagawad Juan')).toBeInTheDocument();
+    });
 });

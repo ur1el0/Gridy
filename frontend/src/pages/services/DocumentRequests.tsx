@@ -22,6 +22,10 @@ export interface DocumentRequest {
     admin_notes?: string;
     or_number?: string;
     fee_amount?: number | string;
+    fee_assessment_status?: 'AWAITING_ASSESSMENT' | 'ASSESSED' | 'WAIVED' | 'STATUTORY_EXEMPT' | string;
+    fee_assessed_by_name?: string | null;
+    fee_assessed_at?: string | null;
+    fee_waiver_reason?: string;
     payment_method?: string;
     payment_recipient?: number | null;
     payment_recipient_name_snapshot?: string | null;
@@ -126,17 +130,23 @@ export const DocumentRequests: React.FC = () => {
         updatedOr?: string,
         updatedFee?: string,
         paymentMethod?: string,
+        feeWaiverReason?: string,
     ) => {
         if (!selectedRequest) return;
         setIsUpdating(true);
 
         try {
-            const response = await axiosPrivate.patch(`/document-requests/${selectedRequest.id}/validate/`, {
+            const payload: Record<string, any> = {
                 status: newStatus,
                 or_number: updatedOr,
                 fee_amount: isFeeExemptDocumentType(selectedRequest.document_type) ? '0.00' : updatedFee,
                 payment_method: paymentMethod,
-            });
+            };
+            if (feeWaiverReason !== undefined) {
+                payload.fee_waiver_reason = feeWaiverReason;
+            }
+
+            const response = await axiosPrivate.patch(`/document-requests/${selectedRequest.id}/validate/`, payload);
 
             setRequests(prev => prev.map(req =>
                 req.id === selectedRequest.id ? { ...req, ...response.data } : req
