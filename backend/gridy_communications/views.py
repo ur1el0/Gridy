@@ -38,6 +38,8 @@ from gridy_communications.navigator import (
     NavigatorQueryResponseSerializer,
     ProviderError,
     ProviderTimeoutError,
+    ProviderNetworkError,
+    ProviderServerError,
     ProviderQuotaError,
 )
 
@@ -259,7 +261,7 @@ class NavigatorQueryView(APIView):
             response_data = {
                 "status": "abstained",
                 "answer": guard_result.message,
-                "reason": guard_result.reason,
+                "reason": "privacy_concern",
                 "sources": [],
                 "escalation": escalation,
             }
@@ -318,6 +320,30 @@ class NavigatorQueryView(APIView):
                     "The navigator service is temporarily experiencing high inquiry volume. Please try again in a few minutes."
                 ),
                 "reason": "provider_quota_exceeded",
+                "sources": format_available_sources_fallback(sources_dict),
+                "escalation": escalation,
+            }
+            return Response(response_data, status=status.HTTP_200_OK)
+        except ProviderNetworkError:
+            response_data = {
+                "status": "unavailable",
+                "answer": (
+                    "The navigator could not connect to the information service at this time. "
+                    "Please consult the verified contacts below or visit the Barangay Hall."
+                ),
+                "reason": "provider_network_error",
+                "sources": format_available_sources_fallback(sources_dict),
+                "escalation": escalation,
+            }
+            return Response(response_data, status=status.HTTP_200_OK)
+        except ProviderServerError:
+            response_data = {
+                "status": "unavailable",
+                "answer": (
+                    "The navigator information service is temporarily unavailable. "
+                    "Please try again or contact the Barangay Hall."
+                ),
+                "reason": "provider_server_error",
                 "sources": format_available_sources_fallback(sources_dict),
                 "escalation": escalation,
             }

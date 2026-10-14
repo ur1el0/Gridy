@@ -123,6 +123,7 @@ PAYMENT_PATTERNS = [
     re.compile(r'\b(?:nagbayad\s+na\s+(?:po\s+)?ako|bayad\s+na\s+(?:po\s+)?ako|nabayaran\s+ko\s+na|pumasok\s+ba\s+ang\s+bayad\s+ko|na-receive\s+ba\s+ang\s+bayad\s+ko|natanggap\s+ba\s+ang\s+bayad\s+ko|tingnan\s+mo\s+kung\s+bayad\s+na|nagsend\s+na\s+(?:po\s+)?ako\s+ng\s+bayad|nagpadala\s+na\s+(?:po\s+)?ako\s+ng\s+bayad|sinend\s+ko\s+na\s+ang\s+bayad)\b', re.IGNORECASE),
     re.compile(r'\b(?:resibo\s+ko|resibo\s+number|resibo\s*#|patunay\s+ng\s+bayad|screenshot\s+ng\s+bayad|katibayan\s+ng\s+bayad)\b', re.IGNORECASE),
     re.compile(r'\b(?:bayad\s+ko\s+sa\s+(?:gcash|maya|bank|clearance))\b', re.IGNORECASE),
+    re.compile(r'\b(?:my|attached|uploaded|submitted|eto(?:\s+po)?|may|meron)\b.{0,80}\b(?:gcash|maya|paymaya)\b.{0,40}\b(?:receipt|resibo)\b|\b(?:gcash|maya|paymaya)\b.{0,40}\b(?:receipt|resibo)\b.{0,80}\b(?:reference|ref|txn|transaction|no\.?|number|#)\b', re.IGNORECASE),
     re.compile(r'\bmay\s+reference\s+number\s+ako\b', re.IGNORECASE),
 ]
 

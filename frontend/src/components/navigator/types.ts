@@ -43,14 +43,17 @@ export type NavigatorTurnKind = 'answered' | 'privacy' | 'out_of_scope' | 'unava
 
 const RETRYABLE_UNAVAILABLE_REASONS = new Set([
     'provider_timeout',
-    'provider_error',
+    'provider_network_error',
+    'provider_server_error',
     'provider_quota_exceeded',
 ]);
 
 export function classifyTurn(response: NavigatorQueryResponse): NavigatorTurnKind {
     if (response.status === 'answered') return 'answered';
     if (response.status === 'unavailable') return 'unavailable';
-    return response.reason?.startsWith('privacy_guard_') ? 'privacy' : 'out_of_scope';
+    return response.reason === 'privacy_concern' || response.reason?.startsWith('privacy_guard_') === true
+        ? 'privacy'
+        : 'out_of_scope';
 }
 
 export function isRetryable(response: NavigatorQueryResponse): boolean {

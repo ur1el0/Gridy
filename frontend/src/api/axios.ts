@@ -12,7 +12,7 @@ export function resolveApiBaseUrl(
 }
 
 const BASE_URL = resolveApiBaseUrl();
-const REQUEST_TIMEOUT_MS = 15_000;
+const REQUEST_TIMEOUT_MS = 35_000;
 
 export const axiosPrivate = axios.create({
     baseURL: BASE_URL,

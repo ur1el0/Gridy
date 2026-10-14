@@ -481,7 +481,7 @@ if IS_TESTING:
             }
         }
 
-def _parse_safe_timeout(raw_val, default: float = 8.0, max_val: float = 8.0) -> float:
+def _parse_safe_timeout(raw_val, default: float = 30.0, max_val: float = 30.0) -> float:
     import math
     if raw_val is None:
         return default
@@ -499,8 +499,8 @@ PUBLIC_NAVIGATOR_ENABLED = env.bool('PUBLIC_NAVIGATOR_ENABLED', default=False)
 GEMINI_API_KEY = env('GEMINI_API_KEY', default='').strip()
 GEMINI_MODEL = env('GEMINI_MODEL', default='gemini-2.5-flash')
 PUBLIC_NAVIGATOR_TIMEOUT_SECONDS = _parse_safe_timeout(
-    env('PUBLIC_NAVIGATOR_TIMEOUT_SECONDS', default='8.0'),
-    default=8.0,
-    max_val=8.0,
+    env('PUBLIC_NAVIGATOR_TIMEOUT_SECONDS', default='30.0'),
+    default=30.0,
+    max_val=30.0,
 )
 PUBLIC_NAVIGATOR_MAX_OUTPUT_TOKENS = env.int('PUBLIC_NAVIGATOR_MAX_OUTPUT_TOKENS', default=800)

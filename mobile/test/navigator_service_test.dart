@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:mobile/core/config/app_config.dart';
 import 'package:mobile/core/network/api_client.dart';
 import 'package:mobile/core/network/api_exception.dart';
 import 'package:mobile/models/navigator_model.dart';
@@ -9,6 +10,10 @@ import 'package:mobile/services/navigator_service.dart';
 
 void main() {
   group('NavigatorService', () {
+    test('uses the approved 35-second client request budget', () {
+      expect(AppConfig.requestTimeout, const Duration(seconds: 35));
+    });
+
     test('submits valid query to /public/navigator/query/ with strict payload and auth', () async {
       final mockClient = MockClient((request) async {
         expect(request.method, 'POST');
@@ -67,8 +72,29 @@ void main() {
       expect(response.sources.first.title, contains('Local Government Code'));
       expect(response.sources.first.reference, 'RA 7160 Section 152(c)');
       expect(response.sources.first.updatedAt, isNotNull);
+      expect(
+        () => response.sources.add(
+          const NavigatorSourceModel(
+            id: 'another-source',
+            title: 'Another source',
+            category: 'statutory',
+            reference: 'RA 7160',
+          ),
+        ),
+        throwsA(isA<UnsupportedError>()),
+      );
       expect(response.escalation.officeContact, '(02) 8123-4567');
       expect(response.escalation.hotlines.first.number, '0917-123-4567');
+      expect(
+        () => response.escalation.hotlines.add(
+          const NavigatorHotlineModel(
+            name: 'Another hotline',
+            number: '911',
+            category: 'EMERGENCY',
+          ),
+        ),
+        throwsA(isA<UnsupportedError>()),
+      );
     });
 
     test('validates and rejects empty or oversized query before network call', () async {
@@ -112,7 +138,7 @@ void main() {
       expect(response.sources, isEmpty);
     });
 
-    test('correctly evaluates response retryability for provider failures vs feature disabled', () {
+    test('correctly limits response retryability to transient provider failures', () {
       final timeoutResponse = NavigatorQueryResponseModel.fromJson({
         'status': 'unavailable',
         'answer': 'Assistant service timed out.',
@@ -137,7 +163,26 @@ void main() {
           'barangay_hall_notice': 'Visit Barangay Hall.',
         },
       });
-      expect(errorResponse.isRetryable, isTrue);
+      expect(errorResponse.isRetryable, isFalse);
+
+      for (final reason in [
+        'provider_network_error',
+        'provider_server_error',
+        'provider_quota_exceeded',
+      ]) {
+        final transientResponse = NavigatorQueryResponseModel.fromJson({
+          'status': 'unavailable',
+          'answer': 'The provider is temporarily unavailable.',
+          'reason': reason,
+          'sources': [],
+          'escalation': {
+            'office_contact': null,
+            'hotlines': [],
+            'barangay_hall_notice': 'Visit Barangay Hall.',
+          },
+        });
+        expect(transientResponse.isRetryable, isTrue, reason: reason);
+      }
 
       final disabledResponse = NavigatorQueryResponseModel.fromJson({
         'status': 'unavailable',
@@ -151,6 +196,20 @@ void main() {
         },
       });
       expect(disabledResponse.isRetryable, isFalse);
+    });
+
+    test('normalizes an unknown response status to unavailable without retry', () {
+      final response = NavigatorQueryResponseModel.fromJson({
+        'status': 'unexpected-status',
+        'answer': 'Untrusted status payload.',
+        'reason': null,
+        'sources': [],
+        'escalation': {},
+      });
+
+      expect(response.status, 'unavailable');
+      expect(response.reason, 'invalid_response');
+      expect(response.isRetryable, isFalse);
     });
 
     test('isRequestErrorRetryable returns true strictly for network errors, 429, and 5xx', () {

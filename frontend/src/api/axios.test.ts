@@ -4,13 +4,13 @@ import { axiosPrivate, axiosPublic, resolveApiBaseUrl } from './axios';
 describe('axios client configuration', () => {
     it('configures axiosPrivate with credentials for HttpOnly cookie transmission and targets the /api/v1 prefix', () => {
         expect(axiosPrivate.defaults.withCredentials).toBe(true);
-        expect(axiosPrivate.defaults.timeout).toBe(15_000);
+        expect(axiosPrivate.defaults.timeout).toBe(35_000);
         expect(axiosPrivate.defaults.headers['Content-Type']).toBe('application/json');
         expect(axiosPrivate.defaults.baseURL).toMatch(/\/api\/v1$/);
     });
 
     it('configures axiosPublic with consistent headers and base URL', () => {
-        expect(axiosPublic.defaults.timeout).toBe(15_000);
+        expect(axiosPublic.defaults.timeout).toBe(35_000);
         expect(axiosPublic.defaults.headers['Content-Type']).toBe('application/json');
         expect(axiosPublic.defaults.baseURL).toBe(axiosPrivate.defaults.baseURL);
     });

@@ -35,7 +35,7 @@ const answered: NavigatorQueryResponse = {
 const privacyAbstained: NavigatorQueryResponse = {
     status: 'abstained',
     answer: 'I cannot look up personal payment records.',
-    reason: 'privacy_guard_payment',
+    reason: 'privacy_concern',
     sources: [],
     escalation,
 };
@@ -189,6 +189,32 @@ describe('PublicNavigatorDrawer', () => {
 
         expect(await screen.findByText('Assistant unavailable')).toBeInTheDocument();
         expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument();
+    });
+
+    it('does not offer retry for a permanent provider error', async () => {
+        vi.mocked(submitNavigatorQuery).mockResolvedValueOnce({
+            ...disabled,
+            reason: 'provider_error',
+        });
+        renderOpen();
+
+        ask('Check the published requirements');
+
+        expect(await screen.findByText('Assistant unavailable')).toBeInTheDocument();
+        expect(screen.queryByRole('button', { name: 'Try again' })).not.toBeInTheDocument();
+    });
+
+    it('offers retry for a transient upstream provider server error', async () => {
+        vi.mocked(submitNavigatorQuery).mockResolvedValueOnce({
+            ...timedOut,
+            reason: 'provider_server_error',
+        });
+        renderOpen();
+
+        ask('Check the published requirements');
+
+        expect(await screen.findByText('Assistant unavailable')).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Try again' })).toBeInTheDocument();
     });
 
     it('shows a rate-limit alert on 429 and retries the same question', async () => {

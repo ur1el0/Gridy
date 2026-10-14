@@ -70,11 +70,11 @@ class NavigatorEscalationModel {
   final List<NavigatorHotlineModel> hotlines;
   final String barangayHallNotice;
 
-  const NavigatorEscalationModel({
+  NavigatorEscalationModel({
     this.officeContact,
-    required this.hotlines,
+    required List<NavigatorHotlineModel> hotlines,
     required this.barangayHallNotice,
-  });
+  }) : hotlines = List<NavigatorHotlineModel>.unmodifiable(hotlines);
 
   factory NavigatorEscalationModel.fromJson(Map<String, dynamic> json) {
     final rawHotlines = json['hotlines'];
@@ -107,15 +107,18 @@ class NavigatorQueryResponseModel {
   final List<NavigatorSourceModel> sources;
   final NavigatorEscalationModel escalation;
 
-  const NavigatorQueryResponseModel({
+  NavigatorQueryResponseModel({
     required this.status,
     required this.answer,
     this.reason,
-    required this.sources,
+    required List<NavigatorSourceModel> sources,
     required this.escalation,
-  });
+  }) : sources = List<NavigatorSourceModel>.unmodifiable(sources);
 
   factory NavigatorQueryResponseModel.fromJson(Map<String, dynamic> json) {
+    const validStatuses = {'answered', 'abstained', 'unavailable'};
+    final rawStatus = json['status']?.toString();
+    final hasValidStatus = validStatuses.contains(rawStatus);
     final rawSources = json['sources'];
     final sourcesList = (rawSources is List<dynamic>)
         ? rawSources
@@ -127,16 +130,16 @@ class NavigatorQueryResponseModel {
     final rawEscalation = json['escalation'];
     final escalationData = rawEscalation is Map<String, dynamic>
         ? NavigatorEscalationModel.fromJson(rawEscalation)
-        : const NavigatorEscalationModel(
+        : NavigatorEscalationModel(
             hotlines: [],
             barangayHallNotice:
                 'Please visit your local Barangay Hall for assistance.',
           );
 
     return NavigatorQueryResponseModel(
-      status: json['status']?.toString() ?? 'unavailable',
+      status: hasValidStatus ? rawStatus! : 'unavailable',
       answer: json['answer']?.toString() ?? '',
-      reason: json['reason']?.toString(),
+      reason: hasValidStatus ? json['reason']?.toString() : 'invalid_response',
       sources: sourcesList,
       escalation: escalationData,
     );
@@ -145,14 +148,18 @@ class NavigatorQueryResponseModel {
   bool get isAnswered => status == 'answered';
   bool get isUnavailable => status == 'unavailable';
   bool get isAbstained => status == 'abstained';
+  bool get hasKnownStatus =>
+      status == 'answered' || status == 'abstained' || status == 'unavailable';
   bool get isPrivacyNotice =>
-      status == 'abstained' && (reason?.startsWith('privacy_guard_') ?? false);
+      status == 'abstained' &&
+      (reason == 'privacy_concern' || (reason?.startsWith('privacy_guard_') ?? false));
 
   bool get isRetryable {
     if (status != 'unavailable') return false;
     const retryableReasons = {
       'provider_timeout',
-      'provider_error',
+      'provider_network_error',
+      'provider_server_error',
       'provider_quota_exceeded',
     };
     return retryableReasons.contains(reason ?? '');

@@ -16,11 +16,13 @@ import '../services/storage_service.dart';
 class NavigatorScreen extends StatefulWidget {
   final ApiClient? apiClient;
   final NavigatorService? navigatorService;
+  final Future<bool> Function(Uri uri)? externalUrlLauncher;
 
   const NavigatorScreen({
     super.key,
     this.apiClient,
     this.navigatorService,
+    this.externalUrlLauncher,
   });
 
   @override
@@ -39,6 +41,7 @@ class _NavigatorScreenState extends State<NavigatorScreen> {
   String? _errorMessage;
   bool _isErrorRetryable = false;
   String? _lastFailedQuery;
+  int _requestGeneration = 0;
 
   static const List<String> _suggestedQuestions = [
     'How to get a barangay clearance?',
@@ -79,6 +82,7 @@ class _NavigatorScreenState extends State<NavigatorScreen> {
   Future<void> _sendQuery([String? predefinedQuery]) async {
     final text = (predefinedQuery ?? _queryController.text).trim();
     if (text.isEmpty || _isLoading) return;
+    final requestGeneration = ++_requestGeneration;
 
     setState(() {
       _isLoading = true;
@@ -92,7 +96,7 @@ class _NavigatorScreenState extends State<NavigatorScreen> {
 
     try {
       final response = await _service.submitQuery(text);
-      if (!mounted) return;
+      if (!mounted || requestGeneration != _requestGeneration) return;
 
       setState(() {
         _turns.add(
@@ -109,7 +113,7 @@ class _NavigatorScreenState extends State<NavigatorScreen> {
       _announce('Response received: ${response.answer}');
       _scrollToBottom();
     } catch (error) {
-      if (!mounted) return;
+      if (!mounted || requestGeneration != _requestGeneration) return;
 
       final message = _service.getRequestErrorMessage(error);
       final retryable = _service.isRequestErrorRetryable(error);
@@ -127,9 +131,11 @@ class _NavigatorScreenState extends State<NavigatorScreen> {
   }
 
   void _clearConversation() {
+    _requestGeneration++;
     setState(() {
       _turns.clear();
       _queryController.clear();
+      _isLoading = false;
       _errorMessage = null;
       _isErrorRetryable = false;
       _lastFailedQuery = null;
@@ -162,9 +168,18 @@ class _NavigatorScreenState extends State<NavigatorScreen> {
   Future<void> _dialNumber(String number) async {
     final clean = number.replaceAll(RegExp(r'[^\d+]'), '');
     final uri = Uri(scheme: 'tel', path: clean);
-    if (await canLaunchUrl(uri)) {
-      await launchUrl(uri);
-    } else if (mounted) {
+    try {
+      final didLaunch = widget.externalUrlLauncher == null
+          ? await launchUrl(uri)
+          : await widget.externalUrlLauncher!(uri);
+      if (!didLaunch) _showDialerUnavailableMessage();
+    } catch (_) {
+      _showDialerUnavailableMessage();
+    }
+  }
+
+  void _showDialerUnavailableMessage() {
+    if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Could not open phone dialer.')),
       );
@@ -532,6 +547,14 @@ class _NavigatorScreenState extends State<NavigatorScreen> {
 }
 
   (String, Color, Color, IconData) _classifyResponse(NavigatorQueryResponseModel r) {
+    if (!r.hasKnownStatus) {
+      return (
+        'Assistant unavailable',
+        const Color(0xFF9F1239),
+        const Color(0xFFFFF1F2),
+        Icons.info_outline_rounded,
+      );
+    }
     if (r.isAnswered) {
       return (
         'Answer from public records',

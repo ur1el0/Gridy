@@ -32,6 +32,11 @@ class ProviderNetworkError(ProviderError):
     pass
 
 
+class ProviderServerError(ProviderError):
+    """Raised when the provider returns a transient HTTP 5xx response."""
+    pass
+
+
 class ProviderQuotaError(ProviderError):
     """Raised when the provider returns HTTP 429 rate limit / quota exceeded."""
     pass
@@ -42,16 +47,16 @@ class ProviderMalformedOutputError(ProviderError):
     pass
 
 
-DEFAULT_TIMEOUT_SECONDS = 8.0
-MAX_TIMEOUT_SECONDS = 8.0
+DEFAULT_TIMEOUT_SECONDS = 30.0
+MAX_TIMEOUT_SECONDS = 30.0
 
 
 def clamp_timeout(val: Optional[float]) -> float:
     """
     Safely resolves and clamps the provider timeout.
-    Enforces a default of 8.0s and an 8.0s hard maximum.
+    Enforces a default of 30.0s and a 30.0s hard maximum.
     Non-finite (NaN, inf, -inf), non-positive (<= 0), null, or invalid values
-    fall back safely to 8.0s. Valid lower values (e.g. 4.5s) are preserved.
+    fall back safely to 30.0s. Valid lower values (e.g. 4.5s) are preserved.
     """
     if val is None:
         return DEFAULT_TIMEOUT_SECONDS
@@ -165,6 +170,9 @@ class GeminiNavigatorProvider:
         if response.status_code == 429:
             logger.warning("Navigator Gemini request throttled by provider (HTTP 429).")
             raise ProviderQuotaError("Gemini quota or rate limit exceeded.")
+        elif 500 <= response.status_code <= 599:
+            logger.warning("Navigator Gemini request returned transient HTTP status: %s", response.status_code)
+            raise ProviderServerError(f"Gemini request failed with HTTP {response.status_code}.")
         elif response.status_code != 200:
             logger.warning("Navigator Gemini request returned non-200 HTTP status: %s", response.status_code)
             raise ProviderError(f"Gemini request failed with HTTP {response.status_code}.")

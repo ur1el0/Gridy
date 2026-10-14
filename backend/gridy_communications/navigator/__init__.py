@@ -28,6 +28,7 @@ from gridy_communications.navigator.provider import (
     ProviderError,
     ProviderTimeoutError,
     ProviderNetworkError,
+    ProviderServerError,
     ProviderQuotaError,
     ProviderMalformedOutputError,
 )
@@ -61,6 +62,7 @@ __all__ = [
     "ProviderError",
     "ProviderTimeoutError",
     "ProviderNetworkError",
+    "ProviderServerError",
     "ProviderQuotaError",
     "ProviderMalformedOutputError",
     "IsResidentWithBarangay",

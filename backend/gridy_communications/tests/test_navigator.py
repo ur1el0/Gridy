@@ -14,7 +14,7 @@ Covers:
 - AC-10: Canonical and alias endpoint parity
 """
 
-from unittest.mock import patch
+from unittest.mock import Mock, patch
 from datetime import datetime, timezone as dt_timezone
 from django.urls import reverse
 from django.test import override_settings
@@ -27,8 +27,10 @@ from gridy_communications.models import Announcement, ActivitySchedule, Emergenc
 from gridy_communications.navigator.provider import (
     GeminiNavigatorProvider,
     clamp_timeout,
+    ProviderError,
     ProviderTimeoutError,
     ProviderNetworkError,
+    ProviderServerError,
     ProviderQuotaError,
     ProviderMalformedOutputError,
 )
@@ -497,7 +499,7 @@ class NavigatorAPITestCase(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["status"], "abstained")
-        self.assertEqual(response.data["reason"], "privacy_guard_gov_id")
+        self.assertEqual(response.data["reason"], "privacy_concern")
         self.assertIn("Republic Act 10173", response.data["answer"])
         mock_get_provider.assert_not_called()
 
@@ -511,7 +513,7 @@ class NavigatorAPITestCase(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["status"], "abstained")
-        self.assertEqual(response.data["reason"], "privacy_guard_credentials")
+        self.assertEqual(response.data["reason"], "privacy_concern")
         mock_get_provider.assert_not_called()
 
     @patch("gridy_communications.views.get_navigator_provider")
@@ -524,7 +526,7 @@ class NavigatorAPITestCase(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["status"], "abstained")
-        self.assertEqual(response.data["reason"], "privacy_guard_request_tracking")
+        self.assertEqual(response.data["reason"], "privacy_concern")
         self.assertIn("My Requests", response.data["answer"])
         mock_get_provider.assert_not_called()
 
@@ -538,7 +540,7 @@ class NavigatorAPITestCase(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["status"], "abstained")
-        self.assertEqual(response.data["reason"], "privacy_guard_queue_ticket")
+        self.assertEqual(response.data["reason"], "privacy_concern")
         self.assertIn("Live Queue", response.data["answer"])
         mock_get_provider.assert_not_called()
 
@@ -552,7 +554,7 @@ class NavigatorAPITestCase(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["status"], "abstained")
-        self.assertEqual(response.data["reason"], "privacy_guard_incident_blotter")
+        self.assertEqual(response.data["reason"], "privacy_concern")
         mock_get_provider.assert_not_called()
 
     @patch("gridy_communications.views.get_navigator_provider")
@@ -565,7 +567,7 @@ class NavigatorAPITestCase(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["status"], "abstained")
-        self.assertEqual(response.data["reason"], "privacy_guard_security")
+        self.assertEqual(response.data["reason"], "privacy_concern")
         mock_get_provider.assert_not_called()
 
     @patch("gridy_communications.views.get_navigator_provider")
@@ -578,7 +580,7 @@ class NavigatorAPITestCase(APITestCase):
         )
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["status"], "abstained")
-        self.assertEqual(response.data["reason"], "privacy_guard_contact_info")
+        self.assertEqual(response.data["reason"], "privacy_concern")
         self.assertIn("Republic Act 10173", response.data["answer"])
         mock_get_provider.assert_not_called()
 
@@ -605,7 +607,7 @@ class NavigatorAPITestCase(APITestCase):
             response = self.client.post(self.canonical_url, {"query": probe})
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertEqual(response.data["status"], "abstained")
-            self.assertEqual(response.data["reason"], "privacy_guard_contact_info")
+            self.assertEqual(response.data["reason"], "privacy_concern")
             self.assertIn("Republic Act 10173", response.data["answer"])
         mock_get_provider.assert_not_called()
 
@@ -812,8 +814,8 @@ class NavigatorAPITestCase(APITestCase):
 
     @override_settings(PUBLIC_NAVIGATOR_ENABLED=True, GEMINI_API_KEY="test-key")
     @patch("gridy_communications.views.get_navigator_provider")
-    def test_provider_network_error_returns_unavailable(self, mock_get_provider):
-        """Network error returns status='unavailable' and reason='provider_error'."""
+    def test_provider_network_error_returns_retryable_unavailable(self, mock_get_provider):
+        """Network error returns an unavailable response with a transient reason."""
         mock_provider = mock_get_provider.return_value
         mock_provider.is_configured.return_value = True
         mock_provider.generate_answer.side_effect = ProviderNetworkError("Connection refused")
@@ -823,7 +825,52 @@ class NavigatorAPITestCase(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(response.data["status"], "unavailable")
+        self.assertEqual(response.data["reason"], "provider_network_error")
+
+    @override_settings(PUBLIC_NAVIGATOR_ENABLED=True, GEMINI_API_KEY="test-key")
+    @patch("gridy_communications.views.get_navigator_provider")
+    def test_provider_server_error_returns_retryable_unavailable(self, mock_get_provider):
+        """Provider HTTP 5xx returns a distinct transient unavailable reason."""
+        mock_provider = mock_get_provider.return_value
+        mock_provider.is_configured.return_value = True
+        mock_provider.generate_answer.side_effect = ProviderServerError("Provider HTTP 503")
+
+        self.client.force_login(self.resident_user_a)
+        response = self.client.post(self.canonical_url, {"query": "What are the requirements?"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["status"], "unavailable")
+        self.assertEqual(response.data["reason"], "provider_server_error")
+
+    @override_settings(PUBLIC_NAVIGATOR_ENABLED=True, GEMINI_API_KEY="test-key")
+    @patch("gridy_communications.views.get_navigator_provider")
+    def test_permanent_provider_error_returns_non_retryable_reason(self, mock_get_provider):
+        """Non-transient provider errors keep the generic non-retryable reason."""
+        mock_provider = mock_get_provider.return_value
+        mock_provider.is_configured.return_value = True
+        mock_provider.generate_answer.side_effect = ProviderError("Provider HTTP 400")
+
+        self.client.force_login(self.resident_user_a)
+        response = self.client.post(self.canonical_url, {"query": "What are the requirements?"})
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["status"], "unavailable")
         self.assertEqual(response.data["reason"], "provider_error")
+
+    @patch("gridy_communications.navigator.provider.requests.post")
+    def test_upstream_http_5xx_is_transient_but_http_4xx_is_not(self, mock_post):
+        """Only upstream HTTP 5xx responses use the retryable provider error class."""
+        mock_response = Mock(status_code=503)
+        mock_post.return_value = mock_response
+        provider = GeminiNavigatorProvider(api_key="test-key")
+
+        with self.assertRaises(ProviderServerError):
+            provider.generate_answer("How do I request a certificate?", [])
+
+        mock_response.status_code = 400
+        with self.assertRaises(ProviderError) as raised:
+            provider.generate_answer("How do I request a certificate?", [])
+        self.assertNotIsInstance(raised.exception, ProviderServerError)
 
     @override_settings(PUBLIC_NAVIGATOR_ENABLED=True, GEMINI_API_KEY="test-key")
     @patch("gridy_communications.views.get_navigator_provider")
@@ -915,7 +962,7 @@ class NavigatorAPITestCase(APITestCase):
             response = self.client.post(self.canonical_url, {"query": probe})
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertEqual(response.data["status"], "abstained")
-            self.assertEqual(response.data["reason"], "privacy_guard_payment")
+            self.assertEqual(response.data["reason"], "privacy_concern")
             self.assertIn("payment", response.data["answer"].lower())
         mock_get_provider.assert_not_called()
 
@@ -933,7 +980,7 @@ class NavigatorAPITestCase(APITestCase):
             response = self.client.post(self.canonical_url, {"query": probe})
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertEqual(response.data["status"], "abstained")
-            self.assertEqual(response.data["reason"], "privacy_guard_billing_doc")
+            self.assertEqual(response.data["reason"], "privacy_concern")
             self.assertIn("Republic Act 10173", response.data["answer"])
         mock_get_provider.assert_not_called()
 
@@ -951,7 +998,7 @@ class NavigatorAPITestCase(APITestCase):
             response = self.client.post(self.canonical_url, {"query": probe})
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertEqual(response.data["status"], "abstained")
-            self.assertEqual(response.data["reason"], "privacy_guard_doc_submission")
+            self.assertEqual(response.data["reason"], "privacy_concern")
             self.assertIn("Republic Act 10173", response.data["answer"])
         mock_get_provider.assert_not_called()
 
@@ -1062,45 +1109,45 @@ class NavigatorAPITestCase(APITestCase):
         self.assertIn("Free rabies shots for pets.", content)
 
     def test_gemini_provider_timeout_clamping_and_defaults(self):
-        """Provider timeout enforces 8.0s default, rejects non-finite/non-positive/malformed, clamps to 8.0s (REV-14, REV-19)."""
+        """Provider timeout enforces 30.0s default, rejects non-finite/non-positive/malformed, clamps to 30.0s (REV-14, REV-19)."""
         # Direct clamp_timeout unit tests
-        self.assertEqual(clamp_timeout(None), 8.0)
-        self.assertEqual(clamp_timeout("8.0"), 8.0)
-        self.assertEqual(clamp_timeout(8.0), 8.0)
+        self.assertEqual(clamp_timeout(None), 30.0)
+        self.assertEqual(clamp_timeout("30.0"), 30.0)
+        self.assertEqual(clamp_timeout(30.0), 30.0)
         self.assertEqual(clamp_timeout(4.5), 4.5)
         self.assertEqual(clamp_timeout("4.5"), 4.5)
-        self.assertEqual(clamp_timeout(15.0), 8.0)
-        self.assertEqual(clamp_timeout("15.0"), 8.0)
-        self.assertEqual(clamp_timeout(0.0), 8.0)
-        self.assertEqual(clamp_timeout("0"), 8.0)
-        self.assertEqual(clamp_timeout(-5.0), 8.0)
-        self.assertEqual(clamp_timeout("-5.0"), 8.0)
-        self.assertEqual(clamp_timeout("malformed"), 8.0)
-        self.assertEqual(clamp_timeout("nan"), 8.0)
-        self.assertEqual(clamp_timeout("NaN"), 8.0)
-        self.assertEqual(clamp_timeout(float("nan")), 8.0)
-        self.assertEqual(clamp_timeout("inf"), 8.0)
-        self.assertEqual(clamp_timeout("Infinity"), 8.0)
-        self.assertEqual(clamp_timeout(float("inf")), 8.0)
-        self.assertEqual(clamp_timeout("-inf"), 8.0)
-        self.assertEqual(clamp_timeout("-Infinity"), 8.0)
-        self.assertEqual(clamp_timeout(float("-inf")), 8.0)
+        self.assertEqual(clamp_timeout(35.0), 30.0)
+        self.assertEqual(clamp_timeout("35.0"), 30.0)
+        self.assertEqual(clamp_timeout(0.0), 30.0)
+        self.assertEqual(clamp_timeout("0"), 30.0)
+        self.assertEqual(clamp_timeout(-5.0), 30.0)
+        self.assertEqual(clamp_timeout("-5.0"), 30.0)
+        self.assertEqual(clamp_timeout("malformed"), 30.0)
+        self.assertEqual(clamp_timeout("nan"), 30.0)
+        self.assertEqual(clamp_timeout("NaN"), 30.0)
+        self.assertEqual(clamp_timeout(float("nan")), 30.0)
+        self.assertEqual(clamp_timeout("inf"), 30.0)
+        self.assertEqual(clamp_timeout("Infinity"), 30.0)
+        self.assertEqual(clamp_timeout(float("inf")), 30.0)
+        self.assertEqual(clamp_timeout("-inf"), 30.0)
+        self.assertEqual(clamp_timeout("-Infinity"), 30.0)
+        self.assertEqual(clamp_timeout(float("-inf")), 30.0)
 
         # Provider initialization tests
         provider_default = GeminiNavigatorProvider()
-        self.assertEqual(provider_default.timeout, 8.0)
+        self.assertEqual(provider_default.timeout, 30.0)
 
-        with override_settings(PUBLIC_NAVIGATOR_TIMEOUT_SECONDS=15.0):
+        with override_settings(PUBLIC_NAVIGATOR_TIMEOUT_SECONDS=35.0):
             provider_high = GeminiNavigatorProvider()
-            self.assertEqual(provider_high.timeout, 8.0)
+            self.assertEqual(provider_high.timeout, 30.0)
 
         with override_settings(PUBLIC_NAVIGATOR_TIMEOUT_SECONDS=0.0):
             provider_zero = GeminiNavigatorProvider()
-            self.assertEqual(provider_zero.timeout, 8.0)
+            self.assertEqual(provider_zero.timeout, 30.0)
 
         with override_settings(PUBLIC_NAVIGATOR_TIMEOUT_SECONDS=-5.0):
             provider_negative = GeminiNavigatorProvider()
-            self.assertEqual(provider_negative.timeout, 8.0)
+            self.assertEqual(provider_negative.timeout, 30.0)
 
         with override_settings(PUBLIC_NAVIGATOR_TIMEOUT_SECONDS=4.5):
             provider_valid = GeminiNavigatorProvider()
@@ -1108,26 +1155,27 @@ class NavigatorAPITestCase(APITestCase):
 
         with override_settings(PUBLIC_NAVIGATOR_TIMEOUT_SECONDS=float("nan")):
             provider_nan = GeminiNavigatorProvider()
-            self.assertEqual(provider_nan.timeout, 8.0)
+            self.assertEqual(provider_nan.timeout, 30.0)
 
         with override_settings(PUBLIC_NAVIGATOR_TIMEOUT_SECONDS=float("inf")):
             provider_inf = GeminiNavigatorProvider()
-            self.assertEqual(provider_inf.timeout, 8.0)
+            self.assertEqual(provider_inf.timeout, 30.0)
 
         with override_settings(PUBLIC_NAVIGATOR_TIMEOUT_SECONDS="invalid_timeout_str"):
             provider_invalid_str = GeminiNavigatorProvider()
-            self.assertEqual(provider_invalid_str.timeout, 8.0)
+            self.assertEqual(provider_invalid_str.timeout, 30.0)
 
         # Settings safe parsing helper tests
-        self.assertEqual(_parse_safe_timeout(None), 8.0)
+        self.assertEqual(_parse_safe_timeout(None), 30.0)
         self.assertEqual(_parse_safe_timeout("4.5"), 4.5)
-        self.assertEqual(_parse_safe_timeout("12.0"), 8.0)
-        self.assertEqual(_parse_safe_timeout("malformed"), 8.0)
-        self.assertEqual(_parse_safe_timeout("NaN"), 8.0)
-        self.assertEqual(_parse_safe_timeout("Infinity"), 8.0)
-        self.assertEqual(_parse_safe_timeout("-Infinity"), 8.0)
-        self.assertEqual(_parse_safe_timeout("-1"), 8.0)
-        self.assertEqual(_parse_safe_timeout("0"), 8.0)
+        self.assertEqual(_parse_safe_timeout("12.0"), 12.0)
+        self.assertEqual(_parse_safe_timeout("35.0"), 30.0)
+        self.assertEqual(_parse_safe_timeout("malformed"), 30.0)
+        self.assertEqual(_parse_safe_timeout("NaN"), 30.0)
+        self.assertEqual(_parse_safe_timeout("Infinity"), 30.0)
+        self.assertEqual(_parse_safe_timeout("-Infinity"), 30.0)
+        self.assertEqual(_parse_safe_timeout("-1"), 30.0)
+        self.assertEqual(_parse_safe_timeout("0"), 30.0)
 
         # Feature disabled by default check
         from django.conf import settings as django_settings
@@ -1369,17 +1417,17 @@ class NavigatorAPITestCase(APITestCase):
 
         # 1. Government IDs and Passport values (including case-insensitive passport detection, REV-20)
         gov_probes = [
-            ("PhilSys number: 1234-5678-9012-3456", "privacy_guard_gov_id"),
-            ("My SSS is 12-3456789-0", "privacy_guard_gov_id"),
-            ("PhilHealth no. 12-345678901-2", "privacy_guard_gov_id"),
-            ("Driver's License N01-12-123456", "privacy_guard_gov_id"),
-            ("My passport is P1234567A", "privacy_guard_doc_submission"),
-            ("My passport is p1234567a", "privacy_guard_doc_submission"),
-            ("Here is p1234567a", "privacy_guard_gov_id"),
-            ("p1234567a", "privacy_guard_gov_id"),
-            ("passport no: P12345678", "privacy_guard_gov_id"),
-            ("passport no: p12345678", "privacy_guard_gov_id"),
-            ("TIN: 123-456-789-000", "privacy_guard_gov_id"),
+            ("PhilSys number: 1234-5678-9012-3456", "privacy_concern"),
+            ("My SSS is 12-3456789-0", "privacy_concern"),
+            ("PhilHealth no. 12-345678901-2", "privacy_concern"),
+            ("Driver's License N01-12-123456", "privacy_concern"),
+            ("My passport is P1234567A", "privacy_concern"),
+            ("My passport is p1234567a", "privacy_concern"),
+            ("Here is p1234567a", "privacy_concern"),
+            ("p1234567a", "privacy_concern"),
+            ("passport no: P12345678", "privacy_concern"),
+            ("passport no: p12345678", "privacy_concern"),
+            ("TIN: 123-456-789-000", "privacy_concern"),
         ]
         for query_text, expected_reason in gov_probes:
             cache.clear()
@@ -1402,7 +1450,7 @@ class NavigatorAPITestCase(APITestCase):
             response = self.client.post(self.canonical_url, {"query": query_text})
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertEqual(response.data["status"], "abstained")
-            self.assertEqual(response.data["reason"], "privacy_guard_doc_submission")
+            self.assertEqual(response.data["reason"], "privacy_concern")
         mock_get_provider.assert_not_called()
 
         # 3. Personal billing account details
@@ -1419,7 +1467,7 @@ class NavigatorAPITestCase(APITestCase):
             response = self.client.post(self.canonical_url, {"query": query_text})
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertEqual(response.data["status"], "abstained")
-            self.assertEqual(response.data["reason"], "privacy_guard_billing_doc")
+            self.assertEqual(response.data["reason"], "privacy_concern")
         mock_get_provider.assert_not_called()
 
         # 4. GCash / Maya payment references
@@ -1430,13 +1478,15 @@ class NavigatorAPITestCase(APITestCase):
             "Ref #: 1234567890",
             "Nabayaran ko na po gamit ang GCash, ito ang resibo ko",
             "paid via gcash",
+            "I attached a synthetic GCash receipt with reference TESTGCASH000000. Paki-verify ang payment.",
+            "May Maya receipt ako na TESTMAYA000000. Paki-check kung pumasok ang bayad.",
         ]
         for query_text in payment_probes:
             cache.clear()
             response = self.client.post(self.canonical_url, {"query": query_text})
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertEqual(response.data["status"], "abstained")
-            self.assertEqual(response.data["reason"], "privacy_guard_payment")
+            self.assertEqual(response.data["reason"], "privacy_concern")
         mock_get_provider.assert_not_called()
 
         # 5. Legitimate public inquiries (Control group: MUST NOT be rejected)
@@ -1452,6 +1502,7 @@ class NavigatorAPITestCase(APITestCase):
         legitimate_controls = [
             "Kailangan ba ng proof of billing para sa certificate of residency?",
             "Is proof of billing required for certificate of residency?",
+            "Does the Barangay Hall accept GCash for clearance payments?",
             "Pwede ba ang passport para sa barangay clearance?",
             "Is passport accepted as valid ID?",
             "Magkano ang bayad sa barangay clearance?",

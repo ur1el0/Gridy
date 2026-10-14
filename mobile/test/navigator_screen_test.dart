@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -17,6 +19,7 @@ class _FakeNavigatorService extends NavigatorService {
 
   NavigatorQueryResponseModel? nextResponse;
   Object? nextError;
+  Completer<NavigatorQueryResponseModel>? pendingResponse;
   final List<String> submittedQueries = [];
 
   @override
@@ -25,8 +28,9 @@ class _FakeNavigatorService extends NavigatorService {
     if (nextError != null) {
       throw nextError!;
     }
+    if (pendingResponse != null) return pendingResponse!.future;
     return nextResponse ??
-        const NavigatorQueryResponseModel(
+        NavigatorQueryResponseModel(
           status: 'answered',
           answer: 'Default answered response.',
           reason: null,
@@ -102,6 +106,8 @@ void main() {
 
     testWidgets('submits query via suggested question and displays answered turn with sources and escalation', (tester) async {
       final service = _FakeNavigatorService();
+      Uri? requestedDialUri;
+      var throwFromDialer = false;
       service.nextResponse = NavigatorQueryResponseModel(
         status: 'answered',
         answer: 'You can request a barangay clearance at the Barangay Hall or online.',
@@ -115,7 +121,7 @@ void main() {
             updatedAt: DateTime(2026, 10, 12),
           ),
         ],
-        escalation: const NavigatorEscalationModel(
+        escalation: NavigatorEscalationModel(
           officeContact: '(02) 8123-4567',
           hotlines: [
             NavigatorHotlineModel(
@@ -130,7 +136,14 @@ void main() {
 
       await tester.pumpWidget(
         MaterialApp(
-          home: NavigatorScreen(navigatorService: service),
+          home: NavigatorScreen(
+            navigatorService: service,
+            externalUrlLauncher: (uri) async {
+              requestedDialUri = uri;
+              if (throwFromDialer) throw StateError('Dialer unavailable');
+              return false;
+            },
+          ),
         ),
       );
       await tester.pumpAndSettle();
@@ -160,6 +173,17 @@ void main() {
       expect(find.text('Barangay office: (02) 8123-4567'), findsOneWidget);
       expect(find.text('Barangay Patrol'), findsOneWidget);
       expect(find.text('0917-111-2222'), findsOneWidget);
+      await tester.ensureVisible(find.text('0917-111-2222'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('0917-111-2222'));
+      await tester.pumpAndSettle();
+      expect(requestedDialUri, Uri(scheme: 'tel', path: '09171112222'));
+      expect(find.text('Could not open phone dialer.'), findsOneWidget);
+
+      throwFromDialer = true;
+      await tester.tap(find.text('0917-111-2222'));
+      await tester.pumpAndSettle();
+      expect(find.text('Could not open phone dialer.'), findsOneWidget);
 
       // Clear conversation button is now visible in AppBar
       expect(find.byTooltip('Clear conversation'), findsOneWidget);
@@ -167,10 +191,10 @@ void main() {
 
     testWidgets('submits typed query in input field and displays privacy notice abstention', (tester) async {
       final service = _FakeNavigatorService();
-      service.nextResponse = const NavigatorQueryResponseModel(
+      service.nextResponse = NavigatorQueryResponseModel(
         status: 'abstained',
         answer: 'For your security, please do not include account numbers or passwords.',
-        reason: 'privacy_guard_credentials',
+        reason: 'privacy_concern',
         sources: [],
         escalation: NavigatorEscalationModel(
           officeContact: null,
@@ -197,7 +221,7 @@ void main() {
 
     testWidgets('displays retry button on assistant-unavailable response and resubmits on tap', (tester) async {
       final service = _FakeNavigatorService();
-      service.nextResponse = const NavigatorQueryResponseModel(
+      service.nextResponse = NavigatorQueryResponseModel(
         status: 'unavailable',
         answer: 'The assistant service timed out while generating a response.',
         reason: 'provider_timeout',
@@ -224,7 +248,7 @@ void main() {
       expect(find.widgetWithText(OutlinedButton, 'Try again'), findsOneWidget);
 
       // Prepare answered response for retry
-      service.nextResponse = const NavigatorQueryResponseModel(
+      service.nextResponse = NavigatorQueryResponseModel(
         status: 'answered',
         answer: 'Certificate of Indigency is issued free of charge.',
         reason: null,
@@ -267,7 +291,7 @@ void main() {
 
       // Clear error and supply response for retry
       service.nextError = null;
-      service.nextResponse = const NavigatorQueryResponseModel(
+      service.nextResponse = NavigatorQueryResponseModel(
         status: 'answered',
         answer: 'The barangay hall operates Monday to Friday, 8:00 AM to 5:00 PM.',
         reason: null,
@@ -309,6 +333,49 @@ void main() {
       expect(find.text('First question'), findsNothing);
       expect(find.byTooltip('Clear conversation'), findsNothing);
       expect(find.text('SUGGESTED QUESTIONS'), findsOneWidget);
+    });
+
+    testWidgets('clearing during a request prevents a late response from restoring turns', (tester) async {
+      final service = _FakeNavigatorService();
+
+      await tester.pumpWidget(
+        MaterialApp(home: NavigatorScreen(navigatorService: service)),
+      );
+      await tester.pumpAndSettle();
+
+      // Create an existing turn so the clear action is available during request two.
+      await tester.enterText(find.byType(TextField), 'First question');
+      await tester.tap(find.byTooltip('Send question'));
+      await tester.pumpAndSettle();
+      expect(find.text('Default answered response.'), findsOneWidget);
+
+      service.pendingResponse = Completer<NavigatorQueryResponseModel>();
+      await tester.enterText(find.byType(TextField), 'Pending question');
+      await tester.tap(find.byTooltip('Send question'));
+      await tester.pump();
+      expect(service.submittedQueries, contains('Pending question'));
+      expect(find.byTooltip('Clear conversation'), findsOneWidget);
+
+      await tester.tap(find.byTooltip('Clear conversation'));
+      await tester.pump();
+      service.pendingResponse!.complete(
+        NavigatorQueryResponseModel(
+          status: 'answered',
+          answer: 'Late answer after clear.',
+          sources: [],
+          escalation: NavigatorEscalationModel(
+            hotlines: [],
+            barangayHallNotice: 'Visit Barangay Hall.',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('SUGGESTED QUESTIONS'), findsOneWidget);
+      expect(find.text('Default answered response.'), findsNothing);
+      expect(find.text('Pending question'), findsNothing);
+      expect(find.text('Late answer after clear.'), findsNothing);
+      expect(find.byTooltip('Clear conversation'), findsNothing);
     });
 
     testWidgets('DashboardScreen Ask Barangay card navigates to NavigatorScreen', (tester) async {
