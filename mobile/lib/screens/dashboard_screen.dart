@@ -295,6 +295,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     // 4. Recent Notifications Section (WIRED ONNOTIFICATIONTAP)
                     RecentNotificationsSection(
                       notifications: _data.notifications,
+                      hasError: _data.hasNotificationsError,
+                      errorMessage: _data.notificationsErrorMessage,
+                      onRetry: _loadDashboardData,
                       onViewAll: () => _showNotificationModalSheet(context),
                       onNotificationTap: (item) =>
                           _showNotificationDetailModal(context, item),
@@ -379,6 +382,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         expand: false,
         builder: (context, scrollController) => NotificationCenterSheet(
           notifications: _data.notifications,
+          hasError: _data.hasNotificationsError,
+          errorMessage: _data.notificationsErrorMessage,
+          onRetry: () {
+            Navigator.pop(context);
+            _loadDashboardData();
+          },
           scrollController: scrollController,
         ),
       ),

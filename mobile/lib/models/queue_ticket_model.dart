@@ -92,6 +92,11 @@ class QueueLiveStatusModel {
   final int avgWaitMins;
   final List<QueueTicketModel> recentCompleted;
   final QueueTicketModel? userTicket;
+  final bool hasLiveStatusError;
+  final bool hasUserTicketsError;
+  final String? errorMessage;
+  final String? liveStatusErrorMessage;
+  final String? userTicketsErrorMessage;
 
   const QueueLiveStatusModel({
     this.currentTicket,
@@ -100,6 +105,11 @@ class QueueLiveStatusModel {
     this.avgWaitMins = 0,
     this.recentCompleted = const [],
     this.userTicket,
+    this.hasLiveStatusError = false,
+    this.hasUserTicketsError = false,
+    this.errorMessage,
+    this.liveStatusErrorMessage,
+    this.userTicketsErrorMessage,
   });
 
   /// Derives human-friendly live capacity label
@@ -124,6 +134,11 @@ class QueueLiveStatusModel {
   factory QueueLiveStatusModel.fromJson({
     required Map<String, dynamic> liveStatusJson,
     List<QueueTicketModel> userTickets = const [],
+    bool hasLiveStatusError = false,
+    bool hasUserTicketsError = false,
+    String? errorMessage,
+    String? liveStatusErrorMessage,
+    String? userTicketsErrorMessage,
   }) {
     final recentList = (liveStatusJson['recent_completed'] as List<dynamic>?)
             ?.map((item) => QueueTicketModel.fromJson(item as Map<String, dynamic>))
@@ -146,6 +161,11 @@ class QueueLiveStatusModel {
       avgWaitMins: liveStatusJson['avg_wait_mins'] as int? ?? 0,
       recentCompleted: recentList,
       userTicket: activeUserTicket,
+      hasLiveStatusError: hasLiveStatusError,
+      hasUserTicketsError: hasUserTicketsError,
+      errorMessage: errorMessage ?? userTicketsErrorMessage ?? liveStatusErrorMessage,
+      liveStatusErrorMessage: liveStatusErrorMessage,
+      userTicketsErrorMessage: userTicketsErrorMessage,
     );
   }
 }
