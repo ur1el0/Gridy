@@ -608,7 +608,8 @@ class StatutoryExemptionPolicyAndRegressionTests(TestCase):
         DocumentRequest.objects.create(
             user=self.resident,
             barangay=self.barangay,
-            document_type="Barangay Clearance",
+            # Historical free-text labels can contain inconsistent whitespace.
+            document_type="  Barangay   Clearance  ",
             purpose="First Time Jobseeker - First Job",
             fee_amount=Decimal("0.00"),
             fee_assessment_status=DocumentRequest.FeeAssessmentStatus.STATUTORY_EXEMPT,

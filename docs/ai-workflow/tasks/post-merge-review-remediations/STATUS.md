@@ -17,8 +17,9 @@
 | M5 — Verification | Automated checks complete | Synthetic answer corpus and blind human scoring are still pending; they are required before M5 sign-off. |
 
 ## Verification log
-- Regression-first run: all five new M85 regressions failed against the reviewed implementation, including the status-only waiver bypass, walk-in acceptance, and wrong-document acceptance. The new M87 injection case also failed while the clean-contact control passed.
+- Regression-first runs: all five new M85 regressions failed against the reviewed implementation, including the status-only waiver bypass, walk-in acceptance, and wrong-document acceptance. The M87 injection case failed while the clean-contact control passed. A one-time-benefit case with historical extra whitespace also reproduced a bypass before normalization was extended to prior requests.
 - Focused regressions after fixes: M85 `5 passed`; M87 `2 passed`.
+- After the historical-label normalization fix, `pytest -q gridy_services/tests/test_fee_assessment.py`: **22 passed**.
 - `pytest -q gridy_services/tests`: **140 passed, 2 skipped**.
 - `pytest -q gridy_communications/tests`: **80 passed**.
 - `flutter test --no-pub`: **161 passed** after Dart formatting.

@@ -30,15 +30,22 @@ def check_ra11261_eligibility(user, document_type, current_request_id=None):
 
     prior_statutory = DocumentRequest.objects.filter(
         user=user,
-        document_type__iexact="Barangay Clearance",
         fee_assessment_status=DocumentRequest.FeeAssessmentStatus.STATUTORY_EXEMPT,
     ).exclude(status=DocumentRequest.Status.REJECTED)
 
     if current_request_id:
         prior_statutory = prior_statutory.exclude(pk=current_request_id)
 
-    if prior_statutory.exists():
-        first_doc = prior_statutory.first()
+    first_doc = next(
+        (
+            previous_request
+            for previous_request in prior_statutory.order_by("pk").iterator()
+            if " ".join((previous_request.document_type or "").split()).casefold()
+            == "barangay clearance"
+        ),
+        None,
+    )
+    if first_doc is not None:
         return False, (
             f"Resident has already availed of the one-time RA 11261 statutory fee exemption "
             f"(Request #{first_doc.id} - {first_doc.document_type})."
