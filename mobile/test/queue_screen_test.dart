@@ -156,4 +156,232 @@ void main() {
       findsOneWidget,
     );
   });
+
+  testWidgets('API failure displays visible retry state and recovers on retry', (WidgetTester tester) async {
+    final prefs = await SharedPreferences.getInstance();
+    final storage = StorageService(prefs);
+    await storage.saveUser(const UserModel(
+      id: 3,
+      username: 'retry_resident',
+      email: 'retry@example.com',
+      role: 'RESIDENT',
+      fullName: 'Retry Resident',
+      isVerified: true,
+    ));
+
+    int fetchCount = 0;
+    final recoveringService = _DynamicQueueService(
+      storage: storage,
+      onFetch: () async {
+        fetchCount++;
+        if (fetchCount == 1) {
+          throw const QueueServiceException('Network connection failed');
+        }
+        return const QueueLiveStatusModel(
+          currentTicket: 'B-201',
+          totalWaiting: 1,
+        );
+      },
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.lightTheme,
+        home: QueueScreen(queueService: recoveringService),
+      ),
+    );
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    // 1. Verify error state is visible with retry button
+    expect(find.text('Live Queue Unavailable'), findsOneWidget);
+    expect(find.text('Network connection failed'), findsOneWidget);
+    expect(find.text('Try again'), findsOneWidget);
+
+    // 2. Tap retry
+    await tester.tap(find.text('Try again'));
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    // 3. Verify recovered state
+    expect(find.text('Live Queue Unavailable'), findsNothing);
+    expect(find.text('B-201'), findsOneWidget);
+  });
+
+  testWidgets('partial failure shows inline retry notice in user ticket card', (WidgetTester tester) async {
+    final prefs = await SharedPreferences.getInstance();
+    final storage = StorageService(prefs);
+    await storage.saveUser(const UserModel(
+      id: 4,
+      username: 'partial_resident',
+      email: 'partial@example.com',
+      role: 'RESIDENT',
+      fullName: 'Partial Resident',
+      isVerified: true,
+    ));
+
+    final partialService = _DynamicQueueService(
+      storage: storage,
+      onFetch: () async => const QueueLiveStatusModel(
+        currentTicket: 'C-301',
+        totalWaiting: 2,
+        hasUserTicketsError: true,
+        errorMessage: 'Unable to load active tickets',
+      ),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.lightTheme,
+        home: QueueScreen(queueService: partialService),
+      ),
+    );
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    // Live status desk is shown
+    expect(find.text('C-301'), findsOneWidget);
+    // User ticket card shows error notice rather than "No Active Ticket"
+    expect(find.text('Unable to Load Ticket'), findsOneWidget);
+    expect(find.text('Unable to load active tickets'), findsOneWidget);
+  });
+
+  testWidgets('partial failure preserves user ticket and displays retry notice in live desk section', (WidgetTester tester) async {
+    final prefs = await SharedPreferences.getInstance();
+    final storage = StorageService(prefs);
+    await storage.saveUser(const UserModel(
+      id: 6,
+      username: 'live_fail_resident',
+      email: 'livefail@example.com',
+      role: 'RESIDENT',
+      fullName: 'Live Fail Resident',
+      isVerified: true,
+    ));
+
+    int fetchCount = 0;
+    final partialLiveFailService = _DynamicQueueService(
+      storage: storage,
+      onFetch: () async {
+        fetchCount++;
+        if (fetchCount == 1) {
+          return const QueueLiveStatusModel(
+            hasLiveStatusError: true,
+            liveStatusErrorMessage: 'Live broadcast offline',
+            hasUserTicketsError: false,
+            userTicket: QueueTicketModel(
+              id: 99,
+              ticketNumber: 'A-199',
+              serviceType: 'Barangay Clearance',
+              status: 'WAITING',
+            ),
+          );
+        }
+        return const QueueLiveStatusModel(
+          currentTicket: 'A-124',
+          totalWaiting: 1,
+          hasLiveStatusError: false,
+          hasUserTicketsError: false,
+          userTicket: QueueTicketModel(
+            id: 99,
+            ticketNumber: 'A-199',
+            serviceType: 'Barangay Clearance',
+            status: 'WAITING',
+          ),
+        );
+      },
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.lightTheme,
+        home: QueueScreen(queueService: partialLiveFailService),
+      ),
+    );
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    // 1. Live status error card is rendered with retry button
+    expect(find.text('Live Queue Unavailable'), findsOneWidget);
+    expect(find.text('Live broadcast offline'), findsOneWidget);
+    expect(find.byTooltip('Retry loading live queue status'), findsOneWidget);
+
+    // 2. User's active ticket is preserved and clearly visible!
+    expect(find.text('YOUR TICKET'), findsOneWidget);
+    expect(find.text('A-199'), findsOneWidget);
+    expect(find.text('Barangay Clearance'), findsOneWidget);
+
+    // 3. Tap retry on the live status error card
+    await tester.tap(find.byTooltip('Retry loading live queue status'));
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    // 4. Live status recovered, user ticket remains visible
+    expect(find.text('Live Queue Unavailable'), findsNothing);
+    expect(find.text('A-124'), findsOneWidget);
+    expect(find.text('A-199'), findsOneWidget);
+  });
+
+  testWidgets('true empty queue renders honest empty state without fallback tickets', (WidgetTester tester) async {
+    final prefs = await SharedPreferences.getInstance();
+    final storage = StorageService(prefs);
+    await storage.saveUser(const UserModel(
+      id: 5,
+      username: 'empty_resident',
+      email: 'empty@example.com',
+      role: 'RESIDENT',
+      fullName: 'Empty Resident',
+      isVerified: true,
+    ));
+
+    final emptyService = _DynamicQueueService(
+      storage: storage,
+      onFetch: () async => const QueueLiveStatusModel(
+        currentTicket: null,
+        currentService: 'General Service',
+        totalWaiting: 0,
+        avgWaitMins: 0,
+        recentCompleted: [],
+        userTicket: null,
+      ),
+    );
+
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: AppTheme.lightTheme,
+        home: QueueScreen(queueService: emptyService),
+      ),
+    );
+    await tester.pump();
+    await tester.pumpAndSettle();
+
+    // 1. Hero Card displays '---'
+    expect(find.text('---'), findsOneWidget);
+
+    // 2. User Ticket displays honest 'No Active Ticket'
+    expect(find.text('No Active Ticket'), findsOneWidget);
+
+    // 3. Live Capacity displays 'Optimal'
+    expect(find.text('Optimal'), findsOneWidget);
+
+    // Missing server wait data is shown as unavailable, not a fabricated time.
+    expect(find.text('Not available'), findsOneWidget);
+
+    // 5. Recent Completions displays honest empty placeholder
+    expect(find.text('No completed queue tickets yet today', skipOffstage: false), findsOneWidget);
+  });
+}
+
+class _DynamicQueueService extends QueueService {
+  final Future<QueueLiveStatusModel> Function() onFetch;
+
+  _DynamicQueueService({
+    required StorageService storage,
+    required this.onFetch,
+  }) : super(
+          apiClient: ApiClient(),
+          storageService: storage,
+        );
+
+  @override
+  Future<QueueLiveStatusModel> fetchQueueStatus() => onFetch();
 }

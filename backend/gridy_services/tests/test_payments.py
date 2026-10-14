@@ -1,8 +1,12 @@
+from io import BytesIO
 from importlib import import_module
 from types import SimpleNamespace
 from django.apps import apps
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection
 from django.urls import reverse
+from django.utils import timezone
+from PIL import Image
 from rest_framework import status
 from rest_framework.test import APITestCase
 from gridy_audit.models import AuditLog
@@ -40,6 +44,16 @@ class DocumentPaymentWorkflowTests(APITestCase):
             recipient_name="Barangay Treasurer",
             recipient_identifier="09170000000",
         )
+        image_buffer = BytesIO()
+        Image.new("RGB", (20, 20), color="blue").save(image_buffer, format="PNG")
+        self.sample_image_bytes = image_buffer.getvalue()
+
+    def _sample_image(self):
+        return SimpleUploadedFile(
+            "receipt.png",
+            self.sample_image_bytes,
+            content_type="image/png",
+        )
 
     def make_request(self, **overrides):
         values = {
@@ -49,6 +63,7 @@ class DocumentPaymentWorkflowTests(APITestCase):
             "purpose": "Employment",
             "status": DocumentRequest.Status.READY_FOR_PICKUP,
             "fee_amount": "50.00",
+            "fee_assessment_status": DocumentRequest.FeeAssessmentStatus.ASSESSED,
             "payment_status": DocumentRequest.PaymentStatus.UNPAID,
         }
         values.update(overrides)
@@ -251,8 +266,10 @@ class DocumentPaymentWorkflowTests(APITestCase):
             {
                 "payment_recipient_id": recipient.id,
                 "payment_reference": " MAYA-REF-2048 ",
+                "payment_transacted_at": timezone.now().isoformat(),
+                "payment_proof_image": self._sample_image(),
             },
-            format="json",
+            format="multipart",
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -262,6 +279,8 @@ class DocumentPaymentWorkflowTests(APITestCase):
         self.assertEqual(document.payment_recipient_name_snapshot, "Barangay Mabini Treasurer")
         self.assertEqual(document.payment_recipient_identifier_snapshot, "09170000001")
         self.assertEqual(document.payment_reference, "MAYA-REF-2048")
+        self.assertIsNotNone(document.payment_proof_image)
+        self.assertIsNotNone(document.payment_transacted_at)
 
     def test_resident_cannot_submit_recipient_from_another_barangay(self):
         other_barangay = Barangay.objects.create(name="Other Recipient Tenant")
@@ -277,8 +296,13 @@ class DocumentPaymentWorkflowTests(APITestCase):
 
         response = self.client.post(
             reverse("document-request-payment-reference", args=[document.pk]),
-            {"payment_recipient_id": recipient.id, "payment_reference": "REF-2048"},
-            format="json",
+            {
+                "payment_recipient_id": recipient.id,
+                "payment_reference": "REF-2048",
+                "payment_transacted_at": timezone.now().isoformat(),
+                "payment_proof_image": self._sample_image(),
+            },
+            format="multipart",
         )
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
@@ -336,8 +360,10 @@ class DocumentPaymentWorkflowTests(APITestCase):
             {
                 "payment_recipient_id": self.gcash_recipient.id,
                 "payment_reference": " GCASH-REF-2048 ",
+                "payment_transacted_at": timezone.now().isoformat(),
+                "payment_proof_image": self._sample_image(),
             },
-            format="json",
+            format="multipart",
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -364,8 +390,10 @@ class DocumentPaymentWorkflowTests(APITestCase):
             {
                 "payment_recipient_id": self.gcash_recipient.id,
                 "payment_reference": "GCASH-REF-2048",
+                "payment_transacted_at": timezone.now().isoformat(),
+                "payment_proof_image": self._sample_image(),
             },
-            format="json",
+            format="multipart",
         )
 
         self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
@@ -381,8 +409,10 @@ class DocumentPaymentWorkflowTests(APITestCase):
             {
                 "payment_recipient_id": self.gcash_recipient.id,
                 "payment_reference": "GCASH-REF-2048",
+                "payment_transacted_at": timezone.now().isoformat(),
+                "payment_proof_image": self._sample_image(),
             },
-            format="json",
+            format="multipart",
         )
 
         self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)

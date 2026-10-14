@@ -1,5 +1,5 @@
-import { act, fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter } from 'react-router-dom';
+import { act, fireEvent, render, screen, waitFor, within } from '@testing-library/react';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axiosPrivate } from '../../api/axios';
 import { ResidentsHub } from './ResidentsHub';
@@ -20,9 +20,47 @@ vi.mock('../../api/axios', () => ({
     },
 }));
 
+const CurrentSearch = () => <output data-testid="current-search">{useLocation().search}</output>;
+
 describe('ResidentsHub pending verification count', () => {
     beforeEach(() => {
         vi.mocked(axiosPrivate.get).mockReset();
+    });
+
+    it('keeps both resident views reachable and exposes the selected view state', async () => {
+        vi.mocked(axiosPrivate.get).mockResolvedValue({ data: { results: [] } } as never);
+
+        render(
+            <MemoryRouter initialEntries={['/residents?keep=1&residentSearch=Juan&residentPage=2']}>
+                <ResidentsHub />
+                <CurrentSearch />
+            </MemoryRouter>,
+        );
+
+        const views = within(screen.getByRole('navigation', { name: 'Resident views' }));
+        const directoryButton = views.getByRole('button', { name: /Residents Directory & RBI/ });
+        const verificationButton = views.getByRole('button', { name: /Resident Verifications/ });
+
+        expect(directoryButton).toHaveAttribute('aria-pressed', 'true');
+        expect(verificationButton).toHaveAttribute('aria-pressed', 'false');
+
+        fireEvent.click(verificationButton);
+
+        expect(await screen.findByText('Resident verification list')).toBeInTheDocument();
+        expect(directoryButton).toHaveAttribute('aria-pressed', 'false');
+        expect(verificationButton).toHaveAttribute('aria-pressed', 'true');
+        let params = new URLSearchParams(screen.getByTestId('current-search').textContent ?? '');
+        expect(params.get('keep')).toBe('1');
+        expect(params.get('residentSearch')).toBe('Juan');
+        expect(params.get('residentPage')).toBe('2');
+        expect(params.get('tab')).toBe('verifications');
+
+        fireEvent.click(directoryButton);
+        expect(await screen.findByText('Residents directory')).toBeInTheDocument();
+        params = new URLSearchParams(screen.getByTestId('current-search').textContent ?? '');
+        expect(params.get('residentSearch')).toBe('Juan');
+        expect(params.get('residentPage')).toBe('2');
+        expect(params.get('tab')).toBe('directory');
     });
 
     it('announces loading and shows a badge only after a successful count response', async () => {

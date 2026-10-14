@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 
 import '../core/network/api_client.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_tokens.dart';
 import '../models/user_model.dart';
 import '../models/notification_item_model.dart';
 import '../services/auth_service.dart';
@@ -25,6 +26,7 @@ import 'profile_screen.dart';
 import 'my_issues_screen.dart';
 import 'announcements_screen.dart';
 import 'aid_requests_screen.dart';
+import 'navigator_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final DashboardService? dashboardService;
@@ -114,7 +116,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
     final UserModel? user = _data.user;
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.background,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(64),
         child: SafeArea(
@@ -209,8 +211,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
                 padding: const EdgeInsets.symmetric(
-                  horizontal: 20.0,
-                  vertical: 12.0,
+                  horizontal: AppSpacing.pageHorizontal,
+                  vertical: AppSpacing.pageVertical,
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -289,12 +291,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           ),
                         );
                       },
+                      onAskBarangay: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => NavigatorScreen(
+                              apiClient: _dashboardService?.apiClient,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                     const SizedBox(height: 24),
 
                     // 4. Recent Notifications Section (WIRED ONNOTIFICATIONTAP)
                     RecentNotificationsSection(
                       notifications: _data.notifications,
+                      hasError: _data.hasNotificationsError,
+                      errorMessage: _data.notificationsErrorMessage,
+                      onRetry: _loadDashboardData,
                       onViewAll: () => _showNotificationModalSheet(context),
                       onNotificationTap: (item) =>
                           _showNotificationDetailModal(context, item),
@@ -379,6 +394,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
         expand: false,
         builder: (context, scrollController) => NotificationCenterSheet(
           notifications: _data.notifications,
+          hasError: _data.hasNotificationsError,
+          errorMessage: _data.notificationsErrorMessage,
+          onRetry: () {
+            Navigator.pop(context);
+            _loadDashboardData();
+          },
           scrollController: scrollController,
         ),
       ),

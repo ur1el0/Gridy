@@ -63,7 +63,7 @@ export const ResidentDirectoryTable: React.FC<ResidentDirectoryTableProps> = ({
                                         </div>
                                     </td>
                                     <td className="py-3.5 px-6 font-medium text-slate-700">
-                                        {resident.purok ? String(resident.purok) : <span className="text-slate-400 italic">Unassigned</span>}
+                                        {resident.purok ? String(resident.purok) : <span className="text-slate-600 italic">Unassigned</span>}
                                     </td>
                                     <td className="py-3.5 px-6 text-slate-600 font-mono text-xs">
                                         {resident.username ? `@${resident.username}` : 'None'}
@@ -81,7 +81,7 @@ export const ResidentDirectoryTable: React.FC<ResidentDirectoryTableProps> = ({
                                                 </span>
                                             )}
                                             {!resident.contact_number && !resident.email && (
-                                                <span className="text-slate-400 italic">No contact info</span>
+                                                <span className="text-slate-600 italic">No contact info</span>
                                             )}
                                         </div>
                                     </td>

@@ -18,6 +18,12 @@ class DocumentRequestModel {
   final String? paymentInstructions;
   final String paymentStatus;
   final String? paymentReviewNote;
+  final String? paymentProofUrl;
+  final DateTime? paymentTransactedAt;
+  final String feeAssessmentStatus;
+  final String? feeAssessedByName;
+  final DateTime? feeAssessedAt;
+  final String? feeWaiverReason;
   final bool isWalkin;
   final DateTime? createdAt;
   final DateTime? updatedAt;
@@ -39,6 +45,12 @@ class DocumentRequestModel {
     this.paymentInstructions,
     this.paymentStatus = 'NOT_REQUIRED',
     this.paymentReviewNote,
+    this.paymentProofUrl,
+    this.paymentTransactedAt,
+    this.feeAssessmentStatus = 'AWAITING_ASSESSMENT',
+    this.feeAssessedByName,
+    this.feeAssessedAt,
+    this.feeWaiverReason,
     this.isWalkin = false,
     this.createdAt,
     this.updatedAt,
@@ -72,6 +84,17 @@ class DocumentRequestModel {
       paymentInstructions: json['payment_instructions_snapshot'] as String?,
       paymentStatus: json['payment_status'] as String? ?? 'NOT_REQUIRED',
       paymentReviewNote: json['payment_review_note'] as String?,
+      paymentProofUrl: json['payment_proof_url'] as String?,
+      paymentTransactedAt: json['payment_transacted_at'] != null
+          ? DateTime.tryParse(json['payment_transacted_at'].toString())
+          : null,
+      feeAssessmentStatus:
+          json['fee_assessment_status'] as String? ?? 'AWAITING_ASSESSMENT',
+      feeAssessedByName: json['fee_assessed_by_name'] as String?,
+      feeAssessedAt: json['fee_assessed_at'] != null
+          ? DateTime.tryParse(json['fee_assessed_at'].toString())
+          : null,
+      feeWaiverReason: json['fee_waiver_reason'] as String?,
       isWalkin: json['is_walkin'] as bool? ?? false,
       createdAt: json['created_at'] != null
           ? DateTime.tryParse(json['created_at'].toString())
@@ -99,6 +122,12 @@ class DocumentRequestModel {
       'payment_instructions_snapshot': paymentInstructions,
       'payment_status': paymentStatus,
       'payment_review_note': paymentReviewNote,
+      'payment_proof_url': paymentProofUrl,
+      'payment_transacted_at': paymentTransactedAt?.toIso8601String(),
+      'fee_assessment_status': feeAssessmentStatus,
+      'fee_assessed_by_name': feeAssessedByName,
+      'fee_assessed_at': feeAssessedAt?.toIso8601String(),
+      'fee_waiver_reason': feeWaiverReason,
       'is_walkin': isWalkin,
       'created_at': createdAt?.toIso8601String(),
       'updated_at': updatedAt?.toIso8601String(),
@@ -111,6 +140,15 @@ class DocumentRequestModel {
   bool get isReleased => status.toUpperCase() == 'RELEASED';
   bool get isRejected => status.toUpperCase() == 'REJECTED';
   bool get isCompleted => isReleased;
+  bool get isAwaitingAssessment =>
+      feeAssessmentStatus.toUpperCase() == 'AWAITING_ASSESSMENT';
+  bool get isFeeWaived => feeAssessmentStatus.toUpperCase() == 'WAIVED';
+  bool get isStatutoryExempt =>
+      feeAssessmentStatus.toUpperCase() == 'STATUTORY_EXEMPT' ||
+      {'certificate of indigency', 'first time job seeker certificate'}.contains(
+        documentType.trim().replaceAll(RegExp(r'\s+'), ' ').toLowerCase(),
+      );
+  bool get isFeeExempt => isStatutoryExempt;
 
   /// Formatted fee string in Philippine Pesos (e.g. "₱50.00")
   String? get formattedFee =>

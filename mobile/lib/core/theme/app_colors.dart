@@ -22,6 +22,7 @@ class AppColors {
   static const Color textHint = Color(0xFF475569);
 
   // Borders & Dividers
+  static const Color borderSubtle = Color(0xFFE2E8F0);
   static const Color borderLight = Color(0xFFCBD5E1);
   static const Color borderFocused = Color(0xFF082B66);
 

@@ -37,6 +37,21 @@ describe('Resident Portal Components', () => {
         expect(screen.getAllByText('Community Bulletin')[0]).toBeInTheDocument();
     });
 
+    it('renders Ask Barangay launcher and opens navigator drawer on click', async () => {
+        render(
+            <BrowserRouter>
+                <AuthProvider>
+                    <CitizenLayout />
+                </AuthProvider>
+            </BrowserRouter>
+        );
+
+        fireEvent.click(screen.getByRole('button', { name: 'Ask Barangay' }));
+
+        expect(screen.getByRole('dialog', { name: 'Ask Barangay' })).toBeInTheDocument();
+        expect(screen.getByLabelText('Your question')).toHaveFocus();
+    });
+
     it('renders empty state when citizen has no active document requests', async () => {
         vi.mocked(axiosPrivate.get)
             .mockResolvedValueOnce({ data: { results: [] } })

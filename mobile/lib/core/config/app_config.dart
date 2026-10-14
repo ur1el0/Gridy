@@ -5,23 +5,53 @@ import 'package:flutter/foundation.dart';
 class AppConfig {
   AppConfig._();
 
+  /// Canonical production backend API base URL for deployed environments.
+  static const String productionBaseUrl =
+      'https://gridy-backend.onrender.com/api/v1';
+
   /// Configurable base URL defined at build time with `--dart-define=API_BASE_URL=...`
   /// or fallback according to running target platform.
   static const String _envBaseUrl = String.fromEnvironment('API_BASE_URL');
 
-  /// Resolves the default backend base URL depending on target platform.
-  /// Android emulators route localhost through `10.0.2.2`.
-  /// iOS simulators, Web, and Desktop environments route via `127.0.0.1`.
-  static String get defaultBaseUrl {
-    if (_envBaseUrl.isNotEmpty) {
-      return _envBaseUrl;
+  /// Resolves the backend base URL given environment configuration,
+  /// build mode, and target platform.
+  ///
+  /// - In release mode ([isReleaseMode] == true), an HTTPS endpoint is required.
+  ///   If no build-time override is provided, it defaults to [productionBaseUrl].
+  ///   Cleartext HTTP (`http://`) is strictly prohibited in release mode.
+  /// - In debug/profile mode ([isReleaseMode] == false), build-time overrides take
+  ///   precedence. Otherwise, local emulator/simulator addresses are used:
+  ///   Android emulators route localhost through `10.0.2.2`, while Web, iOS,
+  ///   and desktop environments route via `127.0.0.1`.
+  static String resolveBaseUrl({
+    String? envBaseUrl,
+    bool isReleaseMode = kReleaseMode,
+    TargetPlatform? platform,
+    bool isWeb = kIsWeb,
+  }) {
+    final effectiveEnv = (envBaseUrl ?? _envBaseUrl).trim();
+
+    if (isReleaseMode) {
+      final candidate = effectiveEnv.isNotEmpty ? effectiveEnv : productionBaseUrl;
+      final uri = Uri.tryParse(candidate);
+      if (uri == null || uri.scheme != 'https') {
+        throw StateError(
+          'Release builds require an HTTPS API base URL. Cleartext HTTP is prohibited: $candidate',
+        );
+      }
+      return candidate;
     }
 
-    if (kIsWeb) {
+    if (effectiveEnv.isNotEmpty) {
+      return effectiveEnv;
+    }
+
+    if (isWeb) {
       return 'http://127.0.0.1:8000/api/v1';
     }
 
-    switch (defaultTargetPlatform) {
+    final effectivePlatform = platform ?? defaultTargetPlatform;
+    switch (effectivePlatform) {
       case TargetPlatform.android:
         return 'http://10.0.2.2:8000/api/v1';
       case TargetPlatform.iOS:
@@ -32,6 +62,9 @@ class AppConfig {
         return 'http://127.0.0.1:8000/api/v1';
     }
   }
+
+  /// Resolves the default backend base URL depending on target platform and build mode.
+  static String get defaultBaseUrl => resolveBaseUrl();
 
   /// Dynamic API Base URL allowing runtime overriding if necessary
   static String baseUrl = defaultBaseUrl;
@@ -44,5 +77,5 @@ class AppConfig {
   static const String registerEndpoint = '/auth/register/';
 
   // Request timeout
-  static const Duration requestTimeout = Duration(seconds: 15);
+  static const Duration requestTimeout = Duration(seconds: 35);
 }

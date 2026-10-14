@@ -34,7 +34,7 @@ describe('Announcements', () => {
         vi.mocked(axiosPrivate.get).mockReset();
         vi.mocked(axiosPrivate.post).mockReset();
         vi.mocked(axiosPrivate.delete).mockReset();
-        vi.mocked(useAuth).mockReturnValue({ user: { role: 'ADMIN' } } as never);
+        vi.mocked(useAuth).mockReturnValue({ user: { role: 'ADMIN', barangay_id: 1 } } as never);
         vi.mocked(axiosPrivate.get).mockResolvedValue({ data: [] } as never);
     });
 
@@ -130,5 +130,43 @@ describe('Announcements', () => {
         expect(axiosPrivate.get).toHaveBeenCalledTimes(2);
         expect(axiosPrivate.post).not.toHaveBeenCalled();
         expect(axiosPrivate.delete).not.toHaveBeenCalled();
+    });
+
+    it('renders navigator_ai_enabled control for authorized staff and includes it in creation payload', async () => {
+        vi.mocked(axiosPrivate.get).mockResolvedValueOnce({ data: [] } as never);
+        vi.mocked(axiosPrivate.post).mockResolvedValueOnce({ data: {} } as never);
+
+        render(<Announcements />);
+        await screen.findByText('No announcements active right now.');
+        fireEvent.click(screen.getByRole('button', { name: 'New Announcement' }));
+
+        const aiCheckbox = screen.getByLabelText('Share with Public AI Navigator');
+        expect(aiCheckbox).toBeInTheDocument();
+        expect(aiCheckbox).toBeEnabled();
+        expect(screen.getByText(/Allow the Public Information AI Navigator to use this announcement/)).toBeInTheDocument();
+
+        fireEvent.change(screen.getByLabelText('Headline'), { target: { value: 'Free Rabies Vaccination' } });
+        fireEvent.change(screen.getByLabelText('Full Content'), { target: { value: 'Bring pets to barangay hall.' } });
+        fireEvent.click(aiCheckbox);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Broadcast Now' }));
+
+        await waitFor(() => expect(axiosPrivate.post).toHaveBeenCalledTimes(1));
+        const [url, formData] = vi.mocked(axiosPrivate.post).mock.calls[0];
+        expect(url).toBe('/announcements/');
+        expect((formData as FormData).get('navigator_ai_enabled')).toBe('true');
+    });
+
+    it('disables navigator_ai_enabled control when user lacks barangay assignment', async () => {
+        vi.mocked(useAuth).mockReturnValue({ user: { role: 'ADMIN', barangay_id: null } } as never);
+        vi.mocked(axiosPrivate.get).mockResolvedValueOnce({ data: [] } as never);
+
+        render(<Announcements />);
+        await screen.findByText('No announcements active right now.');
+        fireEvent.click(screen.getByRole('button', { name: 'New Announcement' }));
+
+        const aiCheckbox = screen.getByLabelText('Share with Public AI Navigator');
+        expect(aiCheckbox).toBeDisabled();
+        expect(screen.getByText('AI sharing is restricted to authorized same-barangay staff.')).toBeInTheDocument();
     });
 });

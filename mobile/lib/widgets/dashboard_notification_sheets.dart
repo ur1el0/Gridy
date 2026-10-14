@@ -6,11 +6,17 @@ import '../models/notification_item_model.dart';
 class NotificationCenterSheet extends StatelessWidget {
   final List<NotificationItemModel> notifications;
   final ScrollController scrollController;
+  final bool hasError;
+  final String? errorMessage;
+  final VoidCallback? onRetry;
 
   const NotificationCenterSheet({
     super.key,
     required this.notifications,
     required this.scrollController,
+    this.hasError = false,
+    this.errorMessage,
+    this.onRetry,
   });
 
   @override
@@ -48,15 +54,17 @@ class NotificationCenterSheet extends StatelessWidget {
                   vertical: 4,
                 ),
                 decoration: BoxDecoration(
-                  color: AppColors.primaryNavy.withValues(alpha: 0.1),
+                  color: hasError
+                      ? const Color(0xFFFEE2E2)
+                      : AppColors.primaryNavy.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  '${notifications.length} Active',
-                  style: const TextStyle(
+                  hasError ? 'Error' : '${notifications.length} Active',
+                  style: TextStyle(
                     fontSize: 12,
                     fontWeight: FontWeight.w700,
-                    color: AppColors.primaryNavy,
+                    color: hasError ? const Color(0xFFDC2626) : AppColors.primaryNavy,
                   ),
                 ),
               ),
@@ -64,15 +72,64 @@ class NotificationCenterSheet extends StatelessWidget {
           ),
           const SizedBox(height: 16),
           Expanded(
-            child: notifications.isEmpty
-                ? const Center(
-                    child: Text(
-                      'No recent notifications',
-                      style: TextStyle(color: AppColors.textMuted),
+            child: hasError
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(20.0),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          const Icon(
+                            Icons.cloud_off_rounded,
+                            color: Color(0xFFDC2626),
+                            size: 40,
+                          ),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Unable to load notifications',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              color: Color(0xFFB91C1C),
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            errorMessage ?? 'Failed to retrieve notification updates',
+                            textAlign: TextAlign.center,
+                            style: const TextStyle(
+                              color: AppColors.textMuted,
+                              fontSize: 13,
+                            ),
+                          ),
+                          if (onRetry != null) ...[
+                            const SizedBox(height: 16),
+                            OutlinedButton.icon(
+                              onPressed: onRetry,
+                              icon: const Icon(Icons.refresh_rounded, size: 18),
+                              label: const Text('Try again'),
+                              style: OutlinedButton.styleFrom(
+                                foregroundColor: AppColors.primaryNavy,
+                                side: const BorderSide(color: AppColors.primaryNavy),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ],
+                      ),
                     ),
                   )
-                : ListView.separated(
-                    controller: scrollController,
+                : notifications.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'No recent notifications',
+                          style: TextStyle(color: AppColors.textMuted),
+                        ),
+                      )
+                    : ListView.separated(
+                        controller: scrollController,
                     itemCount: notifications.length,
                     separatorBuilder: (_, _) => const Divider(height: 20),
                     itemBuilder: (context, index) {

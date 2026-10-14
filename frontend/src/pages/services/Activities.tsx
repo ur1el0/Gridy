@@ -3,6 +3,7 @@ import React, { useEffect, useState } from 'react';
 import { axiosPrivate } from '../../api/axios';
 import { InlineErrorState } from '../../components/ui/InlineErrorState';
 import { Calendar, MapPin, Clock, Plus, Trash2 } from 'lucide-react';
+import { useAuth } from '../../context/auth-context';
 import { ScheduleActivityModal } from '../../components/activities/ScheduleActivityModal';
 
 interface Activity {
@@ -29,6 +30,7 @@ const CardSkeleton = () => (
 );
 
 export const Activities: React.FC = () => {
+    const { user } = useAuth();
     const [activities, setActivities] = useState<Activity[]>([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState('');
@@ -40,6 +42,14 @@ export const Activities: React.FC = () => {
     const [description, setDescription] = useState('');
     const [location, setLocation] = useState('');
     const [eventDate, setEventDate] = useState('');
+    const [navigatorAiEnabled, setNavigatorAiEnabled] = useState(false);
+
+    const canEnableAi = Boolean(
+        user?.role &&
+        (user.role === 'ADMIN' || user.role === 'FIELD_OFFICIAL') &&
+        user.barangay_id !== null &&
+        user.barangay_id !== undefined
+    );
 
     const fetchActivities = async (isRetry = false) => {
         if (isRetry) {
@@ -74,7 +84,8 @@ export const Activities: React.FC = () => {
                 title,
                 description,
                 location,
-                event_datetime: isoDate
+                event_datetime: isoDate,
+                navigator_ai_enabled: navigatorAiEnabled,
             });
             await fetchActivities();
             closeModal();
@@ -93,6 +104,7 @@ export const Activities: React.FC = () => {
         setDescription('');
         setLocation('');
         setEventDate('');
+        setNavigatorAiEnabled(false);
     };
 
     const handleDelete = async (id: number, title: string) => {
@@ -219,6 +231,9 @@ export const Activities: React.FC = () => {
                     description={description}
                     setDescription={setDescription}
                     isSubmitting={isSubmitting}
+                    navigatorAiEnabled={navigatorAiEnabled}
+                    setNavigatorAiEnabled={setNavigatorAiEnabled}
+                    canEnableAi={canEnableAi}
                 />
             )}
         </div>

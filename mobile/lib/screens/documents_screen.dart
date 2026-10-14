@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/network/api_client.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_tokens.dart';
 import '../models/document_request_model.dart';
 import '../models/user_model.dart';
 import '../services/auth_service.dart';
@@ -15,6 +16,7 @@ import '../widgets/document_search_field.dart';
 import '../widgets/empty_document_requests.dart';
 import '../widgets/request_document_dialog.dart';
 import '../widgets/request_document_grid.dart';
+import '../widgets/app_surface.dart';
 import 'dashboard_screen.dart';
 import 'queue_screen.dart';
 import 'schedule_screen.dart';
@@ -160,7 +162,7 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
           }).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.background,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(64),
         child: SafeArea(
@@ -244,31 +246,16 @@ class _DocumentsScreenState extends State<DocumentsScreen> {
               onRefresh: _loadDocumentsData,
               child: SingleChildScrollView(
                 physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.symmetric(horizontal: 20.0),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.pageHorizontal,
+                  vertical: AppSpacing.pageVertical,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const SizedBox(height: 12),
-
-                    // Title Header: CENTRAL REGISTRY / Documents
-                    const Text(
-                      'CENTRAL REGISTRY',
-                      style: TextStyle(
-                        fontSize: 11,
-                        fontWeight: FontWeight.w800,
-                        color: Color(0xFF64748B),
-                        letterSpacing: 1.2,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Documents',
-                      style: TextStyle(
-                        fontSize: 30,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.primaryNavy,
-                        letterSpacing: -0.5,
-                      ),
+                    const AppPageHeading(
+                      eyebrow: 'CENTRAL REGISTRY',
+                      title: 'Documents',
                     ),
 
                     const SizedBox(height: 18),

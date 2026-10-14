@@ -60,8 +60,8 @@ void main() {
             'ticket_number': 'C-098',
             'service_type': 'Tax Clearance',
             'status': 'COMPLETED',
-          }
-        ]
+          },
+        ],
       };
 
       final userTickets = [
@@ -87,6 +87,21 @@ void main() {
       expect(status.recentCompleted.first.ticketNumber, 'A-123');
       expect(status.estimatedCallTimeFormatted, isNotEmpty);
     });
+
+    test(
+      'does not estimate a call time when average wait is missing or zero',
+      () {
+        final withoutAverage = QueueLiveStatusModel.fromJson(
+          liveStatusJson: const {'total_waiting': 3},
+        );
+        final withZeroAverage = QueueLiveStatusModel.fromJson(
+          liveStatusJson: const {'total_waiting': 3, 'avg_wait_mins': 0},
+        );
+
+        expect(withoutAverage.estimatedCallTimeFormatted, isNull);
+        expect(withZeroAverage.estimatedCallTimeFormatted, isNull);
+      },
+    );
 
     test('derives moderate and high capacity labels', () {
       const moderateStatus = QueueLiveStatusModel(totalWaiting: 10);

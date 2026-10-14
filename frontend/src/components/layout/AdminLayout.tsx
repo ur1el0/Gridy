@@ -79,7 +79,7 @@ export const AdminLayout: React.FC = () => {
                     </div>
 
                     {/* Footer */}
-                    <footer className="pt-8 text-xs text-slate-400 font-medium">
+                    <footer className="pt-8 text-xs text-slate-600 font-medium">
                         © 2026 KapitBayan Admin
                     </footer>
                 </main>

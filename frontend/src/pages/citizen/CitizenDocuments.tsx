@@ -138,29 +138,21 @@ export const CitizenDocuments: React.FC = () => {
         }
     };
 
-    const handleSubmitPaymentReference = async (id: number) => {
-        const reference = paymentReference[id]?.trim();
-        const recipientId = Number(selectedRecipientId[id]);
-        if (!recipientId) {
-            toast.error('Select an e-payment recipient configured by your barangay.');
-            return;
-        }
-        if (!reference) {
-            toast.error('Enter the transfer reference.');
-            return;
-        }
-
+    const handleSubmitPaymentReference = async (id: number, formData: FormData) => {
         setSubmittingPaymentId(id);
         try {
             const response = await axiosPrivate.post(
                 `/document-requests/${id}/payment-reference/`,
-                { payment_recipient_id: recipientId, payment_reference: reference },
+                formData,
+                {
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                },
             );
             setRequests((current) => current.map((request) =>
                 request.id === id ? { ...request, ...response.data } : request,
             ));
             setPaymentReference((current) => ({ ...current, [id]: '' }));
-            toast.success('Transfer reference sent to barangay staff for manual verification.');
+            toast.success('Transfer reference and receipt sent to barangay staff for manual verification.');
         } catch (err: any) {
             toast.error(err.response?.data?.detail || 'Could not submit the payment reference.');
         } finally {
@@ -256,7 +248,7 @@ export const CitizenDocuments: React.FC = () => {
                                                 [request.id]: value,
                                             }))
                                         }
-                                        onSubmitPaymentReference={() => handleSubmitPaymentReference(request.id)}
+                                        onSubmitPaymentReference={(formData) => handleSubmitPaymentReference(request.id, formData)}
                                         onDownloadPdf={() => handleDownloadPdf(request.id, request.document_type)}
                                         onCancel={() => handleCancelRequest(request.id)}
                                     />
