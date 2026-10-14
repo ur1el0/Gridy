@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:open_filex/open_filex.dart';
@@ -40,6 +41,9 @@ class _DocumentDetailsDialogState extends State<DocumentDetailsDialog> {
   late String _paymentStatus;
   late String? _paymentMethod;
   late String? _paymentReviewNote;
+  DateTime _selectedTransactedAt = DateTime.now();
+  Uint8List? _selectedProofBytes;
+  String? _selectedProofFilename;
 
   @override
   void initState() {
@@ -48,6 +52,7 @@ class _DocumentDetailsDialogState extends State<DocumentDetailsDialog> {
     _paymentMethod = widget.request.paymentMethod;
     _paymentReviewNote = widget.request.paymentReviewNote;
     _selectedRecipientId = widget.request.paymentRecipientId;
+    _selectedTransactedAt = widget.request.paymentTransactedAt ?? DateTime.now();
     if (widget.request.isReadyForPickup &&
         (widget.request.feeAmount ?? 0) > 0 &&
         widget.documentService != null) {
@@ -91,6 +96,8 @@ class _DocumentDetailsDialogState extends State<DocumentDetailsDialog> {
     if (service == null ||
         reference.isEmpty ||
         _selectedRecipientId == null ||
+        _selectedProofBytes == null ||
+        _selectedProofBytes!.isEmpty ||
         _isSubmittingPayment) {
       return;
     }
@@ -101,6 +108,9 @@ class _DocumentDetailsDialogState extends State<DocumentDetailsDialog> {
         requestId: widget.request.id,
         paymentRecipientId: _selectedRecipientId!,
         paymentReference: reference,
+        transactedAt: _selectedTransactedAt,
+        proofImageBytes: _selectedProofBytes!,
+        proofImageFilename: _selectedProofFilename ?? 'receipt.jpg',
       );
       if (!mounted) return;
       setState(() {
@@ -108,6 +118,8 @@ class _DocumentDetailsDialogState extends State<DocumentDetailsDialog> {
         _paymentMethod = updated.paymentMethod;
         _paymentReviewNote = updated.paymentReviewNote;
         _paymentReferenceController.clear();
+        _selectedProofBytes = null;
+        _selectedProofFilename = null;
       });
       widget.onRequestUpdated?.call();
       ScaffoldMessenger.of(context).showSnackBar(
@@ -123,6 +135,69 @@ class _DocumentDetailsDialogState extends State<DocumentDetailsDialog> {
     } finally {
       if (mounted) setState(() => _isSubmittingPayment = false);
     }
+  }
+
+  void _handleViewProof() {
+    final service = widget.documentService;
+    if (service == null) return;
+    showDialog<void>(
+      context: context,
+      builder: (context) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Text(
+                    'Uploaded Receipt Proof',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () => Navigator.pop(context),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              FutureBuilder<Uint8List>(
+                future: service.fetchPaymentProof(widget.request.id),
+                builder: (context, snapshot) {
+                  if (snapshot.connectionState == ConnectionState.waiting) {
+                    return const Padding(
+                      padding: EdgeInsets.all(32),
+                      child: CircularProgressIndicator(),
+                    );
+                  }
+                  if (snapshot.hasError ||
+                      !snapshot.hasData ||
+                      snapshot.data!.isEmpty) {
+                    return const Padding(
+                      padding: EdgeInsets.all(24),
+                      child: Text(
+                        'Could not load payment proof image.',
+                        style: TextStyle(color: Colors.red),
+                      ),
+                    );
+                  }
+                  return ClipRRect(
+                    borderRadius: BorderRadius.circular(8),
+                    child: Image.memory(
+                      snapshot.data!,
+                      fit: BoxFit.contain,
+                      height: 300,
+                    ),
+                  );
+                },
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
   }
 
   Future<void> _handleDownloadPdf() async {
@@ -302,16 +377,49 @@ class _DocumentDetailsDialogState extends State<DocumentDetailsDialog> {
               ),
 
               DocumentPaymentSection(
+                request: DocumentRequestModel(
+                  id: req.id,
+                  documentType: req.documentType,
+                  purpose: req.purpose,
+                  urgencyTag: req.urgencyTag,
+                  status: req.status,
+                  adminNotes: req.adminNotes,
+                  orNumber: req.orNumber,
+                  feeAmount: req.feeAmount,
+                  paymentMethod: _paymentMethod,
+                  paymentReference: req.paymentReference,
+                  paymentRecipientId: req.paymentRecipientId,
+                  paymentRecipientName: req.paymentRecipientName,
+                  paymentRecipientIdentifier: req.paymentRecipientIdentifier,
+                  paymentInstructions: req.paymentInstructions,
+                  paymentStatus: _paymentStatus,
+                  paymentReviewNote: _paymentReviewNote,
+                  paymentProofUrl: req.paymentProofUrl,
+                  paymentTransactedAt: req.paymentTransactedAt,
+                  isWalkin: req.isWalkin,
+                  createdAt: req.createdAt,
+                  updatedAt: req.updatedAt,
+                ),
                 canSubmitElectronicPayment: canSubmitElectronicPayment,
                 isLoadingRecipients: _isLoadingPaymentRecipients,
                 recipientError: _paymentRecipientError,
                 recipients: _paymentRecipients,
                 selectedRecipientId: _selectedRecipientId,
                 referenceController: _paymentReferenceController,
+                selectedTransactedAt: _selectedTransactedAt,
+                selectedProofBytes: _selectedProofBytes,
+                selectedProofFilename: _selectedProofFilename,
                 isSubmitting: _isSubmittingPayment,
                 onSelectedRecipientChanged: (value) =>
                     setState(() => _selectedRecipientId = value),
+                onTransactedAtChanged: (value) =>
+                    setState(() => _selectedTransactedAt = value),
+                onProofSelected: (bytes) =>
+                    setState(() => _selectedProofBytes = bytes),
+                onProofFilenameSelected: (filename) =>
+                    setState(() => _selectedProofFilename = filename),
                 onSubmitPaymentReference: _handleSubmitPaymentReference,
+                onViewProof: _handleViewProof,
               ),
 
               const SizedBox(height: 24),

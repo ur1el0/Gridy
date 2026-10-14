@@ -130,9 +130,33 @@ class DocumentRequest(models.Model):
         default=PaymentStatus.NOT_REQUIRED,
     )
     payment_review_note = models.TextField(blank=True)
+    payment_proof_image = models.ImageField(
+        upload_to="payment_proofs/",
+        blank=True,
+        null=True,
+        help_text="Private receipt screenshot for manual electronic payment verification.",
+    )
+    payment_transacted_at = models.DateTimeField(
+        blank=True,
+        null=True,
+        help_text="Resident-reported timestamp of the fund transfer.",
+    )
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
+
+    def clean(self):
+        super().clean()
+        if (
+            self.status == self.Status.RELEASED
+            and self.fee_amount > 0
+            and not (self.or_number or "").strip()
+        ):
+            raise ValidationError({
+                "or_number": (
+                    "An Official Receipt (O.R.) number is required before releasing a document with a fee."
+                )
+            })
 
     def __str__(self):
         applicant = self.user.username if self.user else f"Walk-in: {self.walkin_name}"

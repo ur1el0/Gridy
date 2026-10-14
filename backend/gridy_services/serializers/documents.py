@@ -23,6 +23,8 @@ class DocumentRequestSerializer(FeePolicyValidationMixin, serializers.ModelSeria
     payment_recipient_name_snapshot = serializers.SerializerMethodField()
     payment_recipient_identifier_snapshot = serializers.SerializerMethodField()
     payment_instructions_snapshot = serializers.SerializerMethodField()
+    payment_proof_url = serializers.SerializerMethodField()
+    payment_transacted_at = serializers.DateTimeField(read_only=True)
 
     class Meta:
         model = DocumentRequest
@@ -49,6 +51,8 @@ class DocumentRequestSerializer(FeePolicyValidationMixin, serializers.ModelSeria
             'payment_reference',
             'payment_status',
             'payment_review_note',
+            'payment_proof_url',
+            'payment_transacted_at',
             'created_at',
             'updated_at',
         ]
@@ -66,6 +70,8 @@ class DocumentRequestSerializer(FeePolicyValidationMixin, serializers.ModelSeria
             'payment_reference',
             'payment_status',
             'payment_review_note',
+            'payment_proof_url',
+            'payment_transacted_at',
             'created_at',
             'updated_at',
         ]
@@ -102,6 +108,25 @@ class DocumentRequestSerializer(FeePolicyValidationMixin, serializers.ModelSeria
     def get_payment_instructions_snapshot(self, obj) -> str | None:
         return obj.payment_instructions_snapshot if self._can_view_payment_recipient_snapshot(obj) else None
 
+    def get_payment_proof_url(self, obj) -> str | None:
+        request = self.context.get("request")
+        if not request or not request.user or not request.user.is_authenticated:
+            return None
+        if not obj.payment_proof_image or not obj.payment_proof_image.name:
+            return None
+        user = request.user
+        doc_barangay_id = obj.barangay_id or (obj.user.barangay_id if obj.user else None)
+        is_owner = bool(obj.user_id is not None and user.id == obj.user_id)
+        is_same_barangay_staff = bool(
+            user.role in (User.Role.ADMIN, User.Role.FIELD_OFFICIAL)
+            and user.barangay_id is not None
+            and doc_barangay_id is not None
+            and user.barangay_id == doc_barangay_id
+        )
+        if is_owner or is_same_barangay_staff:
+            return f"/api/v1/document-requests/{obj.id}/payment-proof/"
+        return None
+
 
 class DocumentRequestReviewSerializer(FeePolicyValidationMixin, serializers.ModelSerializer):
     class Meta:
@@ -125,3 +150,29 @@ class DocumentRequestReviewSerializer(FeePolicyValidationMixin, serializers.Mode
             raise serializers.ValidationError("Invalid status transition")
 
         return value
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        document_status = attrs.get(
+            "status",
+            self.instance.status if self.instance is not None else None,
+        )
+        fee_amount = attrs.get(
+            "fee_amount",
+            self.instance.fee_amount if self.instance is not None else 0,
+        )
+        or_number = attrs.get(
+            "or_number",
+            self.instance.or_number if self.instance is not None else None,
+        )
+        if (
+            document_status == DocumentRequest.Status.RELEASED
+            and fee_amount > 0
+            and not (or_number or "").strip()
+        ):
+            raise serializers.ValidationError({
+                "or_number": (
+                    "An Official Receipt (O.R.) number is required before releasing a document with a fee."
+                )
+            })
+        return attrs

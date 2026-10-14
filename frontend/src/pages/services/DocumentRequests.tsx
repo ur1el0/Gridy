@@ -30,6 +30,8 @@ export interface DocumentRequest {
     payment_reference?: string;
     payment_status?: string;
     payment_review_note?: string;
+    payment_transacted_at?: string | null;
+    payment_proof_url?: string | null;
     created_at: string;
 }
 
@@ -149,13 +151,20 @@ export const DocumentRequests: React.FC = () => {
         }
     };
 
-    const handlePaymentReview = async (paymentStatus: 'VERIFIED' | 'REJECTED', note: string) => {
+    const handlePaymentReview = async (paymentStatus: 'VERIFIED' | 'REJECTED', note: string, orNumber?: string) => {
         if (!selectedRequest) return;
         setIsUpdating(true);
         try {
+            const payload: { status: 'VERIFIED' | 'REJECTED'; note: string; or_number?: string } = {
+                status: paymentStatus,
+                note,
+            };
+            if (orNumber?.trim()) {
+                payload.or_number = orNumber.trim();
+            }
             const response = await axiosPrivate.patch(
                 `/document-requests/${selectedRequest.id}/payment-review/`,
-                { status: paymentStatus, note },
+                payload,
             );
             setRequests((current) => current.map((request) =>
                 request.id === selectedRequest.id ? { ...request, ...response.data } : request,
@@ -164,6 +173,29 @@ export const DocumentRequests: React.FC = () => {
             toast.success(paymentStatus === 'VERIFIED' ? 'Electronic transfer verified.' : 'Transfer reference rejected with a reason.');
         } catch (err: any) {
             toast.error(err.response?.data?.note?.[0] || err.response?.data?.detail || 'Could not review this electronic payment.');
+        } finally {
+            setIsUpdating(false);
+        }
+    };
+
+    const handleSaveOrNumber = async (orNumber: string) => {
+        if (!selectedRequest) return;
+        setIsUpdating(true);
+        try {
+            const response = await axiosPrivate.patch(`/document-requests/${selectedRequest.id}/validate/`, {
+                status: selectedRequest.status,
+                or_number: orNumber.trim(),
+                fee_amount: isFeeExemptDocumentType(selectedRequest.document_type) ? '0.00' : selectedRequest.fee_amount,
+                payment_method: selectedRequest.payment_method,
+            });
+            setRequests((prev) => prev.map((req) =>
+                req.id === selectedRequest.id ? { ...req, ...response.data } : req,
+            ));
+            setSelectedRequest((prev) => prev ? { ...prev, ...response.data } : prev);
+            toast.success('Official Receipt (O.R.) number saved.');
+        } catch (err: any) {
+            console.error('Failed to save O.R. number', err);
+            toast.error(err?.response?.data?.or_number?.[0] || 'Failed to save O.R. number.');
         } finally {
             setIsUpdating(false);
         }
@@ -276,6 +308,7 @@ export const DocumentRequests: React.FC = () => {
                     getStatusBadge={getStatusBadge}
                     handleStatusUpdate={handleStatusUpdate}
                     handlePaymentReview={handlePaymentReview}
+                    handleSaveOrNumber={handleSaveOrNumber}
                     isUpdating={isUpdating}
                     handleDownloadPDF={handleDownloadPDF}
                 />

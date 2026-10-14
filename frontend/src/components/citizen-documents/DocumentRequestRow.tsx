@@ -1,15 +1,19 @@
-import React from 'react';
+import React, { useState } from 'react';
 import {
     AlertCircle,
     CheckCircle2,
     Clock,
     Download,
     FileText,
+    ImageIcon,
     Loader2,
     Trash2,
+    X,
 } from 'lucide-react';
 import { PaymentReferenceForm } from './PaymentReferenceForm';
 import type { DocumentRequest, PaymentRecipient } from './types';
+import { usePrivateMediaUrl } from '../../hooks/usePrivateMediaUrl';
+import { isFeeExemptDocumentType } from '../../utils/documentFees';
 
 interface DocumentRequestRowProps {
     request: DocumentRequest;
@@ -17,14 +21,14 @@ interface DocumentRequestRowProps {
     recipientsLoading: boolean;
     recipientsLoadError: boolean;
     onRetryRecipients: () => void;
-    selectedRecipientId: string;
-    paymentReference: string;
+    selectedRecipientId?: string;
+    paymentReference?: string;
     submittingPayment: boolean;
     downloading: boolean;
     cancelling: boolean;
-    onRecipientChange: (value: string) => void;
-    onPaymentReferenceChange: (value: string) => void;
-    onSubmitPaymentReference: () => void;
+    onRecipientChange?: (value: string) => void;
+    onPaymentReferenceChange?: (value: string) => void;
+    onSubmitPaymentReference: (formData: FormData) => void;
     onDownloadPdf: () => void;
     onCancel: () => void;
 }
@@ -65,6 +69,87 @@ const RequestStatusBadge: React.FC<{ status: string }> = ({ status }) => {
     }
 };
 
+import { createPortal } from 'react-dom';
+
+interface ProofPreviewModalProps {
+    isOpen: boolean;
+    proofUrl: string | null;
+    reference?: string;
+    onClose: () => void;
+}
+
+const ProofPreviewModal: React.FC<ProofPreviewModalProps> = ({
+    isOpen,
+    proofUrl,
+    reference,
+    onClose,
+}) => {
+    const { url, isLoading, hasError } = usePrivateMediaUrl(isOpen ? proofUrl : null);
+
+    if (!isOpen || typeof document === 'undefined') return null;
+
+    return createPortal(
+        <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Payment receipt preview"
+            className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/60 backdrop-blur-xs p-4"
+            onClick={onClose}
+        >
+            <div
+                className="relative max-w-lg w-full bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-200"
+                onClick={(e) => e.stopPropagation()}
+            >
+                <div className="flex items-center justify-between px-5 py-3.5 border-b border-slate-200 bg-slate-50">
+                    <div className="flex items-center gap-2">
+                        <ImageIcon className="w-4 h-4 text-slate-700" />
+                        <h3 className="text-xs font-bold text-slate-900">
+                            Uploaded Payment Receipt {reference ? `(${reference})` : ''}
+                        </h3>
+                    </div>
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        aria-label="Close receipt preview"
+                        className="p-1 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-200/50 transition-colors"
+                    >
+                        <X className="w-4 h-4" />
+                    </button>
+                </div>
+                <div className="p-4 flex flex-col items-center justify-center min-h-[240px] max-h-[70vh] overflow-auto bg-slate-950/5">
+                    {isLoading ? (
+                        <div className="flex flex-col items-center gap-2 text-slate-500 py-10">
+                            <Loader2 className="w-6 h-6 animate-spin text-primary-text" />
+                            <span className="text-xs">Loading receipt image…</span>
+                        </div>
+                    ) : hasError || !url ? (
+                        <div className="flex flex-col items-center gap-2 text-rose-600 py-10">
+                            <AlertCircle className="w-6 h-6" />
+                            <span className="text-xs font-medium">Could not load payment proof image.</span>
+                        </div>
+                    ) : (
+                        <img
+                            src={url}
+                            alt="Payment receipt proof"
+                            className="max-h-[60vh] w-auto max-w-full rounded-lg object-contain shadow-xs"
+                        />
+                    )}
+                </div>
+                <div className="px-5 py-3 border-t border-slate-100 bg-slate-50 text-right">
+                    <button
+                        type="button"
+                        onClick={onClose}
+                        className="px-3.5 py-1.5 rounded-lg border border-slate-300 bg-white text-xs font-semibold text-slate-700 hover:bg-slate-100 transition-colors cursor-pointer"
+                    >
+                        Close
+                    </button>
+                </div>
+            </div>
+        </div>,
+        document.body,
+    );
+};
+
 export const DocumentRequestRow: React.FC<DocumentRequestRowProps> = ({
     request,
     recipients,
@@ -82,101 +167,242 @@ export const DocumentRequestRow: React.FC<DocumentRequestRowProps> = ({
     onDownloadPdf,
     onCancel,
 }) => {
+    const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+    const [isRetrying, setIsRetrying] = useState(false);
+
     const isAvailableForDownload = ['READY_FOR_PICKUP', 'RELEASED'].includes(
         request.status.toUpperCase(),
     );
 
+    const isStatutoryFeeExempt = isFeeExemptDocumentType(request.document_type);
+    const isPaymentNotRequired = isStatutoryFeeExempt || Number(request.fee_amount ?? 0) <= 0;
+
+    const isCash = request.payment_method === 'CASH';
+
+    const formatDateTime = (isoString?: string | null) => {
+        if (!isoString) return '';
+        try {
+            const d = new Date(isoString);
+            if (isNaN(d.getTime())) return isoString;
+            return d.toLocaleString(undefined, {
+                year: 'numeric',
+                month: 'short',
+                day: 'numeric',
+                hour: 'numeric',
+                minute: '2-digit',
+            });
+        } catch {
+            return isoString;
+        }
+    };
+
     return (
-        <tr className="hover:bg-slate-50/70 transition-colors">
-            <td className="py-4 px-6 font-semibold text-slate-900 flex items-center gap-2">
-                <FileText className="w-4 h-4 text-primary-text" />
-                {request.document_type}
-            </td>
-            <td className="py-4 px-6 text-slate-600">
-                {request.purpose || '—'}
-            </td>
-            <td className="py-4 px-6 text-slate-500 text-xs">
-                {new Date(request.created_at).toLocaleDateString(undefined, {
-                    year: 'numeric',
-                    month: 'short',
-                    day: 'numeric',
-                })}
-            </td>
-            <td className="py-4 px-6">
-                <RequestStatusBadge status={request.status} />
-                {Number(request.fee_amount ?? 0) > 0 && (
-                    <div className="mt-2 space-y-1 text-xs text-slate-600">
-                        <p>Assessment: ₱{Number(request.fee_amount).toFixed(2)}</p>
-                        <p>Payment: {(request.payment_status || 'UNPAID').replace(/_/g, ' ').toLowerCase()}</p>
-                        {request.payment_review_note && (
-                            <p className="text-rose-700">Staff note: {request.payment_review_note}</p>
+        <>
+            <tr className="hover:bg-slate-50/70 transition-colors">
+                <td className="py-4 px-6 font-semibold text-slate-900 flex items-center gap-2">
+                    <FileText className="w-4 h-4 text-primary-text" />
+                    {request.document_type}
+                </td>
+                <td className="py-4 px-6 text-slate-600">
+                    {request.purpose || '—'}
+                </td>
+                <td className="py-4 px-6 text-slate-500 text-xs">
+                    {new Date(request.created_at).toLocaleDateString(undefined, {
+                        year: 'numeric',
+                        month: 'short',
+                        day: 'numeric',
+                    })}
+                </td>
+                <td className="py-4 px-6 space-y-2">
+                    <RequestStatusBadge status={request.status} />
+
+                    {/* Fee-Exempt Badge (REV-07) */}
+                    {isStatutoryFeeExempt && (
+                        <div>
+                            <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-800 border border-emerald-200">
+                                <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600" />
+                                <span>Statutory Fee Exemption — No Payment Required (RA 11261 / Indigency)</span>
+                            </span>
+                        </div>
+                    )}
+
+                    {/* Processing State Guidance Banner */}
+                    {!isStatutoryFeeExempt && request.status.toUpperCase() === 'PROCESSING' && (
+                        <div className="p-3 rounded-xl border border-blue-200 bg-blue-50/70 text-xs text-blue-900 space-y-1">
+                            <p className="font-semibold flex items-center gap-1.5">
+                                <Clock className="w-4 h-4 text-blue-600 shrink-0" />
+                                <span>Document Under Processing</span>
+                            </p>
+                            <p className="text-blue-800 leading-relaxed">
+                                {Number(request.fee_amount ?? 0) > 0
+                                    ? `Assessment fee is ₱${Number(request.fee_amount).toFixed(2)}. `
+                                    : 'The fee is pending staff assessment. '}
+                                Official payment instructions and recipient details will become available once staff process and approve your document and mark it Ready for Pickup.
+                            </p>
+                        </div>
+                    )}
+
+                    {/* Cash Instructions Banner (REV-07) */}
+                    {!isPaymentNotRequired && isCash && (
+                        <div className="p-3 rounded-xl border border-amber-200 bg-amber-50/60 text-xs text-amber-900 space-y-1">
+                            <p className="font-semibold">Payment Method: Cash</p>
+                            <p className="text-amber-800 leading-relaxed">
+                                Please proceed to the Barangay Treasurer desk to pay ₱{Number(request.fee_amount).toFixed(2)} upon document pickup. No online upload required.
+                            </p>
+                        </div>
+                    )}
+
+                    {!isStatutoryFeeExempt && isPaymentNotRequired &&
+                        ['READY_FOR_PICKUP', 'RELEASED'].includes(request.status.toUpperCase()) && (
+                            <p className="text-xs font-semibold text-emerald-800">No payment required</p>
                         )}
-                        {request.status.toUpperCase() === 'READY_FOR_PICKUP' &&
-                            request.payment_method !== 'CASH' &&
-                            ['UNPAID', 'REJECTED'].includes(request.payment_status || 'UNPAID') && (
-                                <PaymentReferenceForm
-                                    requestId={request.id}
-                                    recipients={recipients}
-                                    recipientsLoading={recipientsLoading}
-                                    recipientsLoadError={recipientsLoadError}
-                                    onRetryRecipients={onRetryRecipients}
-                                    selectedRecipientId={selectedRecipientId}
-                                    paymentReference={paymentReference}
-                                    submitting={submittingPayment}
-                                    onRecipientChange={onRecipientChange}
-                                    onPaymentReferenceChange={onPaymentReferenceChange}
-                                    onSubmit={(event) => {
-                                        event.preventDefault();
-                                        onSubmitPaymentReference();
-                                    }}
-                                />
-                            )}
-                    </div>
-                )}
-                {request.admin_notes && (
-                    <p className="text-[11px] text-slate-500 mt-1 italic">
-                        Note: {request.admin_notes}
-                    </p>
-                )}
-            </td>
-            <td className="py-4 px-6 text-right">
-                {isAvailableForDownload ? (
-                    <div className="flex flex-col items-end gap-2">
-                        {request.status.toUpperCase() === 'READY_FOR_PICKUP' &&
-                            request.payment_status === 'PENDING_VERIFICATION' && (
-                                <span className="text-xs font-medium text-amber-700">Waiting for payment verification</span>
-                            )}
+
+                    {/* Assessed electronic payment lifecycle */}
+                    {!isPaymentNotRequired && !isCash && (
+                        <div className="space-y-1.5 text-xs text-slate-600">
+                            <p>Assessment: ₱{Number(request.fee_amount).toFixed(2)}</p>
+
+                            {/* Pending Verification Banner */}
+                            {request.status.toUpperCase() === 'READY_FOR_PICKUP' &&
+                                request.payment_status === 'PENDING_VERIFICATION' && (
+                                    <div className="p-3 rounded-xl border border-amber-200 bg-amber-50 text-xs text-amber-900 space-y-1">
+                                        <p className="font-semibold flex items-center gap-1.5">
+                                            <Clock className="w-4 h-4 text-amber-600 shrink-0" />
+                                            <span>Payment submitted and awaiting staff verification.</span>
+                                        </p>
+                                        <p className="text-amber-800">
+                                            Transfer Reference: <span className="font-mono font-bold">{request.payment_reference || '—'}</span>
+                                            {request.payment_transacted_at && (
+                                                <span> · Transacted at: {formatDateTime(request.payment_transacted_at)}</span>
+                                            )}
+                                        </p>
+                                        {request.payment_proof_url && (
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsPreviewOpen(true)}
+                                                className="mt-1.5 inline-flex items-center gap-1.5 text-[11px] font-semibold text-amber-900 hover:text-amber-950 underline cursor-pointer"
+                                            >
+                                                <ImageIcon className="w-3.5 h-3.5" />
+                                                <span>View submitted receipt</span>
+                                            </button>
+                                        )}
+                                    </div>
+                                )}
+
+                            {/* Rejected State & Resubmission Flow */}
+                            {request.status.toUpperCase() === 'READY_FOR_PICKUP' &&
+                                request.payment_status === 'REJECTED' && (
+                                    <div className="space-y-2">
+                                        <div className="p-3 rounded-xl border border-rose-200 bg-rose-50 text-xs text-rose-800">
+                                            <p className="font-bold flex items-center gap-1.5">
+                                                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
+                                                <span>Payment Reference Rejected</span>
+                                            </p>
+                                            {request.payment_review_note && (
+                                                <p className="mt-1 text-rose-700">Staff Note: {request.payment_review_note}</p>
+                                            )}
+                                        </div>
+                                        {!isRetrying ? (
+                                            <button
+                                                type="button"
+                                                onClick={() => setIsRetrying(true)}
+                                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-100 hover:bg-rose-200 text-rose-800 text-xs font-bold border border-rose-300 transition-colors cursor-pointer"
+                                            >
+                                                <span>Resubmit Payment Evidence</span>
+                                            </button>
+                                        ) : (
+                                            <PaymentReferenceForm
+                                                requestId={request.id}
+                                                recipients={recipients}
+                                                recipientsLoading={recipientsLoading}
+                                                recipientsLoadError={recipientsLoadError}
+                                                onRetryRecipients={onRetryRecipients}
+                                                submitting={submittingPayment}
+                                                initialRecipientId={request.payment_recipient ? String(request.payment_recipient) : selectedRecipientId}
+                                                initialReference={request.payment_reference || paymentReference}
+                                                initialTransactedAt={request.payment_transacted_at || ''}
+                                                onSubmit={onSubmitPaymentReference}
+                                                onCancel={() => setIsRetrying(false)}
+                                            />
+                                        )}
+                                    </div>
+                                )}
+
+                            {/* Unpaid Initial Submission Form */}
+                            {request.status.toUpperCase() === 'READY_FOR_PICKUP' &&
+                                (!request.payment_status || request.payment_status === 'UNPAID') && (
+                                    <PaymentReferenceForm
+                                        requestId={request.id}
+                                        recipients={recipients}
+                                        recipientsLoading={recipientsLoading}
+                                        recipientsLoadError={recipientsLoadError}
+                                        onRetryRecipients={onRetryRecipients}
+                                        submitting={submittingPayment}
+                                        selectedRecipientId={selectedRecipientId}
+                                        paymentReference={paymentReference}
+                                        onRecipientChange={onRecipientChange}
+                                        onPaymentReferenceChange={onPaymentReferenceChange}
+                                        initialRecipientId={selectedRecipientId}
+                                        initialReference={paymentReference}
+                                        onSubmit={onSubmitPaymentReference}
+                                    />
+                                )}
+                        </div>
+                    )}
+
+                    {request.admin_notes && (
+                        <p className="text-[11px] text-slate-500 mt-1 italic">
+                            Note: {request.admin_notes}
+                        </p>
+                    )}
+                </td>
+                <td className="py-4 px-6 text-right">
+                    {isAvailableForDownload ? (
+                        <div className="flex flex-col items-end gap-2">
+                            {request.status.toUpperCase() === 'READY_FOR_PICKUP' &&
+                                request.payment_status === 'PENDING_VERIFICATION' && (
+                                    <span className="text-xs font-medium text-amber-700">Waiting for payment verification</span>
+                                )}
+                            <button
+                                onClick={onDownloadPdf}
+                                disabled={downloading}
+                                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-bold border border-emerald-200 transition-all cursor-pointer"
+                            >
+                                {downloading ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : (
+                                    <Download className="w-3.5 h-3.5" />
+                                )}
+                                <span>Download PDF</span>
+                            </button>
+                        </div>
+                    ) : request.status.toUpperCase() === 'PENDING' ? (
                         <button
-                            onClick={onDownloadPdf}
-                            disabled={downloading}
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-700 hover:bg-emerald-100 text-xs font-bold border border-emerald-200 transition-all cursor-pointer"
+                            onClick={onCancel}
+                            disabled={cancelling}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-bold border border-rose-200 transition-all cursor-pointer"
+                            aria-label={`Cancel clearance request #${request.id}`}
                         >
-                            {downloading ? (
+                            {cancelling ? (
                                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
                             ) : (
-                                <Download className="w-3.5 h-3.5" />
+                                <Trash2 className="w-3.5 h-3.5" />
                             )}
-                            <span>Download PDF</span>
+                            <span>Cancel</span>
                         </button>
-                    </div>
-                ) : request.status.toUpperCase() === 'PENDING' ? (
-                    <button
-                        onClick={onCancel}
-                        disabled={cancelling}
-                        className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-rose-50 text-rose-700 hover:bg-rose-100 text-xs font-bold border border-rose-200 transition-all cursor-pointer"
-                        aria-label={`Cancel clearance request #${request.id}`}
-                    >
-                        {cancelling ? (
-                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                        ) : (
-                            <Trash2 className="w-3.5 h-3.5" />
-                        )}
-                        <span>Cancel</span>
-                    </button>
-                ) : (
-                    <span className="text-xs text-slate-400">Available after approval</span>
-                )}
-            </td>
-        </tr>
+                    ) : (
+                        <span className="text-xs text-slate-400">Available after approval</span>
+                    )}
+                </td>
+            </tr>
+
+            {/* Receipt Inspection Modal */}
+            <ProofPreviewModal
+                isOpen={isPreviewOpen}
+                proofUrl={request.payment_proof_url || null}
+                reference={request.payment_reference}
+                onClose={() => setIsPreviewOpen(false)}
+            />
+        </>
     );
 };
