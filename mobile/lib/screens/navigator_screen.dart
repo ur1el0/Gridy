@@ -767,19 +767,26 @@ class _NavigatorScreenState extends State<NavigatorScreen> {
                               ],
                             ),
                           ),
-                          TextButton.icon(
-                            onPressed: () => _dialNumber(h.number),
-                            style: TextButton.styleFrom(
-                              minimumSize: const Size(48, 48),
-                              padding: const EdgeInsets.symmetric(horizontal: 10),
-                            ),
-                            icon: const Icon(Icons.call, size: 14, color: AppColors.primaryNavy),
-                            label: Text(
-                              h.number,
-                              style: const TextStyle(
-                                fontSize: 12,
-                                fontWeight: FontWeight.w800,
-                                color: AppColors.primaryNavy,
+                          Semantics(
+                            label: 'Call ${h.name} at ${h.number}',
+                            button: true,
+                            onTap: () => _dialNumber(h.number),
+                            child: ExcludeSemantics(
+                              child: TextButton.icon(
+                                onPressed: () => _dialNumber(h.number),
+                                style: TextButton.styleFrom(
+                                  minimumSize: const Size(48, 48),
+                                  padding: const EdgeInsets.symmetric(horizontal: 10),
+                                ),
+                                icon: const Icon(Icons.call, size: 14, color: AppColors.primaryNavy),
+                                label: Text(
+                                  h.number,
+                                  style: const TextStyle(
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w800,
+                                    color: AppColors.primaryNavy,
+                                  ),
+                                ),
                               ),
                             ),
                           ),
