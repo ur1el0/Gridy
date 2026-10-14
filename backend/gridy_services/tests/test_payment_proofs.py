@@ -4,10 +4,10 @@ import tempfile
 from unittest.mock import patch
 
 from django.conf import settings
-from django.core.exceptions import ImproperlyConfigured
+from django.core.exceptions import ImproperlyConfigured, ValidationError
 from django.core.files.base import ContentFile
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.db import transaction
+from django.db import DatabaseError, transaction
 from django.test import override_settings
 from django.urls import reverse
 from django.utils import timezone
@@ -18,6 +18,7 @@ from rest_framework.test import APITestCase
 from gridy_audit.models import AuditLog
 from gridy_auth.models import Barangay, Resident, User
 from gridy_services.models import DocumentRequest, PaymentRecipient
+from gridy_services.serializers.documents import DocumentRequestReviewSerializer
 
 
 class PaymentProofStorageAndEndpointTests(APITestCase):
@@ -438,6 +439,32 @@ class PaymentSubmissionAndReviewWorkflowTests(APITestCase):
             f"/api/v1/document-requests/{document.pk}/payment-proof/",
         )
 
+    def test_upload_extension_and_streamed_mime_follow_verified_image_format(self):
+        document = self._make_ready_request()
+        self.client.force_login(self.resident)
+
+        response = self.client.post(
+            reverse("document-request-payment-reference", args=[document.pk]),
+            {
+                "payment_recipient_id": self.recipient.id,
+                "payment_reference": "GCASH-MIME-101",
+                "payment_transacted_at": timezone.now().isoformat(),
+                "payment_proof_image": self._sample_image(name="receipt.jpg"),
+            },
+            format="multipart",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK, response.data)
+        document.refresh_from_db()
+        self.assertTrue(document.payment_proof_image.name.endswith(".png"))
+
+        proof_response = self.client.get(
+            f"/api/v1/document-requests/{document.pk}/payment-proof/"
+        )
+        self.assertEqual(proof_response.status_code, status.HTTP_200_OK)
+        self.assertEqual(proof_response["Content-Type"], "image/png")
+        self.assertEqual(proof_response["X-Content-Type-Options"], "nosniff")
+
     def test_validation_errors_for_missing_fields(self):
         document = self._make_ready_request()
         self.client.force_login(self.resident)
@@ -632,6 +659,40 @@ class PaymentSubmissionAndReviewWorkflowTests(APITestCase):
             "New proof file must exist in storage",
         )
 
+    def test_database_save_failure_cleans_new_proof_and_preserves_existing_proof(self):
+        document = self._make_ready_request(
+            payment_status=DocumentRequest.PaymentStatus.REJECTED,
+            payment_proof_image=self._sample_image(name="old_receipt.png"),
+        )
+        old_name = document.payment_proof_image.name
+        storage = document.payment_proof_image.storage
+        self.assertTrue(storage.exists(old_name))
+        self.client.force_login(self.resident)
+
+        with patch.object(
+            DocumentRequest,
+            "save",
+            side_effect=DatabaseError("simulated document save failure"),
+        ):
+            with self.assertRaises(DatabaseError):
+                self.client.post(
+                    reverse("document-request-payment-reference", args=[document.pk]),
+                    {
+                        "payment_recipient_id": self.recipient.id,
+                        "payment_reference": "GCASH-DB-FAIL-102",
+                        "payment_transacted_at": timezone.now().isoformat(),
+                        "payment_proof_image": self._sample_image(
+                            name="new_receipt.png"
+                        ),
+                    },
+                    format="multipart",
+                )
+
+        document.refresh_from_db()
+        self.assertEqual(document.payment_proof_image.name, old_name)
+        self.assertTrue(storage.exists(old_name))
+        self.assertFalse(storage.exists("payment_proofs/new_receipt.png"))
+
     def test_converting_to_cash_cleans_up_proof_on_commit(self):
         document = self._make_ready_request(
             payment_proof_image=self._sample_image(name="cash_cleared.png"),
@@ -772,6 +833,38 @@ class PaymentSubmissionAndReviewWorkflowTests(APITestCase):
         document.refresh_from_db()
         self.assertEqual(document.or_number, "OR-EARLY-SAVE-123")
         self.assertEqual(document.status, DocumentRequest.Status.READY_FOR_PICKUP)
+
+    def test_model_and_serializer_require_receipt_for_paid_release(self):
+        document = self._make_ready_request(
+            fee_amount=75,
+            status=DocumentRequest.Status.RELEASED,
+            or_number=" ",
+        )
+
+        with self.assertRaises(ValidationError) as model_error:
+            document.full_clean()
+        self.assertIn("or_number", model_error.exception.message_dict)
+
+        serializer = DocumentRequestReviewSerializer(
+            document,
+            data={"status": DocumentRequest.Status.RELEASED},
+            partial=True,
+        )
+        self.assertFalse(serializer.is_valid())
+        self.assertIn("or_number", serializer.errors)
+
+        exempt = self._make_ready_request(
+            document_type="Certificate of Indigency",
+            fee_amount=0,
+            status=DocumentRequest.Status.READY_FOR_PICKUP,
+            or_number="",
+        )
+        exempt_serializer = DocumentRequestReviewSerializer(
+            exempt,
+            data={"status": DocumentRequest.Status.RELEASED},
+            partial=True,
+        )
+        self.assertTrue(exempt_serializer.is_valid(), exempt_serializer.errors)
 
     def test_release_gate_enforces_or_number_on_paid_document(self):
         self.client.force_login(self.admin)

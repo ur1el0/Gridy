@@ -734,13 +734,26 @@ class _DocumentPaymentSectionState extends State<DocumentPaymentSection> {
                       ),
                     ),
                   ],
+                  if (_internalProofBytes == null ||
+                      _internalProofBytes!.isEmpty) ...[
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Receipt screenshot is required before you can submit.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Color(0xFFB91C1C),
+                      ),
+                    ),
+                  ],
 
                   const SizedBox(height: 14),
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
                       onPressed: widget.isSubmitting ||
-                              widget.selectedRecipientId == null
+                              widget.selectedRecipientId == null ||
+                              _internalProofBytes == null ||
+                              _internalProofBytes!.isEmpty
                           ? null
                           : widget.onSubmitPaymentReference,
                       child: Text(

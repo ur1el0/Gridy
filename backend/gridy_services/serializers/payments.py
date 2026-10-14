@@ -1,4 +1,5 @@
 import datetime
+import os
 from django.utils import timezone
 from PIL import Image
 from rest_framework import serializers
@@ -40,6 +41,10 @@ class PaymentReferenceSerializer(serializers.Serializer):
                 )
             if width <= 0 or height <= 0:
                 raise serializers.ValidationError("Image must have valid positive dimensions.")
+            extension = {"JPEG": ".jpg", "PNG": ".png", "WEBP": ".webp"}[fmt]
+            filename = os.path.basename(value.name or "payment-proof")
+            stem = os.path.splitext(filename)[0] or "payment-proof"
+            value.name = f"{stem}{extension}"
             value.seek(0)
         except serializers.ValidationError:
             raise

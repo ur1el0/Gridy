@@ -96,6 +96,8 @@ class _DocumentDetailsDialogState extends State<DocumentDetailsDialog> {
     if (service == null ||
         reference.isEmpty ||
         _selectedRecipientId == null ||
+        _selectedProofBytes == null ||
+        _selectedProofBytes!.isEmpty ||
         _isSubmittingPayment) {
       return;
     }
@@ -107,8 +109,8 @@ class _DocumentDetailsDialogState extends State<DocumentDetailsDialog> {
         paymentRecipientId: _selectedRecipientId!,
         paymentReference: reference,
         transactedAt: _selectedTransactedAt,
-        proofImageBytes: _selectedProofBytes,
-        proofImageFilename: _selectedProofFilename,
+        proofImageBytes: _selectedProofBytes!,
+        proofImageFilename: _selectedProofFilename ?? 'receipt.jpg',
       );
       if (!mounted) return;
       setState(() {

@@ -3,10 +3,10 @@ from rest_framework.decorators import action
 from rest_framework.parsers import MultiPartParser, FormParser, JSONParser
 from rest_framework.response import Response
 from django.db import transaction
-import mimetypes
 from django.db.models import Q
 from django.template.loader import get_template
 from django.http import FileResponse, Http404, HttpResponse
+from PIL import Image, UnidentifiedImageError
 from django.utils import timezone
 from xhtml2pdf import pisa
 from gridy_auth.models import User
@@ -380,9 +380,14 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
                 document_request.payment_transacted_at = serializer.validated_data[
                     "payment_transacted_at"
                 ]
-                document_request.payment_proof_image = serializer.validated_data[
-                    "payment_proof_image"
-                ]
+                proof_upload = serializer.validated_data["payment_proof_image"]
+                document_request.payment_proof_image.save(
+                    proof_upload.name,
+                    proof_upload,
+                    save=False,
+                )
+                new_saved_name = document_request.payment_proof_image.name
+                new_storage = document_request.payment_proof_image.storage
                 document_request.payment_status = (
                     DocumentRequest.PaymentStatus.PENDING_VERIFICATION
                 )
@@ -402,9 +407,6 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
                         "updated_at",
                     ]
                 )
-                new_saved_name = document_request.payment_proof_image.name
-                new_storage = document_request.payment_proof_image.storage
-
                 if old_proof_name and old_proof_name != new_saved_name and old_storage:
                     transaction.on_commit(
                         lambda s=old_storage, p=old_proof_name: safe_delete_storage_file(s, p)
@@ -550,9 +552,21 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
         except (FileNotFoundError, IOError):
             raise Http404("Payment proof file could not be found.")
 
-        content_type, _ = mimetypes.guess_type(file_name)
-        if not content_type:
-            content_type = "image/jpeg"
+        try:
+            with Image.open(file_obj) as proof_image:
+                content_type = {
+                    "JPEG": "image/jpeg",
+                    "PNG": "image/png",
+                    "WEBP": "image/webp",
+                }.get(proof_image.format)
+            file_obj.seek(0)
+        except (OSError, ValueError, UnidentifiedImageError, Image.DecompressionBombError):
+            file_obj.close()
+            raise Http404("Payment proof image is invalid.")
+
+        if content_type is None:
+            file_obj.close()
+            raise Http404("Payment proof image format is unsupported.")
 
         response = FileResponse(file_obj, content_type=content_type)
         response["Cache-Control"] = "private, no-store, max-age=0"

@@ -116,32 +116,14 @@ void main() {
     );
 
     test(
-      'submits multipart request without optional proof image',
+      'rejects an empty receipt before sending the request',
       () async {
         SharedPreferences.setMockInitialValues({});
         final preferences = await SharedPreferences.getInstance();
-
-        late http.BaseRequest submittedBaseRequest;
-        final mockClient = MockClient.streaming((request, bodyStream) async {
-          submittedBaseRequest = request;
-          return http.StreamedResponse(
-            Stream.value(
-              utf8.encode(
-                jsonEncode({
-                  'request_id': 15,
-                  'document_type': 'Barangay Clearance',
-                  'status': 'READY_FOR_PICKUP',
-                  'fee_amount': '50.00',
-                  'payment_method': 'MAYA',
-                  'payment_recipient': 3,
-                  'payment_reference': 'MAYA-112233',
-                  'payment_status': 'PENDING_VERIFICATION',
-                }),
-              ),
-            ),
-            200,
-            headers: {'content-type': 'application/json'},
-          );
+        var requestCount = 0;
+        final mockClient = MockClient((request) async {
+          requestCount += 1;
+          return http.Response('{}', 200);
         });
         addTearDown(mockClient.close);
 
@@ -149,24 +131,23 @@ void main() {
           client: mockClient,
           baseUrl: 'https://kapitbayan.test/api/v1',
         )..setAuthCredentials(accessToken: 'resident-token');
-
         final service = DocumentService(
           apiClient: apiClient,
           storageService: StorageService(preferences),
         );
 
-        final document = await service.submitPaymentReference(
-          requestId: 15,
-          paymentRecipientId: 3,
-          paymentReference: 'MAYA-112233',
+        await expectLater(
+          service.submitPaymentReference(
+            requestId: 15,
+            paymentRecipientId: 3,
+            paymentReference: 'MAYA-112233',
+            transactedAt: DateTime.utc(2026, 10, 13, 10, 30),
+            proofImageBytes: const <int>[],
+            proofImageFilename: 'receipt.png',
+          ),
+          throwsArgumentError,
         );
-
-        expect(submittedBaseRequest, isA<http.MultipartRequest>());
-        final multipart = submittedBaseRequest as http.MultipartRequest;
-        expect(multipart.fields['payment_recipient_id'], '3');
-        expect(multipart.fields['payment_reference'], 'MAYA-112233');
-        expect(multipart.files, isEmpty);
-        expect(document.paymentStatus, 'PENDING_VERIFICATION');
+        expect(requestCount, 0);
       },
     );
 

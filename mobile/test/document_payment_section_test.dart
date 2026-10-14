@@ -303,6 +303,46 @@ void main() {
       );
     });
 
+    testWidgets('requires a receipt before enabling payment submission', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: DocumentPaymentSection(
+                request: DocumentRequestModel(
+                  id: 107,
+                  documentType: 'Barangay Clearance',
+                  status: 'READY_FOR_PICKUP',
+                  feeAmount: 50.0,
+                  paymentStatus: 'UNPAID',
+                ),
+                canSubmitElectronicPayment: true,
+                isLoadingRecipients: false,
+                recipientError: null,
+                recipients: mockRecipients,
+                selectedRecipientId: 5,
+                referenceController: TextEditingController(text: 'REF-107'),
+                isSubmitting: false,
+                onSelectedRecipientChanged: (_) {},
+                onSubmitPaymentReference: () {},
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final submitButton = tester.widget<ElevatedButton>(
+        find.widgetWithText(ElevatedButton, 'Submit transfer reference'),
+      );
+      expect(submitButton.onPressed, isNull);
+      expect(
+        find.text('Receipt screenshot is required before you can submit.'),
+        findsOneWidget,
+      );
+    });
+
     testWidgets(
       'renders date picker, screenshot preview thumbnail, and remove action in payment form',
       (tester) async {

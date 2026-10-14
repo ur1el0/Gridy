@@ -150,3 +150,29 @@ class DocumentRequestReviewSerializer(FeePolicyValidationMixin, serializers.Mode
             raise serializers.ValidationError("Invalid status transition")
 
         return value
+
+    def validate(self, attrs):
+        attrs = super().validate(attrs)
+        document_status = attrs.get(
+            "status",
+            self.instance.status if self.instance is not None else None,
+        )
+        fee_amount = attrs.get(
+            "fee_amount",
+            self.instance.fee_amount if self.instance is not None else 0,
+        )
+        or_number = attrs.get(
+            "or_number",
+            self.instance.or_number if self.instance is not None else None,
+        )
+        if (
+            document_status == DocumentRequest.Status.RELEASED
+            and fee_amount > 0
+            and not (or_number or "").strip()
+        ):
+            raise serializers.ValidationError({
+                "or_number": (
+                    "An Official Receipt (O.R.) number is required before releasing a document with a fee."
+                )
+            })
+        return attrs

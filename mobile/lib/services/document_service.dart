@@ -86,34 +86,44 @@ class DocumentService {
         .toList();
   }
 
-  /// Sends a resident-selected transfer reference and optional receipt screenshot
+  /// Sends a resident-selected transfer reference, timestamp, and required receipt screenshot
   /// for manual barangay verification using multipart/form-data.
   Future<DocumentRequestModel> submitPaymentReference({
     required int requestId,
     required int paymentRecipientId,
     required String paymentReference,
-    DateTime? transactedAt,
-    List<int>? proofImageBytes,
-    String? proofImageFilename,
+    required DateTime transactedAt,
+    required List<int> proofImageBytes,
+    required String proofImageFilename,
   }) async {
+    if (proofImageBytes.isEmpty) {
+      throw ArgumentError.value(
+        proofImageBytes,
+        'proofImageBytes',
+        'A receipt image is required.',
+      );
+    }
+    if (proofImageFilename.trim().isEmpty) {
+      throw ArgumentError.value(
+        proofImageFilename,
+        'proofImageFilename',
+        'A receipt filename is required.',
+      );
+    }
+
     final fields = <String, String>{
       'payment_recipient_id': paymentRecipientId.toString(),
       'payment_reference': paymentReference.trim(),
     };
-    if (transactedAt != null) {
-      fields['payment_transacted_at'] = transactedAt.toIso8601String();
-    }
+    fields['payment_transacted_at'] = transactedAt.toIso8601String();
 
-    final files = <http.MultipartFile>[];
-    if (proofImageBytes != null && proofImageBytes.isNotEmpty) {
-      files.add(
-        http.MultipartFile.fromBytes(
-          'payment_proof_image',
-          proofImageBytes,
-          filename: proofImageFilename ?? 'proof.jpg',
-        ),
-      );
-    }
+    final files = <http.MultipartFile>[
+      http.MultipartFile.fromBytes(
+        'payment_proof_image',
+        proofImageBytes,
+        filename: proofImageFilename,
+      ),
+    ];
 
     final response = await apiClient.postMultipart(
       '/document-requests/$requestId/payment-reference/',
