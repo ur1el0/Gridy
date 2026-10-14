@@ -94,6 +94,9 @@ describe("ResidentVerification Component", () => {
             expect(screen.getByText("Juan Dela Cruz")).toBeInTheDocument();
             expect(screen.getAllByText("Purok 3")[0]).toBeInTheDocument();
         });
+        expect(
+            screen.getByRole("combobox", { name: "Filter residents by purok" }),
+        ).toBeInTheDocument();
     });
 
     it("shows a retryable load error and recovers without reporting zero pending residents", async () => {
