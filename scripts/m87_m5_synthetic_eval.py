@@ -1,3 +1,6 @@
+Warning: truncated output (original token count: 6470)
+Total output lines: 541
+
 """Run the M87 M5 synthetic-only evaluation against the real Django endpoint.
 
 The provider key is read only from the user-supplied temp env file. Query and
@@ -36,6 +39,9 @@ CHECKPOINT_FILE = Path(f"/tmp/gridy-m87-m5-{RUN_ID}-checkpoint.json")
 MODEL_ID = "gemini-3.8-flash"
 REQUEST_SPACING_SECONDS = 7.1
 HTTP_503_BACKOFF_SECONDS = (8, 16, 32)
+PROVIDER_TIMEOUT_SECONDS = int(os.environ.get("M87_M5_PROVIDER_TIMEOUT_SECONDS", "30"))
+if PROVIDER_TIMEOUT_SECONDS not in {30, 60}:
+    raise RuntimeError("M87_M5_PROVIDER_TIMEOUT_SECONDS must be 30 or 60.")
 
 os.umask(0o077)
 
@@ -62,7 +68,7 @@ os.environ.update(
         "SENTRY_DSN": "",
         "PUBLIC_NAVIGATOR_ENABLED": "True",
         "GEMINI_MODEL": MODEL_ID,
-        "PUBLIC_NAVIGATOR_TIMEOUT_SECONDS": "30",
+        "PUBLIC_NAVIGATOR_TIMEOUT_SECONDS": str(PROVIDER_TIMEOUT_SECONDS),
         "PUBLIC_NAVIGATOR_MAX_OUTPUT_TOKENS": "800",
         "GEMINI_API_KEY": load_provider_key(),
         "DJANGO_SETTINGS_MODULE": "config.settings",
@@ -73,6 +79,16 @@ sys.path.insert(0, str(BACKEND))
 import django  # noqa: E402
 
 django.setup()
+
+if PROVIDER_TIMEOUT_SECONDS > 30:
+    # Django and the provider adapter both cap the product timeout at 30s.
+    # Raise both guards only in this isolated runner process, as explicitly
+    # approved for the synthetic evaluation; committed product defaults stay 30s.
+    from django.conf import settings as django_settings  # noqa: E402
+    from gridy_communications.navigator import provider as navigator_provider  # noqa: E402
+
+    django_settings.PUBLIC_NAVIGATOR_TIMEOUT_SECONDS = PROVIDER_TIMEOUT_SECONDS
+    navigator_provider.MAX_TIMEOUT_SECONDS = PROVIDER_TIMEOUT_SECONDS
 
 from django.core.management import call_command  # noqa: E402
 from django.urls import reverse  # noqa: E402
@@ -170,59 +186,7 @@ def synthetic_fixture():
         name="Synthetic Barangay B",
         municipality="Synthetic City",
         province="Test Province",
-        office_contact="SYNTHETIC TEST HALL CONTACT — DO NOT USE",
-    )
-    official_a = User.objects.create_user(
-        username="m5_synthetic_official_a",
-        password="SyntheticOnly-NotARealAccount-1!",
-        role=User.Role.ADMIN,
-        barangay=barangay_a,
-    )
-    official_b = User.objects.create_user(
-        username="m5_synthetic_official_b",
-        password="SyntheticOnly-NotARealAccount-2!",
-        role=User.Role.ADMIN,
-        barangay=barangay_b,
-    )
-    resident_a = User.objects.create_user(
-        username="m5_synthetic_resident_a",
-        password="SyntheticOnly-NotARealAccount-3!",
-        role=User.Role.RESIDENT,
-        barangay=barangay_a,
-    )
-    resident_b = User.objects.create_user(
-        username="m5_synthetic_resident_b",
-        password="SyntheticOnly-NotARealAccount-4!",
-        role=User.Role.RESIDENT,
-        barangay=barangay_b,
-    )
-    Resident.objects.create(
-        user=resident_a,
-        full_name="Synthetic Resident A",
-        birth_date="1990-01-01",
-        is_verified=True,
-    )
-    Resident.objects.create(
-        user=resident_b,
-        full_name="Synthetic Resident B",
-        birth_date="1990-01-01",
-        is_verified=True,
-    )
-
-    Announcement.objects.create(
-        title="Synthetic Water Service Interruption",
-        content="Water service in Synthetic Barangay A will pause on 18 October 2026 from 9:00 AM to 1:00 PM for scheduled network repairs. Service is expected to resume at 1:00 PM.",
-        navigator_ai_enabled=True,
-        created_by=official_a,
-    )
-    Announcement.objects.create(
-        title="Synthetic Community Cleanup Day",
-        content="Synthetic Barangay B will hold a community cleanup on 25 October 2026 at Riverside Park. Residents who wish to participate should bring gloves.",
-        navigator_ai_enabled=True,
-        created_by=official_b,
-    )
-    ActivitySchedule.objects.create(
-        title="Synthetic Medical Mission",
+        office_contact="SYNTHETIC TEST HALL CONTACT — DO NOT USE…470 tokens truncated…Medical Mission",
         description="Free general checkups for residents. Bring no personal documents to this synthetic evaluation.",
         event_datetime=datetime(2026, 10, 22, 9, 0, tzinfo=MANILA),
         location="Synthetic Barangay A Health Center",
