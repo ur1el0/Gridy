@@ -1,6 +1,3 @@
-Warning: truncated output (original token count: 6470)
-Total output lines: 541
-
 """Run the M87 M5 synthetic-only evaluation against the real Django endpoint.
 
 The provider key is read only from the user-supplied temp env file. Query and
@@ -186,7 +183,59 @@ def synthetic_fixture():
         name="Synthetic Barangay B",
         municipality="Synthetic City",
         province="Test Province",
-        office_contact="SYNTHETIC TEST HALL CONTACT — DO NOT USE…470 tokens truncated…Medical Mission",
+        office_contact="SYNTHETIC TEST HALL CONTACT — DO NOT USE",
+    )
+    official_a = User.objects.create_user(
+        username="m5_synthetic_official_a",
+        password="SyntheticOnly-NotARealAccount-1!",
+        role=User.Role.ADMIN,
+        barangay=barangay_a,
+    )
+    official_b = User.objects.create_user(
+        username="m5_synthetic_official_b",
+        password="SyntheticOnly-NotARealAccount-2!",
+        role=User.Role.ADMIN,
+        barangay=barangay_b,
+    )
+    resident_a = User.objects.create_user(
+        username="m5_synthetic_resident_a",
+        password="SyntheticOnly-NotARealAccount-3!",
+        role=User.Role.RESIDENT,
+        barangay=barangay_a,
+    )
+    resident_b = User.objects.create_user(
+        username="m5_synthetic_resident_b",
+        password="SyntheticOnly-NotARealAccount-4!",
+        role=User.Role.RESIDENT,
+        barangay=barangay_b,
+    )
+    Resident.objects.create(
+        user=resident_a,
+        full_name="Synthetic Resident A",
+        birth_date="1990-01-01",
+        is_verified=True,
+    )
+    Resident.objects.create(
+        user=resident_b,
+        full_name="Synthetic Resident B",
+        birth_date="1990-01-01",
+        is_verified=True,
+    )
+
+    Announcement.objects.create(
+        title="Synthetic Water Service Interruption",
+        content="Water service in Synthetic Barangay A will pause on 18 October 2026 from 9:00 AM to 1:00 PM for scheduled network repairs. Service is expected to resume at 1:00 PM.",
+        navigator_ai_enabled=True,
+        created_by=official_a,
+    )
+    Announcement.objects.create(
+        title="Synthetic Community Cleanup Day",
+        content="Synthetic Barangay B will hold a community cleanup on 25 October 2026 at Riverside Park. Residents who wish to participate should bring gloves.",
+        navigator_ai_enabled=True,
+        created_by=official_b,
+    )
+    ActivitySchedule.objects.create(
+        title="Synthetic Medical Mission",
         description="Free general checkups for residents. Bring no personal documents to this synthetic evaluation.",
         event_datetime=datetime(2026, 10, 22, 9, 0, tzinfo=MANILA),
         location="Synthetic Barangay A Health Center",
