@@ -52,8 +52,9 @@
 - The focused empty-queue test at 360×825 logical pixels and text scale 0.81 passes, including the assertion that the empty message ends above the “Get Ticket” action.
 - Full mobile suite: 113 passed.
 - `flutter analyze --no-pub`: no issues found.
-- `git diff --check`: pending final diff review.
-- The corrected debug APK build is in progress. ADB currently reports no attached devices, so the corrected rendering and removal of the temporary `.m88test` app cannot yet be confirmed on the handset.
+- `git diff --check`: clean.
+- `flutter build apk --debug --no-pub --target-platform android-arm64 --dart-define=API_BASE_URL=http://127.0.0.1:18000/api/v1/`: passed. The temporary `.m88test` application ID/Firebase configuration used for the test build is excluded from the PR.
+- ADB reports no attached devices, so the corrected rendering and removal of the temporary `.m88test` app cannot yet be confirmed on the handset.
 - TalkBack verification remains pending.
 
 ## 5. M4 — Redmi Visual Corrective Pass
