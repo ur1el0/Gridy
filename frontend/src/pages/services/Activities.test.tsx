@@ -1,6 +1,7 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 import { axiosPrivate } from '../../api/axios';
+import { useAuth } from '../../context/auth-context';
 import { Activities } from './Activities';
 
 vi.mock('../../api/axios', () => ({
@@ -9,6 +10,10 @@ vi.mock('../../api/axios', () => ({
         post: vi.fn(),
         delete: vi.fn(),
     },
+}));
+
+vi.mock('../../context/auth-context', () => ({
+    useAuth: vi.fn(),
 }));
 
 vi.mock('react-hot-toast', () => ({
@@ -29,6 +34,7 @@ describe('Activities', () => {
         vi.mocked(axiosPrivate.get).mockReset();
         vi.mocked(axiosPrivate.post).mockReset();
         vi.mocked(axiosPrivate.delete).mockReset();
+        vi.mocked(useAuth).mockReturnValue({ user: { role: 'ADMIN', barangay_id: 1 } } as never);
         vi.mocked(axiosPrivate.get).mockResolvedValue({ data: [] } as never);
     });
 
@@ -121,5 +127,49 @@ describe('Activities', () => {
         expect(axiosPrivate.get).toHaveBeenCalledTimes(2);
         expect(axiosPrivate.post).not.toHaveBeenCalled();
         expect(axiosPrivate.delete).not.toHaveBeenCalled();
+    });
+
+    it('renders navigator_ai_enabled control for authorized staff and includes it in creation payload', async () => {
+        vi.mocked(axiosPrivate.get).mockResolvedValueOnce({ data: [] } as never);
+        vi.mocked(axiosPrivate.post).mockResolvedValueOnce({ data: {} } as never);
+
+        render(<Activities />);
+        await screen.findByText('No upcoming activities scheduled.');
+        fireEvent.click(screen.getByRole('button', { name: 'Schedule Activity' }));
+
+        const aiCheckbox = screen.getByLabelText('Share with Public AI Navigator');
+        expect(aiCheckbox).toBeInTheDocument();
+        expect(aiCheckbox).toBeEnabled();
+        expect(screen.getByText(/Allow the Public Information AI Navigator to use this activity schedule/)).toBeInTheDocument();
+
+        fireEvent.change(screen.getByLabelText('Event Title'), { target: { value: 'Clean-up Drive' } });
+        fireEvent.change(screen.getByLabelText('Location'), { target: { value: 'Zone 4' } });
+        fireEvent.change(screen.getByLabelText('Date & Time'), { target: { value: '2026-10-25T08:00' } });
+        fireEvent.change(screen.getByLabelText('Description'), { target: { value: 'Community cleanup initiative.' } });
+        fireEvent.click(aiCheckbox);
+
+        fireEvent.click(screen.getByRole('button', { name: 'Schedule Event' }));
+
+        await waitFor(() => expect(axiosPrivate.post).toHaveBeenCalledTimes(1));
+        const [url, payload] = vi.mocked(axiosPrivate.post).mock.calls[0];
+        expect(url).toBe('/activities/');
+        expect(payload).toEqual(expect.objectContaining({
+            title: 'Clean-up Drive',
+            location: 'Zone 4',
+            navigator_ai_enabled: true,
+        }));
+    });
+
+    it('disables navigator_ai_enabled control when user lacks barangay assignment', async () => {
+        vi.mocked(useAuth).mockReturnValue({ user: { role: 'ADMIN', barangay_id: null } } as never);
+        vi.mocked(axiosPrivate.get).mockResolvedValueOnce({ data: [] } as never);
+
+        render(<Activities />);
+        await screen.findByText('No upcoming activities scheduled.');
+        fireEvent.click(screen.getByRole('button', { name: 'Schedule Activity' }));
+
+        const aiCheckbox = screen.getByLabelText('Share with Public AI Navigator');
+        expect(aiCheckbox).toBeDisabled();
+        expect(screen.getByText('AI sharing is restricted to authorized same-barangay staff.')).toBeInTheDocument();
     });
 });

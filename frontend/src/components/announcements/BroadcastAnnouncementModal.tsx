@@ -15,6 +15,9 @@ export interface BroadcastAnnouncementModalProps {
     onImageChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
     onRemoveImage: () => void;
     isSubmitting: boolean;
+    navigatorAiEnabled?: boolean;
+    setNavigatorAiEnabled?: (val: boolean) => void;
+    canEnableAi?: boolean;
 }
 
 export const BroadcastAnnouncementModal: React.FC<BroadcastAnnouncementModalProps> = ({
@@ -30,6 +33,9 @@ export const BroadcastAnnouncementModal: React.FC<BroadcastAnnouncementModalProp
     onImageChange,
     onRemoveImage,
     isSubmitting,
+    navigatorAiEnabled = false,
+    setNavigatorAiEnabled,
+    canEnableAi = true,
 }) => {
     const announcementDialogTitleId = useId();
     const announcementDialogRef = useModalFocus<HTMLDivElement>(true, onClose);
@@ -135,6 +141,35 @@ export const BroadcastAnnouncementModal: React.FC<BroadcastAnnouncementModalProp
                         <div className="flex flex-col">
                             <label htmlFor="is_pinned" className="text-xs font-bold text-slate-900 cursor-pointer">Pin to top</label>
                             <span className="text-[11px] text-slate-500">Pinned broadcasts will always appear first.</span>
+                        </div>
+                    </div>
+
+                    <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
+                        <div className="flex items-center h-5">
+                            <input
+                                id="navigator_ai_enabled"
+                                type="checkbox"
+                                checked={navigatorAiEnabled}
+                                disabled={!canEnableAi}
+                                onChange={e => setNavigatorAiEnabled?.(e.target.checked)}
+                                className="h-4 w-4 text-primary-text focus:ring-primary border-slate-300 rounded cursor-pointer disabled:cursor-not-allowed"
+                            />
+                        </div>
+                        <div className="flex flex-col">
+                            <label
+                                htmlFor="navigator_ai_enabled"
+                                className={`text-xs font-bold ${canEnableAi ? 'text-slate-900 cursor-pointer' : 'text-slate-400 cursor-not-allowed'}`}
+                            >
+                                Share with Public AI Navigator
+                            </label>
+                            <span className="text-[11px] text-slate-500">
+                                Allow the Public Information AI Navigator to use this announcement as an official source. Opted-in content is screened locally before reaching the configured AI provider. Do not include resident identifiers, personal contact numbers, or private records.
+                            </span>
+                            {!canEnableAi && (
+                                <span className="text-[11px] text-amber-600 font-medium mt-1">
+                                    AI sharing is restricted to authorized same-barangay staff.
+                                </span>
+                            )}
                         </div>
                     </div>
 

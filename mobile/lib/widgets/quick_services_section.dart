@@ -9,6 +9,7 @@ class QuickServicesSection extends StatelessWidget {
   final VoidCallback? onBarangayHotline;
   final VoidCallback? onMyReports;
   final VoidCallback? onRequestAid;
+  final VoidCallback? onAskBarangay;
 
   const QuickServicesSection({
     super.key,
@@ -17,6 +18,7 @@ class QuickServicesSection extends StatelessWidget {
     this.onBarangayHotline,
     this.onMyReports,
     this.onRequestAid,
+    this.onAskBarangay,
   });
 
   @override
@@ -66,7 +68,13 @@ class QuickServicesSection extends StatelessWidget {
               ),
             ),
             const SizedBox(width: 14),
-            const Expanded(child: SizedBox.shrink()),
+            Expanded(
+              child: _QuickServiceCard(
+                icon: Icons.auto_awesome_outlined,
+                title: 'Ask Barangay',
+                onTap: onAskBarangay,
+              ),
+            ),
           ],
         ),
         const SizedBox(height: 12),

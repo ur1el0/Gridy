@@ -9,6 +9,10 @@ class Announcement(models.Model):
     content = models.TextField()
     image = models.ImageField(upload_to='announcements/', blank=True, null=True)
     is_pinned = models.BooleanField(default=False)
+    navigator_ai_enabled = models.BooleanField(
+        default=False,
+        help_text="Explicit opt-in to share this announcement with the public information AI navigator."
+    )
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='announcements')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -27,6 +31,10 @@ class ActivitySchedule(models.Model):
     description = models.TextField()
     event_datetime = models.DateTimeField()
     location = models.CharField(max_length=255)
+    navigator_ai_enabled = models.BooleanField(
+        default=False,
+        help_text="Explicit opt-in to share this activity with the public information AI navigator."
+    )
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE, related_name='activities')
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

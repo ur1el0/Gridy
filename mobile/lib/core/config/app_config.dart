@@ -44,5 +44,5 @@ class AppConfig {
   static const String registerEndpoint = '/auth/register/';
 
   // Request timeout
-  static const Duration requestTimeout = Duration(seconds: 15);
+  static const Duration requestTimeout = Duration(seconds: 35);
 }
