@@ -58,7 +58,6 @@ def load_provider_key() -> str:
 os.environ.update(
     {
         "SECRET_KEY": "m87-m5-synthetic-run-only-secret",
-        "ADMIN_REGISTRATION_PASSKEY": "m87-m5-synthetic-run-only-passkey",
         "DATABASE_URL": f"sqlite:////{DATABASE.as_posix().lstrip('/')}",
         "DEBUG": "True",
         "ALLOWED_HOSTS": "localhost,127.0.0.1,testserver",
