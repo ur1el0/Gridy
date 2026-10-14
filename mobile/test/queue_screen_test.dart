@@ -322,6 +322,11 @@ void main() {
   });
 
   testWidgets('true empty queue renders honest empty state without fallback tickets', (WidgetTester tester) async {
+    tester.view.physicalSize = const Size(720, 1650);
+    tester.view.devicePixelRatio = 2;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
     final prefs = await SharedPreferences.getInstance();
     final storage = StorageService(prefs);
     await storage.saveUser(const UserModel(
@@ -348,11 +353,24 @@ void main() {
     await tester.pumpWidget(
       MaterialApp(
         theme: AppTheme.lightTheme,
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(context).copyWith(
+            textScaler: const TextScaler.linear(0.81),
+          ),
+          child: child!,
+        ),
         home: QueueScreen(queueService: emptyService),
       ),
     );
     await tester.pump();
     await tester.pumpAndSettle();
+
+    expect(
+      MediaQuery.of(tester.element(find.byType(QueueScreen)))
+          .textScaler
+          .scale(100),
+      81,
+    );
 
     // 1. Hero Card displays '---'
     expect(find.text('---'), findsOneWidget);
@@ -364,7 +382,20 @@ void main() {
     expect(find.text('Optimal'), findsOneWidget);
 
     // 4. Recent Completions displays honest empty placeholder
-    expect(find.text('No completed queue tickets yet today', skipOffstage: false), findsOneWidget);
+    final emptyMessage = find.text(
+      'No completed queue tickets yet today',
+      skipOffstage: false,
+    );
+    final getTicketAction = find.text('Get Ticket');
+    expect(emptyMessage, findsOneWidget);
+    expect(getTicketAction, findsOneWidget);
+    await tester.ensureVisible(emptyMessage);
+    await tester.pumpAndSettle();
+    expect(
+      tester.getRect(emptyMessage).bottom,
+      lessThanOrEqualTo(tester.getRect(getTicketAction).top),
+      reason: 'Get Ticket must not cover the queue empty-state message.',
+    );
   });
 }
 

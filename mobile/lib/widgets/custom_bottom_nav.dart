@@ -33,35 +33,43 @@ class CustomBottomNav extends StatelessWidget {
       child: SafeArea(
         top: false,
         child: Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            _NavItem(
-              index: 0,
-              selectedIndex: currentIndex,
-              icon: Icons.grid_view_rounded,
-              label: 'DASHBOARD',
-              onTap: () => onTap(0),
+            Expanded(
+              child: _NavItem(
+                index: 0,
+                selectedIndex: currentIndex,
+                icon: Icons.grid_view_rounded,
+                label: 'DASHBOARD',
+                onTap: () => onTap(0),
+              ),
             ),
-            _NavItem(
-              index: 1,
-              selectedIndex: currentIndex,
-              icon: Icons.confirmation_number_outlined,
-              label: 'QUEUE',
-              onTap: () => onTap(1),
+            Expanded(
+              child: _NavItem(
+                index: 1,
+                selectedIndex: currentIndex,
+                icon: Icons.confirmation_number_outlined,
+                label: 'QUEUE',
+                onTap: () => onTap(1),
+              ),
             ),
-            _NavItem(
-              index: 2,
-              selectedIndex: currentIndex,
-              icon: Icons.description_outlined,
-              label: 'DOCUMENTS',
-              onTap: () => onTap(2),
+            Expanded(
+              child: _NavItem(
+                index: 2,
+                selectedIndex: currentIndex,
+                icon: Icons.description_outlined,
+                label: 'DOCUMENTS',
+                onTap: () => onTap(2),
+              ),
             ),
-            _NavItem(
-              index: 3,
-              selectedIndex: currentIndex,
-              icon: Icons.calendar_today_outlined,
-              label: 'SCHEDULE',
-              onTap: () => onTap(3),
+            Expanded(
+              child: _NavItem(
+                index: 3,
+                selectedIndex: currentIndex,
+                icon: Icons.calendar_today_outlined,
+                label: 'SCHEDULE',
+                onTap: () => onTap(3),
+              ),
             ),
           ],
         ),
@@ -97,7 +105,7 @@ class _NavItem extends StatelessWidget {
         excludeFromSemantics: true,
         onTap: onTap,
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 10),
           decoration: BoxDecoration(
             color: AppColors.primaryNavy,
             borderRadius: BorderRadius.circular(14),
@@ -127,7 +135,7 @@ class _NavItem extends StatelessWidget {
         onTap: onTap,
         behavior: HitTestBehavior.opaque,
         child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [

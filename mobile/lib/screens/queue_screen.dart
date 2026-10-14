@@ -236,106 +236,122 @@ class _QueueScreenState extends State<QueueScreen> {
               ),
             )
           : _hasError
-              ? _buildErrorState()
-              : RefreshIndicator(
-                  onRefresh: _loadQueueData,
-                  color: AppColors.primaryNavy,
-                  child: SingleChildScrollView(
-                    physics: const AlwaysScrollableScrollPhysics(),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.pageHorizontal,
-                      vertical: AppSpacing.pageVertical,
+          ? _buildErrorState()
+          : RefreshIndicator(
+              onRefresh: _loadQueueData,
+              color: AppColors.primaryNavy,
+              child: SingleChildScrollView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: AppSpacing.pageHorizontal,
+                  vertical: AppSpacing.pageVertical,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const AppPageHeading(
+                      eyebrow: 'LIVE QUEUE STATUS',
+                      title: "Today's Queue",
                     ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const AppPageHeading(
-                          eyebrow: 'LIVE QUEUE STATUS',
-                          title: "Today's Queue",
-                        ),
 
-                        const SizedBox(height: 20),
+                    const SizedBox(height: 20),
 
-                        // 1. Hero Card: Currently at Counter or Live Status Error Notice
-                        if (_queueStatus.hasLiveStatusError) ...[
-                          _buildLiveStatusErrorCard(),
-                          const SizedBox(height: 18),
-                        ] else ...[
-                          QueueHeroCard(
-                            currentTicket: _queueStatus.currentTicket,
-                            serviceType: _queueStatus.currentService,
-                          ),
-                          const SizedBox(height: 18),
-                        ],
+                    // 1. Hero Card: Currently at Counter or Live Status Error Notice
+                    if (_queueStatus.hasLiveStatusError) ...[
+                      _buildLiveStatusErrorCard(),
+                      const SizedBox(height: 18),
+                    ] else ...[
+                      QueueHeroCard(
+                        currentTicket: _queueStatus.currentTicket,
+                        serviceType: _queueStatus.currentService,
+                      ),
+                      const SizedBox(height: 18),
+                    ],
 
-                        // 2. User's Active Ticket Card
-                        UserTicketCard(
-                          ticket: _queueStatus.userTicket,
-                          hasError: _queueStatus.hasUserTicketsError,
-                          errorMessage: _queueStatus.userTicketsErrorMessage ?? _queueStatus.errorMessage,
-                          onRetry: () => _loadQueueData(isRetry: true),
-                        ),
-
-                        const SizedBox(height: 18),
-
-                        // 3. Side-by-Side Metric Cards: Estimated Call & Live Capacity
-                        if (!_queueStatus.hasLiveStatusError) ...[
-                          QueueMetricCards(
-                            estimatedCallTime:
-                                _queueStatus.estimatedCallTimeFormatted,
-                            liveCapacity: _queueStatus.capacityLabel,
-                          ),
-
-                          const SizedBox(height: 28),
-
-                          // 4. Recent Completions List
-                          RecentCompletionsSection(
-                            completedTickets: _queueStatus.recentCompleted,
-                            onViewAll: () {
-                              ScaffoldMessenger.of(context).showSnackBar(
-                                const SnackBar(
-                                  content: Text('Viewing complete queue history'),
-                                  behavior: SnackBarBehavior.floating,
-                                ),
-                              );
-                            },
-                          ),
-
-                          const SizedBox(height: 32),
-                        ],
-                      ],
+                    // 2. User's Active Ticket Card
+                    UserTicketCard(
+                      ticket: _queueStatus.userTicket,
+                      hasError: _queueStatus.hasUserTicketsError,
+                      errorMessage:
+                          _queueStatus.userTicketsErrorMessage ??
+                          _queueStatus.errorMessage,
+                      onRetry: () => _loadQueueData(isRetry: true),
                     ),
+
+                    const SizedBox(height: 18),
+
+                    // 3. Side-by-Side Metric Cards: Estimated Call & Live Capacity
+                    if (!_queueStatus.hasLiveStatusError) ...[
+                      QueueMetricCards(
+                        estimatedCallTime:
+                            _queueStatus.estimatedCallTimeFormatted,
+                        liveCapacity: _queueStatus.capacityLabel,
+                      ),
+
+                      const SizedBox(height: 28),
+
+                      // 4. Recent Completions List
+                      RecentCompletionsSection(
+                        completedTickets: _queueStatus.recentCompleted,
+                        onViewAll: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('Viewing complete queue history'),
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        },
+                      ),
+
+                      const SizedBox(height: 32),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+      bottomNavigationBar: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+            child: Align(
+              alignment: Alignment.centerRight,
+              child: FloatingActionButton.extended(
+                onPressed: _showRequestTicketModal,
+                backgroundColor: const Color(0xFF0047BA),
+                icon: const Icon(
+                  Icons.confirmation_number_outlined,
+                  color: Colors.white,
+                ),
+                label: const Text(
+                  'Get Ticket',
+                  style: TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
                   ),
                 ),
-      bottomNavigationBar: CustomBottomNav(
-        currentIndex: _selectedNavIndex,
-        onTap: (index) {
-          if (index == 0) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const DashboardScreen()),
-            );
-          } else if (index == 2) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const DocumentsScreen()),
-            );
-          } else if (index == 3) {
-            Navigator.of(context).pushReplacement(
-              MaterialPageRoute(builder: (_) => const ScheduleScreen()),
-            );
-          }
-        },
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: _showRequestTicketModal,
-        backgroundColor: const Color(0xFF0047BA),
-        icon: const Icon(
-          Icons.confirmation_number_outlined,
-          color: Colors.white,
-        ),
-        label: const Text(
-          'Get Ticket',
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
+              ),
+            ),
+          ),
+          CustomBottomNav(
+            currentIndex: _selectedNavIndex,
+            onTap: (index) {
+              if (index == 0) {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (_) => const DashboardScreen()),
+                );
+              } else if (index == 2) {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (_) => const DocumentsScreen()),
+                );
+              } else if (index == 3) {
+                Navigator.of(context).pushReplacement(
+                  MaterialPageRoute(builder: (_) => const ScheduleScreen()),
+                );
+              }
+            },
+          ),
+        ],
       ),
     );
   }
@@ -384,7 +400,8 @@ class _QueueScreenState extends State<QueueScreen> {
                 ),
                 const SizedBox(height: 2),
                 Text(
-                  _queueStatus.liveStatusErrorMessage ?? 'Unable to connect to live queue desk.',
+                  _queueStatus.liveStatusErrorMessage ??
+                      'Unable to connect to live queue desk.',
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
@@ -467,7 +484,9 @@ class _QueueScreenState extends State<QueueScreen> {
               ),
               const SizedBox(height: 20),
               OutlinedButton.icon(
-                onPressed: _isRetrying ? null : () => _loadQueueData(isRetry: true),
+                onPressed: _isRetrying
+                    ? null
+                    : () => _loadQueueData(isRetry: true),
                 icon: _isRetrying
                     ? const SizedBox(
                         width: 18,

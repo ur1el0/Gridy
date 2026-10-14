@@ -29,6 +29,16 @@
 - Run Flutter analysis and the full mobile test suite; rerun targeted M79 resident regression tests.
 - Run `git diff --check`, record actual results in `STATUS.md`, and prepare a conventional commit and PR title/body. Do not push or open a PR.
 
+### M4 — Redmi Visual Corrective Pass (added 2026-10-14)
+
+- **Evidence:** On the Redmi 12C (720×1650, 320 dpi / 360×825 logical pixels, Android 14, text scale 0.81), the Queue screen's fixed “Get Ticket” action covered the trailing words of the empty “Recent Completions” message.
+- **Objective:** Keep the queue action accessible while reserving screen space so the action never paints over queue content; keep the shared resident navigation within the measured 360 dp width.
+- **Scope:** Queue screen layout, responsive bottom-navigation item layout, and a focused widget regression test. Keep API calls, ticket action, queue states, and navigation destinations unchanged.
+- **Validation:** Run the queue screen test with a phone-sized logical viewport, full mobile tests, `flutter analyze`, `git diff --check`, and repeat the on-device Queue capture.
+- **Risk:** A fixed action shelf reduces the visible scroll viewport; retain the existing scroll behavior and bottom navigation.
+- **Test calibration:** The initial widget run used Flutter's default text scale 1.0 and reported two flex overflows not present in the device capture. Re-run at the measured device text scale 0.81 before using the overlap assertion.
+- **Follow-up evidence:** With the phone-sized 360×825 logical viewport and measured text scale 0.81, the widget test reproduced the CTA overlap and reported a bottom-navigation `RenderFlex` overflow. The corrective pass now includes a responsive navigation row.
+
 ## 3. Validation Commands
 
 ```bash

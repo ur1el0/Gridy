@@ -91,7 +91,8 @@ class UserTicketCard extends StatelessWidget {
       );
     }
 
-    final bool hasTicket = ticket != null && !ticket!.isCompleted && !ticket!.isCancelled;
+    final bool hasTicket =
+        ticket != null && !ticket!.isCompleted && !ticket!.isCancelled;
 
     return Container(
       width: double.infinity,
@@ -111,40 +112,48 @@ class UserTicketCard extends StatelessWidget {
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
           // Left Ticket Details
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text(
-                'YOUR TICKET',
-                style: TextStyle(
-                  color: Color(0xFF64748B),
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0.8,
-                ),
-              ),
-              const SizedBox(height: 4),
-              Text(
-                hasTicket ? ticket!.ticketNumber : 'No Active Ticket',
-                style: TextStyle(
-                  color: hasTicket ? AppColors.primaryNavy : const Color(0xFF94A3B8),
-                  fontSize: hasTicket ? 28 : 20,
-                  fontWeight: FontWeight.w800,
-                  letterSpacing: -0.5,
-                ),
-              ),
-              if (hasTicket && ticket!.serviceType.isNotEmpty) ...[
-                const SizedBox(height: 2),
-                Text(
-                  ticket!.serviceType,
-                  style: const TextStyle(
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'YOUR TICKET',
+                  style: TextStyle(
                     color: Color(0xFF64748B),
-                    fontSize: 12.5,
-                    fontWeight: FontWeight.w500,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0.8,
                   ),
                 ),
+                const SizedBox(height: 4),
+                Text(
+                  hasTicket ? ticket!.ticketNumber : 'No Active Ticket',
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: hasTicket
+                        ? AppColors.primaryNavy
+                        : const Color(0xFF94A3B8),
+                    fontSize: hasTicket ? 28 : 20,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                if (hasTicket && ticket!.serviceType.isNotEmpty) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    ticket!.serviceType,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      color: Color(0xFF64748B),
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
               ],
-            ],
+            ),
           ),
 
           // Right Ticket Icon Container

@@ -3,11 +3,11 @@
 ## 1. Executive Summary
 
 - **Task ID:** `m88-lightweight-mobile-ui`
-- **State:** Complete
-- **Current Milestone:** M3 — Verification and Handoff
+- **State:** In Progress
+- **Current Milestone:** M4 — Redmi Visual Corrective Pass
 - **Implementer:** Codex (user-directed)
 - **Branch:** `feat/mobile-ui-refresh-lightweight`
-- **Worktree:** `/tmp/gridy-mobile-ui-refresh`
+- **Worktree:** `/home/dokja/vsc-fedora/all/Projects/django-projects/Gridy/.tmp-m88-device`
 
 ## 2. Progress
 
@@ -16,6 +16,7 @@
 | M1 — Shared Theme and Primitives | Complete | Expanded the native Material 3 theme and added shared spacing, radius, surface, and page-heading primitives. |
 | M2 — Resident Core Screens | Complete | Updated dashboard, queue, schedule, documents, and shared login/registration controls without changing service or route behavior. |
 | M3 — Verification and Handoff | Complete | Analysis and full/targeted Flutter suites passed; no package or lockfile changes. |
+| M4 — Redmi Visual Corrective Pass | In Progress | Fixed the measured empty-queue overlap; calibrated widget regression and full Flutter checks pass. The phone disconnected before the patched APK could be rechecked. |
 
 ## 3. Files
 
@@ -45,3 +46,22 @@
 - `git diff -- mobile/pubspec.yaml mobile/pubspec.lock` — clean; no UI dependencies added.
 - Flutter tests required loopback binding; the sandbox denied it on the first run and the same command passed when rerun with the approved test-runner permission.
 - A physical-device visual and assistive-technology audit was not available in this environment.
+
+### M4 verification update — 2026-10-14
+
+- The focused empty-queue test at 360×825 logical pixels and text scale 0.81 passes, including the assertion that the empty message ends above the “Get Ticket” action.
+- Full mobile suite: 113 passed.
+- `flutter analyze --no-pub`: no issues found.
+- `git diff --check`: pending final diff review.
+- The corrected debug APK build is in progress. ADB currently reports no attached devices, so the corrected rendering and removal of the temporary `.m88test` app cannot yet be confirmed on the handset.
+- TalkBack verification remains pending.
+
+## 5. M4 — Redmi Visual Corrective Pass
+
+- **Finding:** The test app successfully logged in on the Redmi 12C (Android 14, 4 GB RAM). Queue tab capture showed the “Get Ticket” floating action button obscuring the right end of “No completed queue tickets yet today.”
+- **Device evidence:** Synthetic local fixture only; auth, profile, announcements, activities, queue status, and document-request API calls returned HTTP 200. The installed production-named package `com.example.mobile` was not replaced; the device run uses `.m88test`.
+- **Plan:** Add a widget regression at a phone-sized viewport, then reserve layout space for the queue action and repeat the visual check. No API or service behavior changes.
+- **Accessibility:** Physical screen-reader/TalkBack verification remains pending; this pass covers visual reflow only.
+- **Test calibration:** The first widget run at default text scale 1.0 reported a bottom-navigation and completion-header flex overflow. The Redmi's measured text scale is 0.81; the test now uses that value so it reproduces the actual screen conditions before asserting the observed overlap.
+- **Regression result:** Before the fix, 360×825 logical pixels and text scale 0.81 reproduced the action overlap and a 30-pixel `CustomBottomNav` horizontal overflow. After the fix, the focused test passes and the full 113-test suite remains green.
+- **Physical recheck:** Not completed: after the code fix, `adb devices -l` returned no attached devices. Do not treat the patched APK as visually verified on hardware until the device is available again.
