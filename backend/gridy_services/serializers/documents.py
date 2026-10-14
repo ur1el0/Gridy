@@ -152,6 +152,7 @@ class DocumentRequestReviewSerializer(FeePolicyValidationMixin, serializers.Mode
     fee_assessment_status = serializers.ChoiceField(
         choices=DocumentRequest.FeeAssessmentStatus.choices,
         required=False,
+        read_only=True,
     )
 
     class Meta:

@@ -230,6 +230,17 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
             fee_assessment_status_input = request.data.get("fee_assessment_status")
             statutory_exempt_flag = request.data.get("statutory_exempt") or request.data.get("is_statutory_exempt")
 
+            if (
+                fee_assessment_status_input is not None
+                and fee_assessment_status_input
+                != DocumentRequest.FeeAssessmentStatus.STATUTORY_EXEMPT
+            ):
+                raise ValidationError({
+                    "fee_assessment_status": (
+                        "Assessment status is derived from fee assessment inputs and cannot be set directly."
+                    )
+                })
+
             if fee_assessment_status_input == DocumentRequest.FeeAssessmentStatus.STATUTORY_EXEMPT or statutory_exempt_flag:
                 # Staff explicitly grants statutory exemption under RA 11261
                 is_eligible, ineligibility_reason = check_ra11261_eligibility(
@@ -240,13 +251,17 @@ class DocumentRequestViewSet(viewsets.ModelViewSet):
                 if not is_eligible:
                     raise ValidationError({"fee_assessment_status": ineligibility_reason})
 
+                statutory_waiver_reason = (fee_waiver_reason_input or "").strip()
+                if not statutory_waiver_reason:
+                    raise ValidationError({
+                        "fee_waiver_reason": "A written verification reason is required for an RA 11261 exemption."
+                    })
+
                 document_request.fee_amount = Decimal("0.00")
                 document_request.fee_assessment_status = DocumentRequest.FeeAssessmentStatus.STATUTORY_EXEMPT
                 document_request.fee_assessed_by = request.user
                 document_request.fee_assessed_at = timezone.now()
-                document_request.fee_waiver_reason = (
-                    fee_waiver_reason_input or "RA 11261 First-Time Jobseeker statutory exemption verified."
-                ).strip()
+                document_request.fee_waiver_reason = statutory_waiver_reason
                 document_request.payment_status = DocumentRequest.PaymentStatus.NOT_REQUIRED
                 log_action(
                     user=request.user,

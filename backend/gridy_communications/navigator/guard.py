@@ -400,10 +400,12 @@ def contains_sensitive_data(text: str) -> bool:
     for pattern in SENSITIVE_SOURCE_PATTERNS:
         if pattern.search(text):
             return True
-    for pattern in SOURCE_INJECTION_PATTERNS:
-        if pattern.search(text):
-            return True
-    return False
+    return contains_source_prompt_injection(text)
+
+
+def contains_source_prompt_injection(text: str) -> bool:
+    """Return whether untrusted source text contains a known prompt-injection phrase."""
+    return bool(text) and any(pattern.search(text) for pattern in SOURCE_INJECTION_PATTERNS)
 
 
 def is_source_content_safe(text: str) -> bool:

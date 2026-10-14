@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 /// Side-by-side metric summary cards displaying estimated wait time and live desk capacity
 class QueueMetricCards extends StatelessWidget {
-  final String estimatedCallTime;
+  final String? estimatedCallTime;
   final String liveCapacity;
 
   const QueueMetricCards({
@@ -18,7 +18,10 @@ class QueueMetricCards extends StatelessWidget {
         // 1. Estimated Call Card
         Expanded(
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 16.0,
+            ),
             decoration: BoxDecoration(
               color: const Color(0xFFEFF4FA),
               borderRadius: BorderRadius.circular(20),
@@ -43,10 +46,10 @@ class QueueMetricCards extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 Text(
-                  estimatedCallTime,
-                  style: const TextStyle(
+                  estimatedCallTime ?? 'Not available',
+                  style: TextStyle(
                     color: Color(0xFF0F172A),
-                    fontSize: 20,
+                    fontSize: estimatedCallTime == null ? 16 : 20,
                     fontWeight: FontWeight.w900,
                     letterSpacing: -0.4,
                   ),
@@ -61,7 +64,10 @@ class QueueMetricCards extends StatelessWidget {
         // 2. Live Capacity Card
         Expanded(
           child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
+            padding: const EdgeInsets.symmetric(
+              horizontal: 16.0,
+              vertical: 16.0,
+            ),
             decoration: BoxDecoration(
               color: const Color(0xFFFEECE6),
               borderRadius: BorderRadius.circular(20),
