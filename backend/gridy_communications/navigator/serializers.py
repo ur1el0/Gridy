@@ -85,7 +85,7 @@ class NavigatorQueryResponseSerializer(serializers.Serializer):
     reason = serializers.CharField(
         allow_null=True,
         required=False,
-        help_text="Machine-readable classification code (privacy_concern, no_eligible_sources, invalid_citations, feature_disabled).",
+        help_text="Machine-readable classification code (privacy_concern, unsupported_query, no_eligible_sources, invalid_citations, feature_disabled).",
     )
     sources = NavigatorSourceSerializer(
         many=True,

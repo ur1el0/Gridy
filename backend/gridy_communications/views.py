@@ -29,6 +29,7 @@ from gridy_communications.serializers import (
 from gridy_communications.tasks import async_send_fcm_topic_notification
 from gridy_communications.navigator import (
     check_privacy_and_intent,
+    check_unsupported_local_query,
     retrieve_public_sources,
     build_escalation_data,
     format_available_sources_fallback,
@@ -262,6 +263,16 @@ class NavigatorQueryView(APIView):
                 "status": "abstained",
                 "answer": guard_result.message,
                 "reason": "privacy_concern",
+                "sources": [],
+                "escalation": escalation,
+            }
+            return Response(response_data, status=status.HTTP_200_OK)
+        unsupported_result = check_unsupported_local_query(query)
+        if unsupported_result.triggered:
+            response_data = {
+                "status": "abstained",
+                "answer": unsupported_result.message,
+                "reason": unsupported_result.reason,
                 "sources": [],
                 "escalation": escalation,
             }
