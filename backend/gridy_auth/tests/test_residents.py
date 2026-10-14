@@ -1,4 +1,5 @@
-from django.core import mail
+from unittest.mock import patch
+
 from django.urls import reverse
 from rest_framework import status
 
@@ -103,7 +104,8 @@ class ResidentEmailUpdateAPITests(IsolatedAuthAPITestCase):
         self.resident_user.refresh_from_db()
         self.assertEqual(self.resident_user.email, "")
 
-    def test_password_reset_is_not_sent_when_email_is_shared(self):
+    @patch("gridy_auth.views.password_reset.send_password_reset_email.delay")
+    def test_password_reset_is_not_sent_when_email_is_shared(self, mock_dispatch):
         shared_email = "shared.resident@example.com"
         self.resident_user.email = shared_email
         self.resident_user.save(update_fields=["email"])
@@ -124,9 +126,10 @@ class ResidentEmailUpdateAPITests(IsolatedAuthAPITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(mail.outbox), 0)
+        mock_dispatch.assert_not_called()
 
-    def test_password_reset_email_uses_kapitbayan_brand(self):
+    @patch("gridy_auth.views.password_reset.send_password_reset_email.delay")
+    def test_password_reset_email_is_dispatched(self, mock_dispatch):
         self.resident_user.email = "reset.resident@example.com"
         self.resident_user.save(update_fields=["email"])
         self.client.force_authenticate(user=None)
@@ -138,8 +141,10 @@ class ResidentEmailUpdateAPITests(IsolatedAuthAPITestCase):
         )
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
-        self.assertEqual(len(mail.outbox), 1)
-        self.assertEqual(mail.outbox[0].subject, "KapitBayan: Password Reset Request")
+        mock_dispatch.assert_called_once()
+        recipient, reset_link = mock_dispatch.call_args.args
+        self.assertEqual(recipient, self.resident_user.email)
+        self.assertIn("/reset-password?uidb64=", reset_link)
 
     def test_resident_cannot_use_directory_endpoint_to_set_email(self):
         self.client.force_authenticate(user=self.resident_user)
