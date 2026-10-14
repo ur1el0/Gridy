@@ -1,9 +1,9 @@
 from decimal import Decimal
 from io import BytesIO
-from unittest.mock import patch
 
 from django.core.files.storage import default_storage
 from django.core.files.uploadedfile import SimpleUploadedFile
+from django.db import transaction
 from django.urls import reverse
 from django.utils import timezone
 from PIL import Image
@@ -11,6 +11,7 @@ from rest_framework import status
 
 from gridy_audit.models import AuditLog
 from gridy_auth.models import Barangay, RefreshSession, Resident, User
+from gridy_auth.lifecycle import erase_user_account
 from gridy_services.models import AidRequest, DocumentRequest
 from .base import IsolatedAuthAPITestCase
 
@@ -96,7 +97,8 @@ class AccountErasureLifecycleTests(IsolatedAuthAPITestCase):
         self.assertTrue(default_storage.exists(philsys_file_name))
         self.assertTrue(default_storage.exists(billing_file_name))
 
-        response = self.client.delete(reverse("auth_me"))
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.delete(reverse("auth_me"))
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
         # User and profile are destroyed
@@ -138,7 +140,8 @@ class AccountErasureLifecycleTests(IsolatedAuthAPITestCase):
         self.assertTrue(default_storage.exists(philsys_file_name))
 
         url = reverse("resident-detail", kwargs={"pk": self.resident.id})
-        response = self.client.delete(url)
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.delete(url)
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
         self.assertFalse(User.objects.filter(username="resident_maria").exists())
@@ -170,7 +173,8 @@ class AccountErasureLifecycleTests(IsolatedAuthAPITestCase):
         self.assertTrue(default_storage.exists(pedro_file))
 
         url = reverse("reject_resident", kwargs={"pk": pending_resident.id})
-        response = self.client.delete(url, {"rejection_reason": "Blurry ID photo"}, format="json")
+        with self.captureOnCommitCallbacks(execute=True):
+            response = self.client.delete(url, {"rejection_reason": "Blurry ID photo"}, format="json")
         self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
 
         self.assertFalse(User.objects.filter(username="pending_pedro").exists())
@@ -182,3 +186,43 @@ class AccountErasureLifecycleTests(IsolatedAuthAPITestCase):
                 description__icontains="Rejected pending resident account for Pedro Penduko"
             ).exists()
         )
+
+    def test_identity_files_are_deleted_only_after_commit(self):
+        self.client.force_authenticate(user=self.resident_user)
+        philsys_file_name = self.resident.philsys_id_photo.name
+        billing_file_name = self.resident.utility_billing_photo.name
+
+        with self.captureOnCommitCallbacks(execute=False) as callbacks:
+            response = self.client.delete(reverse("auth_me"))
+            self.assertEqual(response.status_code, status.HTTP_204_NO_CONTENT)
+            self.assertTrue(default_storage.exists(philsys_file_name))
+            self.assertTrue(default_storage.exists(billing_file_name))
+
+        self.assertEqual(len(callbacks), 2)
+        for callback in callbacks:
+            callback()
+
+        self.assertFalse(default_storage.exists(philsys_file_name))
+        self.assertFalse(default_storage.exists(billing_file_name))
+
+    def test_database_rollback_preserves_identity_files_and_account(self):
+        resident_user_id = self.resident_user.pk
+        resident_id = self.resident.pk
+        philsys_file_name = self.resident.philsys_id_photo.name
+        billing_file_name = self.resident.utility_billing_photo.name
+
+        with self.captureOnCommitCallbacks(execute=False) as callbacks:
+            with self.assertRaisesRegex(RuntimeError, "force erasure rollback"):
+                with transaction.atomic():
+                    erase_user_account(
+                        self.resident_user,
+                        "Test account erasure rollback.",
+                        actor=self.resident_user,
+                    )
+                    raise RuntimeError("force erasure rollback")
+
+        self.assertEqual(callbacks, [])
+        self.assertTrue(User.objects.filter(pk=resident_user_id).exists())
+        self.assertTrue(Resident.objects.filter(pk=resident_id).exists())
+        self.assertTrue(default_storage.exists(philsys_file_name))
+        self.assertTrue(default_storage.exists(billing_file_name))
