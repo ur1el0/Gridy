@@ -54,7 +54,7 @@
 - `flutter analyze --no-pub`: no issues found.
 - `git diff --check`: clean.
 - `flutter build apk --debug --no-pub --target-platform android-arm64 --dart-define=API_BASE_URL=http://127.0.0.1:18000/api/v1/`: passed. The temporary `.m88test` application ID/Firebase configuration used for the test build is excluded from the PR.
-- ADB reports no attached devices, so the corrected rendering and removal of the temporary `.m88test` app cannot yet be confirmed on the handset.
+- Physical recheck on the Redmi 12C passed: at 360×825 logical pixels and text scale 0.81, the empty Recent Completions message is fully visible above the “Get Ticket” action; the action sits above the navigation and all four navigation labels fit. The app used the side-by-side `.m88test` package; the installed `com.example.mobile` app was not replaced.
 - TalkBack verification remains pending.
 
 ## 5. M4 — Redmi Visual Corrective Pass
@@ -65,4 +65,4 @@
 - **Accessibility:** Physical screen-reader/TalkBack verification remains pending; this pass covers visual reflow only.
 - **Test calibration:** The first widget run at default text scale 1.0 reported a bottom-navigation and completion-header flex overflow. The Redmi's measured text scale is 0.81; the test now uses that value so it reproduces the actual screen conditions before asserting the observed overlap.
 - **Regression result:** Before the fix, 360×825 logical pixels and text scale 0.81 reproduced the action overlap and a 30-pixel `CustomBottomNav` horizontal overflow. After the fix, the focused test passes and the full 113-test suite remains green.
-- **Physical recheck:** Not completed: after the code fix, `adb devices -l` returned no attached devices. Do not treat the patched APK as visually verified on hardware until the device is available again.
+- **Physical recheck:** Passed after reconnecting the device. The patched `.m88test` APK displayed the empty queue message without overlap on the Redmi 12C at its measured 360×825 logical viewport and 0.81 text scale. Temporary test app, USB reverse mapping, and server cleanup are in progress.
