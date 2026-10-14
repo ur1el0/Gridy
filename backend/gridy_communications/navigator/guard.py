@@ -71,12 +71,6 @@ INDIGENCY_QUERY_RE = re.compile(
     r"sertipiko\s+ng\s+indigency)\b",
     re.IGNORECASE,
 )
-LOCAL_REQUIREMENT_QUERY_RE = re.compile(
-    r"\b(?:requirement|requirements|document|documents|paper|papers|proof|"
-    r"kailangan|papel|papeles|what\s+do\s+i\s+need|how\s+to\s+apply|"
-    r"paano\s+(?:kumuha|makakuha|mag-apply)|saan\s+(?:kumuha|mag-apply))\b",
-    re.IGNORECASE,
-)
 LOCAL_FEE_QUERY_RE = re.compile(
     r"\b(?:fee|fees|cost|price|charge|charges|pay|paid|payment|bayad|magkano|"
     r"pila|presyo|libre|free)\b",
@@ -106,12 +100,12 @@ def check_unsupported_local_query(query: str) -> GuardResult:
                 triggered=True,
                 reason="unsupported_query",
                 message=(
-                    "Ordinary barangay clearance fees are governed by the local Sangguniang Barangay "
-                    "tax ordinance. I can’t verify the current amount here; please confirm it "
-                    "with the Barangay Hall or Treasurer. Ang karaniwang bayad sa barangay "
-                    "clearance ay itinatakda ng lokal na ordinansa ng Sangguniang Barangay. "
-                    "Hindi ko ma-verify ang kasalukuyang halaga; magtanong sa Barangay Hall "
-                    "o Treasurer."
+                    "Ordinary barangay clearance fees and accepted payment methods are locally "
+                    "determined. I can’t verify the current amount or payment options here; "
+                    "please confirm them with the Barangay Hall or Treasurer. Ang karaniwang "
+                    "bayad sa barangay clearance at mga tinatanggap na paraan ng pagbabayad "
+                    "ay itinatakda sa lokal na ordinansa at patakaran. Hindi ko ma-verify ang "
+                    "kasalukuyang halaga o payment options; magtanong sa Barangay Hall o Treasurer."
                 ),
             )
 
@@ -128,10 +122,7 @@ def check_unsupported_local_query(query: str) -> GuardResult:
             ),
         )
 
-    if INDIGENCY_QUERY_RE.search(normalized) and (
-        LOCAL_REQUIREMENT_QUERY_RE.search(normalized)
-        or LOCAL_FEE_QUERY_RE.search(normalized)
-    ):
+    if INDIGENCY_QUERY_RE.search(normalized) and LOCAL_FEE_QUERY_RE.search(normalized):
         return GuardResult(
             triggered=True,
             reason="unsupported_query",

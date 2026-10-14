@@ -1556,9 +1556,14 @@ class NavigatorAPITestCase(APITestCase):
             mock_get_provider.reset_mock()
             response = self.client.post(self.canonical_url, {"query": query_text})
             self.assertEqual(response.status_code, status.HTTP_200_OK)
-            # Must NOT be rejected by privacy guard
-            self.assertFalse(str(response.data.get("reason", "")).startswith("privacy_guard_"))
-            mock_get_provider.assert_called()
+            # These are public questions, not resident-data probes. Local fee/payment
+            # facts still abstain deterministically before provider invocation.
+            self.assertNotEqual(response.data.get("reason"), "privacy_concern")
+            if response.data.get("reason") == "unsupported_query":
+                self.assertEqual(response.data["status"], "abstained")
+                mock_get_provider.assert_not_called()
+            else:
+                mock_get_provider.assert_called()
 
     def test_source_screening_omits_sensitive_records_and_preserves_public_data(self):
         """Opted-in announcements and activities with sensitive data are omitted; hotlines and catalog stay (REV-16)."""
