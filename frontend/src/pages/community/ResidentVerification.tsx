@@ -144,6 +144,7 @@ export default function ResidentVerification() {
                 <div className="flex items-center gap-2 w-full sm:w-auto">
                     <Filter className="w-4 h-4 text-slate-400" />
                     <select 
+                        aria-label="Filter residents by purok"
                         value={filterPurok}
                         onChange={(e) => setFilterPurok(e.target.value)}
                         className="w-full sm:w-auto px-4 py-2 border border-slate-200 rounded-lg text-sm bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary cursor-pointer transition-all"

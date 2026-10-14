@@ -74,7 +74,7 @@ export const ResidentsHub: React.FC = () => {
         <div className="space-y-6 animate-in fade-in duration-300">
             <div>
                 <h2 className="text-2xl font-bold text-slate-900 tracking-tight">Residents & Community Center</h2>
-                <p className="text-sm text-slate-500 mt-1">
+                <p className="text-sm text-slate-600 mt-1">
                     Manage the official resident registry, review PhilSys verifications, and import census rosters.
                 </p>
             </div>
