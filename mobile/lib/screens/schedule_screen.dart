@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../core/network/api_client.dart';
 import '../core/theme/app_colors.dart';
+import '../core/theme/app_tokens.dart';
 import '../models/activity_schedule_model.dart';
 import '../models/document_request_model.dart';
 import '../models/user_model.dart';
@@ -12,6 +13,7 @@ import '../widgets/calendar_day_strip.dart';
 import '../widgets/custom_bottom_nav.dart';
 import '../widgets/schedule_event_card.dart';
 import '../widgets/schedule_detail_dialogs.dart';
+import '../widgets/app_surface.dart';
 import 'dashboard_screen.dart';
 import 'documents_screen.dart';
 import 'queue_screen.dart';
@@ -227,7 +229,7 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
     final eventDates = _data.activities.map((a) => a.eventDatetime).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF8FAFC),
+      backgroundColor: AppColors.background,
       appBar: PreferredSize(
         preferredSize: const Size.fromHeight(64),
         child: SafeArea(
@@ -312,12 +314,18 @@ class _ScheduleScreenState extends State<ScheduleScreen> {
                   child: SingleChildScrollView(
                     physics: const AlwaysScrollableScrollPhysics(),
                     padding: const EdgeInsets.symmetric(
-                      horizontal: 20.0,
-                      vertical: 12.0,
+                      horizontal: AppSpacing.pageHorizontal,
+                      vertical: AppSpacing.pageVertical,
                     ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        const AppPageHeading(
+                          eyebrow: 'COMMUNITY CALENDAR',
+                          title: 'Schedule',
+                        ),
+                        const SizedBox(height: 20),
+
                         // 1. Calendar Day Strip Header
                         CalendarDayStrip(
                           selectedDate: _selectedDate,

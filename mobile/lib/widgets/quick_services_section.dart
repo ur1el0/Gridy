@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../core/theme/app_colors.dart';
+import 'app_surface.dart';
 
 /// Quick services section providing immediate access to common resident actions
 class QuickServicesSection extends StatelessWidget {
@@ -26,15 +27,7 @@ class QuickServicesSection extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Quick Services',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: AppColors.textPrimary,
-            letterSpacing: -0.3,
-          ),
-        ),
+        Text('Quick Services', style: Theme.of(context).textTheme.titleLarge),
         const SizedBox(height: 12),
 
         // Row 1: Request Document & Report Issue
@@ -47,7 +40,7 @@ class QuickServicesSection extends StatelessWidget {
                 onTap: onRequestDocument,
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
             Expanded(
               child: _QuickServiceCard(
                 icon: Icons.pest_control_outlined,
@@ -67,7 +60,7 @@ class QuickServicesSection extends StatelessWidget {
                 onTap: onRequestAid,
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
             Expanded(
               child: _QuickServiceCard(
                 icon: Icons.auto_awesome_outlined,
@@ -89,7 +82,7 @@ class QuickServicesSection extends StatelessWidget {
                 onTap: onBarangayHotline,
               ),
             ),
-            const SizedBox(width: 14),
+            const SizedBox(width: 12),
             Expanded(
               child: _QuickServiceCard(
                 icon: Icons.history_outlined,
@@ -117,56 +110,47 @@ class _QuickServiceCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      height: 90,
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF0F172A).withValues(alpha: 0.03),
-            blurRadius: 10,
-            offset: const Offset(0, 3),
-          ),
-        ],
-        border: Border.all(color: const Color(0xFFF1F5F9), width: 1.2),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        borderRadius: BorderRadius.circular(16),
-        child: InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(16),
-          child: Padding(
-            padding: const EdgeInsets.symmetric(
-              horizontal: 14.0,
-              vertical: 12.0,
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    return ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: 104),
+      child: AppSurface(
+        onTap: onTap,
+        padding: const EdgeInsets.all(14),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Container(
-                  padding: const EdgeInsets.all(6),
+                DecoratedBox(
                   decoration: BoxDecoration(
-                    color: const Color(0xFFEFF6FF),
-                    borderRadius: BorderRadius.circular(8),
+                    color: AppColors.primaryNavy.withValues(alpha: 0.08),
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  child: Icon(icon, color: AppColors.primaryNavy, size: 18),
+                  child: SizedBox(
+                    width: 36,
+                    height: 36,
+                    child: Icon(icon, color: AppColors.primaryNavy, size: 20),
+                  ),
                 ),
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontSize: 13.5,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textPrimary,
-                  ),
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
+                const Icon(
+                  Icons.chevron_right_rounded,
+                  size: 20,
+                  color: AppColors.textMuted,
                 ),
               ],
             ),
-          ),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              style: Theme.of(context).textTheme.labelLarge?.copyWith(
+                color: AppColors.textPrimary,
+                height: 1.25,
+              ),
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+            ),
+          ],
         ),
       ),
     );

@@ -225,6 +225,41 @@ class FeeAssessmentWorkflowAndRBACTests(TestCase):
         self.assertIn("Approved zero-fee waiver", log_entry.description)
         self.assertIn("financial assistance referral", log_entry.description)
 
+    def test_status_only_waiver_cannot_bypass_reason_provenance_or_readiness_gate(self):
+        doc = DocumentRequest.objects.create(
+            user=self.resident,
+            barangay=self.barangay,
+            document_type="Barangay Clearance",
+            purpose="Employment",
+            status=DocumentRequest.Status.PROCESSING,
+            fee_amount=Decimal("0.00"),
+            fee_assessment_status=DocumentRequest.FeeAssessmentStatus.AWAITING_ASSESSMENT,
+        )
+        self.client.force_login(self.admin)
+        initial_audit_count = AuditLog.objects.count()
+
+        response = self.client.patch(
+            reverse("document-request-validate", args=[doc.pk]),
+            {
+                "fee_assessment_status": DocumentRequest.FeeAssessmentStatus.WAIVED,
+                "status": DocumentRequest.Status.READY_FOR_PICKUP,
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("fee_assessment_status", response.data)
+        doc.refresh_from_db()
+        self.assertEqual(doc.status, DocumentRequest.Status.PROCESSING)
+        self.assertEqual(
+            doc.fee_assessment_status,
+            DocumentRequest.FeeAssessmentStatus.AWAITING_ASSESSMENT,
+        )
+        self.assertIsNone(doc.fee_assessed_by)
+        self.assertIsNone(doc.fee_assessed_at)
+        self.assertEqual(doc.fee_waiver_reason, "")
+        self.assertEqual(AuditLog.objects.count(), initial_audit_count)
+
     def test_statutory_exempt_request_cannot_have_fee_added(self):
         doc = DocumentRequest.objects.create(
             user=self.resident,
@@ -440,6 +475,132 @@ class StatutoryExemptionPolicyAndRegressionTests(TestCase):
         )
         self.assertEqual(doc.payment_status, DocumentRequest.PaymentStatus.NOT_REQUIRED)
 
+    def test_ra11261_requires_explicit_staff_justification(self):
+        doc = DocumentRequest.objects.create(
+            user=self.resident,
+            barangay=self.barangay,
+            document_type="Barangay Clearance",
+            purpose="First Time Jobseeker under RA 11261",
+            status=DocumentRequest.Status.PROCESSING,
+            fee_amount=Decimal("0.00"),
+            fee_assessment_status=DocumentRequest.FeeAssessmentStatus.AWAITING_ASSESSMENT,
+        )
+        self.client.force_login(self.admin)
+        initial_audit_count = AuditLog.objects.count()
+
+        response = self.client.patch(
+            reverse("document-request-validate", args=[doc.pk]),
+            {"fee_assessment_status": DocumentRequest.FeeAssessmentStatus.STATUTORY_EXEMPT},
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("fee_waiver_reason", response.data)
+        doc.refresh_from_db()
+        self.assertEqual(
+            doc.fee_assessment_status,
+            DocumentRequest.FeeAssessmentStatus.AWAITING_ASSESSMENT,
+        )
+        self.assertEqual(doc.fee_waiver_reason, "")
+        self.assertEqual(AuditLog.objects.count(), initial_audit_count)
+
+    def test_ra11261_rejects_non_clearance_document_type(self):
+        doc = DocumentRequest.objects.create(
+            user=self.resident,
+            barangay=self.barangay,
+            document_type="Police Clearance",
+            purpose="First Time Jobseeker under RA 11261",
+            status=DocumentRequest.Status.PROCESSING,
+            fee_amount=Decimal("0.00"),
+            fee_assessment_status=DocumentRequest.FeeAssessmentStatus.AWAITING_ASSESSMENT,
+        )
+        self.client.force_login(self.admin)
+
+        response = self.client.patch(
+            reverse("document-request-validate", args=[doc.pk]),
+            {
+                "fee_assessment_status": DocumentRequest.FeeAssessmentStatus.STATUTORY_EXEMPT,
+                "fee_waiver_reason": "RA 11261 eligibility verified on file.",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("Barangay Clearance", str(response.data))
+        doc.refresh_from_db()
+        self.assertEqual(
+            doc.fee_assessment_status,
+            DocumentRequest.FeeAssessmentStatus.AWAITING_ASSESSMENT,
+        )
+
+    def test_ra11261_rejects_walk_in_without_linked_resident(self):
+        doc = DocumentRequest.objects.create(
+            user=None,
+            barangay=self.barangay,
+            is_walkin=True,
+            walkin_name="Walk-in Applicant",
+            document_type="Barangay Clearance",
+            purpose="First Time Jobseeker under RA 11261",
+            status=DocumentRequest.Status.PROCESSING,
+            fee_amount=Decimal("0.00"),
+            fee_assessment_status=DocumentRequest.FeeAssessmentStatus.AWAITING_ASSESSMENT,
+        )
+        self.client.force_login(self.admin)
+
+        response = self.client.patch(
+            reverse("document-request-validate", args=[doc.pk]),
+            {
+                "fee_assessment_status": DocumentRequest.FeeAssessmentStatus.STATUTORY_EXEMPT,
+                "fee_waiver_reason": "RA 11261 eligibility verified on file.",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("linked resident", str(response.data).lower())
+        doc.refresh_from_db()
+        self.assertEqual(
+            doc.fee_assessment_status,
+            DocumentRequest.FeeAssessmentStatus.AWAITING_ASSESSMENT,
+        )
+
+    def test_other_statutory_document_does_not_consume_ra11261_one_time_benefit(self):
+        DocumentRequest.objects.create(
+            user=self.resident,
+            barangay=self.barangay,
+            document_type="Certificate of Indigency",
+            purpose="Scholarship",
+            fee_amount=Decimal("0.00"),
+            fee_assessment_status=DocumentRequest.FeeAssessmentStatus.STATUTORY_EXEMPT,
+            status=DocumentRequest.Status.RELEASED,
+        )
+        clearance = DocumentRequest.objects.create(
+            user=self.resident,
+            barangay=self.barangay,
+            document_type="Barangay Clearance",
+            purpose="First Time Jobseeker under RA 11261",
+            fee_amount=Decimal("0.00"),
+            fee_assessment_status=DocumentRequest.FeeAssessmentStatus.AWAITING_ASSESSMENT,
+            status=DocumentRequest.Status.PROCESSING,
+        )
+        self.client.force_login(self.admin)
+
+        response = self.client.patch(
+            reverse("document-request-validate", args=[clearance.pk]),
+            {
+                "fee_assessment_status": DocumentRequest.FeeAssessmentStatus.STATUTORY_EXEMPT,
+                "fee_waiver_reason": "RA 11261 first-time jobseeker certification verified.",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        clearance.refresh_from_db()
+        self.assertEqual(
+            clearance.fee_assessment_status,
+            DocumentRequest.FeeAssessmentStatus.STATUTORY_EXEMPT,
+        )
+
     def test_one_time_benefit_restriction_blocks_second_ra11261_statutory_exemption(self):
         """RA 11261 Sec. 5: The benefit is strictly one-time. A resident who has already
         received an RA 11261 statutory fee exemption cannot receive another."""
@@ -447,7 +608,8 @@ class StatutoryExemptionPolicyAndRegressionTests(TestCase):
         DocumentRequest.objects.create(
             user=self.resident,
             barangay=self.barangay,
-            document_type="Barangay Clearance",
+            # Historical free-text labels can contain inconsistent whitespace.
+            document_type="  Barangay   Clearance  ",
             purpose="First Time Jobseeker - First Job",
             fee_amount=Decimal("0.00"),
             fee_assessment_status=DocumentRequest.FeeAssessmentStatus.STATUTORY_EXEMPT,

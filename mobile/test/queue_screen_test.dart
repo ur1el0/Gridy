@@ -363,7 +363,10 @@ void main() {
     // 3. Live Capacity displays 'Optimal'
     expect(find.text('Optimal'), findsOneWidget);
 
-    // 4. Recent Completions displays honest empty placeholder
+    // Missing server wait data is shown as unavailable, not a fabricated time.
+    expect(find.text('Not available'), findsOneWidget);
+
+    // 5. Recent Completions displays honest empty placeholder
     expect(find.text('No completed queue tickets yet today', skipOffstage: false), findsOneWidget);
   });
 }

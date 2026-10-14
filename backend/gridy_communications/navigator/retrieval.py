@@ -15,7 +15,11 @@ from django.utils import timezone
 from gridy_auth.models import Barangay
 from gridy_communications.models import Announcement, ActivitySchedule, EmergencyHotline
 from gridy_communications.navigator.catalog import STATUTORY_CATALOG
-from gridy_communications.navigator.guard import contains_sensitive_data, is_source_content_safe
+from gridy_communications.navigator.guard import (
+    contains_sensitive_data,
+    contains_source_prompt_injection,
+    is_source_content_safe,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -194,30 +198,40 @@ def retrieve_public_sources(barangay_id: int) -> Dict[str, dict]:
     )
     for hot in hotlines:
         source_id = f"hotline:{hot.id}"
+        title = f"{hot.name} ({hot.get_category_display()})"
+        content = (
+            f"Emergency Contact: {hot.name}. Contact Number: {hot.number}. "
+            f"Category: {hot.get_category_display()}."
+        )
+        if contains_source_prompt_injection(f"{title} {content}"):
+            logger.info("Omitted navigator source id=%s due to prompt injection", source_id)
+            continue
         sources[source_id] = {
             "id": source_id,
-            "title": f"{hot.name} ({hot.get_category_display()})",
+            "title": title,
             "category": "hotline",
             "reference": f"Barangay Emergency Hotline #{hot.id}",
             "updated_at": hot.updated_at.isoformat() if hot.updated_at else None,
-            "content": (
-                f"Emergency Contact: {hot.name}. Contact Number: {hot.number}. "
-                f"Category: {hot.get_category_display()}."
-            ),
+            "content": content,
         }
 
     # 5. Verified Barangay Office Contact
     barangay = Barangay.objects.filter(id=barangay_id).first()
     if barangay and is_valid_office_contact(barangay.office_contact):
         source_id = "office_contact"
-        sources[source_id] = {
-            "id": source_id,
-            "title": f"Barangay Hall Office Contact ({barangay.name})",
-            "category": "contact",
-            "reference": "Barangay Official Registry",
-            "updated_at": None,
-            "content": f"Barangay {barangay.name} Office Contact: {barangay.office_contact.strip()}.",
-        }
+        title = f"Barangay Hall Office Contact ({barangay.name})"
+        content = f"Barangay {barangay.name} Office Contact: {barangay.office_contact.strip()}."
+        if contains_source_prompt_injection(f"{title} {content}"):
+            logger.info("Omitted navigator source id=%s due to prompt injection", source_id)
+        else:
+            sources[source_id] = {
+                "id": source_id,
+                "title": title,
+                "category": "contact",
+                "reference": "Barangay Official Registry",
+                "updated_at": None,
+                "content": content,
+            }
 
     # Enforce aggregate source bundle text budget strictly
     total_chars = 0

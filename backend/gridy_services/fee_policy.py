@@ -13,14 +13,18 @@ def check_ra11261_eligibility(user, document_type, current_request_id=None):
     """
     Verifies eligibility for Republic Act No. 11261 (First Time Jobseekers Assistance Act).
 
-    Requirements:
-    1. Beneficiary must be a resident (or walk-in with verified identity).
-    2. One-Time Availment Restriction (RA 11261 Sec. 5): The exemption may only be availed once.
-       If the resident has already received a non-rejected statutory exemption for a document request,
-       they are ineligible for further statutory exemptions.
+    The benefit is limited to linked resident accounts requesting Barangay Clearance.
+    The same resident may receive it once; unrelated statutory exemptions do not consume
+    this RA 11261 benefit.
     """
-    if not user:
-        return True, None
+    from gridy_auth.models import User
+
+    if user is None or getattr(user, "role", None) != User.Role.RESIDENT:
+        return False, "RA 11261 eligibility requires a linked resident account."
+
+    normalized_document_type = " ".join((document_type or "").split()).casefold()
+    if normalized_document_type != "barangay clearance":
+        return False, "RA 11261 first-time jobseeker exemption applies only to Barangay Clearance."
 
     from .models import DocumentRequest
 
@@ -32,8 +36,16 @@ def check_ra11261_eligibility(user, document_type, current_request_id=None):
     if current_request_id:
         prior_statutory = prior_statutory.exclude(pk=current_request_id)
 
-    if prior_statutory.exists():
-        first_doc = prior_statutory.first()
+    first_doc = next(
+        (
+            previous_request
+            for previous_request in prior_statutory.order_by("pk").iterator()
+            if " ".join((previous_request.document_type or "").split()).casefold()
+            == "barangay clearance"
+        ),
+        None,
+    )
+    if first_doc is not None:
         return False, (
             f"Resident has already availed of the one-time RA 11261 statutory fee exemption "
             f"(Request #{first_doc.id} - {first_doc.document_type})."
