@@ -35,12 +35,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 
 # SECURITY WARNING: keep the secret key used in production secret
 SECRET_KEY = env('SECRET_KEY')
-
-ADMIN_REGISTRATION_PASSKEY = env('ADMIN_REGISTRATION_PASSKEY', default='').strip()
-if not ADMIN_REGISTRATION_PASSKEY:
-    raise ImproperlyConfigured(
-        'ADMIN_REGISTRATION_PASSKEY must be configured with a non-empty secret.'
-    )
+SECRET_KEY_FALLBACKS = env.list('SECRET_KEY_FALLBACKS', default=[])
 
 PRIVACY_CONSENT_VERSION = "resident-v1"
 
@@ -417,6 +412,28 @@ EMAIL_HOST_PASSWORD = env('EMAIL_HOST_PASSWORD', default='')
 DEFAULT_FROM_EMAIL = env('DEFAULT_FROM_EMAIL', default=EMAIL_HOST_USER).strip()
 
 if not DEBUG and not IS_TESTING:
+    raw_database_url = os.environ.get('DATABASE_URL', '').strip()
+    if not raw_database_url:
+        raise ImproperlyConfigured('Production requires a non-empty DATABASE_URL environment variable.')
+
+    db_engine = DATABASES['default'].get('ENGINE', '')
+    if 'postgresql' not in db_engine:
+        raise ImproperlyConfigured(
+            f'Production database engine must be PostgreSQL, but resolved to {db_engine}.'
+        )
+
+    from urllib.parse import urlparse
+    parsed_frontend_url = urlparse(FRONTEND_URL)
+    if (
+        not FRONTEND_URL
+        or parsed_frontend_url.scheme != 'https'
+        or not parsed_frontend_url.netloc
+    ):
+        raise ImproperlyConfigured(
+            'Production requires a valid HTTPS FRONTEND_URL '
+            '(e.g. https://gridy.onrender.com).'
+        )
+
     missing_email_settings = [
         name
         for name, value in (

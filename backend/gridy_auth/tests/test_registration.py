@@ -33,197 +33,85 @@ class AuthRegistrationAPITests(IsolatedAuthAPITestCase):
             role=User.Role.RESIDENT,
         )
 
-    def test_admin_passkey_settings_fail_closed_when_missing_or_blank(self):
-        script = (
-            "import environ; "
-            "environ.Env.read_env = lambda *args, **kwargs: None; "
-            "import config.settings"
-        )
-        backend_dir = Path(__file__).resolve().parents[2]
-        base_environment = os.environ.copy()
-        base_environment.pop("ADMIN_REGISTRATION_PASSKEY", None)
-        base_environment["SECRET_KEY"] = "test-only-settings-bootstrap-key"
-
-        for label, value in (("missing", None), ("blank", "")):
-            with self.subTest(value=label):
-                environment = base_environment.copy()
-                if value is not None:
-                    environment["ADMIN_REGISTRATION_PASSKEY"] = value
-
-                result = subprocess.run(
-                    [sys.executable, "-c", script],
-                    cwd=backend_dir,
-                    env=environment,
-                    capture_output=True,
-                    text=True,
-                    check=False,
-                )
-
-                self.assertNotEqual(result.returncode, 0)
-                self.assertIn("ADMIN_REGISTRATION_PASSKEY", result.stderr)
-
-    def test_admin_registration_rejects_known_default_passkey(self):
-        barangay = Barangay.objects.create(name="Barangay Passkey Test")
-        url = reverse('auth_register_admin')
-        payload = {
-            "username": "known_default_attempt",
-            "full_name": "Unauthorized Admin",
-            "barangay_id": barangay.id,
-            "email": "known-default-attempt@example.com",
-            "password": "SecurePassword123!",
-            "confirm_password": "SecurePassword123!",
-            "affirmation": True,
-            "passkey": "LGU-DEFAULT-PASSKEY",
-        }
-
-        response = self.client.post(url, payload, format='json')
-
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("passkey", response.data)
-        self.assertFalse(
-            User.objects.filter(email="known-default-attempt@example.com").exists()
-        )
-
-    def test_admin_registration_success(self):
-        barangay = Barangay.objects.create(name="Barangay Central")
-        url = reverse('auth_register_admin')
-        payload = {
-            "username": "admin_central",
-            "full_name": "Juan De La Cruz",
-            "barangay_id": barangay.id,
-            "email": "juandelacruz@example.com",
-            "password": "SecurePassword123!",
-            "confirm_password": "SecurePassword123!",
-            "affirmation": True,
-            "passkey": settings.ADMIN_REGISTRATION_PASSKEY
-        }
-        response = self.client.post(url, payload, format='json')
-        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
-        self.assertTrue(User.objects.filter(email="juandelacruz@example.com").exists())
-        user = User.objects.get(email="juandelacruz@example.com")
-        self.assertEqual(user.username, "admin_central")
-        self.assertEqual(user.role, User.Role.ADMIN)
-        self.assertEqual(user.first_name, "Juan")
-        self.assertEqual(user.last_name, "De La Cruz")
-        self.assertEqual(user.barangay, barangay)
-        self.assertTrue(user.is_staff)
-        self.assertTrue(user.is_active)
-
-        # Verify admin can log in with username
-        login_url = reverse('auth_login')
-        login_resp = self.client.post(login_url, {"username": "admin_central", "password": "SecurePassword123!"}, format='json')
-        self.assertEqual(login_resp.status_code, status.HTTP_200_OK)
-
-        # Verify admin can also log in with email
-        login_email_resp = self.client.post(login_url, {"username": "juandelacruz@example.com", "password": "SecurePassword123!"}, format='json')
-        self.assertEqual(login_email_resp.status_code, status.HTTP_200_OK)
-
-    def test_admin_registration_requires_barangay(self):
+    def test_unauthenticated_admin_registration_endpoint_closed(self):
+        # Attempting to call the legacy unauthenticated admin registration route returns 404
         response = self.client.post(
-            reverse("auth_register_admin"),
+            "/api/v1/auth/register/admin/",
             {
-                "username": "unassigned_official",
-                "full_name": "Unassigned Official",
-                "email": "unassigned@example.com",
+                "username": "unauthorized_admin",
+                "full_name": "Unauthorized Admin",
+                "barangay_id": self.barangay.id,
+                "email": "unauth@example.com",
                 "password": "SecurePassword123!",
                 "confirm_password": "SecurePassword123!",
                 "affirmation": True,
-                "passkey": settings.ADMIN_REGISTRATION_PASSKEY,
+                "passkey": "AnyPasskeyVal",
             },
             format="json",
         )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+        self.assertFalse(User.objects.filter(username="unauthorized_admin").exists())
 
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("barangay_id", response.data)
-        self.assertFalse(User.objects.filter(username="unassigned_official").exists())
+    def test_public_registration_cannot_elevate_to_admin_role(self):
+        # Public resident registration ignores or forbids setting role to ADMIN
+        url = reverse('auth_register')
+        payload = {
+            "username": "sneaky_admin_attempt",
+            "email": "sneaky@example.com",
+            "password": "ValidPassword123!",
+            "full_name": "Sneaky User",
+            "birth_date": "1995-05-15",
+            "barangay_id": self.barangay.id,
+            "role": User.Role.ADMIN,
+            "privacy_consent": True,
+            "privacy_consent_version": settings.PRIVACY_CONSENT_VERSION,
+            "philsys_id_photo": create_test_image_upload(),
+        }
+        response = self.client.post(url, payload, format='multipart')
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        created_user = User.objects.get(username="sneaky_admin_attempt")
+        self.assertEqual(created_user.role, User.Role.RESIDENT)
+        self.assertFalse(created_user.is_staff)
 
-    def test_admin_registration_duplicate_username(self):
-        User.objects.create_user(
-            username="existing_admin_handle",
-            email="handle@example.com",
-            password="SecurePassword123!",
-            role=User.Role.ADMIN
+    def test_staff_creation_aligned_with_adr011_dilg_onboarding(self):
+        from gridy_auth.models import BarangayApplication
+        dilg_admin = User.objects.create_user(
+            username="dilg_reviewer",
+            email="dilg@dilg.gov.ph",
+            password="DilgPassword123!",
+            role=User.Role.DILG_ADMIN,
+            is_staff=True,
         )
-        url = reverse('auth_register_admin')
-        payload = {
-            "username": "existing_admin_handle",
-            "full_name": "Duplicate Admin",
-            "barangay_id": self.barangay.id,
-            "email": "another@example.com",
-            "password": "SecurePassword123!",
-            "confirm_password": "SecurePassword123!",
-            "affirmation": True,
-            "passkey": settings.ADMIN_REGISTRATION_PASSKEY
-        }
-        response = self.client.post(url, payload, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("username", response.data)
-
-    def test_admin_registration_password_mismatch(self):
-        url = reverse('auth_register_admin')
-        payload = {
-            "full_name": "Juan De La Cruz",
-            "barangay_id": self.barangay.id,
-            "email": "mismatch@example.com",
-            "password": "SecurePassword123!",
-            "confirm_password": "DifferentPassword123!",
-            "affirmation": True,
-            "passkey": settings.ADMIN_REGISTRATION_PASSKEY
-        }
-        response = self.client.post(url, payload, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("confirm_password", response.data)
-
-    def test_admin_registration_missing_affirmation(self):
-        url = reverse('auth_register_admin')
-        payload = {
-            "full_name": "Juan De La Cruz",
-            "barangay_id": self.barangay.id,
-            "email": "unaffirmed@example.com",
-            "password": "SecurePassword123!",
-            "confirm_password": "SecurePassword123!",
-            "affirmation": False,
-            "passkey": settings.ADMIN_REGISTRATION_PASSKEY
-        }
-        response = self.client.post(url, payload, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("affirmation", response.data)
-
-    def test_admin_registration_duplicate_email(self):
-        User.objects.create_user(
-            username="existing_admin",
-            email="existing@example.com",
-            password="SecurePassword123!",
-            role=User.Role.ADMIN
+        application = BarangayApplication.objects.create(
+            name="Barangay Onboarded",
+            municipality="Lucena City",
+            province="Quezon",
+            applicant_name="Kapitan Mario Reyes",
+            applicant_position="Punong Barangay",
+            applicant_email="kapitan.mario@example.com",
+            applicant_phone="09181234567",
+            status=BarangayApplication.Status.PENDING,
         )
-        url = reverse('auth_register_admin')
-        payload = {
-            "full_name": "Duplicate Admin",
-            "barangay_id": self.barangay.id,
-            "email": "existing@example.com",
-            "password": "SecurePassword123!",
-            "confirm_password": "SecurePassword123!",
-            "affirmation": True,
-            "passkey": settings.ADMIN_REGISTRATION_PASSKEY
-        }
-        response = self.client.post(url, payload, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("email", response.data)
 
-    def test_admin_registration_invalid_barangay(self):
-        url = reverse('auth_register_admin')
-        payload = {
-            "full_name": "Juan De La Cruz",
-            "barangay_id": 99999,
-            "email": "bad_brgy@example.com",
-            "password": "SecurePassword123!",
-            "confirm_password": "SecurePassword123!",
-            "affirmation": True,
-            "passkey": settings.ADMIN_REGISTRATION_PASSKEY
-        }
-        response = self.client.post(url, payload, format='json')
-        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
-        self.assertIn("barangay_id", response.data)
+        self.client.force_authenticate(user=dilg_admin)
+        review_url = reverse("barangay-application-review", kwargs={"pk": application.pk})
+        with patch("gridy_auth.tasks.send_barangay_approval_email.delay") as mock_email:
+            response = self.client.post(
+                review_url,
+                {"status": "APPROVED", "review_note": "Verified through DILG field office."},
+                format="json",
+            )
+            self.assertEqual(response.status_code, status.HTTP_200_OK)
+
+        created_official = User.objects.get(email="kapitan.mario@example.com")
+        self.assertEqual(created_official.role, User.Role.ADMIN)
+        self.assertTrue(created_official.is_staff)
+        self.assertTrue(created_official.is_active)
+        self.assertFalse(created_official.has_usable_password())
+        self.assertEqual(created_official.barangay.name, "Barangay Onboarded")
+        self.assertEqual(created_official.first_name, "Kapitan")
+        self.assertEqual(created_official.last_name, "Mario Reyes")
+
 
     def test_user_registration_success(self):
         url = reverse('auth_register')

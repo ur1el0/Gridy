@@ -26,7 +26,7 @@ COPY --chown=app:app . .
 RUN chmod +x entrypoint.sh && mkdir -p /app/media /app/staticfiles && chown -R app:app /app/media /app/staticfiles
 
 # Collect static files for production WhiteNoise serving
-RUN SECRET_KEY="build-time-secret" DEBUG=True ADMIN_REGISTRATION_PASSKEY="build-time-passkey" python manage.py collectstatic --noinput
+RUN SECRET_KEY="build-time-secret" DEBUG=True python manage.py collectstatic --noinput
 
 USER app
 

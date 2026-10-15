@@ -76,7 +76,6 @@ BACKEND_ENV_CREATED=1
 cat > "$ROOT_DIR/backend/.env" <<'ENV_EOF'
 SECRET_KEY=m44-local-compose-smoke-key
 DEBUG=True
-ADMIN_REGISTRATION_PASSKEY=m44-local-compose-smoke-passkey
 DATABASE_URL=postgres://gridy_user:m44-ci-only-local-password@db:5432/gridy_db
 ENV_EOF
 

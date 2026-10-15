@@ -41,7 +41,6 @@ services:
     environment:
       SECRET_KEY: m48-disposable-test-key
       DEBUG: "True"
-      ADMIN_REGISTRATION_PASSKEY: m48-disposable-test-passkey
       DATABASE_URL: postgres://m48_probe:disposable-m48-password@db:5432/m48_probe
     depends_on:
       db_primary:

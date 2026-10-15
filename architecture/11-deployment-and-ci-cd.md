@@ -42,7 +42,7 @@ Under this configured topology, web browser traffic targets `/api/v1` on the fro
 ## 3. Environment Management
 
 Strict separation of configuration across environments:
-*   `SECRET_KEY` & `ADMIN_REGISTRATION_PASSKEY`
+*   `SECRET_KEY`
 *   `DATABASE_URL` (PostgreSQL connection string)
 *   `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, & `CLOUDINARY_API_SECRET`
 *   `FIREBASE_SERVICE_ACCOUNT_JSON_PATH` (mounted as a Secret File on Render)
@@ -53,6 +53,8 @@ Strict separation of configuration across environments:
 ### Runtime guarantees and scale-out gates
 
 The current notification implementation starts daemon threads in the API process. An API success response means the work was accepted by the process, not that SMTP or FCM delivered it; process termination can interrupt the work and there is no persistent queue or retry. This is the low-dependency behavior selected by [ADR 009](decisions/009-simplification-to-defended-proposal-architecture.md) and bounded for pilot planning by [ADR 013](decisions/013-pilot-notification-and-throttle-guardrails.md). Treat notification delivery as best-effort unless a separate durable delivery design is reviewed and accepted by the responsible owner.
+
+Resident private-evidence deletion uses a database-backed cleanup record because storage deletion happens after account erasure commits. File names are encrypted with `SECRET_KEY` before they are stored. Run `python manage.py cleanup_private_evidence` periodically from a single application environment to retry due records; failures remain queued with increasing retry delays. If `SECRET_KEY` is rotated while cleanup records remain, retain the old key in `SECRET_KEY_FALLBACKS` until those records have been deleted. This job uses the existing Django database and does not add Celery or Redis.
 
 DRF scoped throttles use Django's default `LocMemCache`. Each of the three Gunicorn workers has its own in-memory counters, and replicas do not share them. Configured rates are therefore approximate request budgets, not brute-force or denial-of-service controls. Before relying on consistent abuse protection or increasing replicas, evaluate and test a shared cache or edge enforcement mechanism. A single replica does not make the worker-local counters global.
 

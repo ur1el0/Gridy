@@ -1,6 +1,6 @@
+import logging
 from django.conf import settings
 from django.contrib.auth.tokens import default_token_generator
-from django.core.mail import send_mail
 from django.utils.encoding import force_bytes
 from django.utils.http import urlsafe_base64_encode
 from drf_spectacular.utils import OpenApiTypes, extend_schema
@@ -13,6 +13,9 @@ from gridy_auth.serializers import (
     PasswordResetConfirmSerializer,
     PasswordResetRequestSerializer,
 )
+from gridy_auth.tasks import send_password_reset_email
+
+logger = logging.getLogger(__name__)
 
 
 class PasswordResetRequestView(APIView):
@@ -39,13 +42,14 @@ class PasswordResetRequestView(APIView):
                 token = default_token_generator.make_token(user)
                 reset_link = f"{settings.FRONTEND_URL.rstrip('/')}/reset-password?uidb64={uid}&token={token}"
 
-                send_mail(
-                    subject="KapitBayan: Password Reset Request",
-                    message=f"Hello,\n\nYou requested a password reset. Click the link below to set a new password:\n\n{reset_link}\n\nIf you did not request this, please ignore this email.",
-                    from_email=settings.EMAIL_HOST_USER,
-                    recipient_list=[email],
-                    fail_silently=False,
-                )
+                try:
+                    send_password_reset_email.delay(email, reset_link)
+                except Exception as exc:
+                    logger.error(
+                        "Password reset dispatch failed (%s).",
+                        type(exc).__name__,
+                    )
+
             return Response(
                 {"detail": "If your email is registered, a reset link has been sent."},
                 status=status.HTTP_200_OK

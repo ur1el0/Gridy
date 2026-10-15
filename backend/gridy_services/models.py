@@ -60,7 +60,7 @@ class DocumentRequest(models.Model):
 
     user = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
         null=True,
         blank=True,
         related_name='document_requests'
@@ -209,7 +209,9 @@ class AidRequest(models.Model):
 
     requester = models.ForeignKey(
         settings.AUTH_USER_MODEL,
-        on_delete=models.CASCADE,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
         related_name="aid_requests",
     )
     barangay = models.ForeignKey(
