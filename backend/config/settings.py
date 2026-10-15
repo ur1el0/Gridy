@@ -266,7 +266,7 @@ REST_FRAMEWORK = {
     # Basic application-level request budgets. These are not a security
     # boundary against brute-force or denial-of-service attacks.
     'DEFAULT_THROTTLE_CLASSES': [
-        'rest_framework.throttling.ScopedRateThrottle',
+        'gridy_auth.throttling.SharedDatabaseScopedRateThrottle',
     ],
     'DEFAULT_THROTTLE_RATES': {
         'auth_login': '10/minute',
@@ -360,7 +360,7 @@ SPECTACULAR_SETTINGS = {
     },
 }
 
-# Cache Settings (In-memory cache for session and throttling management)
+# General-purpose cache. API throttles use the shared database table instead.
 CACHES = {
     'default': {
         'BACKEND': 'django.core.cache.backends.locmem.LocMemCache',
