@@ -11,6 +11,7 @@ class QuickServicesSection extends StatelessWidget {
   final VoidCallback? onMyReports;
   final VoidCallback? onRequestAid;
   final VoidCallback? onAskBarangay;
+  final bool showAskBarangay;
 
   const QuickServicesSection({
     super.key,
@@ -20,6 +21,7 @@ class QuickServicesSection extends StatelessWidget {
     this.onMyReports,
     this.onRequestAid,
     this.onAskBarangay,
+    this.showAskBarangay = false,
   });
 
   @override
@@ -51,25 +53,32 @@ class QuickServicesSection extends StatelessWidget {
           ],
         ),
         const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(
-              child: _QuickServiceCard(
-                icon: Icons.volunteer_activism_outlined,
-                title: 'Request Assistance',
-                onTap: onRequestAid,
+        if (showAskBarangay)
+          Row(
+            children: [
+              Expanded(
+                child: _QuickServiceCard(
+                  icon: Icons.volunteer_activism_outlined,
+                  title: 'Request Assistance',
+                  onTap: onRequestAid,
+                ),
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _QuickServiceCard(
-                icon: Icons.auto_awesome_outlined,
-                title: 'Ask Barangay',
-                onTap: onAskBarangay,
+              const SizedBox(width: 12),
+              Expanded(
+                child: _QuickServiceCard(
+                  icon: Icons.auto_awesome_outlined,
+                  title: 'Ask Barangay',
+                  onTap: onAskBarangay,
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          )
+        else
+          _QuickServiceCard(
+            icon: Icons.volunteer_activism_outlined,
+            title: 'Request Assistance',
+            onTap: onRequestAid,
+          ),
         const SizedBox(height: 12),
 
         // Row 2: Barangay Hotline & My Reports
