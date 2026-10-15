@@ -95,8 +95,8 @@ export function BarangayApplications() {
                                 <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-bold text-slate-700">{application.status}</span>
                             </div>
                             <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2">
-                                <div><dt className="font-semibold text-slate-500">Applicant</dt><dd>{application.applicant_name} · {application.applicant_position}</dd></div>
-                                <div><dt className="font-semibold text-slate-500">Official contact</dt><dd>{application.applicant_email} · {application.applicant_phone}</dd></div>
+                                <div><dt className="font-semibold text-slate-500">Applicant</dt><dd className="break-words">{application.applicant_name} · {application.applicant_position}</dd></div>
+                                <div><dt className="font-semibold text-slate-500">Official contact</dt><dd className="break-words">{application.applicant_email} · {application.applicant_phone}</dd></div>
                             </dl>
                             {application.status === 'PENDING' && (
                                 <div className="mt-4 border-t border-slate-100 pt-4">
