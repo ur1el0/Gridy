@@ -1,5 +1,5 @@
 import { act, fireEvent, render, screen } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { axiosPublic } from '../../api/axios';
 import { PublicAnnouncements } from './PublicAnnouncements';
@@ -8,9 +8,19 @@ vi.mock('../../api/axios', () => ({
     axiosPublic: { get: vi.fn() },
 }));
 
-function renderPublicAnnouncements() {
+const originalScrollIntoViewDescriptor = Object.getOwnPropertyDescriptor(HTMLElement.prototype, 'scrollIntoView');
+
+afterEach(() => {
+    if (originalScrollIntoViewDescriptor) {
+        Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', originalScrollIntoViewDescriptor);
+    } else {
+        Reflect.deleteProperty(HTMLElement.prototype, 'scrollIntoView');
+    }
+});
+
+function renderPublicAnnouncements(initialEntry = '/public/announcements/12') {
     return render(
-        <MemoryRouter initialEntries={['/public/announcements/12']}>
+        <MemoryRouter initialEntries={[initialEntry]}>
             <Routes>
                 <Route path="/public/announcements/:barangayId" element={<PublicAnnouncements />} />
             </Routes>
@@ -124,5 +134,47 @@ describe('PublicAnnouncements', () => {
         expect(screen.getByText('The office opens at 8 AM on Monday.')).toBeInTheDocument();
         expect(screen.getByRole('link', { name: 'Sign in to KapitBayan' })).toHaveAttribute('href', '/login');
         expect(axiosPublic.get).toHaveBeenCalledWith('/public/barangays/12/announcements/');
+    });
+
+    it('focuses and scrolls to the announcement named by the share link', async () => {
+        const scrollIntoView = vi.fn();
+        Object.defineProperty(HTMLElement.prototype, 'scrollIntoView', {
+            configurable: true,
+            value: scrollIntoView,
+        });
+        vi.mocked(axiosPublic.get).mockResolvedValue({
+            data: [{
+                id: 8,
+                title: 'Water service interruption',
+                content: 'Water service will return at 1 PM.',
+                is_pinned: false,
+                created_at: '2026-10-12T08:00:00Z',
+            }],
+        } as never);
+
+        renderPublicAnnouncements('/public/announcements/12#announcement-8');
+
+        const article = await screen.findByRole('article', { name: 'Water service interruption' });
+        expect(article).toHaveAttribute('id', 'announcement-8');
+        expect(article).toHaveFocus();
+        expect(scrollIntoView).toHaveBeenCalledWith({ block: 'start' });
+    });
+
+    it('explains when a deep-linked announcement is no longer public', async () => {
+        vi.mocked(axiosPublic.get).mockResolvedValue({
+            data: [{
+                id: 8,
+                title: 'Another announcement',
+                content: 'This is a different public notice.',
+                is_pinned: false,
+                created_at: '2026-10-12T08:00:00Z',
+            }],
+        } as never);
+
+        renderPublicAnnouncements('/public/announcements/12#announcement-99');
+
+        expect(await screen.findByText(
+            'This announcement is no longer available in the public bulletin.',
+        )).toHaveAttribute('role', 'status');
     });
 });
