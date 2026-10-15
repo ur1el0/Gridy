@@ -6,6 +6,7 @@ from gridy_communications.navigator.catalog import STATUTORY_CATALOG
 from gridy_communications.navigator.guard import (
     GuardResult,
     check_privacy_and_intent,
+    check_unsupported_local_query,
     contains_sensitive_data,
     contains_ph_phone_number,
     contains_email_address,
@@ -44,6 +45,7 @@ __all__ = [
     "STATUTORY_CATALOG",
     "GuardResult",
     "check_privacy_and_intent",
+    "check_unsupported_local_query",
     "contains_sensitive_data",
     "contains_ph_phone_number",
     "contains_email_address",

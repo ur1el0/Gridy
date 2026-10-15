@@ -22,6 +22,122 @@ class GuardResult:
     message: Optional[str] = None
 
 
+# These local details are not in the verified public source bundle. Never send
+# questions about their current values to the external provider.
+CLEARANCE_QUERY_RE = re.compile(r"\bclearances?\b", re.IGNORECASE)
+CLEARANCE_FEE_QUERY_RE = re.compile(
+    r"\b(?:how\s+much|magkano|pila|presyo|fee|fees|cost|price|charge|charges|"
+    r"pay|paid|payment|bayad|libre|free)\b",
+    re.IGNORECASE,
+)
+CLEARANCE_AMOUNT_QUERY_RE = re.compile(
+    r"\b(?:how\s+much|magkano|pila|presyo|exact\s+amount|current\s+amount)\b|"
+    r"\b(?:what(?:'s|\s+is)|how\s+much).{0,60}\b(?:cost|price|charge|amount)\b",
+    re.IGNORECASE,
+)
+CLEARANCE_FEE_AMOUNT_QUESTION_RE = re.compile(
+    r"\bwhat(?:'s|\s+is).{0,60}\b(?:fee|fees)\b", re.IGNORECASE
+)
+CLEARANCE_EXEMPTION_QUERY_RE = re.compile(
+    r"\b(?:exempt(?:ion)?|waiver|free|libre)\b", re.IGNORECASE
+)
+FIRST_TIME_JOBSEEKER_RE = re.compile(
+    r"\bfirst[\s-]+time\s+jobseekers?\b", re.IGNORECASE
+)
+ORDINARY_CLEARANCE_RE = re.compile(
+    r"\b(?:ordinary|regular|personal|general|non[\s-]+employment|business|residency)\b",
+    re.IGNORECASE,
+)
+HALL_HOURS_QUERY_RES = (
+    re.compile(r"\b(?:barangay\s+)?hall\s+hours?\b", re.IGNORECASE),
+    re.compile(r"\b(?:office|opening|operating)\s+hours?\b", re.IGNORECASE),
+    re.compile(
+        r"\b(?:what|when|at\s+what|anong)\b.{0,80}\b(?:time|oras)\b.{0,80}"
+        r"\b(?:open|opens|close|closes|closing|bukas|sara|magsasara)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?:open|opens|close|closes|closing|bukas|sara|magsasara)\b.{0,80}"
+        r"\b(?:barangay\s+hall|hall|office|tanggapan|today|ngayon)\b",
+        re.IGNORECASE,
+    ),
+    re.compile(
+        r"\b(?:oras|time)\b.{0,60}\b(?:barangay\s+hall|hall|office|tanggapan)\b",
+        re.IGNORECASE,
+    ),
+)
+INDIGENCY_QUERY_RE = re.compile(
+    r"\b(?:certificate\s+of\s+indigency|indigency\s+certificate|indigency|"
+    r"sertipiko\s+ng\s+indigency)\b",
+    re.IGNORECASE,
+)
+LOCAL_FEE_QUERY_RE = re.compile(
+    r"\b(?:fee|fees|cost|price|charge|charges|pay|paid|payment|bayad|magkano|"
+    r"pila|presyo|libre|free)\b",
+    re.IGNORECASE,
+)
+
+
+def check_unsupported_local_query(query: str) -> GuardResult:
+    """Abstain before source retrieval/provider calls for unsupported local details."""
+    normalized = re.sub(r"\s+", " ", query.strip())
+
+    if (
+        CLEARANCE_QUERY_RE.search(normalized)
+        and CLEARANCE_FEE_QUERY_RE.search(normalized)
+    ):
+        asks_for_amount = CLEARANCE_AMOUNT_QUERY_RE.search(normalized) or (
+            CLEARANCE_FEE_AMOUNT_QUESTION_RE.search(normalized)
+            and not CLEARANCE_EXEMPTION_QUERY_RE.search(normalized)
+        )
+        first_time_exemption_question = (
+            FIRST_TIME_JOBSEEKER_RE.search(normalized)
+            and not ORDINARY_CLEARANCE_RE.search(normalized)
+            and not asks_for_amount
+        )
+        if not first_time_exemption_question:
+            return GuardResult(
+                triggered=True,
+                reason="unsupported_query",
+                message=(
+                    "Ordinary barangay clearance fees and accepted payment methods are locally "
+                    "determined. I can’t verify the current amount or payment options here; "
+                    "please confirm them with the Barangay Hall or Treasurer. Ang karaniwang "
+                    "bayad sa barangay clearance at mga tinatanggap na paraan ng pagbabayad "
+                    "ay itinatakda sa lokal na ordinansa at patakaran. Hindi ko ma-verify ang "
+                    "kasalukuyang halaga o payment options; magtanong sa Barangay Hall o Treasurer."
+                ),
+            )
+
+    if any(pattern.search(normalized) for pattern in HALL_HOURS_QUERY_RES):
+        return GuardResult(
+            triggered=True,
+            reason="unsupported_query",
+            message=(
+                "I can’t verify the current Barangay Hall hours from the official records "
+                "available here. Please contact the Hall through the official contact below. "
+                "Hindi ko ma-verify ang kasalukuyang oras ng Barangay Hall mula sa opisyal "
+                "na tala rito. Mangyaring makipag-ugnayan sa Hall gamit ang opisyal na "
+                "contact sa ibaba."
+            ),
+        )
+
+    if INDIGENCY_QUERY_RE.search(normalized) and LOCAL_FEE_QUERY_RE.search(normalized):
+        return GuardResult(
+            triggered=True,
+            reason="unsupported_query",
+            message=(
+                "The requirements and fees for a Certificate of Indigency depend on local "
+                "policy and aren’t verified in the official records available here. Please "
+                "confirm them with the Barangay Hall or Treasurer. Ang mga requirement at "
+                "bayad para sa Certificate of Indigency ay nakabatay sa lokal na patakaran "
+                "at hindi beripikado rito. Magtanong sa Barangay Hall o Treasurer."
+            ),
+        )
+
+    return GuardResult(triggered=False)
+
+
 # Patterns for government-issued identification numbers and references
 GOV_ID_PATTERNS = [
     re.compile(r'\b\d{4}[-\s]?\d{4}[-\s]?\d{4}[-\s]?\d{4}\b'),  # 16-digit PhilSys / National ID
