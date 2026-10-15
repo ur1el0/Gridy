@@ -1,7 +1,13 @@
 import { describe, expect, it, vi } from 'vitest';
 import axios from 'axios';
 import { axiosPrivate, axiosPublic, resolveApiBaseUrl } from './axios';
-import { clearAccessToken, getAccessToken, setAccessToken } from './accessToken';
+import {
+    clearAccessToken,
+    clearExplicitLogout,
+    EXPLICIT_LOGOUT_KEY,
+    getAccessToken,
+    setAccessToken,
+} from './accessToken';
 
 describe('axios client configuration', () => {
     it('configures axiosPrivate with credentials for HttpOnly cookie transmission and targets the /api/v1 prefix', () => {
@@ -80,6 +86,29 @@ describe('axios client configuration', () => {
             axiosPrivate.defaults.adapter = originalAdapter;
             refresh.mockRestore();
             clearAccessToken();
+        }
+    });
+
+    it('does not refresh the HttpOnly session after an explicit logout', async () => {
+        clearAccessToken();
+        localStorage.setItem(EXPLICIT_LOGOUT_KEY, 'true');
+        const originalAdapter = axiosPrivate.defaults.adapter;
+        const adapter = vi.fn((config) => Promise.reject({
+            config,
+            response: { status: 401, data: {}, headers: {}, config },
+            isAxiosError: true,
+        }));
+        axiosPrivate.defaults.adapter = adapter;
+        const refresh = vi.spyOn(axios, 'post');
+
+        try {
+            await expect(axiosPrivate.get('/auth/me/')).rejects.toThrow('Session was explicitly logged out.');
+            expect(refresh).not.toHaveBeenCalled();
+        } finally {
+            axiosPrivate.defaults.adapter = originalAdapter;
+            refresh.mockRestore();
+            clearAccessToken();
+            clearExplicitLogout();
         }
     });
 });

@@ -1,9 +1,50 @@
 import React, { useEffect, useRef, useState, type ReactNode } from "react";
 import { AuthContext, type User } from "./auth-context";
 import { axiosPrivate } from "../api/axios";
-import { clearAccessToken, setAccessToken } from "../api/accessToken";
+import {
+    clearAccessToken,
+    clearExplicitLogout,
+    EXPLICIT_LOGOUT_KEY,
+    hasExplicitLogout,
+    markExplicitLogout,
+    setAccessToken,
+} from "../api/accessToken";
 
 const DEFAULT_PRIMARY_COLOR = '#082B66';
+const AUTHENTICATED_ROLES = new Set([
+    'ADMIN',
+    'RESIDENT',
+    'DILG_ADMIN',
+    'FIELD_OFFICIAL',
+]);
+
+function isUserProfile(value: unknown): value is User {
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+        return false;
+    }
+
+    const profile = value as Record<string, unknown>;
+    const hasValidId =
+        (typeof profile.id === 'number' && Number.isSafeInteger(profile.id) && profile.id > 0) ||
+        (typeof profile.id === 'string' && profile.id.trim().length > 0);
+
+    return (
+        hasValidId &&
+        typeof profile.username === 'string' &&
+        profile.username.trim().length > 0 &&
+        typeof profile.role === 'string' &&
+        AUTHENTICATED_ROLES.has(profile.role)
+    );
+}
+
+function hasLogoutConfirmation(value: unknown): boolean {
+    return (
+        typeof value === 'object' &&
+        value !== null &&
+        !Array.isArray(value) &&
+        (value as Record<string, unknown>).detail === 'Successfully logged out.'
+    );
+}
 
 const applyBarangayTheme = (primaryColor?: string) => {
     const color =
@@ -92,6 +133,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, restoreSes
 
     useEffect(() => {
         if (!restoreSession) return;
+        if (hasExplicitLogout()) {
+            clearAccessToken();
+            setUser(null);
+            setIsAuthReady(true);
+            return;
+        }
         let active = true;
         const initialActionVersion = authActionVersion.current;
 
@@ -101,10 +148,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, restoreSes
             setUser(null);
             setIsAuthReady(true);
         };
+        const handleCrossTabLogout = (event: StorageEvent) => {
+            if (event.key === EXPLICIT_LOGOUT_KEY && event.newValue === 'true') {
+                handleSessionExpired();
+            }
+        };
         window.addEventListener('gridy:session-expired', handleSessionExpired);
+        window.addEventListener('storage', handleCrossTabLogout);
 
         axiosPrivate.get('/auth/me/')
             .then((response) => {
+                if (!isUserProfile(response.data)) {
+                    throw new Error('Invalid authenticated profile response.');
+                }
                 if (active && authActionVersion.current === initialActionVersion) {
                     setUser(response.data);
                 }
@@ -127,28 +183,44 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, restoreSes
         return () => {
             active = false;
             window.removeEventListener('gridy:session-expired', handleSessionExpired);
+            window.removeEventListener('storage', handleCrossTabLogout);
         };
     }, [restoreSession]);
 
     const login = (token: string, userData?: User) => {
         authActionVersion.current += 1;
-        setAccessToken(token);
-        setIsAuthReady(true);
-        if (userData) {
-            setUser(userData);
-        } else {
+        let authenticatedUser: User | null = null;
+        if (typeof token === 'string' && token.trim().length > 0 && userData && isUserProfile(userData)) {
+            authenticatedUser = userData;
+        } else if (typeof token === 'string' && token.trim().length > 0 && !userData) {
             try {
                 const payload = JSON.parse(atob(token.split('.')[1]));
-                setUser({
+                const tokenUser: User = {
                     id: payload.user_id,
                     username: payload.username,
                     full_name: payload.full_name,
                     role: payload.role,
-                });
-            } catch (error) {
-                console.error("Failed to parse token payload", error);
+                };
+                if (isUserProfile(tokenUser)) {
+                    authenticatedUser = tokenUser;
+                }
+            } catch {
+                // Treat unparseable token claims as an invalid login response.
             }
         }
+
+        if (!authenticatedUser) {
+            clearAccessToken();
+            setUser(null);
+            setIsAuthReady(true);
+            console.error('Login response did not contain a valid authenticated profile.');
+            return;
+        }
+
+        clearExplicitLogout();
+        setAccessToken(token);
+        setIsAuthReady(true);
+        setUser(authenticatedUser);
     };
 
     const updateBarangayPrimaryColor = (primaryColor: string) => {
@@ -167,15 +239,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children, restoreSes
 
     const logout = async () => {
         authActionVersion.current += 1;
+        markExplicitLogout();
+        clearAccessToken();
+        setUser(null);
+        setIsAuthReady(true);
+
         try {
             // Tell the backend to blacklist the session and destroy the HttpOnly cookie.
-            await axiosPrivate.post('/auth/logout/');
-        } catch (error) {
-            console.error("Server logout failed, but local state will be cleared.", error);
-        } finally {
-            clearAccessToken();
-            setUser(null);
-            setIsAuthReady(true);
+            const response = await axiosPrivate.post('/auth/logout/');
+            if (!hasLogoutConfirmation(response.data)) {
+                throw new Error('Invalid server logout response.');
+            }
+        } catch {
+            console.error("Server logout failed, but local state will be cleared.");
         }
     };
 
