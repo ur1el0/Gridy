@@ -3,6 +3,7 @@ import {
     clearAccessToken,
     getAccessToken,
     getAccessTokenVersion,
+    hasExplicitLogout,
     setAccessToken,
 } from './accessToken';
 
@@ -40,6 +41,10 @@ export const axiosPublic = axios.create({
 let refreshRequest: Promise<string> | null = null;
 
 function refreshAccessToken(): Promise<string> {
+    if (hasExplicitLogout()) {
+        return Promise.reject(new Error('Session was explicitly logged out.'));
+    }
+
     if (!refreshRequest) {
         refreshRequest = axios.post(`${BASE_URL}/auth/token/refresh/`, {}, {
             withCredentials: true,
@@ -48,6 +53,9 @@ function refreshAccessToken(): Promise<string> {
             const access = response.data?.access;
             if (typeof access !== 'string' || access.length === 0) {
                 throw new Error('The session refresh response did not include an access token.');
+            }
+            if (hasExplicitLogout()) {
+                throw new Error('Session was explicitly logged out.');
             }
             setAccessToken(access);
             return access;
