@@ -89,10 +89,38 @@ function RootRedirect() {
     if (!isAuthenticated) {
         return <Navigate to="/login" replace />;
     }
+    if (user?.role === 'FIELD_OFFICIAL') {
+        return <Navigate to="/field-official-mobile" replace />;
+    }
     if (user?.role === 'RESIDENT') {
         return <Navigate to="/portal/documents" replace />;
     }
     return <Navigate to="/dashboard" replace />;
+}
+
+function FieldOfficialWebNotice() {
+    const { isAuthenticated, user, logout } = useAuth();
+
+    if (!isAuthenticated) return <Navigate to="/login" replace />;
+    if (user?.role !== 'FIELD_OFFICIAL') return <Navigate to="/" replace />;
+
+    return (
+        <main className="flex min-h-screen items-center justify-center bg-slate-50 px-6 py-12">
+            <section className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm">
+                <h1 className="text-2xl font-bold text-slate-900">Field operations are in the mobile app</h1>
+                <p className="mt-3 text-sm leading-6 text-slate-600">
+                    Field Official accounts do not have a web dashboard. Open KapitBayan on your mobile device to continue.
+                </p>
+                <button
+                    type="button"
+                    onClick={() => void logout()}
+                    className="mt-6 inline-flex min-h-11 items-center justify-center rounded-lg bg-primary px-5 font-semibold text-primary-foreground outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                >
+                    Log out
+                </button>
+            </section>
+        </main>
+    );
 }
 
 export function App() {
@@ -107,6 +135,7 @@ export function App() {
 
                             {/* Public Auth Routes */}
                             <Route path="/login" element={<Login />} />
+                            <Route path="/field-official-mobile" element={<FieldOfficialWebNotice />} />
                             <Route path="/register" element={<Register />} />
                             <Route path="/register/barangay" element={<BarangayApplication />} />
                             <Route path="/forgot-password" element={<ForgotPassword />} />

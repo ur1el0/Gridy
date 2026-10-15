@@ -12,7 +12,7 @@ export const Login: React.FC = () => {
     const [loading, setLoading] = useState(false);
     const [isAdminMode, setIsAdminMode] = useState(false);
 
-    const { login } = useAuth();
+    const { login, logout } = useAuth();
     const navigate = useNavigate();
 
     const handleLogin = async (e: React.SubmitEvent<HTMLElement>) => {
@@ -28,14 +28,27 @@ export const Login: React.FC = () => {
 
             const { access, user: userData } = response.data;
 
-            // Enforce Portal Boundary
-            if (!isAdminMode && userData?.role !== 'RESIDENT') {
-                setError('Official accounts cannot log in through the Resident Portal. Press Shift + \\ to switch.');
-                return;
-            }
+            const isAllowedForWeb = isAdminMode
+                ? ['ADMIN', 'DILG_ADMIN'].includes(userData?.role ?? '')
+                : userData?.role === 'RESIDENT';
 
-            if (isAdminMode && userData?.role === 'RESIDENT') {
-                setError('Resident accounts are not authorized to access the Barangay Authority Command.');
+            if (!isAllowedForWeb) {
+                try {
+                    // Login sets an HttpOnly refresh cookie before the web client
+                    // checks the role. Clear that browser session when the role
+                    // belongs in another client.
+                    await logout();
+                } catch {
+                    // The role denial remains in place if cleanup cannot reach the API.
+                }
+
+                if (userData?.role === 'FIELD_OFFICIAL') {
+                    setError('Field Official accounts must use the KapitBayan mobile app. Web access is not available for this role.');
+                } else if (!isAdminMode) {
+                    setError('Official accounts cannot log in through the Resident Portal. Press Shift + \\ to switch.');
+                } else {
+                    setError('Resident accounts are not authorized to access the Barangay Authority Command.');
+                }
                 return;
             }
 

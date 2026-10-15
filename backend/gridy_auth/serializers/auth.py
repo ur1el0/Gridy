@@ -1,5 +1,7 @@
 from django.db import transaction
 from django.utils import timezone
+from django.contrib.auth.password_validation import validate_password
+from django.core.exceptions import ValidationError as DjangoValidationError
 from rest_framework_simplejwt.token_blacklist.models import (
     BlacklistedToken,
     OutstandingToken,
@@ -67,6 +69,11 @@ class PasswordResetConfirmSerializer(serializers.Serializer):
         
         if not default_token_generator.check_token(user, data['token']):
             raise serializers.ValidationError({"token": "Invalid or expired token"})
+
+        try:
+            validate_password(data['new_password'], user=user)
+        except DjangoValidationError as exc:
+            raise serializers.ValidationError({"new_password": list(exc.messages)})
         
         self.context['user'] = user
         return data

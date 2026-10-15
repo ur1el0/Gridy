@@ -20,6 +20,9 @@ export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
 
     // If specific roles are required, verify user's role
     if (allowedRoles && user?.role && !allowedRoles.includes(user.role)) {
+        if (user.role === 'FIELD_OFFICIAL') {
+            return <Navigate to="/field-official-mobile" replace />;
+        }
         // Redirect residents away from admin routes to resident portal
         if (user.role === 'RESIDENT') {
             return <Navigate to="/portal" replace />;

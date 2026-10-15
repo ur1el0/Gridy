@@ -237,6 +237,22 @@ class AuthAPITests(IsolatedAuthAPITestCase):
         refresh_response = self.client.post(refresh_url)
         self.assertEqual(refresh_response.status_code, status.HTTP_401_UNAUTHORIZED)
 
+    def test_password_reset_rejects_numeric_passwords(self):
+        response = self.client.post(
+            reverse("password_reset_confirm"),
+            {
+                "uidb64": urlsafe_base64_encode(force_bytes(self.user.pk)),
+                "token": default_token_generator.make_token(self.user),
+                "new_password": "12345678",
+            },
+            format="json",
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("new_password", response.data)
+        self.user.refresh_from_db()
+        self.assertTrue(self.user.check_password(self.password))
+
     def test_logout_invalidates_cookie_and_session(self):
         # 1. Login to establish cookie
         login_url = reverse('auth_login')
