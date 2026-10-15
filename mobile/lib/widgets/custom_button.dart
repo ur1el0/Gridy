@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+
 import '../core/theme/app_colors.dart';
 
 class CustomButton extends StatelessWidget {
@@ -23,65 +24,49 @@ class CustomButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    final isEnabled = onPressed != null && !isLoading;
+
+    return SizedBox(
       width: double.infinity,
       height: height,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(height / 2),
-        boxShadow: onPressed != null && !isLoading
-            ? [
-                BoxShadow(
-                  color: backgroundColor.withValues(alpha: 0.35),
-                  blurRadius: 18,
-                  offset: const Offset(0, 8),
-                  spreadRadius: 1,
-                ),
-              ]
-            : null,
-      ),
-      child: Material(
-        color: onPressed == null || isLoading
-            ? backgroundColor.withValues(alpha: 0.6)
-            : backgroundColor,
-        borderRadius: BorderRadius.circular(height / 2),
-        child: InkWell(
-          onTap: isLoading ? null : onPressed,
-          borderRadius: BorderRadius.circular(height / 2),
-          child: Center(
-            child: isLoading
-                ? const SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: CircularProgressIndicator(
-                      strokeWidth: 2.5,
-                      valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                    ),
-                  )
-                : Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Text(
-                        text,
-                        style: TextStyle(
-                          fontSize: 16,
-                          fontWeight: FontWeight.w700,
-                          color: textColor,
-                          letterSpacing: 0.3,
-                        ),
-                      ),
-                      if (icon != null) ...[
-                        const SizedBox(width: 8),
-                        Icon(
-                          icon,
-                          color: textColor,
-                          size: 18,
-                        ),
-                      ],
-                    ],
-                  ),
+      child: FilledButton(
+        onPressed: isEnabled ? onPressed : null,
+        style: FilledButton.styleFrom(
+          backgroundColor: backgroundColor,
+          foregroundColor: textColor,
+          disabledBackgroundColor: backgroundColor.withValues(alpha: 0.45),
+          disabledForegroundColor: textColor.withValues(alpha: 0.8),
+          minimumSize: Size(48, height),
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(height >= 52 ? 16 : 12),
+          ),
+          textStyle: const TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0.1,
           ),
         ),
+        child: isLoading
+            ? const SizedBox(
+                width: 24,
+                height: 24,
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Text(text),
+                  if (icon != null) ...[
+                    const SizedBox(width: 8),
+                    Icon(icon, size: 18),
+                  ],
+                ],
+              ),
       ),
     );
   }

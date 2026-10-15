@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import '../config/app_config.dart';
 import 'api_exception.dart';
@@ -132,26 +133,24 @@ class ApiClient {
     List<http.MultipartFile>? files,
     bool requiresAuth = true,
   }) async {
-    final request = http.MultipartRequest('POST', _buildUri(endpoint));
-
-    // Add standard headers, but remove Content-Type so the http package
-    // can generate the correct multipart boundary header automatically
-    final headers = _buildHeaders(null, requiresAuth: requiresAuth);
-    headers.remove('Content-Type');
-    request.headers.addAll(headers);
-
-    if (fields != null) {
-      request.fields.addAll(fields);
-    }
-
-    if (files != null) {
-      request.files.addAll(files);
-    }
-
-    return _sendRequest(() async {
-      final streamedResponse = await request.send();
-      return await http.Response.fromStream(streamedResponse);
-    });
+    final requestFiles = List<http.MultipartFile>.of(files ?? const []);
+    final replayableFiles = _hasRefreshCookie
+        ? await _makeMultipartFilesReplayable(requestFiles)
+        : null;
+    final requestFields = Map<String, String>.of(fields ?? const {});
+    return _sendRequest(
+      () => _sendMultipartRequest(
+        'POST',
+        endpoint,
+        fields: requestFields,
+        filesForAttempt: replayableFiles == null
+            ? () => requestFiles
+            : () => replayableFiles
+                  .map((file) => file.createMultipartFile())
+                  .toList(),
+        requiresAuth: requiresAuth,
+      ),
+    );
   }
 
   /// Perform a PATCH request with multipart/form-data (for file uploads and updates)
@@ -161,24 +160,65 @@ class ApiClient {
     List<http.MultipartFile>? files,
     bool requiresAuth = true,
   }) async {
-    final request = http.MultipartRequest('PATCH', _buildUri(endpoint));
+    final requestFiles = List<http.MultipartFile>.of(files ?? const []);
+    final replayableFiles = _hasRefreshCookie
+        ? await _makeMultipartFilesReplayable(requestFiles)
+        : null;
+    final requestFields = Map<String, String>.of(fields ?? const {});
+    return _sendRequest(
+      () => _sendMultipartRequest(
+        'PATCH',
+        endpoint,
+        fields: requestFields,
+        filesForAttempt: replayableFiles == null
+            ? () => requestFiles
+            : () => replayableFiles
+                  .map((file) => file.createMultipartFile())
+                  .toList(),
+        requiresAuth: requiresAuth,
+      ),
+    );
+  }
 
+  Future<http.Response> _sendMultipartRequest(
+    String method,
+    String endpoint, {
+    required Map<String, String> fields,
+    required List<http.MultipartFile> Function() filesForAttempt,
+    required bool requiresAuth,
+  }) async {
+    final request = http.MultipartRequest(method, _buildUri(endpoint));
     final headers = _buildHeaders(null, requiresAuth: requiresAuth);
     headers.remove('Content-Type');
     request.headers.addAll(headers);
+    request.fields.addAll(fields);
+    request.files.addAll(filesForAttempt());
 
-    if (fields != null) {
-      request.fields.addAll(fields);
+    final streamedResponse = await _client.send(request);
+    return http.Response.fromStream(streamedResponse);
+  }
+
+  bool get _hasRefreshCookie =>
+      _cookieHeader != null && _cookieHeader!.isNotEmpty;
+
+  /// Captures file streams once so a single token-refresh retry can build fresh requests.
+  Future<List<_ReplayableMultipartFile>> _makeMultipartFilesReplayable(
+    List<http.MultipartFile>? files,
+  ) async {
+    if (files == null || files.isEmpty) return const [];
+
+    final replayable = <_ReplayableMultipartFile>[];
+    for (final file in files) {
+      replayable.add(
+        _ReplayableMultipartFile(
+          field: file.field,
+          bytes: await file.finalize().toBytes(),
+          filename: file.filename,
+          contentType: file.contentType,
+        ),
+      );
     }
-
-    if (files != null) {
-      request.files.addAll(files);
-    }
-
-    return _sendRequest(() async {
-      final streamedResponse = await request.send();
-      return await http.Response.fromStream(streamedResponse);
-    });
+    return replayable;
   }
 
   /// Perform a GET request
@@ -251,6 +291,11 @@ class ApiClient {
     final fullUrl = '$cleanBase$cleanEndpoint';
 
     final uri = Uri.parse(fullUrl);
+    if (kReleaseMode && uri.scheme != 'https') {
+      throw StateError(
+        'Release builds require an HTTPS endpoint. Cleartext HTTP is prohibited: $fullUrl',
+      );
+    }
     if (queryParams != null && queryParams.isNotEmpty) {
       return uri.replace(queryParameters: queryParams);
     }
@@ -403,4 +448,25 @@ class ApiClient {
         );
     }
   }
+}
+
+class _ReplayableMultipartFile {
+  const _ReplayableMultipartFile({
+    required this.field,
+    required this.bytes,
+    required this.filename,
+    required this.contentType,
+  });
+
+  final String field;
+  final List<int> bytes;
+  final String? filename;
+  final http.MediaType contentType;
+
+  http.MultipartFile createMultipartFile() => http.MultipartFile.fromBytes(
+    field,
+    bytes,
+    filename: filename,
+    contentType: contentType,
+  );
 }

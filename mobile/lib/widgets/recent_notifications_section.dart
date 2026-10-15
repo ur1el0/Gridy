@@ -7,12 +7,18 @@ class RecentNotificationsSection extends StatelessWidget {
   final List<NotificationItemModel> notifications;
   final VoidCallback? onViewAll;
   final Function(NotificationItemModel)? onNotificationTap;
+  final bool hasError;
+  final String? errorMessage;
+  final VoidCallback? onRetry;
 
   const RecentNotificationsSection({
     super.key,
     required this.notifications,
     this.onViewAll,
     this.onNotificationTap,
+    this.hasError = false,
+    this.errorMessage,
+    this.onRetry,
   });
 
   @override
@@ -49,7 +55,78 @@ class RecentNotificationsSection extends StatelessWidget {
         const SizedBox(height: 12),
 
         // Notifications List Cards
-        if (notifications.isEmpty)
+        if (hasError)
+          Container(
+            padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: const Color(0xFFFECACA)),
+              boxShadow: [
+                BoxShadow(
+                  color: const Color(0xFF0F172A).withValues(alpha: 0.03),
+                  blurRadius: 10,
+                  offset: const Offset(0, 3),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  width: 42,
+                  height: 42,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFFEE2E2),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Center(
+                    child: Icon(
+                      Icons.cloud_off_rounded,
+                      color: Color(0xFFDC2626),
+                      size: 22,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Unable to load notifications',
+                        style: TextStyle(
+                          fontSize: 14.5,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFFB91C1C),
+                        ),
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        errorMessage ?? 'Check connection and tap retry',
+                        style: const TextStyle(
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w400,
+                          color: AppColors.textMuted,
+                        ),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+                if (onRetry != null)
+                  IconButton(
+                    onPressed: onRetry,
+                    tooltip: 'Retry loading notifications',
+                    icon: const Icon(
+                      Icons.refresh_rounded,
+                      color: AppColors.primaryNavy,
+                    ),
+                  ),
+              ],
+            ),
+          )
+        else if (notifications.isEmpty)
           Container(
             padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
             decoration: BoxDecoration(

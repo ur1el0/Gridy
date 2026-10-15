@@ -106,3 +106,32 @@ def send_field_official_setup_email(user_email, full_name, barangay_name, setup_
     if sent_count != 1:
         logger.error("Email backend did not accept the field official setup message.")
     return sent_count
+
+
+@async_task
+def send_password_reset_email(user_email, reset_link):
+    """
+    Sends password reset email in a non-blocking background thread.
+    Avoids logging recipient email addresses or sensitive reset tokens.
+    """
+    try:
+        subject = "KapitBayan: Password Reset Request"
+        message = (
+            f"Hello,\n\n"
+            f"You requested a password reset. Click the link below to set a new password:\n\n"
+            f"{reset_link}\n\n"
+            f"If you did not request this, please ignore this email."
+        )
+        sent_count = send_mail(
+            subject=subject,
+            message=message,
+            from_email=settings.DEFAULT_FROM_EMAIL,
+            recipient_list=[user_email],
+            fail_silently=False,
+        )
+        if sent_count != 1:
+            logger.error("Email backend did not accept the password reset message.")
+        return sent_count
+    except Exception as exc:
+        logger.error("Password reset email delivery failed (%s).", type(exc).__name__)
+        return None

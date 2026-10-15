@@ -195,14 +195,15 @@ export const ResidentsManagement: React.FC = () => {
     return (
         <div className="space-y-6">
             {/* Header and Controls */}
-            <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
+            <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 bg-white p-5 rounded-2xl border border-slate-200 shadow-2xs">
                 <div>
                     <h3 className="text-lg font-bold text-slate-900">Residents Directory & RBI</h3>
                     <p className="text-xs text-slate-500 mt-0.5">Click any resident row to view their complete dossier and identification proofs.</p>
                 </div>
 
-                <div className="flex items-center gap-3 w-full sm:w-auto">
-                    <div className="relative flex-1 sm:w-64">
+                <div className="flex items-center gap-3 w-full lg:w-auto">
+                    <label className="relative flex-1 lg:w-64">
+                        <span className="sr-only">Search residents</span>
                         <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
                         <input
                             type="text"
@@ -211,7 +212,7 @@ export const ResidentsManagement: React.FC = () => {
                             onChange={(e) => setSearch(e.target.value)}
                             className="w-full pl-10 pr-4 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:border-primary focus:ring-1 focus:ring-primary transition-all shadow-2xs"
                         />
-                    </div>
+                    </label>
 
                     <button
                         onClick={() => {

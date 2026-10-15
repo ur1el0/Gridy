@@ -21,12 +21,12 @@ export const AdminLayout: React.FC = () => {
     const userName = user?.full_name || user?.username || 'Admin Juan';
 
     return (
-        <div className="min-h-screen flex flex-col md:h-screen md:flex-row bg-[#F0F4FA] text-slate-900 font-sans antialiased md:overflow-hidden">
+        <div className="min-h-screen min-h-[100dvh] flex flex-col md:h-screen md:flex-row bg-[#F0F4FA] text-slate-900 font-sans antialiased md:overflow-hidden">
             {/* Sidebar Navigation */}
             <Sidebar />
 
             {/* Main Right Content Section */}
-            <div className="flex min-h-screen min-w-0 flex-1 flex-col md:min-h-0 md:overflow-hidden">
+            <div className="flex min-h-screen min-h-[100dvh] min-w-0 flex-1 flex-col md:min-h-0 md:overflow-hidden">
                 {/* Top Navigation Bar */}
                 <header className="h-16 sm:h-20 bg-transparent flex items-center justify-between gap-3 px-4 sm:px-6 lg:px-8 shrink-0">
                     <div className="flex min-w-0 items-center gap-3">
@@ -79,7 +79,7 @@ export const AdminLayout: React.FC = () => {
                     </div>
 
                     {/* Footer */}
-                    <footer className="pt-8 text-xs text-slate-400 font-medium">
+                    <footer className="pt-8 text-xs text-slate-600 font-medium">
                         © 2026 KapitBayan Admin
                     </footer>
                 </main>

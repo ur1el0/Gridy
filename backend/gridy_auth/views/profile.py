@@ -9,6 +9,7 @@ from drf_spectacular.utils import extend_schema, OpenApiTypes
 from gridy_auth.models import Barangay, User
 from gridy_auth.serializers import UserSerializer, BarangaySerializer
 from gridy_auth.permissions import IsBarangayOfficial
+from gridy_auth.lifecycle import erase_user_account
 from gridy_audit.services import log_action
 from gridy_audit.models import AuditLog
 
@@ -103,16 +104,12 @@ class UserProfileView(APIView):
     )
     def delete(self, request):
         user = request.user
-
-        # Log the voluntary self-deletion for the audit trail before the object is destroyed
-        log_action(
+        erase_user_account(
             user=user,
-            action_type=AuditLog.ActionType.USER_ACTION,
-            description=f"User {user.username} (ID: {user.id}) voluntarily exercised their Right to Erasure and permanently deleted their account.",
-            request=request
+            reason=f"User {user.username} (ID: {user.id}) voluntarily exercised their Right to Erasure and permanently deleted their account.",
+            request=request,
+            actor=user,
         )
-
-        user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
     
 @extend_schema(tags=['Barangay Settings'])

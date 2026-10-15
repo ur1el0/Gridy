@@ -9,7 +9,7 @@ from django.core.exceptions import ImproperlyConfigured
 class ResidentAwareCloudinaryStorage(MediaCloudinaryStorage):
     """Store resident evidence as authenticated Cloudinary assets."""
 
-    PRIVATE_DIRECTORIES = {"resident_ids", "resident_billings"}
+    PRIVATE_DIRECTORIES = {"resident_ids", "resident_billings", "payment_proofs"}
 
     @classmethod
     def is_private_resident_media(cls, name):

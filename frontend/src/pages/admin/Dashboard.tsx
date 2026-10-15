@@ -9,6 +9,59 @@ import { ScenarioBreakdownChart } from '../../components/admin-dashboard/Scenari
 import type { ActivityItem, DashboardSummary } from '../../components/admin-dashboard/types';
 import { InlineErrorState } from '../../components/ui/InlineErrorState';
 
+const isRecord = (value: unknown): value is Record<string, unknown> =>
+    typeof value === 'object' && value !== null && !Array.isArray(value);
+
+const hasNumericFields = (value: Record<string, unknown>, fields: string[]) =>
+    fields.every((field) => typeof value[field] === 'number' && Number.isFinite(value[field]));
+
+const isDashboardSummary = (value: unknown): value is DashboardSummary => {
+    if (!isRecord(value) || typeof value.total_residents !== 'number' || !Number.isFinite(value.total_residents)) {
+        return false;
+    }
+
+    const documents = value.document_requests;
+    const issues = value.issue_reports;
+    if (!isRecord(documents) || !hasNumericFields(documents, ['pending'])) return false;
+    if (documents.total_revenue !== undefined
+        && (typeof documents.total_revenue !== 'number' || !Number.isFinite(documents.total_revenue))) return false;
+    if (!isRecord(issues) || !hasNumericFields(issues, ['in_progress'])) return false;
+
+    const scenarios = issues.scenario_breakdown;
+    if (!isRecord(scenarios)
+        || !hasNumericFields(scenarios, ['peace_and_order', 'public_health', 'infrastructure', 'environment'])) {
+        return false;
+    }
+
+    if (value.demographics !== undefined) {
+        const demographics = value.demographics;
+        if (!isRecord(demographics) || !isRecord(demographics.purok_distribution)
+            || !Object.values(demographics.purok_distribution).every(
+                (count) => typeof count === 'number' && Number.isFinite(count),
+            )) return false;
+
+        const ageDemographics = demographics.age_demographics;
+        if (!isRecord(ageDemographics)
+            || !hasNumericFields(ageDemographics, ['youth', 'young_adult', 'adult', 'senior'])) return false;
+    }
+
+    return true;
+};
+
+const isActivityItem = (value: unknown): value is ActivityItem =>
+    isRecord(value)
+    && typeof value.id === 'number'
+    && typeof value.title === 'string'
+    && typeof value.description === 'string'
+    && typeof value.location === 'string'
+    && typeof value.event_datetime === 'string'
+    && typeof value.created_at === 'string';
+
+const parseActivityItems = (value: unknown): ActivityItem[] | null => {
+    const items = Array.isArray(value) ? value : isRecord(value) ? value.results : null;
+    return Array.isArray(items) && items.every(isActivityItem) ? items : null;
+};
+
 export const Dashboard: React.FC = () => {
     const { user } = useAuth();
     const navigate = useNavigate();
@@ -31,6 +84,9 @@ export const Dashboard: React.FC = () => {
 
         try {
             const response = await axiosPrivate.get('/dashboard/summary/', { signal: controller.signal });
+            if (!isDashboardSummary(response.data)) {
+                throw new Error('Dashboard summary response did not match the expected shape.');
+            }
             setSummaryData(response.data);
             setSummaryLoadError(false);
         } catch {
@@ -52,8 +108,11 @@ export const Dashboard: React.FC = () => {
 
         try {
             const response = await axiosPrivate.get('/activities/', { signal: controller.signal });
-            const data = response.data;
-            setActivities(data.results || data || []);
+            const items = parseActivityItems(response.data);
+            if (!items) {
+                throw new Error('Activities response did not match the expected shape.');
+            }
+            setActivities(items);
             setActivitiesLoadError(false);
         } catch {
             if (!controller.signal.aborted) setActivitiesLoadError(true);

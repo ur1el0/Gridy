@@ -1,8 +1,12 @@
 {
     "rewrites": [
         {
+            "source": "/api/v1/:path*/",
+            "destination": "https://gridy.onrender.com/api/v1/:path*/"
+        },
+        {
             "source": "/api/v1/:path*",
-            "destination": "https://gridy-backend.onrender.com/api/v1/:path*"
+            "destination": "https://gridy.onrender.com/api/v1/:path*"
         },
         {
             "source": "/(.*)",

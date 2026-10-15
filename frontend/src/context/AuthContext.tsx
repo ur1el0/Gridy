@@ -1,8 +1,50 @@
-import React, { useEffect, useState, type ReactNode } from "react";
+import React, { useEffect, useRef, useState, type ReactNode } from "react";
 import { AuthContext, type User } from "./auth-context";
 import { axiosPrivate } from "../api/axios";
+import {
+    clearAccessToken,
+    clearExplicitLogout,
+    EXPLICIT_LOGOUT_KEY,
+    hasExplicitLogout,
+    markExplicitLogout,
+    setAccessToken,
+} from "../api/accessToken";
 
 const DEFAULT_PRIMARY_COLOR = '#082B66';
+const AUTHENTICATED_ROLES = new Set([
+    'ADMIN',
+    'RESIDENT',
+    'DILG_ADMIN',
+    'FIELD_OFFICIAL',
+]);
+
+function isUserProfile(value: unknown): value is User {
+    if (typeof value !== 'object' || value === null || Array.isArray(value)) {
+        return false;
+    }
+
+    const profile = value as Record<string, unknown>;
+    const hasValidId =
+        (typeof profile.id === 'number' && Number.isSafeInteger(profile.id) && profile.id > 0) ||
+        (typeof profile.id === 'string' && profile.id.trim().length > 0);
+
+    return (
+        hasValidId &&
+        typeof profile.username === 'string' &&
+        profile.username.trim().length > 0 &&
+        typeof profile.role === 'string' &&
+        AUTHENTICATED_ROLES.has(profile.role)
+    );
+}
+
+function hasLogoutConfirmation(value: unknown): boolean {
+    return (
+        typeof value === 'object' &&
+        value !== null &&
+        !Array.isArray(value) &&
+        (value as Record<string, unknown>).detail === 'Successfully logged out.'
+    );
+}
 
 const applyBarangayTheme = (primaryColor?: string) => {
     const color =
@@ -75,71 +117,110 @@ const applyBarangayTheme = (primaryColor?: string) => {
     rootStyle.setProperty('--brand-primary-text', primaryTextColor);
 };
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<User | null>(() => {
-        const token = localStorage.getItem('access_token');
-        if (token) {
-            try {
-                const payload = JSON.parse(atob(token.split('.')[1]));
-                return {
-                    id: payload.user_id,
-                    username: payload.username,
-                    full_name: payload.full_name,
-                    role: payload.role,
-                };
-            } catch (error) {
-                console.error("Failed to parse token on load", error);
-                localStorage.removeItem('access_token');
-            }
-        }
-        return null;
-    });
+interface AuthProviderProps {
+    children: ReactNode;
+    restoreSession?: boolean;
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children, restoreSession = true }) => {
+    const [user, setUser] = useState<User | null>(null);
+    const [isAuthReady, setIsAuthReady] = useState(!restoreSession);
+    const authActionVersion = useRef(0);
 
     useEffect(() => {
         applyBarangayTheme(user?.barangay?.primary_color);
     }, [user?.barangay?.primary_color]);
 
     useEffect(() => {
-        const accessToken = localStorage.getItem('access_token');
-        if (!accessToken || !user?.id || user.barangay?.primary_color) return;
-
+        if (!restoreSession) return;
+        if (hasExplicitLogout()) {
+            clearAccessToken();
+            setUser(null);
+            setIsAuthReady(true);
+            return;
+        }
         let active = true;
-        const currentUserId = String(user.id);
+        const initialActionVersion = authActionVersion.current;
+
+        const handleSessionExpired = () => {
+            authActionVersion.current += 1;
+            clearAccessToken();
+            setUser(null);
+            setIsAuthReady(true);
+        };
+        const handleCrossTabLogout = (event: StorageEvent) => {
+            if (event.key === EXPLICIT_LOGOUT_KEY && event.newValue === 'true') {
+                handleSessionExpired();
+            }
+        };
+        window.addEventListener('gridy:session-expired', handleSessionExpired);
+        window.addEventListener('storage', handleCrossTabLogout);
 
         axiosPrivate.get('/auth/me/')
             .then((response) => {
-                if (active && String(response.data.id) === currentUserId) {
+                if (!isUserProfile(response.data)) {
+                    throw new Error('Invalid authenticated profile response.');
+                }
+                if (active && authActionVersion.current === initialActionVersion) {
                     setUser(response.data);
                 }
             })
             .catch((error) => {
-                if (active) {
-                    console.error('Failed to load the authenticated profile', error);
+                if (active && authActionVersion.current === initialActionVersion) {
+                    clearAccessToken();
+                    setUser(null);
+                }
+                if (error?.response?.status !== 401) {
+                    console.error('Failed to load the authenticated profile');
+                }
+            })
+            .finally(() => {
+                if (active && authActionVersion.current === initialActionVersion) {
+                    setIsAuthReady(true);
                 }
             });
 
         return () => {
             active = false;
+            window.removeEventListener('gridy:session-expired', handleSessionExpired);
+            window.removeEventListener('storage', handleCrossTabLogout);
         };
-    }, [user?.id, user?.barangay?.primary_color]);
+    }, [restoreSession]);
 
     const login = (token: string, userData?: User) => {
-        localStorage.setItem('access_token', token);
-        if (userData) {
-            setUser(userData);
-        } else {
+        authActionVersion.current += 1;
+        let authenticatedUser: User | null = null;
+        if (typeof token === 'string' && token.trim().length > 0 && userData && isUserProfile(userData)) {
+            authenticatedUser = userData;
+        } else if (typeof token === 'string' && token.trim().length > 0 && !userData) {
             try {
                 const payload = JSON.parse(atob(token.split('.')[1]));
-                setUser({
+                const tokenUser: User = {
                     id: payload.user_id,
                     username: payload.username,
                     full_name: payload.full_name,
                     role: payload.role,
-                });
-            } catch (error) {
-                console.error("Failed to parse token payload", error);
+                };
+                if (isUserProfile(tokenUser)) {
+                    authenticatedUser = tokenUser;
+                }
+            } catch {
+                // Treat unparseable token claims as an invalid login response.
             }
         }
+
+        if (!authenticatedUser) {
+            clearAccessToken();
+            setUser(null);
+            setIsAuthReady(true);
+            console.error('Login response did not contain a valid authenticated profile.');
+            return;
+        }
+
+        clearExplicitLogout();
+        setAccessToken(token);
+        setIsAuthReady(true);
+        setUser(authenticatedUser);
     };
 
     const updateBarangayPrimaryColor = (primaryColor: string) => {
@@ -157,14 +238,20 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const logout = async () => {
+        authActionVersion.current += 1;
+        markExplicitLogout();
+        clearAccessToken();
+        setUser(null);
+        setIsAuthReady(true);
+
         try {
             // Tell the backend to blacklist the session and destroy the HttpOnly cookie.
-            await axiosPrivate.post('/auth/logout/');
-        } catch (error) {
-            console.error("Server logout failed, but local state will be cleared.", error);
-        } finally {
-            localStorage.removeItem('access_token');
-            setUser(null);
+            const response = await axiosPrivate.post('/auth/logout/');
+            if (!hasLogoutConfirmation(response.data)) {
+                throw new Error('Invalid server logout response.');
+            }
+        } catch {
+            console.error("Server logout failed, but local state will be cleared.");
         }
     };
 
@@ -175,6 +262,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 login,
                 logout,
                 isAuthenticated: !!user,
+                isAuthReady,
                 updateBarangayPrimaryColor,
             }}
         >

@@ -72,7 +72,6 @@ cp .env.example .env
 cp backend/.env.example backend/.env
 # Set POSTGRES_PASSWORD and DATABASE_URL in .env using the same local database
 # credentials. Use host `db`, database `gridy_db`, and port `5432` in the URL.
-# ADMIN_REGISTRATION_PASSKEY in backend/.env to a unique secret.
 
 # Boot the local 3-Tier Stack
 docker compose up -d --build

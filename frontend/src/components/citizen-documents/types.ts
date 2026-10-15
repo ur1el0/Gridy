@@ -14,6 +14,10 @@ export interface DocumentRequest {
     purpose: string;
     status: string;
     fee_amount?: number | string | null;
+    fee_assessment_status?: 'AWAITING_ASSESSMENT' | 'ASSESSED' | 'WAIVED' | 'STATUTORY_EXEMPT' | string;
+    fee_assessed_by_name?: string | null;
+    fee_assessed_at?: string | null;
+    fee_waiver_reason?: string;
     payment_method?: string;
     payment_reference?: string;
     payment_status?: string;
@@ -22,6 +26,9 @@ export interface DocumentRequest {
     payment_recipient_name_snapshot?: string | null;
     payment_recipient_identifier_snapshot?: string | null;
     payment_instructions_snapshot?: string | null;
+    payment_proof_url?: string | null;
+    payment_transacted_at?: string | null;
     admin_notes?: string;
+    or_number?: string;
     created_at: string;
 }

@@ -92,6 +92,11 @@ class QueueLiveStatusModel {
   final int avgWaitMins;
   final List<QueueTicketModel> recentCompleted;
   final QueueTicketModel? userTicket;
+  final bool hasLiveStatusError;
+  final bool hasUserTicketsError;
+  final String? errorMessage;
+  final String? liveStatusErrorMessage;
+  final String? userTicketsErrorMessage;
 
   const QueueLiveStatusModel({
     this.currentTicket,
@@ -100,6 +105,11 @@ class QueueLiveStatusModel {
     this.avgWaitMins = 0,
     this.recentCompleted = const [],
     this.userTicket,
+    this.hasLiveStatusError = false,
+    this.hasUserTicketsError = false,
+    this.errorMessage,
+    this.liveStatusErrorMessage,
+    this.userTicketsErrorMessage,
   });
 
   /// Derives human-friendly live capacity label
@@ -109,10 +119,12 @@ class QueueLiveStatusModel {
     return 'High Load';
   }
 
-  /// Calculates estimated call time formatted as hh:mm AM/PM
-  String get estimatedCallTimeFormatted {
+  /// Calculates estimated call time when the server reports a positive average wait.
+  String? get estimatedCallTimeFormatted {
+    if (avgWaitMins <= 0) return null;
+
     final now = DateTime.now();
-    final estimatedTime = now.add(Duration(minutes: avgWaitMins > 0 ? avgWaitMins : 15));
+    final estimatedTime = now.add(Duration(minutes: avgWaitMins));
     final hour = estimatedTime.hour > 12
         ? estimatedTime.hour - 12
         : (estimatedTime.hour == 0 ? 12 : estimatedTime.hour);
@@ -124,9 +136,17 @@ class QueueLiveStatusModel {
   factory QueueLiveStatusModel.fromJson({
     required Map<String, dynamic> liveStatusJson,
     List<QueueTicketModel> userTickets = const [],
+    bool hasLiveStatusError = false,
+    bool hasUserTicketsError = false,
+    String? errorMessage,
+    String? liveStatusErrorMessage,
+    String? userTicketsErrorMessage,
   }) {
-    final recentList = (liveStatusJson['recent_completed'] as List<dynamic>?)
-            ?.map((item) => QueueTicketModel.fromJson(item as Map<String, dynamic>))
+    final recentList =
+        (liveStatusJson['recent_completed'] as List<dynamic>?)
+            ?.map(
+              (item) => QueueTicketModel.fromJson(item as Map<String, dynamic>),
+            )
             .toList() ??
         [];
 
@@ -141,11 +161,18 @@ class QueueLiveStatusModel {
 
     return QueueLiveStatusModel(
       currentTicket: liveStatusJson['current_ticket'] as String?,
-      currentService: liveStatusJson['current_service'] as String? ?? 'Document Issuance',
+      currentService:
+          liveStatusJson['current_service'] as String? ?? 'Document Issuance',
       totalWaiting: liveStatusJson['total_waiting'] as int? ?? 0,
       avgWaitMins: liveStatusJson['avg_wait_mins'] as int? ?? 0,
       recentCompleted: recentList,
       userTicket: activeUserTicket,
+      hasLiveStatusError: hasLiveStatusError,
+      hasUserTicketsError: hasUserTicketsError,
+      errorMessage:
+          errorMessage ?? userTicketsErrorMessage ?? liveStatusErrorMessage,
+      liveStatusErrorMessage: liveStatusErrorMessage,
+      userTicketsErrorMessage: userTicketsErrorMessage,
     );
   }
 }

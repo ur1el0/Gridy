@@ -56,3 +56,11 @@ Validation:
 - transaction.on_commit ensures an email isn't sent for a rolled-back account. The asynchronous email helper is best-effort; the standard forgot-password path remains the recovery route.
 - Do not infer native-app identity from User-Agent or request headers. API authorization remains role-scoped and the web client has no Field Official workspace.
 - If current-main code differs from the reference implementation, prefer the current-main contract and document any necessary minimal plan adjustment before making the conflicting edit.
+
+## Milestone 4: Synchronize with Current Main and Resolve Merge Conflicts
+1. Merge current `main` into this published feature branch without rewriting its history.
+2. Preserve the mainline secret-key fallback and removal of shared-passkey administrative registration; do not restore the removed `AdminRegisterSerializer` or `ADMIN_REGISTRATION_PASSKEY` requirement.
+3. Keep both current-main password-reset mail dispatch and the Field Official setup-mail task.
+4. Keep both public-navigator and staff-management throttle rates.
+5. Combine the route-restore regression test with the Field Official web-boundary test, marking the mocked auth state ready for the latter.
+6. Inspect for remaining conflict markers and run `git diff --check`. CI will run after the PR branch update; do not merge the PR as part of this milestone.

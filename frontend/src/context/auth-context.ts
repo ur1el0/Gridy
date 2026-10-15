@@ -19,6 +19,7 @@ export interface AuthContextType {
     login: (token: string, userData?: User) => void
     logout: () => Promise<void>
     isAuthenticated: boolean
+    isAuthReady?: boolean
     updateBarangayPrimaryColor: (primaryColor: string) => void
 }
 

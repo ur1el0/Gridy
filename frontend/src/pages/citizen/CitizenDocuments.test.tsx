@@ -62,12 +62,27 @@ describe('CitizenDocuments', () => {
         fireEvent.change(recipient, { target: { value: '7' } });
         const input = screen.getByLabelText('Transfer reference for request 15');
         fireEvent.change(input, { target: { value: 'GC-REF-5512' } });
+
+        const file = new File(['fake-proof-content'], 'receipt.png', { type: 'image/png' });
+        const fileInput = screen.getByLabelText('Payment proof screenshot for request 15');
+        fireEvent.change(fileInput, { target: { files: [file] } });
+
         fireEvent.click(screen.getByRole('button', { name: 'Submit transfer reference' }));
 
-        await waitFor(() => expect(axiosPrivate.post).toHaveBeenCalledWith(
-            '/document-requests/15/payment-reference/',
-            { payment_recipient_id: 7, payment_reference: 'GC-REF-5512' },
-        ));
+        await waitFor(() => {
+            expect(axiosPrivate.post).toHaveBeenCalledWith(
+                '/document-requests/15/payment-reference/',
+                expect.any(FormData),
+                expect.objectContaining({
+                    headers: { 'Content-Type': 'multipart/form-data' },
+                }),
+            );
+        });
+        const formData = vi.mocked(axiosPrivate.post).mock.calls[0][1] as FormData;
+        expect(formData.get('payment_recipient_id')).toBe('7');
+        expect(formData.get('payment_reference')).toBe('GC-REF-5512');
+        expect(formData.get('payment_proof_image')).toBeTruthy();
+        expect(formData.get('payment_transacted_at')).toBeTruthy();
     });
 
     it('keeps recipient failures separate from requests and retries only the recipient read', async () => {

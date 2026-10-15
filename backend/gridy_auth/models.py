@@ -3,6 +3,7 @@ from django.db.models import Q
 from django.db.models.functions import Lower
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
+from django.utils import timezone
 
 # Create your models here.
 
@@ -169,3 +170,26 @@ class RefreshSession(models.Model):
 
     def __str__(self):
         return f"Session for {self.user.username} (JTI: {self.refresh_token_jti[:8]})"
+
+
+class PrivateMediaCleanup(models.Model):
+    """Durable, non-user-linked work item for deleting private resident evidence."""
+
+    class ResidentField(models.TextChoices):
+        PHILSYS_ID_PHOTO = "philsys_id_photo", "PhilSys ID photo"
+        SECONDARY_ID_PHOTO = "secondary_id_photo", "Secondary ID photo"
+        UTILITY_BILLING_PHOTO = "utility_billing_photo", "Utility billing photo"
+
+    field_name = models.CharField(max_length=32, choices=ResidentField.choices)
+    encrypted_file_name = models.TextField()
+    attempt_count = models.PositiveIntegerField(default=0)
+    next_attempt_at = models.DateTimeField(default=timezone.now, db_index=True)
+    last_attempt_at = models.DateTimeField(null=True, blank=True)
+    last_error_code = models.CharField(max_length=128, blank=True, default="")
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["created_at", "pk"]
+
+    def __str__(self):
+        return f"Private media cleanup #{self.pk}"

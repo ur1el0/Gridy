@@ -71,14 +71,11 @@ describe('Register Component (Dual-Mode)', () => {
         expect(screen.getByText('ADMIN ACCESS TIERS')).toBeInTheDocument();
         expect(screen.getByText('SECURITY AUDIT COMPLIANCE')).toBeInTheDocument();
 
-        // Admin-Specific Inputs
-        expect(screen.getByPlaceholderText('admin_captain')).toBeInTheDocument();
-        expect(screen.getByRole('combobox')).toBeInTheDocument();
-        const affirmationCheckbox = screen.getByRole('checkbox', {
-            name: /I affirm that I am an authorized barangay official or personnel/i,
-        });
-        expect(affirmationCheckbox).toBeRequired();
-        expect(screen.getByRole('button', { name: /create admin account/i })).toBeInTheDocument();
+        // Verify DILG Guidance and Link per ADR 011
+        expect(screen.getByRole('heading', { level: 3, name: 'DILG-Reviewed Staff Onboarding' })).toBeInTheDocument();
+        expect(screen.getByText(/unauthenticated public registration for barangay administrative accounts is disabled/i)).toBeInTheDocument();
+        const onboardingLink = screen.getByRole('link', { name: 'Apply for Barangay Onboarding' });
+        expect(onboardingLink).toHaveAttribute('href', '/register/barangay');
     });
 
     it('blocks registration when the approved barangay directory is unavailable', async () => {
@@ -187,35 +184,30 @@ describe('Register Component (Dual-Mode)', () => {
         expect(await screen.findByText('Passwords do not match.')).toBeInTheDocument();
     });
 
-    it('validates affirmation requirement before administrative account submission', async () => {
+    it('allows toggling between Resident and Administrative modes via the bottom links', async () => {
         render(
             <BrowserRouter>
                 <Register />
             </BrowserRouter>
         );
 
-        // Switch to Admin mode
-        const toggleButton = screen.getByTitle('Tap to switch registration type');
-        fireEvent.click(toggleButton);
+        // Click bottom link to switch to official registration
+        const switchToAdminLink = screen.getByRole('button', {
+            name: /Barangay Personnel\? Switch to Official Registration/i,
+        });
+        fireEvent.click(switchToAdminLink);
 
-        const fullNameInput = screen.getByPlaceholderText('e.g. Juan Dela Cruz');
-        const usernameInput = screen.getByPlaceholderText('admin_captain');
-        const emailInput = screen.getByPlaceholderText('juan@example.com');
-        const [passwordInput, confirmPasswordInput] = screen.getAllByPlaceholderText('••••••••');
-        const submitButton = screen.getByRole('button', { name: /create admin account/i });
+        expect(screen.getByRole('heading', { level: 2, name: 'Administrative Registration' })).toBeInTheDocument();
+        expect(screen.getByRole('link', { name: 'Apply for Barangay Onboarding' })).toHaveAttribute('href', '/register/barangay');
 
-        fireEvent.change(fullNameInput, { target: { value: 'Brgy Kagawad' } });
-        fireEvent.change(usernameInput, { target: { value: 'brgy_kagawad' } });
-        fireEvent.change(emailInput, { target: { value: 'kagawad@barangay.gov.ph' } });
-        fireEvent.change(passwordInput, { target: { value: 'AdminPass123!' } });
-        fireEvent.change(confirmPasswordInput, { target: { value: 'AdminPass123!' } });
+        // Click bottom link to switch back to resident sign up
+        const switchToResidentLink = screen.getByRole('button', {
+            name: /Registering as a Resident\? Switch to Resident Sign Up/i,
+        });
+        fireEvent.click(switchToResidentLink);
 
-        // Dispatch submit without checking the affirmation checkbox
-        fireEvent.submit(submitButton.closest('form')!);
-
-        expect(
-            await screen.findByText('You must affirm that you are an authorized barangay official or personnel.')
-        ).toBeInTheDocument();
+        expect(screen.getByRole('heading', { level: 2, name: 'Resident Registration' })).toBeInTheDocument();
+        expect(screen.getByRole('button', { name: /create resident account/i })).toBeInTheDocument();
     });
 
     it('sends accepted privacy consent with resident registration', async () => {

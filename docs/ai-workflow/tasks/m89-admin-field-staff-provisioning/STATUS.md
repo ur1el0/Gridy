@@ -91,3 +91,11 @@ Result: exit code 0; schema output contains 14 warnings and 17 errors (6 and 5 u
 - `git diff --cached --name-only`: empty at the time of the check.
 - `git status`: changes are confined to staff provisioning, password setup validation, admin settings UI, web role routing, tests, and this task packet. No migrations or dependency manifests changed.
 - The worktree uses a symlink to the primary checkout's existing `frontend/node_modules` solely to run frontend verification; package files were not changed.
+
+## Current Main Conflict Resolution (2026-10-16)
+
+- Merged current `main` (`da0e47adc76300d51c8d5db35a07e34f26b64f49`) into the feature branch in an isolated worktree at `/tmp/gridy-pr230-conflict-20261016`; the primary checkout and its uncommitted edits were left untouched.
+- Resolved four conflicts in `backend/config/settings.py`, `backend/gridy_auth/serializers/__init__.py`, `backend/gridy_auth/tasks.py`, and `frontend/src/components/core/ProtectedRoute.test.tsx`.
+- Kept `SECRET_KEY_FALLBACKS`, the mainline removal of shared-passkey admin registration, both `public_navigator` and `staff_management` throttle scopes, both password-reset and staff-setup email tasks, and both route restoration and Field Official guard assertions.
+- `git diff --cached --check`: passed with no output. `git ls-files -u`: no unmerged paths. Conflict-marker scan across all four resolved files: no matches.
+- Tests were not rerun as part of this merge-conflict update; GitHub CI is expected to validate the updated PR head after it is pushed. The PR remains unmerged.

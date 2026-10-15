@@ -1,11 +1,26 @@
 import 'dart:convert';
 import '../core/network/api_client.dart';
+import '../core/network/api_exception.dart';
 import '../models/activity_schedule_model.dart';
 import '../models/announcement_model.dart';
 import '../models/document_request_model.dart';
 import '../models/notification_item_model.dart';
 import '../models/user_model.dart';
 import 'storage_service.dart';
+
+class _FetchResult<T> {
+  final T? data;
+  final bool failed;
+  final String? errorMessage;
+  final int? statusCode;
+
+  const _FetchResult({
+    this.data,
+    this.failed = false,
+    this.errorMessage,
+    this.statusCode,
+  });
+}
 
 /// Aggregated data container holding all dashboard metrics and schedules
 class DashboardData {
@@ -15,6 +30,10 @@ class DashboardData {
   final List<ActivityScheduleModel> activities;
   final List<NotificationItemModel> notifications;
   final Map<String, dynamic>? queueStatus;
+  final bool hasNotificationsError;
+  final String? notificationsErrorMessage;
+  final bool hasAnnouncementsError;
+  final bool hasDocumentRequestsError;
 
   const DashboardData({
     this.user,
@@ -23,6 +42,10 @@ class DashboardData {
     this.activities = const [],
     this.notifications = const [],
     this.queueStatus,
+    this.hasNotificationsError = false,
+    this.notificationsErrorMessage,
+    this.hasAnnouncementsError = false,
+    this.hasDocumentRequestsError = false,
   });
 
   /// Count of active pending/processing document requests for this resident
@@ -63,16 +86,34 @@ class DashboardService {
     ]);
 
     if (results[0] != null) currentUser = results[0] as UserModel;
-    announcements = results[1] as List<AnnouncementModel>;
-    documentRequests = results[2] as List<DocumentRequestModel>;
+    final annResult = results[1] as _FetchResult<List<AnnouncementModel>>;
+    final docResult = results[2] as _FetchResult<List<DocumentRequestModel>>;
+
+    announcements = annResult.data ?? [];
+    documentRequests = docResult.data ?? [];
     activities = results[3] as List<ActivityScheduleModel>;
     queueStatus = results[4] as Map<String, dynamic>?;
 
+    final bool hasNotificationsError = annResult.failed || docResult.failed;
+    String? notificationsErrorMessage;
+    if (annResult.failed && docResult.failed) {
+      notificationsErrorMessage =
+          'Unable to load announcements (${annResult.errorMessage}) and document updates (${docResult.errorMessage})';
+    } else if (annResult.failed) {
+      notificationsErrorMessage =
+          'Unable to load announcements (${annResult.errorMessage})';
+    } else if (docResult.failed) {
+      notificationsErrorMessage =
+          'Unable to load document request updates (${docResult.errorMessage})';
+    }
+
     // Synthesize notifications list from document status and announcements
-    final notifications = _generateNotifications(
-      documentRequests: documentRequests,
-      announcements: announcements,
-    );
+    final notifications = hasNotificationsError
+        ? <NotificationItemModel>[]
+        : _generateNotifications(
+            documentRequests: documentRequests,
+            announcements: announcements,
+          );
 
     return DashboardData(
       user: currentUser,
@@ -81,6 +122,10 @@ class DashboardService {
       activities: activities,
       notifications: notifications,
       queueStatus: queueStatus,
+      hasNotificationsError: hasNotificationsError,
+      notificationsErrorMessage: notificationsErrorMessage,
+      hasAnnouncementsError: annResult.failed,
+      hasDocumentRequestsError: docResult.failed,
     );
   }
 
@@ -96,25 +141,59 @@ class DashboardService {
     }
   }
 
-  Future<List<AnnouncementModel>> _fetchAnnouncements() async {
+  Future<_FetchResult<List<AnnouncementModel>>> _fetchAnnouncements() async {
     try {
       final response = await apiClient.get('/announcements/', requiresAuth: true);
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
-      final List<dynamic> list = (data is Map<String, dynamic> ? data['results'] : data) ?? [];
-      return list.map((item) => AnnouncementModel.fromJson(item as Map<String, dynamic>)).toList();
-    } catch (_) {
-      return [];
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        final List<dynamic> list = (data is Map<String, dynamic> ? data['results'] : data) ?? [];
+        final items = list.map((item) => AnnouncementModel.fromJson(item as Map<String, dynamic>)).toList();
+        return _FetchResult(data: items);
+      } else {
+        return _FetchResult(
+          data: [],
+          failed: true,
+          statusCode: response.statusCode,
+          errorMessage: 'HTTP ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      final int? statusCode = e is ApiException ? e.statusCode : null;
+      final String msg = e is ApiException && e.statusCode != null ? 'HTTP ${e.statusCode}' : e.toString();
+      return _FetchResult(
+        data: [],
+        failed: true,
+        statusCode: statusCode,
+        errorMessage: msg,
+      );
     }
   }
 
-  Future<List<DocumentRequestModel>> _fetchDocumentRequests() async {
+  Future<_FetchResult<List<DocumentRequestModel>>> _fetchDocumentRequests() async {
     try {
       final response = await apiClient.get('/document-requests/', requiresAuth: true);
-      final data = jsonDecode(utf8.decode(response.bodyBytes));
-      final List<dynamic> list = (data is Map<String, dynamic> ? data['results'] : data) ?? [];
-      return list.map((item) => DocumentRequestModel.fromJson(item as Map<String, dynamic>)).toList();
-    } catch (_) {
-      return [];
+      if (response.statusCode == 200) {
+        final data = jsonDecode(utf8.decode(response.bodyBytes));
+        final List<dynamic> list = (data is Map<String, dynamic> ? data['results'] : data) ?? [];
+        final items = list.map((item) => DocumentRequestModel.fromJson(item as Map<String, dynamic>)).toList();
+        return _FetchResult(data: items);
+      } else {
+        return _FetchResult(
+          data: [],
+          failed: true,
+          statusCode: response.statusCode,
+          errorMessage: 'HTTP ${response.statusCode}',
+        );
+      }
+    } catch (e) {
+      final int? statusCode = e is ApiException ? e.statusCode : null;
+      final String msg = e is ApiException && e.statusCode != null ? 'HTTP ${e.statusCode}' : e.toString();
+      return _FetchResult(
+        data: [],
+        failed: true,
+        statusCode: statusCode,
+        errorMessage: msg,
+      );
     }
   }
 
@@ -173,27 +252,8 @@ class DashboardService {
       );
     }
 
-    // If backend has no data yet, provide matching sample notifications for UI fidelity
-    if (list.isEmpty) {
-      list.addAll([
-        NotificationItemModel(
-          id: 'sample-1',
-          title: 'Tax Clearance Approved',
-          category: 'Document Services',
-          timestamp: DateTime.now().subtract(const Duration(hours: 2)),
-          type: NotificationType.approved,
-        ),
-        NotificationItemModel(
-          id: 'sample-2',
-          title: 'Utility Maintenance Notice',
-          category: 'Community Alert',
-          timestamp: DateTime.now().subtract(const Duration(hours: 5)),
-          type: NotificationType.warning,
-        ),
-      ]);
-    }
-
-    // Limit to top 5 most recent
+    // Sort by most recent timestamp descending and limit to top 5
+    list.sort((a, b) => b.timestamp.compareTo(a.timestamp));
     return list.take(5).toList();
   }
 }

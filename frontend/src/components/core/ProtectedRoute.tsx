@@ -1,13 +1,18 @@
 import { Navigate, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../../context/auth-context';
+import { RouteLoadingFallback } from './RouteLoadingFallback';
 
 interface ProtectedRouteProps {
     allowedRoles?: string[];
 }
 
 export const ProtectedRoute = ({ allowedRoles }: ProtectedRouteProps) => {
-    const { isAuthenticated, user } = useAuth();
+    const { isAuthenticated, isAuthReady, user } = useAuth();
     const location = useLocation();
+
+    if (isAuthReady === false) {
+        return <RouteLoadingFallback />;
+    }
 
     if (!isAuthenticated) {
         return <Navigate to="/login" state={{ from: location }} replace />;

@@ -26,7 +26,7 @@ export const TextField: React.FC<TextFieldProps> = ({
             <input
                 {...props}
                 id={inputId}
-                className={`w-full px-4 py-3 bg-surface-input focus:bg-surface border border-transparent rounded-medium text-sm font-medium text-neutral-primary placeholder-neutral-hint outline-none transition-all focus-visible:ring-2 ${
+                className={`w-full px-4 py-3 bg-surface-input focus:bg-surface border border-transparent rounded-medium text-base md:text-sm font-medium text-neutral-primary placeholder-neutral-hint outline-none transition-all focus-visible:ring-2 ${
                     isAdminMode
                         ? 'focus:border-brand-admin focus-visible:ring-brand-admin/25'
                         : 'focus:border-brand-accent focus-visible:ring-brand-accent/25'

@@ -42,10 +42,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
   bool _removePhilsysPhoto = false;
 
   String _secondaryIdType = 'Passport';
+  bool _secondaryIdTypeChanged = false;
   XFile? _newSecondaryIdPhoto;
   bool _removeSecondaryIdPhoto = false;
 
   String _utilityBillingType = 'Electric / Meralco';
+  bool _utilityBillingTypeChanged = false;
   XFile? _newUtilityBillingPhoto;
   bool _removeUtilityBillingPhoto = false;
 
@@ -95,6 +97,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _removePhilsysPhoto = false;
 
     _secondaryIdType = _currentUser.secondaryIdType ?? 'Passport';
+    _secondaryIdTypeChanged = false;
     if (!_secondaryIdTypes.contains(_secondaryIdType)) {
       _secondaryIdType = 'Passport';
     }
@@ -102,6 +105,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _removeSecondaryIdPhoto = false;
 
     _utilityBillingType = _currentUser.utilityBillingType ?? 'Electric / Meralco';
+    _utilityBillingTypeChanged = false;
     if (!_billingTypes.contains(_utilityBillingType)) {
       _utilityBillingType = 'Electric / Meralco';
     }
@@ -209,10 +213,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
         philsysIdNumber: _philsysIdController.text.trim(),
         philsysPhoto: _newPhilsysPhoto,
         removePhilsysPhoto: _removePhilsysPhoto,
-        secondaryIdType: _secondaryIdType,
+        secondaryIdType: _secondaryIdTypeChanged ? _secondaryIdType : null,
         secondaryIdPhoto: _newSecondaryIdPhoto,
         removeSecondaryIdPhoto: _removeSecondaryIdPhoto,
-        utilityBillingType: _utilityBillingType,
+        utilityBillingType: _utilityBillingTypeChanged ? _utilityBillingType : null,
         utilityBillingPhoto: _newUtilityBillingPhoto,
         removeUtilityBillingPhoto: _removeUtilityBillingPhoto,
       );
@@ -417,7 +421,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     secondaryIdType: _secondaryIdType,
                     secondaryIdTypes: _secondaryIdTypes,
                     onSecondaryIdTypeChanged: (val) {
-                      if (val != null) setState(() => _secondaryIdType = val);
+                      if (val != null) {
+                        setState(() {
+                          _secondaryIdType = val;
+                          _secondaryIdTypeChanged = true;
+                        });
+                      }
                     },
                     newSecondaryIdPhoto: _newSecondaryIdPhoto,
                     removeSecondaryIdPhoto: _removeSecondaryIdPhoto,
@@ -428,7 +437,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     utilityBillingType: _utilityBillingType,
                     utilityBillingTypes: _billingTypes,
                     onUtilityBillingTypeChanged: (val) {
-                      if (val != null) setState(() => _utilityBillingType = val);
+                      if (val != null) {
+                        setState(() {
+                          _utilityBillingType = val;
+                          _utilityBillingTypeChanged = true;
+                        });
+                      }
                     },
                     newUtilityBillingPhoto: _newUtilityBillingPhoto,
                     removeUtilityBillingPhoto: _removeUtilityBillingPhoto,

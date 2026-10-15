@@ -48,7 +48,6 @@ class AuthScopedThrottleTests(IsolatedAuthAPITestCase):
                 {'username': 'unknown-user', 'password': 'WrongPassword123!'},
             ),
             ('auth_register', reverse('auth_register'), {}),
-            ('auth_admin_register', reverse('auth_register_admin'), {}),
             (
                 'password_reset_request',
                 reverse('password_reset_request'),

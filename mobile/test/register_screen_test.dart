@@ -146,9 +146,19 @@ void main() {
     await tester.enterText(textFields.at(3), 'Password123!');
     await tester.enterText(textFields.at(4), 'Password123!');
 
-    final barangayDropdown = find.byType(DropdownButtonFormField<int>);
+    final barangayDropdown = find.text('Select your Barangay');
     await tester.ensureVisible(barangayDropdown);
     await tester.tap(barangayDropdown);
+    await tester.pumpAndSettle();
+    final searchField = find.widgetWithText(
+      TextField,
+      'Search barangay, municipality, or province',
+    );
+    await tester.enterText(searchField, 'missing barangay');
+    await tester.pumpAndSettle();
+    expect(find.text('No barangays found.'), findsOneWidget);
+    expect(find.text('Test Barangay (Lucena City, Quezon)'), findsNothing);
+    await tester.enterText(searchField, '  LUCENA  ');
     await tester.pumpAndSettle();
     await tester.tap(find.text('Test Barangay (Lucena City, Quezon)').last);
     await tester.pumpAndSettle();

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../core/theme/app_colors.dart';
 import '../models/barangay_model.dart';
 import 'custom_text_field.dart';
+import 'barangay_select_field.dart';
 
 class ResidentRegistrationDetailsSection extends StatelessWidget {
   final TextEditingController fullNameController;
@@ -98,64 +99,12 @@ class ResidentRegistrationDetailsSection extends StatelessWidget {
                 color: AppColors.inputBackground,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: DropdownButtonFormField<int>(
-                initialValue: selectedBarangayId,
-                isExpanded: true,
-                icon: const Icon(
-                  Icons.keyboard_arrow_down_rounded,
-                  color: AppColors.textMuted,
-                ),
-                style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: AppColors.textPrimary,
-                ),
-                decoration: const InputDecoration(
-                  border: InputBorder.none,
-                  enabledBorder: InputBorder.none,
-                  focusedBorder: InputBorder.none,
-                  errorBorder: InputBorder.none,
-                  focusedErrorBorder: InputBorder.none,
-                  contentPadding: EdgeInsets.symmetric(
-                    horizontal: 14,
-                    vertical: 12,
-                  ),
-                  prefixIcon: Icon(
-                    Icons.location_on_outlined,
-                    color: AppColors.textMuted,
-                    size: 20,
-                  ),
-                ),
-                hint: const Text(
-                  'Select your Barangay',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w400,
-                    color: AppColors.textHint,
-                  ),
-                ),
-                items: barangays
-                    .map(
-                      (barangay) => DropdownMenuItem(
-                        value: barangay.id,
-                        child: Text(
-                          barangay.displayName,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    )
-                    .toList(),
-                onChanged: isLoading || isLoadingBarangays || barangays.isEmpty
-                    ? null
-                    : (value) {
-                        onBarangayChanged(value);
-                      },
-                validator: (value) {
-                  if (value == null) {
-                    return 'Please select your barangay';
-                  }
-                  return null;
-                },
+              child: BarangaySelectField(
+                barangays: barangays,
+                selectedId: selectedBarangayId,
+                enabled:
+                    !isLoading && !isLoadingBarangays && barangays.isNotEmpty,
+                onChanged: onBarangayChanged,
               ),
             ),
             if (isLoadingBarangays)
