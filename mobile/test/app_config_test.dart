@@ -19,7 +19,7 @@ void main() {
         platform: TargetPlatform.android,
       );
 
-      expect(url, 'https://gridy-backend.onrender.com/api/v1');
+      expect(url, 'https://gridy.onrender.com/api/v1');
       expect(url, AppConfig.productionBaseUrl);
     });
 
@@ -50,6 +50,16 @@ void main() {
           envBaseUrl: 'ftp://insecure.test/api/v1',
           isReleaseMode: true,
           platform: TargetPlatform.android,
+        ),
+        throwsStateError,
+      );
+    });
+
+    test('release mode rejects HTTPS URLs without a host', () {
+      expect(
+        () => AppConfig.resolveBaseUrl(
+          envBaseUrl: 'https:///api/v1',
+          isReleaseMode: true,
         ),
         throwsStateError,
       );
@@ -115,7 +125,7 @@ void main() {
         expect(request.method, 'GET');
         expect(
           request.url.toString(),
-          'https://gridy-backend.onrender.com/api/v1/auth/public/barangays/',
+          'https://gridy.onrender.com/api/v1/auth/public/barangays/',
         );
         expect(request.headers['authorization'], isNull);
 
