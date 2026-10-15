@@ -1,5 +1,8 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_secure_storage/test/test_flutter_secure_storage_platform.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_secure_storage_platform_interface/flutter_secure_storage_platform_interface.dart';
+import 'package:mobile/models/user_model.dart';
 import 'package:mobile/services/storage_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -100,16 +103,21 @@ void main() {
   });
 
   test(
-    'migrates cached user and login preferences without losing values',
+    'migrates cached user into encrypted storage and keeps login preferences',
     () async {
       final prefs = await SharedPreferences.getInstance();
-      await prefs.setString(legacyCachedUserKey, '{"cached":"user"}');
+      const legacyUserJson =
+          '{"id":4,"username":"resident","email":"resident@example.com","role":"RESIDENT","full_name":"Resident One","birth_date":"1990-01-01","philsys_id_number":"1111-2222-3333-4444"}';
+      await prefs.setString(legacyCachedUserKey, legacyUserJson);
       await prefs.setBool(legacyRememberMeKey, true);
       await prefs.setString(legacySavedUsernameKey, 'resident.user');
 
       final storage = await StorageService.init();
+      const secureStorage = FlutterSecureStorage();
 
-      expect(prefs.getString(cachedUserKey), '{"cached":"user"}');
+      expect(await secureStorage.read(key: cachedUserKey), legacyUserJson);
+      expect(storage.getUser()?.philsysIdNumber, '1111-2222-3333-4444');
+      expect(prefs.getString(cachedUserKey), isNull);
       expect(prefs.getBool(rememberMeKey), isTrue);
       expect(prefs.getString(savedUsernameKey), 'resident.user');
       expect(prefs.getString(legacyCachedUserKey), isNull);
@@ -120,41 +128,70 @@ void main() {
     },
   );
 
+  test(
+    'keeps the legacy cache for retry when secure migration write fails',
+    () async {
+      final prefs = await SharedPreferences.getInstance();
+      const legacyUserJson =
+          '{"id":4,"username":"resident","email":"resident@example.com","role":"RESIDENT","full_name":"Resident One","philsys_id_number":"1111-2222-3333-4444"}';
+      await prefs.setString(legacyCachedUserKey, legacyUserJson);
+      FlutterSecureStoragePlatform.instance = _FailingUserWriteStorage({});
+
+      final storage = await StorageService.init();
+
+      expect(storage.getUser(), isNull);
+      expect(prefs.getString(legacyCachedUserKey), legacyUserJson);
+      expect(prefs.getString(cachedUserKey), isNull);
+    },
+  );
+
   test('retains legacy preferences when a destination write fails', () async {
     final prefs = _FailingWriteSharedPreferences({
-      legacyCachedUserKey: '{"cached":"user"}',
       legacyRememberMeKey: true,
       legacySavedUsernameKey: 'resident.user',
     });
 
     await StorageService.init(preferences: prefs);
 
-    expect(prefs.getString(legacyCachedUserKey), '{"cached":"user"}');
     expect(prefs.getBool(legacyRememberMeKey), isTrue);
     expect(prefs.getString(legacySavedUsernameKey), 'resident.user');
-    expect(prefs.containsKey(cachedUserKey), isFalse);
     expect(prefs.containsKey(rememberMeKey), isFalse);
     expect(prefs.containsKey(savedUsernameKey), isFalse);
   });
 
-  test('saves new keys and clears only active session data', () async {
+  test('saves user details securely and clears them on logout', () async {
     final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(cachedUserKey, '{"cached":"user"}');
-
     final storage = await StorageService.init();
     const secureStorage = FlutterSecureStorage();
+    const user = UserModel(
+      id: 5,
+      username: 'resident.user',
+      email: 'resident@example.com',
+      role: 'RESIDENT',
+      fullName: 'Resident User',
+      birthDate: '1990-01-01',
+      philsysIdNumber: '1111-2222-3333-4444',
+    );
 
     await storage.saveTokens(
       accessToken: 'new-access-token',
       refreshCookie: 'refresh_token=new-refresh-token',
     );
     await storage.saveRememberMe(rememberMe: true, username: 'resident.user');
+    await storage.saveUser(user);
 
     expect(storage.getAccessToken(), 'new-access-token');
     expect(storage.getRefreshCookie(), 'refresh_token=new-refresh-token');
     expect(await secureStorage.read(key: accessTokenKey), 'new-access-token');
     expect(await secureStorage.read(key: legacyAccessTokenKey), isNull);
     expect(prefs.getString(accessTokenKey), isNull);
+    expect(prefs.getString(cachedUserKey), isNull);
+    expect(prefs.getString(legacyCachedUserKey), isNull);
+    expect(await secureStorage.read(key: cachedUserKey), contains('1111-2222'));
+    expect(storage.getUser()?.philsysIdNumber, '1111-2222-3333-4444');
+
+    final restoredStorage = await StorageService.init();
+    expect(restoredStorage.getUser()?.philsysIdNumber, '1111-2222-3333-4444');
 
     await storage.clearSession();
 
@@ -164,6 +201,7 @@ void main() {
     expect(await secureStorage.read(key: refreshCookieKey), isNull);
     expect(await secureStorage.read(key: legacyAccessTokenKey), isNull);
     expect(await secureStorage.read(key: legacyRefreshCookieKey), isNull);
+    expect(await secureStorage.read(key: cachedUserKey), isNull);
     expect(prefs.getString(cachedUserKey), isNull);
     expect(prefs.getString(legacyCachedUserKey), isNull);
     expect(storage.isRememberMeEnabled(), isTrue);
@@ -179,6 +217,16 @@ void main() {
       accessToken: 'access-token-to-clear',
       refreshCookie: 'refresh_token=refresh-token-to-clear',
     );
+    await storage.saveUser(
+      const UserModel(
+        id: 8,
+        username: 'resident.user',
+        email: 'resident@example.com',
+        role: 'RESIDENT',
+        fullName: 'Resident User',
+        philsysIdNumber: '9999-8888-7777-6666',
+      ),
+    );
     await secureStorage.write(
       key: legacyAccessTokenKey,
       value: 'legacy-access-token-to-clear',
@@ -193,6 +241,7 @@ void main() {
     expect(await secureStorage.read(key: refreshCookieKey), isNull);
     expect(await secureStorage.read(key: legacyAccessTokenKey), isNull);
     expect(await secureStorage.read(key: legacyRefreshCookieKey), isNull);
+    expect(await secureStorage.read(key: cachedUserKey), isNull);
     expect(prefs.getBool(rememberMeKey), isNull);
     expect(prefs.getString(savedUsernameKey), isNull);
   });
@@ -226,4 +275,20 @@ class _FailingWriteSharedPreferences implements SharedPreferences {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+}
+
+class _FailingUserWriteStorage extends TestFlutterSecureStoragePlatform {
+  _FailingUserWriteStorage(super.data);
+
+  @override
+  Future<void> write({
+    required String key,
+    required String value,
+    required Map<String, String> options,
+  }) async {
+    if (key == 'kapitbayan_cached_user') {
+      throw StateError('Simulated secure cache write failure');
+    }
+    await super.write(key: key, value: value, options: options);
+  }
 }

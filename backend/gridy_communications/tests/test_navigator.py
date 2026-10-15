@@ -22,7 +22,8 @@ from rest_framework.test import APITestCase
 from rest_framework import status
 
 from django.core.cache import cache
-from gridy_auth.models import Barangay, User, Resident
+from gridy_auth.models import APIRateLimitWindow, Barangay, User, Resident
+from gridy_auth.throttling import SharedDatabaseScopedRateThrottle
 from gridy_communications.models import Announcement, ActivitySchedule, EmergencyHotline, FAQ
 from gridy_communications.navigator.provider import (
     GeminiNavigatorProvider,
@@ -54,11 +55,17 @@ from gridy_communications.navigator.retrieval import (
     MAX_ACTIVITY_RECORD_CONTENT_CHARS,
     MAX_AGGREGATE_SOURCE_BUNDLE_CHARS,
 )
+from gridy_communications.views import NavigatorQueryView
+
+
+def clear_rate_limit_state():
+    cache.clear()
+    APIRateLimitWindow.objects.all().delete()
 
 
 class NavigatorAPITestCase(APITestCase):
     def setUp(self):
-        cache.clear()
+        clear_rate_limit_state()
         # Create Barangay A
         self.barangay_a = Barangay.objects.create(
             name="Barangay San Isidro",
@@ -603,7 +610,7 @@ class NavigatorAPITestCase(APITestCase):
             "Telephone: 0464123456",
         ]
         for probe in probes:
-            cache.clear()
+            clear_rate_limit_state()
             response = self.client.post(self.canonical_url, {"query": probe})
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertEqual(response.data["status"], "abstained")
@@ -941,6 +948,10 @@ class NavigatorAPITestCase(APITestCase):
     @patch("gridy_communications.views.get_navigator_provider")
     def test_rate_limiting_returns_429(self, mock_get_provider):
         """Exceeding configured throttle rate (10/minute) yields HTTP 429 Too Many Requests."""
+        self.assertEqual(
+            NavigatorQueryView.throttle_classes,
+            [SharedDatabaseScopedRateThrottle],
+        )
         mock_provider = mock_get_provider.return_value
         mock_provider.is_configured.return_value = True
         mock_provider.generate_answer.return_value = {
@@ -956,6 +967,7 @@ class NavigatorAPITestCase(APITestCase):
         for _ in range(10):
             res = self.client.post(self.canonical_url, {"query": "Sample question"})
             self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertTrue(APIRateLimitWindow.objects.exists())
 
         # 11th request must be throttled
         res_throttled = self.client.post(self.canonical_url, {"query": "Sample question"})
@@ -1473,7 +1485,7 @@ class NavigatorAPITestCase(APITestCase):
             ("TIN: 123-456-789-000", "privacy_concern"),
         ]
         for query_text, expected_reason in gov_probes:
-            cache.clear()
+            clear_rate_limit_state()
             response = self.client.post(self.canonical_url, {"query": query_text})
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertEqual(response.data["status"], "abstained")
@@ -1489,7 +1501,7 @@ class NavigatorAPITestCase(APITestCase):
             "Sinend ko ang passport ko",
         ]
         for query_text in id_submission_probes:
-            cache.clear()
+            clear_rate_limit_state()
             response = self.client.post(self.canonical_url, {"query": query_text})
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertEqual(response.data["status"], "abstained")
@@ -1506,7 +1518,7 @@ class NavigatorAPITestCase(APITestCase):
             "account number: 9876543210",
         ]
         for query_text in billing_probes:
-            cache.clear()
+            clear_rate_limit_state()
             response = self.client.post(self.canonical_url, {"query": query_text})
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertEqual(response.data["status"], "abstained")
@@ -1525,7 +1537,7 @@ class NavigatorAPITestCase(APITestCase):
             "May Maya receipt ako na TESTMAYA000000. Paki-check kung pumasok ang bayad.",
         ]
         for query_text in payment_probes:
-            cache.clear()
+            clear_rate_limit_state()
             response = self.client.post(self.canonical_url, {"query": query_text})
             self.assertEqual(response.status_code, status.HTTP_200_OK)
             self.assertEqual(response.data["status"], "abstained")
@@ -1552,7 +1564,7 @@ class NavigatorAPITestCase(APITestCase):
             "May bayad ba ang barangay clearance?",
         ]
         for query_text in legitimate_controls:
-            cache.clear()
+            clear_rate_limit_state()
             mock_get_provider.reset_mock()
             response = self.client.post(self.canonical_url, {"query": query_text})
             self.assertEqual(response.status_code, status.HTTP_200_OK)
@@ -1775,7 +1787,7 @@ class NavigatorAPITestCase(APITestCase):
 
             for query_text, secret_value in sensitive_queries:
                 handler.records.clear()
-                cache.clear()
+                clear_rate_limit_state()
                 response = self.client.post(self.canonical_url, {"query": query_text})
                 self.assertEqual(response.status_code, status.HTTP_200_OK)
                 self.assertEqual(response.data["status"], "abstained")

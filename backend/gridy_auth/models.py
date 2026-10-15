@@ -193,3 +193,18 @@ class PrivateMediaCleanup(models.Model):
 
     def __str__(self):
         return f"Private media cleanup #{self.pk}"
+
+
+class APIRateLimitWindow(models.Model):
+    """Rolling-window request timestamps shared by all API workers.
+
+    The primary key is a keyed digest of a throttle scope and client identity;
+    raw IP addresses and user identifiers are not stored in this table.
+    """
+
+    window_key = models.CharField(max_length=64, primary_key=True)
+    history = models.JSONField(default=list)
+    expires_at = models.DateTimeField(db_index=True)
+
+    class Meta:
+        ordering = ["expires_at"]

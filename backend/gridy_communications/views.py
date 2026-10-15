@@ -5,10 +5,10 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework.views import APIView
 from rest_framework.exceptions import PermissionDenied
-from rest_framework.throttling import ScopedRateThrottle
 from drf_spectacular.utils import extend_schema, OpenApiResponse
 from gridy_auth.models import User
 from gridy_auth.permissions import IsBarangayOfficial, IsDILGAdmin
+from gridy_auth.throttling import SharedDatabaseScopedRateThrottle
 from gridy_communications.models import (
     Announcement,
     ActivitySchedule,
@@ -229,7 +229,7 @@ class NavigatorQueryView(APIView):
     """
 
     permission_classes = [permissions.IsAuthenticated, IsResidentWithBarangay]
-    throttle_classes = [ScopedRateThrottle]
+    throttle_classes = [SharedDatabaseScopedRateThrottle]
     throttle_scope = "public_navigator"
 
     @extend_schema(

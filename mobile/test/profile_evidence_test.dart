@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
@@ -57,6 +58,7 @@ class MockRecordingApiClient extends ApiClient {
 
 void main() {
   setUp(() {
+    FlutterSecureStorage.setMockInitialValues({});
     SharedPreferences.setMockInitialValues({});
   });
 

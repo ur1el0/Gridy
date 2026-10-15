@@ -5,7 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/user_model.dart';
 
-/// Manages secure session tokens and ordinary cached app preferences.
+/// Manages secure session tokens and cached authenticated user details.
 class StorageService {
   static const String _keyAccessToken = 'kapitbayan_access_token';
   static const String _keyRefreshCookie = 'kapitbayan_refresh_cookie';
@@ -25,6 +25,7 @@ class StorageService {
   // Keep tokens in memory after loading them from secure storage.
   String? _accessToken;
   String? _refreshCookie;
+  UserModel? _cachedUser;
 
   StorageService(this._prefs, {FlutterSecureStorage? secureStorage})
     : _secureStorage = secureStorage ?? FlutterSecureStorage();
@@ -46,7 +47,7 @@ class StorageService {
       _keyRefreshCookie,
       _legacyKeyRefreshCookie,
     );
-    await storage._migrateStringPreference(_keyUser, _legacyKeyUser);
+    await storage._loadAndMigrateCachedUser();
     await storage._migrateBoolPreference(_keyRememberMe, _legacyKeyRememberMe);
     await storage._migrateStringPreference(
       _keySavedUsername,
@@ -119,6 +120,62 @@ class StorageService {
     await _prefs.remove(legacyKey);
   }
 
+  /// Loads the encrypted user cache and migrates any old preference copies.
+  /// A legacy copy remains in place if the secure write fails so a later
+  /// startup can retry without silently losing the offline cache.
+  Future<void> _loadAndMigrateCachedUser() async {
+    final secureJson = await _secureStorage.read(key: _keyUser);
+    final secureUser = _decodeUser(secureJson);
+    if (secureUser != null) {
+      _cachedUser = secureUser;
+      await _removePlaintextUserCopies();
+      return;
+    }
+
+    if (secureJson != null) {
+      await _secureStorage.delete(key: _keyUser);
+    }
+
+    final preferenceJson =
+        _prefs.getString(_keyUser) ?? _prefs.getString(_legacyKeyUser);
+    final legacyUser = _decodeUser(preferenceJson);
+    if (legacyUser == null || preferenceJson == null) {
+      await _removePlaintextUserCopies();
+      return;
+    }
+
+    try {
+      // Keep the plaintext source until the encrypted copy is safely stored.
+      await _secureStorage.write(key: _keyUser, value: preferenceJson);
+    } catch (_) {
+      // Leave the migration source intact for a retry on the next startup.
+      return;
+    }
+
+    _cachedUser = legacyUser;
+    try {
+      await _removePlaintextUserCopies();
+    } catch (_) {
+      // The encrypted copy is valid; a later startup can retry cleanup.
+    }
+  }
+
+  UserModel? _decodeUser(String? userJson) {
+    if (userJson == null || userJson.isEmpty) return null;
+    try {
+      final decoded = jsonDecode(userJson);
+      if (decoded is! Map<String, dynamic>) return null;
+      return UserModel.fromJson(decoded);
+    } catch (_) {
+      return null;
+    }
+  }
+
+  Future<void> _removePlaintextUserCopies() async {
+    await _prefs.remove(_keyUser);
+    await _prefs.remove(_legacyKeyUser);
+  }
+
   /// Saves authentication tokens to secure storage.
   Future<void> saveTokens({
     required String accessToken,
@@ -143,25 +200,17 @@ class StorageService {
     return _refreshCookie;
   }
 
-  /// Caches non-secret authenticated user details in app preferences.
+  /// Stores authenticated user details in platform-encrypted secure storage.
   Future<void> saveUser(UserModel user) async {
     final userJsonStr = jsonEncode(user.toJson());
-    await _prefs.setString(_keyUser, userJsonStr);
+    await _secureStorage.write(key: _keyUser, value: userJsonStr);
+    _cachedUser = user;
+    await _removePlaintextUserCopies();
   }
 
-  /// Retrieves cached user details.
+  /// Retrieves user details loaded from encrypted storage at startup.
   UserModel? getUser() {
-    final userJsonStr = _prefs.getString(_keyUser);
-    if (userJsonStr == null || userJsonStr.isEmpty) {
-      return null;
-    }
-
-    try {
-      final Map<String, dynamic> userMap = jsonDecode(userJsonStr);
-      return UserModel.fromJson(userMap);
-    } catch (_) {
-      return null;
-    }
+    return _cachedUser;
   }
 
   /// Saves the "Remember Me" preference and username.
@@ -192,6 +241,7 @@ class StorageService {
   Future<void> clearSession() async {
     _accessToken = null;
     _refreshCookie = null;
+    _cachedUser = null;
 
     try {
       await Future.wait<void>([
@@ -199,6 +249,7 @@ class StorageService {
         _secureStorage.delete(key: _keyRefreshCookie),
         _secureStorage.delete(key: _legacyKeyAccessToken),
         _secureStorage.delete(key: _legacyKeyRefreshCookie),
+        _secureStorage.delete(key: _keyUser),
       ]);
     } finally {
       // Also remove plaintext copies in both namespaces and cached user data.
@@ -215,6 +266,7 @@ class StorageService {
   Future<void> clearAll() async {
     _accessToken = null;
     _refreshCookie = null;
+    _cachedUser = null;
 
     try {
       await Future.wait<void>([
@@ -222,6 +274,7 @@ class StorageService {
         _secureStorage.delete(key: _keyRefreshCookie),
         _secureStorage.delete(key: _legacyKeyAccessToken),
         _secureStorage.delete(key: _legacyKeyRefreshCookie),
+        _secureStorage.delete(key: _keyUser),
       ]);
     } finally {
       await _prefs.clear();

@@ -10,7 +10,6 @@ from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.exceptions import ValidationError
 from rest_framework.response import Response
-from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
 from gridy_audit.models import AuditLog
@@ -24,6 +23,7 @@ from gridy_auth.serializers.onboarding import (
     PublicBarangaySerializer,
 )
 from gridy_auth.tasks import send_barangay_approval_email
+from gridy_auth.throttling import SharedDatabaseScopedRateThrottle
 
 
 @extend_schema(tags=["Barangay Directory"])
@@ -43,7 +43,7 @@ class BarangayApplicationViewSet(
     viewsets.GenericViewSet,
 ):
     queryset = BarangayApplication.objects.select_related("reviewed_by", "created_barangay")
-    throttle_classes = [ScopedRateThrottle]
+    throttle_classes = [SharedDatabaseScopedRateThrottle]
     throttle_scope = "barangay_application"
 
     def get_permissions(self):
@@ -60,7 +60,7 @@ class BarangayApplicationViewSet(
 
     def get_throttles(self):
         if self.action == "create":
-            return [ScopedRateThrottle()]
+            return [SharedDatabaseScopedRateThrottle()]
         return []
 
     def get_queryset(self):
