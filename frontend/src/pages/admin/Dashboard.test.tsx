@@ -90,6 +90,32 @@ describe('Dashboard', () => {
         expect(axiosPrivate.get).toHaveBeenNthCalledWith(2, '/activities/', expect.anything());
     });
 
+    it('treats an HTML summary response as a failed read without crashing the dashboard', async () => {
+        vi.mocked(axiosPrivate.get).mockReset();
+        vi.mocked(axiosPrivate.get)
+            .mockResolvedValueOnce({ data: '<!doctype html><html><body>KapitBayan</body></html>' } as never)
+            .mockResolvedValueOnce({ data: { results: activities } } as never);
+
+        renderDashboard();
+
+        expect(await screen.findByRole('alert')).toHaveTextContent("We couldn't load dashboard summary.");
+        expect(screen.getByText('Community Health Day')).toBeInTheDocument();
+        expect(screen.queryByText('This screen couldn’t load')).not.toBeInTheDocument();
+    });
+
+    it('treats an HTML activities response as a failed read and preserves summary metrics', async () => {
+        vi.mocked(axiosPrivate.get).mockReset();
+        vi.mocked(axiosPrivate.get)
+            .mockResolvedValueOnce({ data: summary } as never)
+            .mockResolvedValueOnce({ data: '<!doctype html><html><body>KapitBayan</body></html>' } as never);
+
+        renderDashboard();
+
+        expect(await screen.findByRole('alert')).toHaveTextContent("We couldn't load today's appointments.");
+        expect(screen.getByText('₱1,250.00')).toBeInTheDocument();
+        expect(screen.queryByText('This screen couldn’t load')).not.toBeInTheDocument();
+    });
+
     it('redirects DILG admins to the cross-barangay analytics page without fetching barangay data', async () => {
         renderDashboard('DILG_ADMIN');
 
