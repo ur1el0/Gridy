@@ -24,7 +24,6 @@ export function StaffManagementSettings() {
     const [lastName, setLastName] = useState('');
     const [username, setUsername] = useState('');
     const [email, setEmail] = useState('');
-    const [password, setPassword] = useState('');
 
     const [loading, setLoading] = useState(true);
     const [retrying, setRetrying] = useState(false);
@@ -64,16 +63,14 @@ export function StaffManagementSettings() {
                 last_name: lastName.trim(),
                 username: username.trim(),
                 email: email.trim().toLowerCase(),
-                password,
             });
             setStaffList((current) => [response.data, ...current]);
             setFirstName('');
             setLastName('');
             setUsername('');
             setEmail('');
-            setPassword('');
             setMessage({
-                text: `Field official account '${response.data.username}' created successfully.`,
+                text: `Field official account created. Setup instructions are being sent to ${response.data.email}. If the email does not arrive or the link expires, they can use Forgot Password.`,
                 type: 'success',
             });
         } catch (err: unknown) {
@@ -128,8 +125,7 @@ export function StaffManagementSettings() {
                 <div>
                     <h2 className="text-xl font-bold text-slate-900">Barangay Field Officials & Staff</h2>
                     <p className="mt-0.5 text-sm leading-6 text-slate-600">
-                        Provision mobile operations accounts for Barangay Tanods, field officers, and desk inspectors. 
-                        Field officials use the KapitBayan mobile application to monitor queues, verify clearances, and triage field incident reports.
+                        Create mobile operations accounts for Barangay Tanods, field officers, and desk inspectors. Field officials set their own password using the emailed setup link and use the KapitBayan mobile app for their work. They do not have an admin web workspace.
                     </p>
                 </div>
             </div>
@@ -198,25 +194,10 @@ export function StaffManagementSettings() {
                             placeholder="e.g. carding@barangay.gov.ph"
                         />
                     </label>
-                    <label className="text-sm font-medium text-slate-700 sm:col-span-2">
-                        Initial Password
-                        <input
-                            type="password"
-                            className={inputClass}
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            minLength={8}
-                            maxLength={128}
-                            required
-                            autoComplete="new-password"
-                            placeholder="Minimum 8 characters"
-                        />
-                    </label>
-
                     <button
                         type="submit"
                         disabled={saving}
-                        className="rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground disabled:opacity-50 sm:col-span-2 hover:bg-primary/90 transition-colors"
+                        className="min-h-11 rounded-lg bg-primary px-4 py-2.5 text-sm font-bold text-primary-foreground outline-none disabled:opacity-50 hover:bg-primary/90 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 transition-colors sm:col-span-2"
                     >
                         {saving ? 'Creating Account…' : 'Register Field Official'}
                     </button>
@@ -225,7 +206,7 @@ export function StaffManagementSettings() {
 
             <div className="mt-8 space-y-3" aria-live="polite">
                 <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">
-                    Active Barangay Field Personnel
+                    Barangay Field Personnel
                 </h3>
 
                 {loadError && (
@@ -273,7 +254,7 @@ export function StaffManagementSettings() {
                                     type="button"
                                     disabled={togglingId === staff.id}
                                     onClick={() => void toggleStatus(staff)}
-                                    className={`rounded-md border px-3 py-1.5 text-xs font-semibold transition-colors disabled:opacity-50 ${
+                                    className={`min-h-11 min-w-11 rounded-md border px-3 py-1.5 text-xs font-semibold outline-none transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
                                         staff.is_active
                                             ? 'border-red-200 text-red-700 hover:bg-red-50'
                                             : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'

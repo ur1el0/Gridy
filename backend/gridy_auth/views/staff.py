@@ -1,4 +1,9 @@
-from drf_spectacular.utils import extend_schema, OpenApiResponse
+from django.conf import settings
+from django.contrib.auth.tokens import default_token_generator
+from django.db import transaction
+from django.utils.encoding import force_bytes
+from django.utils.http import urlsafe_base64_encode
+from drf_spectacular.utils import OpenApiResponse, extend_schema
 from rest_framework import mixins, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -7,11 +12,24 @@ from rest_framework.throttling import ScopedRateThrottle
 from gridy_audit.models import AuditLog
 from gridy_audit.services import log_action
 from gridy_auth.models import RefreshSession, User
-from gridy_auth.permissions import IsBarangayOfficial
 from gridy_auth.serializers.staff import (
     StaffUserCreateSerializer,
     StaffUserListSerializer,
 )
+from gridy_auth.tasks import send_field_official_setup_email
+
+
+class IsAssignedBarangayAdmin(permissions.BasePermission):
+    """Allow staff management only to admins assigned to a barangay."""
+
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(
+            user
+            and user.is_authenticated
+            and user.role == User.Role.ADMIN
+            and user.barangay_id is not None
+        )
 
 
 @extend_schema(tags=["Staff Management"])
@@ -25,7 +43,7 @@ class StaffManagementViewSet(
     Allows authenticated Barangay Admins to provision, list, and toggle
     active status of field officers strictly within their own Barangay.
     """
-    permission_classes = [permissions.IsAuthenticated, IsBarangayOfficial]
+    permission_classes = [permissions.IsAuthenticated, IsAssignedBarangayAdmin]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "staff_management"
 
@@ -75,25 +93,43 @@ class StaffManagementViewSet(
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        user = User(
-            username=data["username"],
-            email=data["email"].lower(),
-            first_name=data["first_name"],
-            last_name=data["last_name"],
-            role=User.Role.FIELD_OFFICIAL,
-            barangay=request.user.barangay,
-            is_staff=False,
-            is_active=True,
-        )
-        user.set_password(data["password"])
-        user.save()
+        with transaction.atomic():
+            user = User(
+                username=data["username"],
+                email=data["email"].strip().lower(),
+                first_name=data["first_name"],
+                last_name=data["last_name"],
+                role=User.Role.FIELD_OFFICIAL,
+                barangay=request.user.barangay,
+                is_staff=False,
+                is_active=True,
+            )
+            user.set_unusable_password()
+            user.save()
 
-        log_action(
-            user=request.user,
-            action_type=AuditLog.ActionType.USER_ACTION,
-            description=f"Admin {request.user.username} created field official account '{user.username}' for Barangay {request.user.barangay.name}.",
-            request=request,
-        )
+            log_action(
+                user=request.user,
+                action_type=AuditLog.ActionType.USER_ACTION,
+                description=f"Admin {request.user.username} created field official account '{user.username}' for Barangay {request.user.barangay.name}.",
+                request=request,
+            )
+
+            uid = urlsafe_base64_encode(force_bytes(user.pk))
+            token = default_token_generator.make_token(user)
+            setup_link = (
+                f"{settings.FRONTEND_URL.rstrip('/')}/reset-password"
+                f"?uidb64={uid}&token={token}"
+            )
+            transaction.on_commit(
+                lambda email=user.email, full_name=user.get_full_name(),
+                barangay_name=request.user.barangay.name, link=setup_link:
+                    send_field_official_setup_email.delay(
+                        email,
+                        full_name,
+                        barangay_name,
+                        link,
+                    )
+            )
 
         read_serializer = StaffUserListSerializer(user)
         return Response(read_serializer.data, status=status.HTTP_201_CREATED)
@@ -101,6 +137,7 @@ class StaffManagementViewSet(
     @extend_schema(
         summary="Toggle Field Official Active Status",
         description="Activates or deactivates a Field Official. Deactivating immediately revokes all active refresh sessions.",
+        request=None,
         responses={
             200: StaffUserListSerializer,
             404: OpenApiResponse(description="Field Official not found in administrator's Barangay."),
@@ -108,21 +145,21 @@ class StaffManagementViewSet(
     )
     @action(detail=True, methods=["post"], url_path="toggle-status")
     def toggle_status(self, request, pk=None):
-        user = self.get_object()
-        user.is_active = not user.is_active
-        user.save(update_fields=["is_active"])
+        with transaction.atomic():
+            user = self.get_object()
+            user.is_active = not user.is_active
+            user.save(update_fields=["is_active"])
 
-        if not user.is_active:
-            # Immediate session revocation
-            RefreshSession.objects.filter(user=user, is_revoked=False).update(is_revoked=True)
+            if not user.is_active:
+                RefreshSession.objects.filter(user=user, is_revoked=False).update(is_revoked=True)
 
-        action_word = "activated" if user.is_active else "deactivated"
-        log_action(
-            user=request.user,
-            action_type=AuditLog.ActionType.USER_ACTION,
-            description=f"Admin {request.user.username} {action_word} field official account '{user.username}'.",
-            request=request,
-        )
+            action_word = "activated" if user.is_active else "deactivated"
+            log_action(
+                user=request.user,
+                action_type=AuditLog.ActionType.USER_ACTION,
+                description=f"Admin {request.user.username} {action_word} field official account '{user.username}'.",
+                request=request,
+            )
 
         serializer = StaffUserListSerializer(user)
         return Response(serializer.data, status=status.HTTP_200_OK)

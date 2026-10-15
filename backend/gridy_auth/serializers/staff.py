@@ -26,7 +26,7 @@ class StaffUserListSerializer(serializers.ModelSerializer):
         ]
         read_only_fields = fields
 
-    def get_full_name(self, obj):
+    def get_full_name(self, obj) -> str:
         name = f"{obj.first_name} {obj.last_name}".strip()
         return name or obj.username
 
@@ -34,8 +34,8 @@ class StaffUserListSerializer(serializers.ModelSerializer):
 class StaffUserCreateSerializer(serializers.Serializer):
     """
     Validates payload for onboarding a new Field Official.
-    Enforces strict field boundaries, case-insensitive uniqueness,
-    and password complexity.
+    Enforces strict field boundaries and case-insensitive uniqueness. New
+    field officials set their own password through the private setup flow.
     """
     username = serializers.CharField(
         min_length=3,
@@ -55,16 +55,11 @@ class StaffUserCreateSerializer(serializers.Serializer):
         max_length=150,
         trim_whitespace=True,
     )
-    password = serializers.CharField(
-        write_only=True,
-        min_length=8,
-        max_length=128,
-    )
 
     def validate(self, attrs):
         # Strict rejection of disallowed extra fields (e.g. role, barangay, is_staff, is_superuser)
         if isinstance(self.initial_data, Mapping):
-            allowed_fields = {"username", "email", "first_name", "last_name", "password"}
+            allowed_fields = {"username", "email", "first_name", "last_name"}
             disallowed = set(self.initial_data.keys()) - allowed_fields
             if disallowed:
                 raise serializers.ValidationError(

@@ -35,6 +35,10 @@ class AuthScopedThrottleTests(IsolatedAuthAPITestCase):
             ScopedRateThrottle.THROTTLE_RATES['password_reset_confirm'],
             '10/hour',
         )
+        self.assertEqual(
+            ScopedRateThrottle.THROTTLE_RATES['staff_management'],
+            '30/minute',
+        )
 
     def test_authentication_and_recovery_routes_enforce_scoped_limits(self):
         endpoints = [

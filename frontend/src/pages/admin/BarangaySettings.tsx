@@ -11,7 +11,8 @@ export const BarangaySettings: React.FC = () => {
     const [captainName, setCaptainName] = useState('');
     const [officeContact, setOfficeContact] = useState('');
     const [primaryColor, setPrimaryColor] = useState('#082B66');
-    const { updateBarangayPrimaryColor } = useAuth();
+    const { updateBarangayPrimaryColor, user } = useAuth();
+    const canManageFieldStaff = user?.role === 'ADMIN';
     
     const [logoPreview, setLogoPreview] = useState<string | null>(null);
     const [sealPreview, setSealPreview] = useState<string | null>(null);
@@ -123,7 +124,7 @@ export const BarangaySettings: React.FC = () => {
                     retrying={retrying}
                 />
                 <PaymentRecipientSettings />
-                <StaffManagementSettings />
+                {canManageFieldStaff && <StaffManagementSettings />}
             </div>
         );
     }
@@ -237,7 +238,7 @@ export const BarangaySettings: React.FC = () => {
             </form>
 
             <PaymentRecipientSettings />
-            <StaffManagementSettings />
+            {canManageFieldStaff && <StaffManagementSettings />}
         </div>
     );
 };

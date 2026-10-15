@@ -1,7 +1,12 @@
 import pytest
+from unittest.mock import patch
+from urllib.parse import parse_qs, urlparse
 from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
 from rest_framework import status
 from rest_framework.test import APIClient
+from django.utils.encoding import force_str
+from django.utils.http import urlsafe_base64_decode
 
 from gridy_audit.models import AuditLog
 from gridy_auth.models import Barangay, RefreshSession
@@ -129,10 +134,7 @@ class TestStaffManagementPermissions:
         )
         api_client.force_authenticate(user=unassigned_admin)
         response = api_client.get("/api/v1/auth/staff/")
-        # Empty list because get_queryset filters User.objects.none()
-        assert response.status_code == status.HTTP_200_OK
-        results = response.data.get("results", response.data)
-        assert len(results) == 0
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
         # Create attempt fails with 403
         create_resp = api_client.post(
@@ -142,11 +144,34 @@ class TestStaffManagementPermissions:
                 "email": "tanod@example.com",
                 "first_name": "Test",
                 "last_name": "Tanod",
-                "password": "ValidPassword123!",
             },
             format="json",
         )
         assert create_resp.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_dilg_admin_cannot_manage_field_staff(self, api_client):
+        dilg_admin = User.objects.create_user(
+            username="dilg_admin_staff_test",
+            email="dilg.staff.test@example.com",
+            password="AdminPassword123!",
+            role=User.Role.DILG_ADMIN,
+            barangay=None,
+            is_staff=True,
+        )
+        api_client.force_authenticate(user=dilg_admin)
+
+        assert api_client.get("/api/v1/auth/staff/").status_code == status.HTTP_403_FORBIDDEN
+        response = api_client.post(
+            "/api/v1/auth/staff/",
+            {
+                "username": "dilg_created_staff",
+                "email": "staff@example.com",
+                "first_name": "Dilg",
+                "last_name": "Created",
+            },
+            format="json",
+        )
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 @pytest.mark.django_db
@@ -173,14 +198,17 @@ class TestStaffManagementEndpoints:
         assert resident_a.id not in returned_ids
         assert admin_a.id not in returned_ids
 
-    def test_admin_can_create_field_official_successfully(self, api_client, admin_a, barangay_a):
+    @pytest.mark.django_db(transaction=True)
+    @patch("gridy_auth.views.staff.send_field_official_setup_email", create=True)
+    def test_admin_can_create_field_official_with_private_setup_link(
+        self, send_setup_email, api_client, admin_a, barangay_a
+    ):
         api_client.force_authenticate(user=admin_a)
         payload = {
             "username": "tanod_carding",
             "email": "carding@isidro.example.gov.ph",
             "first_name": "Ricardo",
             "last_name": "Dalisay",
-            "password": "SecurePassword2026!",
         }
         response = api_client.post("/api/v1/auth/staff/", payload, format="json")
         assert response.status_code == status.HTTP_201_CREATED
@@ -196,7 +224,20 @@ class TestStaffManagementEndpoints:
         assert created_user.role == User.Role.FIELD_OFFICIAL
         assert created_user.is_staff is False
         assert created_user.is_active is True
-        assert created_user.check_password("SecurePassword2026!") is True
+        assert created_user.has_usable_password() is False
+
+        send_setup_email.delay.assert_called_once()
+        recipient, full_name, barangay_name, setup_link = send_setup_email.delay.call_args.args
+        assert recipient == created_user.email
+        assert full_name == "Ricardo Dalisay"
+        assert barangay_name == barangay_a.name
+        query = parse_qs(urlparse(setup_link).query)
+        uidb64 = query["uidb64"][0]
+        token = query["token"][0]
+        assert force_str(urlsafe_base64_decode(uidb64)) == str(created_user.pk)
+        assert default_token_generator.check_token(created_user, token)
+        assert token not in response.content.decode()
+        assert "password" not in response.data
 
         # Verify audit log was written
         audit = AuditLog.objects.filter(
@@ -215,6 +256,7 @@ class TestStaffManagementEndpoints:
             "last_name": "Actor",
             "password": "SecurePassword2026!",
             "role": User.Role.ADMIN,  # Disallowed
+            "barangay": barangay_b.id,
             "barangay_id": barangay_b.id,  # Disallowed
             "is_staff": True,  # Disallowed
             "is_superuser": True,  # Disallowed
@@ -230,7 +272,6 @@ class TestStaffManagementEndpoints:
             "email": "unique.email@example.com",
             "first_name": "Duplicate",
             "last_name": "User",
-            "password": "SecurePassword2026!",
         }
         response = api_client.post("/api/v1/auth/staff/", payload, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
@@ -243,24 +284,23 @@ class TestStaffManagementEndpoints:
             "email": field_official_a.email.upper(),  # Case-insensitive duplicate
             "first_name": "Duplicate",
             "last_name": "Email",
-            "password": "SecurePassword2026!",
         }
         response = api_client.post("/api/v1/auth/staff/", payload, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
         assert "email" in response.data
 
-    def test_short_password_rejected(self, api_client, admin_a):
+    def test_password_field_is_rejected_from_staff_creation_payload(self, api_client, admin_a):
         api_client.force_authenticate(user=admin_a)
         payload = {
             "username": "tanod_weak",
-            "email": "weak@example.com",
-            "first_name": "Weak",
-            "last_name": "Pass",
-            "password": "short",  # < 8 chars
+            "email": "field@example.com",
+            "first_name": "Field",
+            "last_name": "Staff",
+            "password": "AdminProvidedPassword123!",
         }
         response = api_client.post("/api/v1/auth/staff/", payload, format="json")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "password" in response.data
+        assert "Disallowed fields" in str(response.data)
 
     def test_admin_can_toggle_staff_active_status_and_revokes_sessions(
         self, api_client, admin_a, field_official_a

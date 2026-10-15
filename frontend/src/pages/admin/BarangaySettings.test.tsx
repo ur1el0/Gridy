@@ -48,6 +48,13 @@ describe('BarangaySettings', () => {
     });
 
     it('saves the selected primary color and updates the active theme', async () => {
+        vi.mocked(useAuth).mockReturnValue({
+            user: { role: 'ADMIN' },
+            login: vi.fn(),
+            logout: vi.fn(async () => {}),
+            isAuthenticated: true,
+            updateBarangayPrimaryColor,
+        } as never);
         render(<BarangaySettings />);
 
         const colorInput = await screen.findByLabelText('Primary brand color');
@@ -62,6 +69,28 @@ describe('BarangaySettings', () => {
         const formData = vi.mocked(axiosPrivate.patch).mock.calls[0]?.[1] as FormData;
         expect(formData.get('primary_color')).toBe('#C70039');
         expect(await screen.findByText('Settings updated successfully!')).toBeInTheDocument();
+    });
+
+    it('shows staff account management to barangay admins but not DILG admins', async () => {
+        vi.mocked(useAuth).mockReturnValue({
+            user: { role: 'ADMIN' },
+            login: vi.fn(),
+            logout: vi.fn(async () => {}),
+            isAuthenticated: true,
+            updateBarangayPrimaryColor,
+        } as never);
+        const { rerender } = render(<BarangaySettings />);
+        expect(await screen.findByRole('heading', { name: 'Barangay Field Officials & Staff' })).toBeInTheDocument();
+
+        vi.mocked(useAuth).mockReturnValue({
+            user: { role: 'DILG_ADMIN' },
+            login: vi.fn(),
+            logout: vi.fn(async () => {}),
+            isAuthenticated: true,
+            updateBarangayPrimaryColor,
+        } as never);
+        rerender(<BarangaySettings />);
+        expect(screen.queryByRole('heading', { name: 'Barangay Field Officials & Staff' })).not.toBeInTheDocument();
     });
 
     it('shows a retryable settings error and preserves payment recipient settings', async () => {

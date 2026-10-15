@@ -23,7 +23,7 @@ describe('StaffManagementSettings', () => {
         expect(screen.getByRole('button', { name: 'Register Field Official' })).toBeEnabled();
     });
 
-    it('submits new field official payload and adds it to the list', async () => {
+    it('submits account details without a password and confirms setup instructions', async () => {
         const createdStaff = {
             id: 10,
             username: 'tanod_carding',
@@ -45,8 +45,6 @@ describe('StaffManagementSettings', () => {
         fireEvent.change(screen.getByLabelText('Last Name'), { target: { value: 'Dalisay' } });
         fireEvent.change(screen.getByLabelText('Username'), { target: { value: 'tanod_carding' } });
         fireEvent.change(screen.getByLabelText('Email Address'), { target: { value: 'carding@barangay.gov.ph' } });
-        fireEvent.change(screen.getByLabelText('Initial Password'), { target: { value: 'Password123!' } });
-
         fireEvent.click(screen.getByRole('button', { name: 'Register Field Official' }));
 
         await waitFor(() => {
@@ -55,13 +53,13 @@ describe('StaffManagementSettings', () => {
                 last_name: 'Dalisay',
                 username: 'tanod_carding',
                 email: 'carding@barangay.gov.ph',
-                password: 'Password123!',
             });
         });
 
-        expect(await screen.findByText("Field official account 'tanod_carding' created successfully.")).toBeInTheDocument();
+        expect(await screen.findByText(/setup instructions are being sent to carding@barangay.gov.ph/i)).toBeInTheDocument();
         expect(screen.getByText('Ricardo Dalisay')).toBeInTheDocument();
         expect(screen.getByText('@tanod_carding')).toBeInTheDocument();
+        expect(screen.queryByLabelText(/password/i)).not.toBeInTheDocument();
     });
 
     it('renders existing staff and toggles active status', async () => {
