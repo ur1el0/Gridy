@@ -7,7 +7,7 @@ class AppConfig {
 
   /// Canonical production backend API base URL for deployed environments.
   static const String productionBaseUrl =
-      'https://gridy-backend.onrender.com/api/v1';
+      'https://gridy.onrender.com/api/v1';
 
   /// Configurable base URL defined at build time with `--dart-define=API_BASE_URL=...`
   /// or fallback according to running target platform.
@@ -34,9 +34,9 @@ class AppConfig {
     if (isReleaseMode) {
       final candidate = effectiveEnv.isNotEmpty ? effectiveEnv : productionBaseUrl;
       final uri = Uri.tryParse(candidate);
-      if (uri == null || uri.scheme != 'https') {
+      if (uri == null || uri.scheme != 'https' || uri.host.isEmpty) {
         throw StateError(
-          'Release builds require an HTTPS API base URL. Cleartext HTTP is prohibited: $candidate',
+          'Release builds require an absolute HTTPS API base URL: $candidate',
         );
       }
       return candidate;
