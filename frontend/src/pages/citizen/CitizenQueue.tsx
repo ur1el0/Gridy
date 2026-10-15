@@ -241,7 +241,7 @@ export const CitizenQueue: React.FC = () => {
                                     )}
                                 </div>
                                 <p className="text-xs text-slate-500 mt-1">
-                                    Service: <span className="font-semibold text-slate-700">{activeTicket.service_type}</span>
+                                    Service: <span className="font-semibold text-slate-700 break-words">{activeTicket.service_type}</span>
                                 </p>
                                 <p className="text-[11px] text-slate-400 mt-0.5">
                                     Issued: {new Date(activeTicket.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}

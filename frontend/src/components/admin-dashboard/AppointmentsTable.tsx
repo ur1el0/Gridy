@@ -90,15 +90,19 @@ export const AppointmentsTable: React.FC<AppointmentsTableProps> = ({
                                                 )}
                                             </td>
                                             <td className="py-3.5 px-4 whitespace-nowrap">
-                                                <div className="flex items-center gap-2.5">
+                                                <div className="flex items-center gap-2.5 min-w-0">
                                                     <div className="w-7 h-7 rounded-pill bg-primary/15 text-primary-text font-bold text-xs flex items-center justify-center shrink-0">
                                                         {initial}
                                                     </div>
-                                                    <span className="font-bold text-neutral-primary">{act.title}</span>
+                                                    <span className="font-bold text-neutral-primary truncate max-w-[200px] lg:max-w-xs" title={act.title}>
+                                                        {act.title}
+                                                    </span>
                                                 </div>
                                             </td>
                                             <td className="py-3.5 px-4 text-neutral-secondary font-medium whitespace-nowrap">
-                                                {act.location || '--'}
+                                                <span className="block truncate max-w-[160px] lg:max-w-[200px]" title={act.location || ''}>
+                                                    {act.location || '--'}
+                                                </span>
                                             </td>
                                             <td className="py-3.5 px-4 whitespace-nowrap">
                                                 <span

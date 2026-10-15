@@ -70,7 +70,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ compact = false, onNavigate })
                                         to="/dilg-applications"
                                         onClick={onNavigate}
                                         aria-current={location.pathname === '/dilg-applications' ? 'page' : undefined}
-                                        className={({ isActive }) => `flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 group ${
+                                        className={({ isActive }) => `flex min-h-[44px] items-center gap-3.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 group ${
                                             isActive ? 'bg-primary/10 text-primary-text font-bold shadow-xs' : 'text-[#475569] font-medium hover:bg-[#EEF3FA] hover:text-[#0f172a]'
                                         } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40`}
                                     >
@@ -83,7 +83,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ compact = false, onNavigate })
                                         to="/dilg-analytics"
                                         onClick={onNavigate}
                                         aria-current={location.pathname === '/dilg-analytics' ? 'page' : undefined}
-                                        className={({ isActive }) => `flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 group ${
+                                        className={({ isActive }) => `flex min-h-[44px] items-center gap-3.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 group ${
                                             isActive ? 'bg-primary/10 text-primary-text font-bold shadow-xs' : 'text-[#475569] font-medium hover:bg-[#EEF3FA] hover:text-[#0f172a]'
                                         } focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/40`}
                                     >
@@ -108,7 +108,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ compact = false, onNavigate })
                                         <NavLink
                                             to={item.path}
                                             onClick={onNavigate}
-                                            className={`flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 group ${
+                                            className={`flex min-h-[44px] items-center gap-3.5 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-150 group ${
                                                 isActive
                                                     ? 'bg-primary/10 text-primary-text font-bold shadow-xs'
                                                     : 'text-[#475569] font-medium hover:bg-[#EEF3FA] hover:text-[#0f172a]'
@@ -138,7 +138,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ compact = false, onNavigate })
                     onClick={onNavigate}
                     aria-current={location.pathname === '/settings' ? 'page' : undefined}
                     className={({ isActive }) =>
-                        `flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group ${
+                        `flex min-h-[44px] items-center gap-3.5 px-4 py-2.5 rounded-xl text-sm font-medium transition-all duration-150 group ${
                             isActive
                                 ? 'bg-primary/10 text-primary-text font-bold shadow-xs'
                                 : 'text-[#475569] hover:bg-[#EEF3FA] hover:text-[#0f172a]'
@@ -158,7 +158,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ compact = false, onNavigate })
                     }}
                     type="button"
                     aria-label="Log out"
-                    className="w-full flex items-center gap-3.5 px-4 py-2.5 rounded-xl text-sm font-semibold text-[#DC2626] hover:bg-red-50 hover:text-red-700 transition-all duration-150 text-left cursor-pointer group"
+                    className="w-full flex min-h-[44px] items-center gap-3.5 px-4 py-2.5 rounded-xl text-sm font-semibold text-[#DC2626] hover:bg-red-50 hover:text-red-700 transition-all duration-150 text-left cursor-pointer group"
                 >
                     <div className="w-5 h-5 flex items-center justify-center shrink-0">
                         <LogOut className="w-[19px] h-[19px] text-[#DC2626] group-hover:text-red-700 transition-colors" />

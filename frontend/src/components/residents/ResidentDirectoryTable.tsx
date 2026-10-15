@@ -48,12 +48,12 @@ export const ResidentDirectoryTable: React.FC<ResidentDirectoryTableProps> = ({
                                     className="hover:bg-primary/5 transition-colors cursor-pointer group"
                                 >
                                     <td className="py-3.5 px-6">
-                                        <div className="flex items-center gap-3">
-                                            <div className="w-9 h-9 rounded-full bg-primary/10 text-primary-text flex items-center justify-center font-bold text-sm shadow-2xs">
+                                        <div className="flex items-center gap-3 min-w-0">
+                                            <div className="w-9 h-9 rounded-full bg-primary/10 text-primary-text flex items-center justify-center font-bold text-sm shadow-2xs shrink-0">
                                                 {resident.full_name.charAt(0).toUpperCase()}
                                             </div>
-                                            <div>
-                                                <div className="font-bold text-slate-900 group-hover:text-primary-text transition-colors">
+                                            <div className="min-w-0">
+                                                <div className="font-bold text-slate-900 group-hover:text-primary-text transition-colors truncate max-w-[180px] sm:max-w-[220px]" title={resident.full_name}>
                                                     {resident.full_name}
                                                 </div>
                                                 <div className="text-xs text-slate-500">
@@ -69,15 +69,15 @@ export const ResidentDirectoryTable: React.FC<ResidentDirectoryTableProps> = ({
                                         {resident.username ? `@${resident.username}` : 'None'}
                                     </td>
                                     <td className="py-3.5 px-6 text-slate-600">
-                                        <div className="flex flex-col gap-0.5 text-xs">
+                                        <div className="flex flex-col gap-0.5 text-xs min-w-0">
                                             {resident.contact_number && (
                                                 <span className="flex items-center gap-1.5">
-                                                    <Phone className="w-3 h-3 text-slate-400" /> {resident.contact_number}
+                                                    <Phone className="w-3 h-3 text-slate-400 shrink-0" /> {resident.contact_number}
                                                 </span>
                                             )}
                                             {resident.email && (
-                                                <span className="flex items-center gap-1.5">
-                                                    <Mail className="w-3 h-3 text-slate-400" /> {resident.email}
+                                                <span className="flex items-center gap-1.5 truncate max-w-[160px] sm:max-w-[200px]" title={resident.email}>
+                                                    <Mail className="w-3 h-3 text-slate-400 shrink-0" /> <span className="truncate">{resident.email}</span>
                                                 </span>
                                             )}
                                             {!resident.contact_number && !resident.email && (
@@ -110,7 +110,7 @@ export const ResidentDirectoryTable: React.FC<ResidentDirectoryTableProps> = ({
                                             }}
                                             aria-label={`Delete ${resident.full_name}`}
                                             title="Delete Resident"
-                                            className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
+                                            className="min-h-[36px] min-w-[36px] inline-flex items-center justify-center p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors cursor-pointer"
                                         >
                                             <Trash2 className="w-4 h-4" />
                                         </button>
