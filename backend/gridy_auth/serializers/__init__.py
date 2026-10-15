@@ -6,4 +6,5 @@ from .base import (
 )
 from .auth import CustomTokenObtainPairSerializer, PasswordResetRequestSerializer, PasswordResetConfirmSerializer, RefreshSessionSerializer
 from .registration import RegisterSerializer, AdminRegisterSerializer
+from .staff import StaffUserListSerializer, StaffUserCreateSerializer
 

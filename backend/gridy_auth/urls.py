@@ -18,6 +18,7 @@ from .views import (
     PasswordResetConfirmView,
     BarangayApplicationViewSet,
     PublicBarangayDirectoryView,
+    StaffManagementViewSet,
 )
 from .views.resident_media import ResidentPrivateMediaView
 
@@ -26,6 +27,7 @@ router.register(r'resident', ResidentViewSet, basename='resident')
 router.register(r'barangay', BarangayViewSet, basename='barangay')
 router.register(r"sessions", SessionViewSet, basename="session")
 router.register(r"barangay-applications", BarangayApplicationViewSet, basename="barangay-application")
+router.register(r"staff", StaffManagementViewSet, basename="staff")
 
 
 urlpatterns = [

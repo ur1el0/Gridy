@@ -28,3 +28,4 @@ from .residents import (
     ResidentViewSet,
 )
 from .onboarding import BarangayApplicationViewSet, PublicBarangayDirectoryView
+from .staff import StaffManagementViewSet

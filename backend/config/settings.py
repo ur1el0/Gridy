@@ -280,6 +280,7 @@ REST_FRAMEWORK = {
         'barangay_application': '5/hour',
         'password_reset_request': '5/hour',
         'password_reset_confirm': '10/hour',
+        'staff_management': '30/minute',
     }
 }
 
