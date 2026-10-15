@@ -1,7 +1,7 @@
 # Status: M89 Cross-Channel Announcement QR Share Kit
 
 ## Summary
-- **State:** Implementation and local verification complete; not committed or pushed.
+- **State:** Implementation and local verification complete; branch pushed and PR #224 open against `main`.
 - **Branch:** `feat/announcement-qr-share-kit`
 - **Base:** `origin/main` (`13ce01e067298d59c652ffc8b7791d8011b79406`)
 - **Scope:** Administrator-managed manual posting supported by QR/link/caption materials for public announcements; no Meta publishing integration. The QR share kit replaces M5 as the active emerging-technology deliverable.
@@ -41,4 +41,6 @@
 
 ## Delivery
 
-- No commit, push, pull request, Facebook post, or deployment has been made.
+- Branch `feat/announcement-qr-share-kit` is pushed to `ur1el0/KapitBayan`.
+- [PR #224](https://github.com/ur1el0/KapitBayan/pull/224) is open against `main`; it has not been merged.
+- No Facebook post or deployment has been made.
