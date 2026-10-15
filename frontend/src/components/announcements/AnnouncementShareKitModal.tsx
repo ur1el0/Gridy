@@ -67,7 +67,7 @@ export const AnnouncementShareKitModal: React.FC<AnnouncementShareKitModalProps>
                 aria-modal="true"
                 aria-labelledby={titleId}
                 tabIndex={-1}
-                className="max-h-[90vh] w-full max-w-xl overflow-y-auto rounded-2xl border border-slate-100 bg-white shadow-xl"
+                className="max-h-[90vh] w-full min-w-0 max-w-xl overflow-x-hidden overflow-y-auto rounded-2xl border border-slate-100 bg-white shadow-xl"
             >
                 <div className="flex items-center justify-between border-b border-slate-100 bg-slate-50/70 px-5 py-4">
                     <h2 id={titleId} className="flex items-center gap-2 text-base font-bold text-slate-900">
@@ -84,7 +84,7 @@ export const AnnouncementShareKitModal: React.FC<AnnouncementShareKitModalProps>
                     </button>
                 </div>
 
-                <div className="space-y-5 p-5">
+                <div className="min-w-0 space-y-5 p-5">
                     <div>
                         <h3 className="font-semibold text-slate-900">{announcement.title}</h3>
                         <p className="mt-1 text-sm text-slate-600">
@@ -92,8 +92,8 @@ export const AnnouncementShareKitModal: React.FC<AnnouncementShareKitModalProps>
                         </p>
                     </div>
 
-                    <div className="flex flex-col items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 sm:flex-row sm:items-start">
-                        <div className="shrink-0 rounded-lg border border-slate-200 bg-white p-2">
+                    <div className="flex w-full min-w-0 flex-col items-center gap-3 rounded-xl border border-slate-200 bg-white p-4 md:flex-row md:items-start">
+                        <div className="w-full max-w-56 shrink-0 rounded-lg border border-slate-200 bg-white p-2 md:w-56">
                             <QRCodeCanvas
                                 ref={qrCanvasRef}
                                 value={publicUrl}
@@ -101,7 +101,7 @@ export const AnnouncementShareKitModal: React.FC<AnnouncementShareKitModalProps>
                                 level="M"
                                 marginSize={4}
                                 title={`QR code linking to ${announcement.title}`}
-                                className="h-52 w-52"
+                                className="block aspect-square h-auto w-full max-w-52"
                             />
                         </div>
                         <div className="min-w-0 flex-1 space-y-3">
