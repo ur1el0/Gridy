@@ -1,6 +1,7 @@
-import React, { useEffect, useState, type ReactNode } from "react";
+import React, { useEffect, useRef, useState, type ReactNode } from "react";
 import { AuthContext, type User } from "./auth-context";
 import { axiosPrivate } from "../api/axios";
+import { clearAccessToken, setAccessToken } from "../api/accessToken";
 
 const DEFAULT_PRIMARY_COLOR = '#082B66';
 
@@ -75,56 +76,64 @@ const applyBarangayTheme = (primaryColor?: string) => {
     rootStyle.setProperty('--brand-primary-text', primaryTextColor);
 };
 
-export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [user, setUser] = useState<User | null>(() => {
-        const token = localStorage.getItem('access_token');
-        if (token) {
-            try {
-                const payload = JSON.parse(atob(token.split('.')[1]));
-                return {
-                    id: payload.user_id,
-                    username: payload.username,
-                    full_name: payload.full_name,
-                    role: payload.role,
-                };
-            } catch (error) {
-                console.error("Failed to parse token on load", error);
-                localStorage.removeItem('access_token');
-            }
-        }
-        return null;
-    });
+interface AuthProviderProps {
+    children: ReactNode;
+    restoreSession?: boolean;
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children, restoreSession = true }) => {
+    const [user, setUser] = useState<User | null>(null);
+    const [isAuthReady, setIsAuthReady] = useState(!restoreSession);
+    const authActionVersion = useRef(0);
 
     useEffect(() => {
         applyBarangayTheme(user?.barangay?.primary_color);
     }, [user?.barangay?.primary_color]);
 
     useEffect(() => {
-        const accessToken = localStorage.getItem('access_token');
-        if (!accessToken || !user?.id || user.barangay?.primary_color) return;
-
+        if (!restoreSession) return;
         let active = true;
-        const currentUserId = String(user.id);
+        const initialActionVersion = authActionVersion.current;
+
+        const handleSessionExpired = () => {
+            authActionVersion.current += 1;
+            clearAccessToken();
+            setUser(null);
+            setIsAuthReady(true);
+        };
+        window.addEventListener('gridy:session-expired', handleSessionExpired);
 
         axiosPrivate.get('/auth/me/')
             .then((response) => {
-                if (active && String(response.data.id) === currentUserId) {
+                if (active && authActionVersion.current === initialActionVersion) {
                     setUser(response.data);
                 }
             })
             .catch((error) => {
-                if (active) {
-                    console.error('Failed to load the authenticated profile', error);
+                if (active && authActionVersion.current === initialActionVersion) {
+                    clearAccessToken();
+                    setUser(null);
+                }
+                if (error?.response?.status !== 401) {
+                    console.error('Failed to load the authenticated profile');
+                }
+            })
+            .finally(() => {
+                if (active && authActionVersion.current === initialActionVersion) {
+                    setIsAuthReady(true);
                 }
             });
 
         return () => {
             active = false;
+            window.removeEventListener('gridy:session-expired', handleSessionExpired);
         };
-    }, [user?.id, user?.barangay?.primary_color]);
+    }, [restoreSession]);
 
     const login = (token: string, userData?: User) => {
-        localStorage.setItem('access_token', token);
+        authActionVersion.current += 1;
+        setAccessToken(token);
+        setIsAuthReady(true);
         if (userData) {
             setUser(userData);
         } else {
@@ -157,14 +166,16 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
     };
 
     const logout = async () => {
+        authActionVersion.current += 1;
         try {
             // Tell the backend to blacklist the session and destroy the HttpOnly cookie.
             await axiosPrivate.post('/auth/logout/');
         } catch (error) {
             console.error("Server logout failed, but local state will be cleared.", error);
         } finally {
-            localStorage.removeItem('access_token');
+            clearAccessToken();
             setUser(null);
+            setIsAuthReady(true);
         }
     };
 
@@ -175,6 +186,7 @@ export const AuthProvider: React.FC<{ children: ReactNode }> = ({ children }) =>
                 login,
                 logout,
                 isAuthenticated: !!user,
+                isAuthReady,
                 updateBarangayPrimaryColor,
             }}
         >

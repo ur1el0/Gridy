@@ -1,16 +1,24 @@
 import { render, screen } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
-import { beforeEach, describe, it, expect } from 'vitest'
+import { beforeEach, describe, it, expect, vi } from 'vitest'
 import { Login } from './pages/auth/Login'
 import { AuthProvider } from './context/AuthContext'
 import { App } from './App'
+
+vi.mock('./api/axios', () => ({
+    axiosPrivate: {
+        get: vi.fn().mockRejectedValue({ response: { status: 401 } }),
+        post: vi.fn(),
+    },
+    axiosPublic: { post: vi.fn() },
+}));
 
 describe('Login Component', () => {
     it('renders the login form correctly', () => {
         // 1. Render the component in virtual jsdom environment
         render(
             <BrowserRouter>
-                <AuthProvider>
+                <AuthProvider restoreSession={false}>
                     <Login/>
                 </AuthProvider>
             </BrowserRouter>

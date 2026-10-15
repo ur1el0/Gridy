@@ -24,13 +24,6 @@ describe('AuthContext tenant theme', () => {
     });
 
     it('hydrates the tenant color on refresh and chooses readable text colors', async () => {
-        const payload = btoa(JSON.stringify({
-            user_id: 7,
-            username: 'official',
-            role: 'BARANGAY_OFFICIAL',
-        }));
-        localStorage.setItem('access_token', 'header.' + payload + '.signature');
-
         vi.mocked(axiosPrivate.get).mockResolvedValueOnce({
             data: {
                 id: 7,
@@ -55,6 +48,7 @@ describe('AuthContext tenant theme', () => {
         });
 
         expect(axiosPrivate.get).toHaveBeenCalledWith('/auth/me/');
+        expect(localStorage.getItem('access_token')).toBeNull();
         expect(document.documentElement.style.getPropertyValue('--brand-primary-foreground')).toBe('#0F172A');
         expect(document.documentElement.style.getPropertyValue('--brand-primary-text')).not.toBe('#F1C40F');
     });

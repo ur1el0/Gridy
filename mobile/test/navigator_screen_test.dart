@@ -378,7 +378,7 @@ void main() {
       expect(find.byTooltip('Clear conversation'), findsNothing);
     });
 
-    testWidgets('DashboardScreen Ask Barangay card navigates to NavigatorScreen', (tester) async {
+    testWidgets('DashboardScreen hides Ask Barangay while the feature is disabled by default', (tester) async {
       final prefs = await SharedPreferences.getInstance();
       final storage = StorageService(prefs);
       final dashboardService = _FakeDashboardService(storage: storage);
@@ -390,14 +390,8 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('Ask Barangay'), findsOneWidget);
-      await tester.ensureVisible(find.text('Ask Barangay'));
-      await tester.pumpAndSettle();
-      await tester.tap(find.text('Ask Barangay'));
-      await tester.pumpAndSettle();
-
-      expect(find.byType(NavigatorScreen), findsOneWidget);
-      expect(find.text('Public information assistant'), findsOneWidget);
+      expect(find.text('Ask Barangay'), findsNothing);
+      expect(find.byType(NavigatorScreen), findsNothing);
     });
 
     testWidgets('meets touch target minimum accessibility constraints', (tester) async {

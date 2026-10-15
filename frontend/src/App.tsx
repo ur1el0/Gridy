@@ -82,7 +82,10 @@ const AidRequests = lazy(() =>
 );
 
 function RootRedirect() {
-    const { isAuthenticated, user } = useAuth();
+    const { isAuthenticated, isAuthReady, user } = useAuth();
+    if (isAuthReady === false) {
+        return <RouteLoadingFallback />;
+    }
     if (!isAuthenticated) {
         return <Navigate to="/login" replace />;
     }
