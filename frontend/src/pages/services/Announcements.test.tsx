@@ -1,8 +1,22 @@
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { axiosPrivate } from '../../api/axios';
 import { useAuth } from '../../context/auth-context';
 import { Announcements } from './Announcements';
+
+vi.mock('qrcode.react', async () => {
+    const React = await import('react');
+    return {
+        QRCodeCanvas: React.forwardRef<HTMLCanvasElement, { value: string; title: string }>(
+            ({ value, title }, ref) => React.createElement('canvas', {
+                ref,
+                'data-testid': 'announcement-qr',
+                'data-value': value,
+                'aria-label': title,
+            }),
+        ),
+    };
+});
 
 vi.mock('../../api/axios', () => ({
     axiosPrivate: {
@@ -28,6 +42,23 @@ const announcement = {
     is_pinned: false,
     created_at: '2026-10-12T08:00:00Z',
 };
+
+const originalClipboardDescriptor = Object.getOwnPropertyDescriptor(navigator, 'clipboard');
+const originalCanvasToDataUrlDescriptor = Object.getOwnPropertyDescriptor(HTMLCanvasElement.prototype, 'toDataURL');
+
+afterEach(() => {
+    vi.restoreAllMocks();
+    if (originalClipboardDescriptor) {
+        Object.defineProperty(navigator, 'clipboard', originalClipboardDescriptor);
+    } else {
+        Reflect.deleteProperty(navigator, 'clipboard');
+    }
+    if (originalCanvasToDataUrlDescriptor) {
+        Object.defineProperty(HTMLCanvasElement.prototype, 'toDataURL', originalCanvasToDataUrlDescriptor);
+    } else {
+        Reflect.deleteProperty(HTMLCanvasElement.prototype, 'toDataURL');
+    }
+});
 
 describe('Announcements', () => {
     beforeEach(() => {
@@ -168,5 +199,59 @@ describe('Announcements', () => {
         const aiCheckbox = screen.getByLabelText('Share with Public AI Navigator');
         expect(aiCheckbox).toBeDisabled();
         expect(screen.getByText('AI sharing is restricted to authorized same-barangay staff.')).toBeInTheDocument();
+    });
+
+    it('opens a per-announcement QR share kit with manual Facebook guidance', async () => {
+        vi.mocked(axiosPrivate.get).mockResolvedValueOnce({ data: [announcement] } as never);
+
+        render(<Announcements />);
+        await screen.findByText('Water service interruption');
+        fireEvent.click(screen.getByRole('button', { name: 'Share announcement' }));
+
+        const dialog = screen.getByRole('dialog', { name: 'Announcement share kit' });
+        const expectedUrl = `${window.location.origin}/public/announcements/1#announcement-12`;
+        expect(dialog).toBeInTheDocument();
+        expect(screen.getByLabelText('Public announcement link')).toHaveValue(expectedUrl);
+        expect(screen.getByTestId('announcement-qr')).toHaveAttribute('data-value', expectedUrl);
+        expect(screen.getByText(/Posting is manual/)).toBeInTheDocument();
+        expect(screen.getByText(/does not publish Facebook posts or read comments/)).toBeInTheDocument();
+        expect(axiosPrivate.post).not.toHaveBeenCalled();
+        expect(axiosPrivate.delete).not.toHaveBeenCalled();
+    });
+
+    it('copies Facebook-ready text containing the exact public announcement URL', async () => {
+        const writeText = vi.fn().mockResolvedValue(undefined);
+        Object.defineProperty(navigator, 'clipboard', {
+            configurable: true,
+            value: { writeText },
+        });
+        vi.mocked(axiosPrivate.get).mockResolvedValueOnce({ data: [announcement] } as never);
+
+        render(<Announcements />);
+        await screen.findByText('Water service interruption');
+        fireEvent.click(screen.getByRole('button', { name: 'Share announcement' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Copy post text' }));
+
+        await waitFor(() => expect(writeText).toHaveBeenCalledWith(
+            `Water service interruption\n\nWater service will be unavailable this afternoon.\n\nRead the official KapitBayan announcement: ${window.location.origin}/public/announcements/1#announcement-12`,
+        ));
+    });
+
+    it('downloads the QR canvas as a PNG asset', async () => {
+        const toDataURL = vi.fn().mockReturnValue('data:image/png;base64,qr');
+        Object.defineProperty(HTMLCanvasElement.prototype, 'toDataURL', {
+            configurable: true,
+            value: toDataURL,
+        });
+        const clickDownload = vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(() => undefined);
+        vi.mocked(axiosPrivate.get).mockResolvedValueOnce({ data: [announcement] } as never);
+
+        render(<Announcements />);
+        await screen.findByText('Water service interruption');
+        fireEvent.click(screen.getByRole('button', { name: 'Share announcement' }));
+        fireEvent.click(screen.getByRole('button', { name: 'Download QR PNG' }));
+
+        expect(toDataURL).toHaveBeenCalledWith('image/png');
+        expect(clickDownload).toHaveBeenCalledOnce();
     });
 });

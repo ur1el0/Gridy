@@ -4,6 +4,7 @@ import { axiosPrivate } from '../../api/axios';
 import { Pin, Megaphone, Plus, Trash, Share2 } from 'lucide-react';
 import { useAuth } from '../../context/auth-context';
 import { BroadcastAnnouncementModal } from '../../components/announcements/BroadcastAnnouncementModal';
+import { AnnouncementShareKitModal } from '../../components/announcements/AnnouncementShareKitModal';
 import { InlineErrorState } from '../../components/ui/InlineErrorState';
 
 interface Announcement {
@@ -37,6 +38,7 @@ export const Announcements: React.FC = () => {
     const [retrying, setRetrying] = useState(false);
 
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const [shareAnnouncement, setShareAnnouncement] = useState<Announcement | null>(null);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
@@ -84,26 +86,13 @@ export const Announcements: React.FC = () => {
         }
     };
 
-    const handleShare = async (announcement: Announcement) => {
+    const handleShare = (announcement: Announcement) => {
         const barangayId = user?.barangay?.id ?? user?.barangay_id;
         if (!barangayId) {
             toast.error('Your account is not linked to a barangay.');
             return;
         }
-        const url = `${window.location.origin}/public/announcements/${barangayId}`;
-        const shareText = `${announcement.title}\n\n${announcement.content}\n\nRead the official post and complete any transaction in KapitBayan: ${url}`;
-
-        try {
-            if (navigator.share) {
-                await navigator.share({ title: announcement.title, text: shareText, url });
-                return;
-            }
-            await navigator.clipboard.writeText(shareText);
-            toast.success('Announcement text and KapitBayan link copied. Paste them into the official social page.');
-        } catch (error) {
-            if (error instanceof DOMException && error.name === 'AbortError') return;
-            toast.error('Could not share this announcement.');
-        }
+        setShareAnnouncement(announcement);
     };
 
     useEffect(() => {
@@ -262,10 +251,10 @@ export const Announcements: React.FC = () => {
                                 {user?.role === 'ADMIN' && (
                                     <div className="pt-4 mt-4 border-t border-slate-100 flex items-center justify-end gap-2">
                                         <button
-                                            onClick={() => void handleShare(ann)}
+                                            onClick={() => handleShare(ann)}
                                             className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 px-3 py-2 text-xs font-semibold text-slate-700 hover:bg-slate-50"
                                         >
-                                            <Share2 className="h-3.5 w-3.5" /> Share externally
+                                            <Share2 className="h-3.5 w-3.5" /> Share announcement
                                         </button>
                                         <button 
                                             onClick={() => handleDelete(ann.id)}
@@ -300,6 +289,14 @@ export const Announcements: React.FC = () => {
                     navigatorAiEnabled={navigatorAiEnabled}
                     setNavigatorAiEnabled={setNavigatorAiEnabled}
                     canEnableAi={canEnableAi}
+                />
+            )}
+
+            {shareAnnouncement && (
+                <AnnouncementShareKitModal
+                    announcement={shareAnnouncement}
+                    barangayId={user?.barangay?.id ?? user?.barangay_id ?? ''}
+                    onClose={() => setShareAnnouncement(null)}
                 />
             )}
         </div>
