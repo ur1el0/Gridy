@@ -3,6 +3,7 @@ from rest_framework.routers import DefaultRouter
 from gridy_communications.views import (
     AnnouncementViewSet,
     PublicAnnouncementListView,
+    PublicAnnouncementDetailView,
     ActivityScheduleViewSet, 
     FCMDeviceViewSet, 
     EmergencyHotlineViewSet,
@@ -25,6 +26,11 @@ urlpatterns = [
         'public/barangays/<int:barangay_id>/announcements/',
         PublicAnnouncementListView.as_view(),
         name='public-announcements',
+    ),
+    path(
+        'public/announcements/<int:announcement_id>/',
+        PublicAnnouncementDetailView.as_view(),
+        name='public-announcement-detail',
     ),
     path(
         'public/navigator/query/',

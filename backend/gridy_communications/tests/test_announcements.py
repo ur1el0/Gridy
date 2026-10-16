@@ -103,6 +103,41 @@ class PublicAnnouncementAPITests(APITestCase):
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         self.assertEqual(len(response.data), 1)
         self.assertEqual(response.data[0]["id"], announcement.pk)
+        self.assertEqual(response.data[0]["barangay_id"], first_barangay.pk)
         self.assertEqual(response.data[0]["title"], "Office schedule")
         self.assertNotIn("created_by", response.data[0])
         self.assertNotIn("image", response.data[0])
+
+    def test_public_announcement_detail_returns_post_and_barangay(self):
+        first_barangay = Barangay.objects.create(name="Barangay 1")
+        admin = User.objects.create_user(
+            username="official@test.com",
+            email="official@test.com",
+            password="secure-password",
+            role=User.Role.ADMIN,
+            barangay=first_barangay,
+        )
+        announcement = Announcement.objects.create(
+            title="Vaccination drive",
+            content="Free flu shots this Saturday.",
+            created_by=admin,
+        )
+
+        response = self.client.get(
+            reverse("public-announcement-detail", args=[announcement.pk])
+        )
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertEqual(response.data["id"], announcement.pk)
+        self.assertEqual(response.data["barangay_id"], first_barangay.pk)
+        self.assertEqual(response.data["title"], "Vaccination drive")
+        self.assertEqual(response.data["content"], "Free flu shots this Saturday.")
+        self.assertNotIn("created_by", response.data)
+        self.assertNotIn("image", response.data)
+
+    def test_public_announcement_detail_returns_404_when_missing(self):
+        response = self.client.get(
+            reverse("public-announcement-detail", args=[999999])
+        )
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
