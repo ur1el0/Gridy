@@ -1,7 +1,7 @@
-# Gridy - Product Requirements Document (PRD)
+# KapitBayan - Product Requirements Document (PRD)
 
 ## 1. Project Overview
-**Gridy** is a Barangay Information and Service Management System designed to digitize and streamline local government operations in the Philippines. It serves as a centralized platform for residents to interact with their barangay officials and for officials to manage constituents efficiently.
+**KapitBayan** is a Barangay Information and Service Management System designed to digitize and streamline local government operations in the Philippines. It serves as a centralized platform for residents to interact with their barangay officials and for officials to manage constituents efficiently.
 
 ## 2. Target Audience
 - **Residents**: Constituents of the barangay who need to request documents, report issues, and view community announcements.

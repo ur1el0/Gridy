@@ -1,4 +1,4 @@
-# Gridy - AI Coding Agent Rules & Reference Index
+# KapitBayan - AI Coding Agent Rules & Reference Index
 
 All agent sessions must consult and adhere to the project standards defined across these documents:
 

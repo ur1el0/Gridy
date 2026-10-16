@@ -54,7 +54,7 @@
 - `mobile/test/document_payment_section_test.dart` (Modified: Added widget tests for processing guidance and staff waiver card)
 
 ### Architecture Decision Records
-- `architecture/decisions/017-explicit-document-fee-assessment-and-waiver-provenance.md` (Created: ADR 017 documenting explicit fee assessment and waiver provenance)
+- `architecture/decisions/018-explicit-document-fee-assessment-and-waiver-provenance.md` (Created as ADR 017; later renumbered ADR 018 after ADR 016 was allocated to shared database API throttling)
 
 ### Task Packet & Documentation
 - `docs/ai-workflow/tasks/m85-document-fee-assessment-provenance/TASK_BRIEF.md` (Created)

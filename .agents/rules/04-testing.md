@@ -1,6 +1,6 @@
 # Testing Protocol (TDD)
 
-Gridy adheres to a strict test-driven development protocol to ensure high reliability across all platforms.
+KapitBayan adheres to a strict test-driven development protocol to ensure high reliability across all platforms.
 
 ### 1. Backend Coverage (Django)
 * **Rule**: Every new Django ViewSet or endpoint must have accompanying tests verifying functionality and security.

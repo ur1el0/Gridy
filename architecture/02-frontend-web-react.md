@@ -1,65 +1,31 @@
-# 02 Frontend Web Implementation (ReactJS & TypeScript)
+# Web Client Architecture (React)
 
-## 1. Technology Stack
-*   **Core:** React 19 with TypeScript, bundled using **Vite** for rapid hot module replacement.
-*   **Styling:** Tailwind CSS with utility-first responsive tokens and full dark/light theme switching.
-*   **State & Authentication:** React Context (`AuthContext`, `ThemeContext`) with HTTP cookie session sync.
-*   **API Client:** Axios instance with automated Bearer authorization headers and centralized error dispatch.
-*   **Icons & Motion:** Lucide React icons with smooth micro-animations.
+The browser application is a React and TypeScript single-page application built with Vite. Route configuration is in `frontend/src/App.tsx`; authentication state, API clients, layouts, and page-level feature code live under `frontend/src/`.
 
----
+## Route groups
 
-## 2. Directory Architecture
-The frontend follows a domain-driven, role-segregated layout:
+| Route group | Access | Purpose |
+|---|---|---|
+| `/login`, `/register`, `/register/barangay`, password-reset routes | Public | Resident access and barangay onboarding |
+| `/public/queue/:barangayId`, `/public/announcements/:barangayId` | Public | Read-only public displays |
+| `/dashboard`, `/documents`, `/queue`, `/communications`, `/residents`, `/reports`, and related staff routes | `ADMIN` or `DILG_ADMIN`, with additional route-level restrictions where configured | Staff and oversight workspaces |
+| `/portal/documents`, `/portal/queue`, `/portal/bulletin`, `/portal/aid` | `RESIDENT` | Resident self-service |
 
-```text
-frontend/src/
-├── components/
-│   ├── citizen/             # Citizen portal components (CitizenLayout, navbars)
-│   ├── common/              # Universal UI (buttons, badges, inputs, skeleton loaders)
-│   ├── documents/           # Clearance tables, validation modal, walk-in creation
-│   ├── issues/              # Incident reporting cards, triage badges
-│   ├── layout/              # Admin shell (Sidebar, Navbar, MobileDrawer)
-│   └── queue/               # Queue ticket displays and counter widgets
-├── context/                 # AuthContext, ThemeContext
-├── pages/
-│   ├── admin/               # Executive Desk views (Dashboard, Queue, Documents, Reports)
-│   ├── citizen/             # Citizen Self-Service views (Documents, Queue, Bulletin, Issues)
-│   └── community/           # Residents directory, RBI census CSV import
-├── routes/                  # ProtectedRoute, AppRoutes, role gatekeepers
-└── services/                # Axios API service integrations
+`/aid-requests` has an additional `ADMIN` route guard. DILG application management has a `DILG_ADMIN` guard. `FIELD_OFFICIAL` has no web staff workspace in the current router and uses the Flutter client; browser login for that role is rejected. These are UI route guards; the API remains the authorization boundary. The Field Official API token is not cryptographically bound to a native device.
 
-```
+## API and authentication
 
----
+The web API client is configured in `frontend/src/api/`. Access credentials are used for authenticated requests; refresh is handled through the backend's HttpOnly cookie contract. The production build defaults to the relative `/api/v1` base when `VITE_API_BASE_URL` is unset, matching the intended reverse-proxy topology. Do not place provider secrets or private media URLs in browser code.
 
-## 3. Dual-Portal Architectural Pattern
+See [ADR 002](decisions/002-httponly-jwt-cookie-auth.md), [ADR 003](decisions/003-openapi-contract-driven-development.md), and [API contracts](06-api-endpoint-contracts.md).
 
-Per **ADR 008**, the application separates public constituent self-service from executive LGU administration:
+## Feature boundaries
 
-### 3.1 Citizen Self-Service Desktop Portal (`/portal/*`)
-Mounted under `CitizenLayout`, providing a distraction-free, resident-first experience:
-*   **`/portal/documents` (`CitizenDocuments.tsx`):** Self-service clearance applications with instant status tracking and downloadable legal PDF slips.
-*   **`/portal/queue` (`CitizenQueue.tsx`):** Live queue ticket tracker showing active serving numbers and average wait times.
-*   **`/portal/bulletin` (`CitizenBulletin.tsx`):** Community announcements feed and scheduled events calendar.
-*   **`/portal/issues` (`CitizenIssues.tsx`):** Public incident reporting with client-side image attachment and geo-location notes.
+- Route components compose pages and layouts; domain components live under `frontend/src/components/`.
+- API access should go through the existing API modules and client instances.
+- Keep resident and staff workflows visually distinct. Do not add a role-switch shortcut unless a separately reviewed decision changes the current route contract.
+- The Public Information Navigator launcher is controlled by `VITE_PUBLIC_NAVIGATOR_ENABLED`; the backend independently checks `PUBLIC_NAVIGATOR_ENABLED`.
+- Announcement sharing generates an in-app share kit. Staff publish externally themselves; KapitBayan does not automatically post to Facebook or manage Facebook comments.
+- Barangay `ADMIN` users can provision, list, edit the allowed profile fields of, and activate/deactivate Field Official accounts from `/settings`; operations are scoped to the administrator's barangay. Account setup uses an expiring email link rather than an administrator-set password.
 
-### 3.2 Executive Desk Portal (`/admin/*`)
-Mounted under `AdminLayout`, guarded by `ProtectedRoute` requiring `ADMIN` or `DILG_ADMIN` roles:
-*   **`/admin/dashboard` (`Dashboard.tsx`):** Executive overview with gross clearance revenue collection, resident demographics, and incident scenario charts.
-*   **`/admin/documents` (`DocumentsManagement.tsx`):** Clearance triage, treasury O.R. fee assignment, and walk-in legal issuance.
-*   **`/admin/residents` (`ResidentsManagement.tsx`):** Registry of Barangay Inhabitants directory with bulk RBI CSV import modal and template download.
-*   **`/admin/queue`, `/admin/reports`, `/admin/hotlines`, `/admin/settings`.
-
-### 3.3 Secret Demarcation Gateway (`Shift + \`)
-To allow evaluators and developers to switch between citizen and official views without disrupting presentation flow, pressing `Shift + \` triggers a hidden modal. The gateway verifies session permissions before permitting navigation into administrative routes.
-
----
-
-## 4. Key Operational Components
-
-### 4.1 Treasury Auditing in ReviewDocumentModal
-Officials process clearances via `ReviewDocumentModal.tsx`. Prior to transitioning a document to `RELEASED`, the modal requires input of the **Official Receipt (O.R.) Number** and **Fee Amount in PHP**, directly embedding them into the database and server-side PDF generator.
-
-### 4.2 Bulk RBI Census CSV Import
-Located in `ResidentsManagement.tsx`, this component accepts local registry CSV files, performs client-side header validation, provides a downloadable template (`residents_template.csv`), and transmits records to `/api/v1/auth/import-residents/`.
+For supported screens and workflows, see [Feature Guides](../docs/README.md#feature-guides).

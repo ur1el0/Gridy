@@ -1,67 +1,29 @@
-# 08 Core Feature Workflows
+# Core Service Workflows
 
-## 1. Hybrid Queue Monitoring Workflow
-This workflow coordinates physical ticketing at the barangay hall with digital, real-time status updates on the resident's mobile application.
+This page summarizes current workflow boundaries. Exact transition rules live in the relevant backend services, models, serializers, and regression tests.
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Resident
-    actor Admin
-    participant Flutter as Flutter Mobile App
-    participant Django as Django DRF Backend
-    participant DB as PostgreSQL Database
-    participant FCM as Firebase Cloud Messaging
+## Document request and treasury workflow
 
-    Note over Resident, Django: Step 1: Resident gets physical slip at Hall (e.g., A-125)
-    Resident->>Flutter: Open QR Scanner & Scan physical slip
-    Flutter->>Django: POST /api/v1/queue/ticket/ { "ticket_number": "A-125" }
-    Django->>DB: Save ticket link to Resident Profile
-    Django-->>Flutter: 201 Created (linked successfully)
-    
-    loop Real-Time Polling
-        Flutter->>Django: GET /api/v1/queue/live-status/
-        Django->>DB: Fetch current serving ticket
-        DB-->>Django: Current ticket is A-124
-        Django-->>Flutter: Return live-status (waiting...)
-    end
-    
-    Admin->>Django: POST /api/v1/queue/next/ (Advance queue)
-    Django->>DB: Update A-125 status to "ONGOING"
-    Django->>FCM: Trigger push notification payload
-    FCM->>Flutter: Push Notification: "Please proceed to Counter 1"
-    Flutter->>Resident: Display notification alert & update screen
-```
+1. A resident submits a request, or authorized staff records an in-person walk-in without creating a synthetic resident account.
+2. Staff in the request's barangay review the application and record an explicit fee assessment or supported waiver. `PROCESSING` is not a payment-ready state.
+3. Once the request is `READY_FOR_PICKUP`, payment may be recorded through the approved manual workflow. Electronic references and uploaded receipts are evidence for staff review, not proof of settlement.
+4. Staff verifies payment against the barangay's actual account and records the Official Receipt. A positive-fee document cannot be released without the required payment verification and O.R. controls. Cash and statutory-waiver cases follow their documented paths.
+5. The resident follows status and retrieves authorized documents through the API. Private evidence is served through authenticated media endpoints.
 
----
+See [ADR 007](decisions/007-revenue-and-official-receipt-auditing.md), [ADR 017](decisions/017-manual-epayment-evidence-and-verification.md), and [ADR 018](decisions/018-explicit-document-fee-assessment-and-waiver-provenance.md).
 
-## 2. Image-Backed Issue Reporting Workflow
-This workflow manages camera capture, local device image compression, streaming to the backend, and hosting media in cloud storage.
+## Queue workflow
 
-```mermaid
-sequenceDiagram
-    autonumber
-    actor Resident
-    actor Admin
-    participant Flutter as Flutter Mobile App
-    participant Django as Django DRF Backend
-    participant Cloudinary as Cloudinary CDN
-    participant DB as PostgreSQL Database
-    participant React as React Admin Dashboard
+Residents and walk-in visitors can receive tickets under the applicable service rules. Staff advances tickets within their barangay. Resident and public displays refresh from HTTP endpoints; the documented queue path is polling, not WebSocket delivery. Queue ticket ownership and live desk status are separate data concerns and clients handle partial failures independently.
 
-    Resident->>Flutter: Capture photo of local issue
-    Flutter->>Flutter: Compress image to < 2MB limit
-    Flutter->>Django: POST /api/v1/reports/submit/ (multipart/form-data)
-    Django->>Cloudinary: Stream binary upload
-    Cloudinary-->>Django: Return secure asset URL
-    Django->>DB: Insert issue report (title, description, image_url)
-    DB-->>Django: Confirm save
-    Django-->>Flutter: 201 Created
-    
-    Admin->>React: Open reports tab
-    React->>Django: GET /api/v1/reports/
-    Django->>DB: Fetch active reports
-    DB-->>Django: Return reports list
-    Django-->>React: Return JSON (with Cloudinary image_url)
-    React-->>Admin: Render report details with image preview
-```
+## Communications and announcements
+
+Authorized staff publish barangay announcements and activities. Residents can read public content, and staff can share an announcement link externally using the share kit. KapitBayan does not automatically publish Facebook posts or control comments on Facebook.
+
+## Assistance and reports
+
+Residents submit assistance applications and issue reports. Authorized staff review and update records within the applicable barangay scope. The platform records staff decisions; it does not autonomously determine aid eligibility or replace emergency response. For immediate danger, use official emergency channels.
+
+## Public Information Navigator
+
+The navigator answers only from approved public information. Deterministic privacy checks run before the provider call; private application, identity, queue, payment, and case records are excluded. Ambiguous or unsupported questions abstain and direct residents to verified contacts. Both server and client feature flags default off. See [ADR 019](decisions/019-public-information-ai-navigator-boundary.md).

@@ -1,50 +1,19 @@
-# Cloudinary Media Storage Configuration & Setup Guide
+# Cloudinary and Protected Media
 
-KapitBayan uses **Cloudinary** to store and serve image attachments uploaded by residents when filing incident reports. This secures fast load times, offloads file traffic from our main servers, and provides automated image compression.
+The backend selects its media storage from environment configuration. In production, persistent uploads require the Cloudinary settings shown in `backend/.env.example`; without a configured production storage provider, do not assume local container files are durable.
 
----
+## Configure credentials safely
 
-## Step 1: Obtain Cloudinary Credentials
+Set `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, and `CLOUDINARY_API_SECRET` in an ignored local environment file or an approved deployment secret store. Do not commit credentials. Never place the API secret in web build variables, Flutter defines, or a public issue.
 
-1. Go to the [Cloudinary website](https://cloudinary.com/) and register or sign in.
-2. Navigate to your **Console Dashboard**.
-3. Locate your **Product Environment Credentials**:
-   * **Cloud Name**
-   * **API Key**
-   * **API Secret**
+## Distinguish public content from protected evidence
 
----
+The custom `ResidentAwareCloudinaryStorage` uses authenticated assets for the private directories `resident_ids/`, `resident_billings/`, and `payment_proofs/`. These files are retrieved through backend views that apply authentication, ownership/tenant permissions, and private response headers. Local/test media serving blocks direct access to sensitive media paths.
 
-## Step 2: Configure Environment Variables
+Do not call `.url()` for a protected asset, construct a Cloudinary delivery URL, or expose storage names in client responses. Store and return evidence only through the authenticated media endpoint for that feature.
 
-1. Open your `backend/.env` file.
-2. Paste the retrieved credentials into the following environment fields:
+Issue-report images use a different path and policy from identity or payment evidence. Check the current model, serializer, storage configuration, and permissions before deciding whether an incident image can be rendered or shared. Never infer privacy from the fact that a file is hosted on Cloudinary.
 
-```env
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
-```
+## Safe local validation
 
----
-
-## Step 3: Media Upload Flow
-
-When a resident submits an incident report via the mobile or web application:
-
-1. **Client Action:** Post request payload with `multipart/form-data` formatting to:
-   `POST /api/v1/reports/`
-2. **Backend Processing:**
-   * Receives request variables (`title`, `description`, `location`) and the binary file stream (`image`).
-   * KapitBayan automatically intercepts the binary attachment, compresses the file, and pushes it directly to Cloudinary.
-   * On successful response from Cloudinary, the backend stores the secure URL (`image_url`) inside our database tables and returns it to the client.
-3. **Response:**
-   ```json
-   {
-     "id": 12,
-     "title": "Road Hazard",
-     "image_url": "https://res.cloudinary.com/your-cloud-name/image/upload/v1234/report_road_hazard.jpg",
-     "status": "PENDING"
-   }
-   ```
-   *(Mobile and Web clients can load and render this `image_url` directly inside their interfaces).*
+Use mocked storage in unit tests. For an authorized integration check, use a non-production Cloudinary environment and synthetic images, then verify both permitted and denied media requests. Do not upload real resident identity, utility-bill, payment, or incident records to a developer account.

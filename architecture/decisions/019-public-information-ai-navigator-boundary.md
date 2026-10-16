@@ -1,10 +1,10 @@
-# ADR 018: Public Information AI Navigator Boundary and Source Eligibility
+# ADR 019: Public Information AI Navigator Boundary and Source Eligibility
 
 ## Status
 Accepted
 
 ## Context
-As an emerging-technology research and development component for the Barangay Information and Service Management System (Gridy / KapitBayan), residents frequently inquire about public barangay procedures, required documents, statutory fee exemptions (e.g., First Time Jobseekers Assistance Act - RA 11261, Certificate of Indigency - RA 7160), community schedules, public announcements, and emergency hotlines. Routine inquiries consume significant phone and counter time of barangay staff.
+As an emerging-technology research and development component for KapitBayan (the repository retains legacy Gridy identifiers), residents frequently inquire about public barangay procedures, required documents, statutory fee exemptions (e.g., First Time Jobseekers Assistance Act - RA 11261, Certificate of Indigency - RA 7160), community schedules, public announcements, and emergency hotlines. Routine inquiries consume significant phone and counter time of barangay staff.
 
 However, integrating Large Language Models (LLMs) into Local Government Unit (LGU) public service operations presents substantial risks:
 1. **Hallucination and Misinformation:** Unconstrained generative models may invent local ordinances, fake document requirements, non-existent office hours, or incorrect clearance fees.

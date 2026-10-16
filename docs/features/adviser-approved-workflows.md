@@ -1,29 +1,34 @@
 # Adviser-Approved Service Workflows
 
-This page records the confirmed, intentionally manual service policies for KapitBayan.
+This guide summarizes manually adjudicated resident-service policies. It does not grant authority beyond the backend role and tenant checks.
 
 ## Queue fairness
 
-Regular and priority tickets remain separate classifications. The caller uses a two-priority-to-one-regular rotation while both groups are waiting. If either group is empty, the next ticket comes from the group that still has a waiting resident. Staff cannot assign priority to their own account; changes to a ticket's classification are recorded for review.
+Queue classification and advancement are handled by the service API. Staff cannot use resident-facing UI to change another barangay's queue. Queue clients refresh through HTTP endpoints; they should display independent errors when ticket data and live desk status fail separately.
 
 ## Assistance requests
 
-Residents submit an assistance type and a short explanation. A barangay official reviews each request and records the decision. KapitBayan does not determine eligibility, promise funding, or automatically approve an application. A decline requires a reason, and officials can only review requests belonging to their barangay.
+Residents submit an assistance request for authorized staff review. Officials record decisions and required notes. KapitBayan does not autonomously determine eligibility, guarantee funding, or approve applications using AI.
 
-## Document payment
+## Document fees and payment
 
-Residents may submit a GCash transfer reference after the document is ready for pickup. Before transferring, residents confirm the payment recipient using an official barangay announcement or posted instructions; staff compare the reference with the actual GCash transaction and mark it verified or rejected. Rejection requires a note. A paid document cannot be released until the GCash reference is verified and the official receipt number is recorded. Cash collection remains supported and is recorded with its receipt number. Exempt document fees remain zero.
+- A request is not payable while it is `PROCESSING`. Staff must first complete an explicit fee assessment or record an eligible waiver.
+- Statutory exemptions and staff-approved waivers have distinct provenance; a zero amount alone does not show why no fee is due.
+- Payment is available only at `READY_FOR_PICKUP` for requests with a payable fee. Residents can choose CASH or a configured manual electronic transfer recipient where supported.
+- Residents report transfer details and may upload a receipt image. The uploaded proof is evidence, not confirmation that funds settled.
+- Authorized same-barangay staff manually verify the transfer against the barangay's actual account. No payment gateway, webhook, bank scraping, or automatic settlement is involved.
+- A positive-fee document cannot be released without the required O.R. number and the workflow's payment controls. Cash and statutory-exemption cases follow their own states.
 
-KapitBayan does not connect to GCash, move money, or claim that a reference proves settlement by itself. The staff verification step is the control that protects document release.
+See [ADR 007](../../architecture/decisions/007-revenue-and-official-receipt-auditing.md), [ADR 017](../../architecture/decisions/017-manual-epayment-evidence-and-verification.md), and [ADR 018](../../architecture/decisions/018-explicit-document-fee-assessment-and-waiver-provenance.md).
 
-## Announcements
+## Announcements and public sharing
 
-Officials publish notices in KapitBayan and can share the public announcement link through an external social platform. The KapitBayan page is read-only and contains no transaction action or comments. KapitBayan cannot manage comments on external social pages; officials use that platform's own controls when available and direct residents to KapitBayan for requests and transactions.
+Staff publish notices in KapitBayan. They may use the generated share kit to distribute an announcement link through an external platform. KapitBayan does not automatically post to Facebook or manage external comments. Residents use KapitBayan for follow-up requests.
 
-## After-hours safety reports
+## Safety reports
 
-KapitBayan does not provide live chat after office hours. A resident files an incident report with the details and location; field staff use the existing incident-report queue to triage and update the report. For immediate danger, residents should contact the appropriate emergency service or the barangay hotline.
+Incident reports are triaged by authorized staff. The feature is not a live emergency response service. For immediate danger, residents should contact emergency services or official barangay hotlines.
 
-## Presentation data
+## Demo data
 
-`seed_demo_analytics` creates repeatable synthetic records across three demo barangays for local charts and workflow demonstrations. Names and content are marked synthetic, login passwords are unusable, and seeding requires explicit confirmation while `DEBUG=True` on a local SQLite or PostgreSQL host. The command blocks remote database hosts, including Neon. It must never be run against a deployed or production database.
+Demo-seeding commands are for explicitly confirmed local databases only and refuse unsafe environments. Review each command's `--help` and the management command code before use. Never run demo seeders against a deployed database.

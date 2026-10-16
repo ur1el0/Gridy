@@ -1,52 +1,31 @@
-# KapitBayan Backend Features Manual
+# Backend Feature Guide
 
-This document details the core backend features and functionalities implemented in KapitBayan.
+The Django REST API is divided into the `gridy_auth`, `gridy_services`, `gridy_reports`, `gridy_communications`, and `gridy_audit` apps. These internal names remain part of the migration and database history.
 
----
+## Authentication and account lifecycle
 
-## 1. Authentication & Session Verification
-* **SimpleJWT Token System**: Utilizes JSON Web Token (JWT) authorization for secure client-server communication.
-* **Token Rotation & Blacklisting**: Enforces security policies where refresh tokens are rotated on usage, and logged-out or invalidated tokens are added to a database blacklist to prevent reuse.
-* **Session Verification**: Offers a `/api/v1/auth/me/` endpoint returning current profile states and permissions to verify authentication status.
+Authentication uses access credentials and server-managed refresh sessions. Registration, verification, profile changes, and account deactivation are separate guarded workflows. Session revocation and record-retention behavior are defined by the models, tests, and [ADR 005](../../architecture/decisions/005-session-revocation.md); do not assume deleting a user deletes municipal service history.
 
----
+## Roles and barangay isolation
 
-## 2. Role-Based Access Control (RBAC)
-Enforces application access controls dividing features between roles:
-* **Resident Profile permissions**: Residents can request documents, check queue states, and report incidents.
-* **Barangay Official permissions**: Officials can approve/reject document requests, advance the active counter queue, and post bulletins.
+API permissions and querysets enforce role and barangay scope. Residents access their own records; barangay staff actions are restricted to their assigned barangay; DILG routes are explicit. Barangay administrators can provision, list, update the permitted profile fields of, and activate/deactivate Field Officials only within their barangay. Provisioning sends an expiring password-setup link instead of setting a password in the admin UI. Cross-tenant IDs supplied by clients do not grant access.
 
----
+## Documents and treasury
 
-## 3. Queue Ticketing Pipeline
-* **Auto-Sequenced Numbering**: Automatically sequences and formats ticket codes (e.g., `T001`, `T002`, `T003`) upon creation.
-* **Counter Management**: Allows officials to call the next resident, updating states between `WAITING`, `SERVING`, `COMPLETED`, and `CANCELLED`.
-* **Instant Alerts**: Triggers real-time alerts when counter status changes.
+The document workflow includes explicit fee assessment, waiver provenance, resident payment evidence, manual staff verification, O.R. recording, and release guards. `PROCESSING` is not a payment state; electronic transfers are not settled automatically. See [walk-in and revenue workflows](walkin_and_revenue_clearances.md) and the applicable ADRs.
 
----
+## Queue and analytics
 
-## 4. Document Request Workflow
-* **Resident Submissions**: Residents submit requests for certifications (e.g. Barangay Clearance, Indigency Certificate) with optional urgency parameters.
-* **Official Processing**: Officials audit requests, updating status fields from `PENDING` to `APPROVED`, `REJECTED`, or `RELEASED`.
+Queue tickets and live desk state are exposed through HTTP APIs and refreshed by clients. Staff operations and analytics are tenant/role scoped. The current client behavior is polling and fault-isolated retries, not a WebSocket stream.
 
----
+## Reports, communications, and notifications
 
-## 5. Incident Reporting System
-* **Image Upload Engine**: Residents file reports with photos of hazards, potholes, or emergencies.
-* **Cloudinary CDN Integration**: Binary files are compressed and streamed directly to Cloudinary storage, keeping the server database light.
-* **Urgency Classifications**: Incident reports feature urgency levels (`LOW`, `MEDIUM`, `HIGH`, `URGENT`) to assist officials in prioritization.
+Residents can submit incident reports and staff can triage them. Communications include announcements, schedules, FAQs, hotlines, device registration, and staff notifications. Push/email work is best-effort when external credentials are configured; it is not backed by a durable task broker.
 
----
+## Public Information Navigator
 
-## 6. Notification Dispatcher (FCM)
-* **Token Registration**: Registers client devices in a database map to bind tokens to user accounts.
-* **Firebase Cloud Messaging Service**: Dispatches push notifications to resident devices when ticket numbers advance or document requests change status.
+The navigator uses allowlisted public information only, performs deterministic privacy screening, and does not persist prompts or answers. It is disabled by default and calls the provider only from server code. Read [ADR 019](../../architecture/decisions/019-public-information-ai-navigator-boundary.md) before changing this boundary.
 
----
+## Contract and verification
 
-## 7. Operations Analytics Summary
-* **Aggregated Dashboard API**: Offers a `/api/v1/dashboard/summary/` metrics route mapping:
-  * Document requests status counts.
-  * Incident reports urgency breakdown.
-  * Active daily queue load statistics.
-* **Access Control**: Restricted to authenticated Barangay Officials.
+The generated OpenAPI schema and endpoint tests define exact payloads and status behavior. See the [API specification guide](api_specification.md); avoid maintaining copied payload samples here.

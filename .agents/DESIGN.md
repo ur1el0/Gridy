@@ -1,7 +1,7 @@
-# Gridy - Design & Aesthetics
+# KapitBayan - Design & Aesthetics
 
 ## 1. Visual Aesthetics
-- **Premium Feel**: Gridy must look like a high-end enterprise application, not a basic student project.
+- **Premium Feel**: KapitBayan must look like a high-end enterprise application, not a basic student project.
 - **Color Palette**: Use Tailwind CSS defaults with strategic branding colors (e.g., deep Indigo/Blue for primary actions, Emerald for success, Rose for destructive actions).
 - **Glassmorphism & Depth**: Utilize subtle shadows (`shadow-sm`, `shadow-md`), blurring, and soft border styling to create visual hierarchy.
 

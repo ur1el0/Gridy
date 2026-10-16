@@ -1,6 +1,6 @@
-# Gridy - Domain & Legal Glossary
+# KapitBayan - Domain & Legal Glossary
 
-This document defines core legal statutes, administrative Philippine local government terminology, and technical domain concepts governing the Gridy system.
+This document defines core legal statutes, administrative Philippine local government terminology, and technical domain concepts governing KapitBayan.
 
 ---
 
@@ -10,10 +10,10 @@ This document defines core legal statutes, administrative Philippine local gover
 The primary Philippine statutory framework devolving national powers to local government units (LGUs). Section 384 defines the **Barangay** as the basic political unit serving as the primary planning and implementing unit of government policies, plans, programs, projects, and activities in the community.
 
 ### Republic Act No. 10173 (Data Privacy Act of 2012)
-Governs the processing of all personal data in the Philippines, enforced by the National Privacy Commission (NPC). In Gridy:
+Governs the processing of all personal data in the Philippines, enforced by the National Privacy Commission (NPC). In KapitBayan:
 * **PII Protection:** Resident records (birthdates, exact purok domiciles, civil statuses, contact info) are classified as protected personal/sensitive information.
 * **Access Control:** Gated behind strict authentication walls, role-based access control (RBAC), and automated multi-tenant query boundaries.
-* **Audit Trails:** Administrative modifications, exports, and document releases generate immutable audit logs (`gridy_audit`).
+* **Audit Logs:** Selected administrative actions create `AuditLog` records in the internal `gridy_audit` app. These are application-level records, not a cryptographically immutable ledger; actor references may be nulled by account deletion policy.
 
 ### Commission on Audit (COA) Circulars & Treasury Compliance
 Rules governing revenue collection, financial reporting, and accountable forms in Philippine local governments:
@@ -31,10 +31,10 @@ The smallest administrative and political subdivision in the Philippines, headed
 Sub-village geographic clusters and neighborhood zones within a barangay (e.g., "Purok Maligaya", "Sitio Ilaya"). Modeled as alphanumeric string fields (`CharField`) to support descriptive local naming conventions.
 
 ### Registry of Barangay Inhabitants (RBI)
-Official LGU population census documenting resident profiles, household heads, residency tenures, and socio-economic demographics. Gridy supports bulk RBI CSV migration and automated account linking.
+Official LGU population census documenting resident profiles, household heads, residency tenures, and socio-economic demographics. KapitBayan supports a barangay-scoped RBI CSV import with audit provenance. Legacy rows can be imported without fabricating digitized proof files or usable login credentials.
 
 ### Barangay Tanod / Field Officials
-Community watchmen and peace officers appointed by the Punong Barangay. In Gridy, modeled under the `FIELD_OFFICIAL` RBAC tier, equipped with roving tools: physical queue advancement, clearance authenticity verification, and on-the-ground incident inspection.
+Community watchmen and peace officers appointed by the Punong Barangay. In KapitBayan, `FIELD_OFFICIAL` is a distinct role whose access is defined per endpoint and client; do not infer its permissions from the role name.
 
 ### Lupon Tagapamayapa (Katarungang Pambarangay)
 Community-based conciliation panel established under Presidential Decree No. 1508 / RA 7160 for non-adversarial resolution of localized disputes before court litigation.
@@ -66,28 +66,28 @@ Direct desk capability allowing barangay officials to process, assess fees, reco
 Architectural guarantee ensuring data belonging to Barangay A (residents, clearances, queue tickets, reports) is strictly invisible and inaccessible to users and officials belonging to Barangay B.
 
 ### Live Queue Ticker
-Hybrid physical-digital lobby system coordinating paper ticket slips with real-time mobile push and desktop web displays to prevent hall congestion.
+Hybrid physical-digital lobby system coordinating in-person service tickets with mobile and web status displays. Clients refresh status through HTTP; push delivery, where configured, is best-effort and is not the queue's durable state channel.
 
 ### Priority Queue Rotation
 The `Next Ticket` policy that serves up to two waiting priority tickets for each regular ticket while both groups are waiting. If one group is empty, staff serve the other group. The quota restarts at Manila midnight.
 
 ### Assistance Request
-A resident-submitted request for barangay aid or allowance. Barangay officials review and record the decision; Gridy does not automate eligibility or promise funds.
+A resident-submitted request for barangay aid or allowance. Barangay officials review and record the decision; KapitBayan does not automate eligibility or promise funds.
 
 ### Payment Recipient
-A payment destination configured by one barangay, such as its GCash wallet, Maya wallet, bank account, or another approved e-payment account. Gridy stores the recipient name, account identifier, and transfer instructions so residents in that barangay can make a transfer. It never stores wallet or bank passwords, PINs, or one-time codes.
+A payment destination configured by one barangay, such as its GCash wallet, Maya wallet, bank account, or another approved e-payment account. KapitBayan stores the recipient name, account identifier, and transfer instructions so residents in that barangay can make a transfer. It never stores wallet or bank passwords, PINs, or one-time codes.
 
 ### Payment Verification
 The manual check by barangay staff that an electronic transfer reference matches money received by that barangay. A reference entered by a resident alone does not authorize document release; staff must verify the payment and record the official receipt. Cash collection remains available.
 
 ### Barangay Onboarding Application
-A public request to add a barangay to Gridy. The application does not create a tenant or account until a DILG administrator completes independent verification and approves it.
+A public request to add a barangay to KapitBayan. The application does not create a tenant or account until a DILG administrator completes independent verification and approves it.
 
 ### Public Announcement Page
-A read-only, publicly accessible Gridy page that displays a barangay's announcements. Requests and other transactions remain inside the authenticated Gridy portal. Gridy does not control replies on external social platforms.
+A read-only, publicly accessible KapitBayan page that displays a barangay's announcements. Requests and other transactions remain inside the authenticated KapitBayan portal. KapitBayan does not control replies on external social platforms.
 
 ### After-Hours Incident Report
-A resident-submitted safety report that field officials triage through the existing incident-report workflow when live chat is unavailable. Immediate danger requires contacting the appropriate emergency service or barangay hotline.
+A resident-submitted safety report that authorized staff triage through the incident-report workflow. It is not live emergency dispatch; immediate danger requires contacting the appropriate emergency service or barangay hotline.
 
 ### Presentation Data
 Clearly labeled synthetic records used for local demonstrations and analytics. Demo seed commands are restricted to an explicitly confirmed local database and are never part of production startup.

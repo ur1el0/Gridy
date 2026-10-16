@@ -1,6 +1,6 @@
-# Gridy - Troubleshooting Runbook
+# KapitBayan - Troubleshooting Runbook
 
-This runbook documents known runtime failure modes, operational pitfalls, and validated remediation procedures across the Gridy application stack.
+This runbook documents known runtime failure modes, operational pitfalls, and validated remediation procedures across the KapitBayan application stack.
 
 ---
 
@@ -105,12 +105,12 @@ cat backend/.env | grep FIREBASE_SERVICE_ACCOUNT_JSON_PATH
 * `LogoutView` returns `400 Bad Request` or CORS header error.
 
 ### Root Cause
-* Refresh token cookie is set to `HttpOnly; SameSite=Lax`. Cross-origin discrepancies between `localhost` and `127.0.0.1` will block cookie transmission.
+* Refresh token cookie defaults to `HttpOnly; SameSite=Strict`. Cookie delivery depends on matching host/origin, CSRF, and proxy configuration.
 * Logout endpoint previously expected `refresh_token` in body; hardened `LogoutView` now gracefully invalidates without throwing 400 if cookie is absent.
 
 ### Remediation
-1. Ensure both frontend and backend configurations consistently use `http://localhost` (not mixing `127.0.0.1` with `localhost`).
-2. Verify `CORS_ALLOWED_ORIGINS` and `CORS_ALLOW_CREDENTIALS = True` in `backend/gridy_backend/settings.py`.
+1. Confirm the frontend and API hostnames, cookie path, forwarded HTTPS headers, and CSRF trusted origins; do not change SameSite or widen CORS as a first response.
+2. Check `CORS_ALLOWED_ORIGINS`, cookie settings, and CSRF settings in `backend/config/settings.py`. The intended production web topology uses the same-origin proxy; verify its upstream host and headers.
 
 ---
 

@@ -1,43 +1,27 @@
-# Feature Specification: Citizen Desktop Web Portal
+# Resident Web Portal
 
-## 1. Overview
-The Citizen Desktop Web Portal provides a constituent-first, browser-based interface for barangay residents. It mirrors core mobile features—document applications, queue status tracking, community bulletin updates, and incident reporting—while optimizing layout and typography for desktop viewports.
+The resident portal is a role-guarded section of the React application mounted under `CitizenLayout`. It shares the API and account with the mobile app while providing responsive browser-based self-service.
 
----
+## Current route map
 
-## 2. Architecture & Route Structure
+| Route | Purpose |
+|---|---|
+| `/portal` | Redirects to the resident documents page |
+| `/portal/documents` | Submit and follow document requests, inspect payment states, and access eligible documents |
+| `/portal/queue` | Create/view resident queue tickets and monitor desk status |
+| `/portal/bulletin` | Read announcements and community activities |
+| `/portal/aid` | Submit and follow assistance requests |
 
-Per **ADR 008**, the citizen portal is decoupled from the administrative command center and mounted under `CitizenLayout`:
+Issue reporting is available through its own resident-facing workflow where routed by the current client; verify `frontend/src/App.tsx` before assuming an exact web URL. There is no hidden `Shift + \\` role-switch shortcut in the current router. Staff paths have separate role guards.
 
-| Route | Component | Purpose |
-| :--- | :--- | :--- |
-| `/` or `/portal` | Redirect | Automatically directs authenticated residents to `/portal/documents`. |
-| `/portal/documents` | `CitizenDocuments.tsx` | Self-service clearance applications with live status badges and legal PDF download. |
-| `/portal/queue` | `CitizenQueue.tsx` | Real-time queue tracker displaying active serving numbers, waiting count, and estimated delay. |
-| `/portal/bulletin` | `CitizenBulletin.tsx` | Chronological community announcements feed with category badges and upcoming activity calendar. |
-| `/portal/issues` | `CitizenIssues.tsx` | Public incident reporting form supporting image uploads, categorization, and tracking. |
+## Document and payment experience
 
----
+Payment options are shown only when a request is eligible and `READY_FOR_PICKUP`. Residents can choose CASH or an available manual transfer recipient. Transfer time, reference, and receipt image are resident-submitted evidence; staff verify the transaction manually. While `PROCESSING`, payment remains unavailable and the page should explain that staff assessment is still pending. Private proof images are retrieved through authenticated APIs, not public storage URLs.
 
-## 3. Key Components & Capabilities
+## Public information
 
-### 3.1 Self-Service Document Applications (`CitizenDocuments.tsx`)
-*   **Application Modal:** Residents select document types (e.g., Barangay Clearance, Certificate of Indigency) and state their purpose.
-*   **Status Tracking:** Visual timeline badges (`PENDING` ➔ `PROCESSING` ➔ `RELEASED`).
-*   **Direct PDF Download:** Released certificates feature a "Download Official PDF" button connecting to `/api/v1/documents/<id>/generate_pdf/`.
+Residents can read public announcements, activities, and queue displays. The Ask Barangay navigator launcher is controlled by the web feature flag and requires the backend feature flag as well. The navigator handles only approved public information, does not answer account-status questions, and defaults off.
 
-### 3.2 Live Queue Tracker (`CitizenQueue.tsx`)
-*   **Live Metrics:** Shows the current serving ticket (e.g., `T008`), total waiting citizens, and estimated wait minutes (`waiting_count * 2`).
-*   **Remote Ticket Generation:** Verified residents can generate a remote queue slip directly from their browser, receiving an assigned ticket number without standing in line.
+## Authorization boundary
 
-### 3.3 Citizen Incident Reporting (`CitizenIssues.tsx`)
-*   **Media Upload:** Residents can upload photographic evidence (JPEG/PNG up to 5MB) previewed client-side before submission.
-*   **Category Triage:** Reports are tagged by category (`Peace and Order`, `Public Health`, `Infrastructure`, `Environment`, `Other`).
-*   **Privacy & Ownership:** Residents see only their own filed reports with real-time official resolution status notes.
-
----
-
-## 4. Secret Role-Switching Demarcation (`Shift + \`)
-To prevent public exposure of administrative routes while facilitating unified workstation administration:
-*   **Keyboard Trigger:** Pressing `Shift + \` opens the Demarcation Gateway.
-*   **Permission Verification:** The modal interrogates the session JWT. If the user possesses `ADMIN` or `DILG_ADMIN` privileges, they can switch directly to the Executive Desk (`/admin/dashboard`). Unprivileged resident accounts receive an access denied notification.
+The portal only routes users with the `RESIDENT` role. Backend object ownership and barangay scope remain authoritative. See [ADR 008](../../architecture/decisions/008-dual-portal-role-segregated-auth.md) and [Security and RBAC](../../architecture/09-security-and-rbac.md).

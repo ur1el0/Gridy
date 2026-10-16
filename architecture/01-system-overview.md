@@ -1,28 +1,36 @@
-# 01 System Overview
+# System Overview
 
-## 1. Project Context & Objectives
+KapitBayan is a web and mobile system for barangay services. Residents use it to request documents, follow queues, read public information, and submit eligible service requests. Authorized personnel process those requests within their barangay. The system supports digital and in-person service; it does not replace barangay decisions or treasury controls.
 
-KapitBayan is a comprehensive Web and Mobile-Based Barangay Information and Service Management System designed to transition local governance from fragmented, manual processes to a centralized digital ecosystem. It is built to support a hybrid communication approach, bridging digital applications with traditional face-to-face local transactions.
+## Runtime shape
 
-Following the enterprise software engineering lifecycle, the system objectives are:
+```text
+React web client ─┐
+                  ├── Django REST API ── PostgreSQL
+Flutter app ──────┘          ├────────── private media storage
+                             ├────────── Firebase Cloud Messaging (when configured)
+                             └────────── SMTP (when configured)
+```
 
-- **Analyze:** Current information dissemination and manual queue practices within local government units.
-- **Design:** A scalable, secure client-server architecture including a Web Admin Dashboard (ReactJS) and Resident Mobile App (Flutter).
-- **Develop:**
-  - An administration module for announcements, schedules, and resident accounts.
-  - A hybrid queue management system (coupling physical queue tickets with live mobile tracking).
-  - A resident issue-reporting pipeline (incorporating image capture and compression).
-  - A document request processing and tracking system.
-  - An automated notification system utilizing push payloads (FCM).
-- **Test & Evaluate:** Assess usability, reliability, and functional suitability under ISO/IEC 25010 standards.
+The web client uses the API through the configured same-origin proxy in the intended production topology. The Flutter app connects to the configured API URL. Hosting details and checks that remain unverified are recorded in [Deployment](11-deployment-and-ci-cd.md); this diagram describes components, not a claim that every external integration is live.
 
-## 2. High-Level Implementation Scope
+## Roles and tenancy
 
-- **Web Portal (ReactJS):** Serves as the administrative command center for barangay officials to post announcements, validate requested documents, manage live queues, and review reported issues.
-- **Mobile App (Flutter):** Provides residents with self-service capabilities, allowing them to view official announcements/schedules, submit document requests, report localized issues with image evidence, and scan physical queue slips to track status.
+- `RESIDENT` accounts belong to one barangay and can access their own resident services.
+- `ADMIN` and `FIELD_OFFICIAL` accounts are assigned to a barangay and receive staff permissions defined by each endpoint.
+- `DILG_ADMIN` accounts support cross-barangay oversight and onboarding; they do not receive ordinary barangay staff access by implication.
 
-## 3. Validation and Evaluation Sites
+Tenant scope is derived and enforced by the backend. A client-supplied barangay identifier does not grant access to another tenant's records. See [Security and RBAC](09-security-and-rbac.md) and [ADR 004](decisions/004-multi-tenant-isolation.md).
 
-- **Target Scope:** The system's usability and utility are evaluated by a minimum of 50 survey respondents (officials and residents) across two case-study environments:
-  1.  _Barangay Ibabang Dupay_ (Lucena City)
-  2.  _Barangay Daungan_ (Pagbilao, Quezon)
+## Core capabilities
+
+- Resident registration, identity evidence review, account sessions, and profile lifecycle.
+- Document requests, explicit fee assessment, statutory waivers, manual payment evidence review, and official-receipt controls.
+- Digital and in-person queue workflows.
+- Announcements, activities, FAQs, emergency hotlines, and notifications.
+- Assistance requests, incident reports, resident directories, and scoped analytics.
+- Public Information AI Navigator, behind server and client feature flags. Its default is disabled; it is limited to approved public information and must not answer private account questions. See [ADR 019](decisions/019-public-information-ai-navigator-boundary.md).
+
+## Architecture records
+
+Accepted decisions and their current status are listed in [the ADR index](decisions/README.md). Internal Django app and database identifiers such as `gridy_auth` are implementation names and remain unchanged unless a separate, migration-safe project is approved.

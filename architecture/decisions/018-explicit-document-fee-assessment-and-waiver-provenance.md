@@ -1,10 +1,10 @@
-# ADR 017: Explicit Document Fee Assessment and Waiver Provenance
+# ADR 018: Explicit Document Fee Assessment and Waiver Provenance
 
 ## Status
 Accepted
 
 ## Context
-Under ADR 007, ADR 010, and ADR 016, KapitBayan established municipal revenue accounting and manual payment verification for barangay clearance and certification requests. Residents may pay out-of-band via GCash, Maya, or bank transfer once a request is marked `READY_FOR_PICKUP`, and staff must record an Official Receipt (O.R.) number before release whenever `fee_amount > 0`.
+Under ADR 007, ADR 010, and ADR 017, KapitBayan established municipal revenue accounting and manual payment verification for barangay clearance and certification requests. Residents may pay out-of-band via GCash, Maya, or bank transfer once a request is marked `READY_FOR_PICKUP`, and staff must record an Official Receipt (O.R.) number before release whenever `fee_amount > 0`.
 
 However, an audit of the document request lifecycle revealed a significant treasury governance loophole:
 1. **Ambiguous Default Zero-Fee State**: Ordinary document requests (such as Barangay Clearance and Business Permit) were initialized with `fee_amount = Decimal('0.00')` and `payment_status = NOT_REQUIRED`. This default made unassessed requests visually and programmatically indistinguishable from deliberate zero-fee waivers or statutory exemptions.
@@ -77,4 +77,4 @@ Migration `0016_document_fee_assessment_provenance.py` adds the schema columns a
 - [ADR 009: Simplification to Defended Proposal Architecture](009-simplification-to-defended-proposal-architecture.md)
 - [ADR 010: Adviser-Approved Service Workflows](010-adviser-approved-service-workflows.md)
 - [ADR 011: Verified Barangay Onboarding and Tenant Payment Recipients](011-verified-barangay-onboarding-and-manual-payment-recipients.md)
-- [ADR 016: Resident Manual E-Payment Evidence, Storage Isolation, and Verification Architecture](016-manual-epayment-evidence-and-verification.md)
+- [ADR 017: Resident Manual E-Payment Evidence, Storage Isolation, and Verification Architecture](017-manual-epayment-evidence-and-verification.md)
