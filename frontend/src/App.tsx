@@ -77,6 +77,9 @@ const PublicQueueDisplay = lazy(() =>
 const PublicAnnouncements = lazy(() =>
     import("./pages/public/PublicAnnouncements").then(({ PublicAnnouncements }) => ({ default: PublicAnnouncements })),
 );
+const PublicNoticeRedirect = lazy(() =>
+    import("./pages/public/PublicNoticeRedirect").then(({ PublicNoticeRedirect }) => ({ default: PublicNoticeRedirect })),
+);
 const AidRequests = lazy(() =>
     import("./pages/citizen/AidRequests").then(({ AidRequests }) => ({ default: AidRequests })),
 );
@@ -142,6 +145,7 @@ export function App() {
                             <Route path="/reset-password" element={<ResetPassword />} />
                             <Route path="/public/queue/:barangayId" element={<PublicQueueDisplay />} />
                             <Route path="/public/announcements/:barangayId" element={<PublicAnnouncements />} />
+                            <Route path="/notice/:id" element={<PublicNoticeRedirect />} />
 
                             {/* Admin & Official Workstation (Tier 1 & Tier 2) */}
                             <Route element={<ProtectedRoute allowedRoles={['ADMIN', 'DILG_ADMIN']} />}>

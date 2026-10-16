@@ -209,7 +209,7 @@ describe('Announcements', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Share announcement' }));
 
         const dialog = screen.getByRole('dialog', { name: 'Announcement share kit' });
-        const expectedUrl = `${window.location.origin}/public/announcements/1#announcement-12`;
+        const expectedUrl = `${window.location.origin}/notice/12`;
         expect(dialog).toBeInTheDocument();
         expect(screen.getByLabelText('Public announcement link')).toHaveValue(expectedUrl);
         expect(screen.getByTestId('announcement-qr')).toHaveAttribute('data-value', expectedUrl);
@@ -233,7 +233,7 @@ describe('Announcements', () => {
         fireEvent.click(screen.getByRole('button', { name: 'Copy post text' }));
 
         await waitFor(() => expect(writeText).toHaveBeenCalledWith(
-            `Water service interruption\n\nWater service will be unavailable this afternoon.\n\nRead the official KapitBayan announcement: ${window.location.origin}/public/announcements/1#announcement-12`,
+            `Water service interruption\n\nWater service will be unavailable this afternoon.\n\nRead the official KapitBayan announcement: ${window.location.origin}/notice/12`,
         ));
     });
 
