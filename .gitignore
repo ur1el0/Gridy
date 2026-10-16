@@ -59,3 +59,6 @@ STATUS.md
 docs/ai-workflow
 .codex
 .aws
+
+# Vercel project link metadata is local to each developer checkout.
+/frontend/.vercel/
