@@ -51,9 +51,9 @@ GitHub Issues are the repository issue tracker. Use `gh issue view`, `gh issue l
 
 Scoped implementation packets, when present in a working environment, use `docs/ai-workflow/tasks/<task-id>/TASK_BRIEF.md`, `PLAN.md`, and `STATUS.md`. These files may be local workflow artifacts and are not necessarily included in the public repository. Treat a task's `STATUS.md` as a record of commands actually run, not as a guarantee about a later revision.
 
-## Agent skills and reproducibility
+## Agent guidance and local tooling
 
-The tracked root [`skills-lock.json`](../skills-lock.json) records upstream skill sources, paths, and computed hashes for reproducible installation. It is a manifest, not the downloaded skill content. Installed skill payloads under `.agents/skills/` and generated `.agents/ecc-install-state.json` are local tooling state and are intentionally not tracked. Keep project-level `.agents/` guidance files tracked.
+Project-specific guidance under the root `.agents/` directory is tracked. Downloaded third-party skill packages under `.agents/skills/` and generated `.agents/ecc-install-state.json` are local developer tooling, are intentionally ignored by Git, and are not application dependencies.
 
 ## Setup and live status
 
