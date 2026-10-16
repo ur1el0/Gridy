@@ -9,11 +9,19 @@ The platform supports resident document requests, manual fee assessment and trea
 - Backend: Django and Django REST Framework in `backend/`.
 - Web: React, TypeScript, and Vite in `frontend/`.
 - Mobile: Flutter in `mobile/`.
-- Database: PostgreSQL for hosted use; local and test setups may use SQLite.
+- Backend authentication and API docs: SimpleJWT and `drf-spectacular`.
+- Database: PostgreSQL in hosted and Docker environments. The production database is Neon; tests may use SQLite where configured.
+- Media storage: Cloudinary stores uploaded evidence and documents; private evidence is served through authenticated backend views.
+- Push notifications: Firebase Cloud Messaging (FCM), using Firebase Messaging in the mobile app and Firebase Admin in Django.
+- Email: SMTP for account and transactional email.
+- Error monitoring: Sentry SDK support, enabled when `SENTRY_DSN` is configured.
+- Production hosting: Vercel hosts the web app and rewrites `/api/v1` to the Django API on Render. The API connects to Neon through `DATABASE_URL`.
+- Local services: Docker Compose runs the development database and application services; Nginx serves the local web build and proxies API requests.
+- Background delivery: email and push dispatch currently uses in-process daemon threads. There is no Celery or Redis task queue, so delivery is best effort.
 - Exact endpoint contracts: generated OpenAPI at `/api/schema/` and Swagger UI at `/api/schema/swagger-ui/` when the API is running.
 - Database schema and migrations: Django models and migration files. Do not infer schema from historical documentation.
 
-The web client is configured for a same-origin API proxy, while mobile clients call the configured API URL. Private identity and payment evidence is served through authenticated backend views; never construct public evidence URLs. Hosting and service behavior must be verified against the active deployment before being described as live.
+The web client is configured for a same-origin API proxy, while mobile clients call the configured API URL. Private identity and payment evidence is served through authenticated backend views; never construct public evidence URLs. Provider selection describes the current deployment configuration; check provider dashboards for live service health and environment values.
 
 ## Documentation
 
