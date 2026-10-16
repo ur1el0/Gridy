@@ -4,7 +4,7 @@ trigger: always_on
 
 # Enterprise Architecture Standards
 
-These guidelines apply across the entire Gridy ecosystem to ensure enterprise-grade stability and security.
+These guidelines apply across the entire KapitBayan ecosystem to ensure enterprise-grade stability and security.
 
 ### 1. Decision & Evidence Pattern (ADRs)
 

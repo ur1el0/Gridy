@@ -1,17 +1,20 @@
-# 11 Deployment & CI/CD Pipeline
+# Deployment and CI/CD
 
 ## 1. Hosting Infrastructure & Origin Topology
 
-KapitBayan is configured for an intended **Same-Origin Reverse Proxy Architecture** for its production web deployment to guarantee robust cookie security and eliminate third-party cookie restrictions:
+The repository is configured for an intended **Same-Origin Reverse Proxy Architecture** for web production. The names and settings below describe the configured target, not proof that a live deployment currently uses them. Verify the active deployment and forwarded headers before relying on runtime behavior.
 
-*   **Backend & Database:** Deployed on **Render.com**. Render provides a managed PostgreSQL instance and auto-deploys the Django backend from the `main` branch.
-    *   **Production API Hostname:** `https://gridy-backend.onrender.com`
-*   **Frontend Web Application:** Hosted on **Vercel** as a single-page application (SPA).
-    *   **Production Frontend Hostname:** `https://gridy.vercel.app`
+*   **Backend & Database:** Intended for **Render.com** with PostgreSQL. Confirm the active service, database, and deploy branch in the provider before treating this as live topology.
+*   **Frontend Web Application:** Intended for **Vercel** as a single-page application (SPA). Confirm active domains and project settings in the provider.
+    *   **Frontend-origin example in the backend configuration:** `https://gridy.vercel.app`
 *   **Reverse Proxy Contract:**
-    *   Vercel Edge Rewrites (`frontend/vercel.json`): Rewrites all `/api/v1/:path*` requests directly to `https://gridy-backend.onrender.com/api/v1/:path*`.
+    *   Vercel Edge Rewrites (`frontend/vercel.json`): The checked-in rewrite currently targets `https://gridy.onrender.com/api/v1/:path*`.
     *   Containerized Stack (`frontend/nginx.conf`): Nginx reverse proxies `/api/` traffic directly to `http://backend:8000`.
     *   Client URL Resolution (`frontend/src/api/axios.ts`): Resolves `VITE_API_BASE_URL` to relative `/api/v1` in production when unset. Any configured environment variable overrides this fallback.
+
+### Configuration drift to resolve
+
+The checked-in frontend rewrite targets `gridy.onrender.com`, while `backend/.env.example` uses `gridy-backend.onrender.com` for `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS`. These are inconsistent configuration examples. Verify the actual Render hostname and forwarded `Host`/`Origin` headers, then align the frontend rewrite and backend allowlists before a production release. This documentation records the discrepancy; it does not claim that either hostname is the live service.
 
 ### Release migration gate
 
@@ -33,8 +36,8 @@ Under this configured topology, web browser traffic targets `/api/v1` on the fro
     *   `HttpOnly=True`: Inaccessible to JavaScript memory (`localStorage`/`sessionStorage`).
     *   `Secure=True`: Enforced automatically in production when `DEBUG=False`.
 *   **Host & Origin Allowlists (Backend):**
-    *   `ALLOWED_HOSTS`: Validates the canonical backend host `gridy-backend.onrender.com` and local development hosts. Broad platform wildcards (`.onrender.com`, `.vercel.app`) are rejected.
-    *   `CSRF_TRUSTED_ORIGINS`: Configured specifically with `https://gridy.vercel.app`, `https://gridy-backend.onrender.com`, and local development origins. Arbitrary platform subdomains are not trusted.
+    *   `ALLOWED_HOSTS`: The example config includes `gridy-backend.onrender.com` and Django may append `RENDER_EXTERNAL_HOSTNAME`. Reconcile this with the Vercel rewrite destination above; do not assume the example matches the active service.
+    *   `CSRF_TRUSTED_ORIGINS`: The example lists `https://gridy.vercel.app` and `https://gridy-backend.onrender.com`, plus development origins when `DEBUG=True`. Arbitrary platform subdomains are not trusted. Confirm the actual origins for the deployed frontend and backend.
     *   `CORS Policy`: Web browser clients communicate via the same-origin reverse proxy and do not invoke CORS. Native mobile applications (Flutter) do not run within a browser sandbox and do not use CORS. Broad production regexes are removed; `CORS_ALLOWED_ORIGINS` accepts only explicitly configured origins.
 
 ---
@@ -56,7 +59,7 @@ The current notification implementation starts daemon threads in the API process
 
 Resident private-evidence deletion uses a database-backed cleanup record because storage deletion happens after account erasure commits. File names are encrypted with `SECRET_KEY` before they are stored. Run `python manage.py cleanup_private_evidence` periodically from a single application environment to retry due records; failures remain queued with increasing retry delays. If `SECRET_KEY` is rotated while cleanup records remain, retain the old key in `SECRET_KEY_FALLBACKS` until those records have been deleted. This job uses the existing Django database and does not add Celery or Redis.
 
-DRF scoped throttles use Django's default `LocMemCache`. Each of the three Gunicorn workers has its own in-memory counters, and replicas do not share them. Configured rates are therefore approximate request budgets, not brute-force or denial-of-service controls. Before relying on consistent abuse protection or increasing replicas, evaluate and test a shared cache or edge enforcement mechanism. A single replica does not make the worker-local counters global.
+Scoped DRF API throttles use the PostgreSQL `APIRateLimitWindow` table, keyed with HMACs and updated under row locks so configured windows are shared across workers. Apply the additive migration before deploying the code and verify concurrency on PostgreSQL; SQLite cannot establish the row-lock behavior. These scoped limits are not a volumetric DDoS defense. Django's separate general-purpose `LocMemCache` remains process-local. See [ADR 016](decisions/016-shared-database-api-throttling.md).
 
 These constraints document current behavior and future decision gates; they do not configure Azure resources, select a shared service, or record production-owner acceptance.
 
@@ -72,6 +75,6 @@ The CI DNS-reconnect smoke uses disposable PostgreSQL containers and Docker's em
 
 ## 4. Mobile Distribution
 
-*   The Flutter application compiles into an Android `.apk` (and optionally an iOS `.ipa`).
-*   Mobile clients connect directly to the API endpoint (`https://gridy.onrender.com/api/v1`) via `--dart-define=API_BASE_URL`. Because mobile HTTP clients are not subject to browser origin controls, they do not require or use CORS permissions.
-*   For staged LGU field rollouts, direct APK distribution via GitHub Releases or Firebase App Distribution is utilized.
+*   The Flutter application can be built into an Android `.apk` (and, with the required signing and platform setup, an iOS `.ipa`).
+*   Mobile clients connect directly to the verified API endpoint via `--dart-define=API_BASE_URL`. Do not copy the current environment example hostname until the Vercel/Render hostname mismatch is reconciled. Because native clients are not subject to browser origin controls, they do not require or use CORS permissions.
+*   GitHub Releases or Firebase App Distribution can be evaluated for staged APK distribution. A release or distribution channel must be verified separately for each build.

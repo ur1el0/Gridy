@@ -1,118 +1,63 @@
-<p align="center">
-  <img src="frontend/src/assets/kapitbayan/wordmark.png" alt="KapitBayan" width="240" />
-</p>
+# KapitBayan
 
-# KapitBayan - Barangay Information and Service Management System
+KapitBayan is a web and mobile information and service system for barangays. The repository contains a Django REST API, a React web application for staff and resident use, and a Flutter mobile application for residents and field personnel. Internal Django package names such as `gridy_auth` remain part of the migration history and are not product names.
 
-KapitBayan is a web and mobile barangay information and service management system developed for local government operations. The repository contains a Django REST Framework API, a React Single Page Application (providing administrative desk operations and citizen self-service kiosk mode), and a Flutter mobile application for residents and field personnel.
+The platform supports resident document requests, manual fee assessment and treasury verification, queue services, assistance requests, incident reporting, communications, and public information. It records out-of-band payments but does not process funds through a payment gateway. Staff make service decisions; assistance eligibility and document approval are not automated.
 
-> **Operational Scope Note:** KapitBayan supports cash collection recorded with a municipal Treasury Official Receipt and resident-submitted GCash transfer references that barangay staff verify manually. It does not process or settle payments through a payment gateway. Assistance requests are reviewed by barangay officials without automated eligibility decisions. Public announcements can be shared outward, while applications and follow-up transactions remain in KapitBayan. After-hours safety concerns use the incident-reporting workflow for field staff triage.
+## Architecture and API
 
-## Database Baseline & Multi-Tenancy
+- Backend: Django and Django REST Framework in `backend/`.
+- Web: React, TypeScript, and Vite in `frontend/`.
+- Mobile: Flutter in `mobile/`.
+- Database: PostgreSQL for hosted use; local and test setups may use SQLite.
+- Exact endpoint contracts: generated OpenAPI at `/api/schema/` and Swagger UI at `/api/schema/swagger-ui/` when the API is running.
+- Database schema and migrations: Django models and migration files. Do not infer schema from historical documentation.
 
-KapitBayan requires PostgreSQL 15 or higher. The relational schema enforces multi-tenant boundary isolation across local government jurisdictions:
+The web client is configured for a same-origin API proxy, while mobile clients call the configured API URL. Private identity and payment evidence is served through authenticated backend views; never construct public evidence URLs. The Public Information AI Navigator uses only approved public information and is disabled by default. Hosting and service behavior must be verified against the active deployment before being described as live.
 
-- **Tenant Scoping:** Operational domain models (`DocumentRequest`, `QueueTicket`, `Announcement`, `Activity`) link directly to a `Barangay` foreign key; citizen hazard reports (`IssueReport`) resolve tenant context through the reporter's registered profile.
-- **Composite Indexing:** Targeted composite indices are enforced on high-throughput query boundaries, including `['barangay', 'status']` for document review filtering, `['status', 'created_at']` for lobby queue dispatch, and `['user', 'is_read', '-created_at']` for citizen notifications.
-- **Sequential Queue Ticketing:** Queue ticket numbers (e.g., `T001`, `T002`) are sequentially allocated and scoped per barangay tenant, resetting daily at midnight local time.
+## Documentation
 
-## System Architecture
+Start at the [documentation index](docs/README.md) for current architecture, decision records, feature guides, and walkthroughs. The [ADR index](architecture/decisions/README.md) records the accepted architectural decisions. Use the generated OpenAPI schema for exact request/response details.
 
-KapitBayan implements a decoupled 3-tier client-server architecture containerized via Docker Compose:
+`skills-lock.json` is tracked metadata containing upstream skill sources and hashes for reproducible local installation. Downloaded skills under `.agents/skills/` and generated ECC install state are local tooling, not repository source. Project-level `.agents/` guidance remains tracked.
 
-- **Backend API (Django & DRF):** Powers the core REST API (Python 3.12, Django 6.0). Handles relational transactions, OpenAPI schema generation (`drf-spectacular`), and JWT authentication.
-- **Frontend Web Application (React & Vite):** Single Page Application (SPA) in TypeScript providing responsive Tailwind-styled interfaces for administrative desk staff and citizen self-service kiosks.
-- **Resident & Field Portal (Flutter):** Cross-platform mobile application for residents and field personnel to submit hazard reports with photo attachments, track clearances, and view community schedules.
-- **Primary Database (PostgreSQL 15):** Relational data store enforcing ACID compliance, foreign key constraints, and tenant isolation.
-- **Background Task Execution:** Non-blocking operations (push alerts and transactional emails) execute via native Python daemon threads (`@async_task`), avoiding external broker dependencies.
-- **Queue Synchronization:** 3-second HTTP interval polling across web and mobile clients for synchronized lobby queue status.
-- **Reverse Proxy (Nginx):** Serves compiled React frontend assets on port 80 and reverse-proxies `/api/` traffic to the Django backend on port 8000.
-- **Cloud Media Storage (Cloudinary):** Remote object storage for resident incident report photo attachments, preventing local container filesystem bloat.
+## Local development with Docker Compose
 
-## Current API Surface
+Requirements: Docker Compose and Git.
 
-The Django REST Framework backend exposes the following contract-driven endpoints under `/api/v1/`:
+1. Copy the example files and set a local-only PostgreSQL password plus a matching `DATABASE_URL` in `.env`:
 
-- `POST /api/v1/auth/login/` & `POST /api/v1/auth/token/refresh/`: JWT authentication with rotating `HttpOnly` cookie session tracking;
-- `POST /api/v1/auth/logout/` & `GET /api/v1/auth/me/`: Session invalidation and authenticated profile resolution;
-- `/api/v1/document-requests/`: Requisition lifecycle, fee assessment, municipal O.R. assignment, and authenticated PDF certificate generation;
-- `/api/v1/aid-requests/`: Resident assistance requests and barangay-scoped manual review;
-- `/api/v1/document-requests/<id>/payment-reference/` and `/payment-review/`: GCash transfer reference submission and staff verification;
-- `/api/v1/public/barangays/<id>/announcements/`: Read-only announcement content suitable for sharing outside the authenticated portal;
-- `/api/v1/tickets/`: Daily sequential ticket issuance, desk status progression (`WAITING` -> `SERVING` -> `COMPLETED`), and public lobby display;
-- `/api/v1/reports/`: Citizen hazard reporting with multipart image streaming to Cloudinary storage;
-- `/api/v1/announcements/` & `/api/v1/activities/`: Community bulletins and youth/barangay calendar schedules;
-- `/api/v1/health/`: System health telemetry monitoring PostgreSQL query latency and local cache responsiveness;
-- `/api/schema/swagger-ui/`: Interactive OpenAPI 3.0 contract documentation.
+   ```bash
+   cp .env.example .env
+   cp backend/.env.example backend/.env
+   ```
 
-*(Note: Administrative audit logging is enforced internally across service mutations via the `gridy_audit` module rather than a public REST endpoint).*
+2. Set a local Django secret in `backend/.env`. Keep both environment files untracked; do not put production credentials in a local file or container image.
+3. Start the local stack:
 
-## Authentication & Session Security
+   ```bash
+   docker compose up --build
+   ```
 
-Authentication implements a dual-token strategy designed to protect against XSS and CSRF vulnerabilities:
+Compose starts PostgreSQL, runs migrations in a one-shot service, then starts Django's development server and the Nginx-served web build. It is for local development and demos, not production. Ports and service names are defined in `docker-compose.yml`.
 
-- **Access Tokens:** Short-lived JWTs (15-minute default) held strictly in client memory. Never persisted in `localStorage` or `sessionStorage`.
-- **Refresh Sessions:** Cryptographically random session tokens stored in server-backed `RefreshSession` records and transmitted via `HttpOnly`, `SameSite=Strict` cookies.
-- **Token Rotation:** Refresh tokens rotate upon every refresh call (`/api/v1/auth/token/refresh/`). Previous tokens are revoked immediately to prevent replay attacks.
-- **Role-Based Access Control (RBAC):** Endpoints enforce viewset-level and query-level isolation across `ADMIN`, `RESIDENT`, and `FIELD_OFFICIAL` roles. ViewSets branch `get_queryset()` to restrict non-administrative users to their own records.
+## Run clients without Docker
 
-## Quickstart
-
-### 1. Docker Compose (Recommended)
-
-The 3-tier web stack is containerized for local development and demos. This Compose setup runs Django's development server and is not a production deployment configuration.
+### Backend
 
 ```bash
-# Clone the repository
-git clone https://github.com/ur1el0/Gridy.git
-cd Gridy
-
-# Configure local Compose and Django settings
-cp .env.example .env
-cp backend/.env.example backend/.env
-# Set POSTGRES_PASSWORD and DATABASE_URL in .env using the same local database
-# credentials. Use host `db`, database `gridy_db`, and port `5432` in the URL.
-
-# Boot the local 3-Tier Stack
-docker compose up -d --build
-
-# Seed local development accounts across all roles (Officials, Field, Residents, DILG)
-# with ready-to-use development credentials (local presentation/development only; requires --confirm-demo-only):
-docker compose exec backend python manage.py seed_users --confirm-demo-only
-
-# Seed local synthetic starter barangay records (documents, announcements, queues).
-docker compose exec backend python manage.py seed_barangays --confirm-demo-only
-
-# Add synthetic history for charts and dashboards on a local demo database.
-docker compose exec backend python manage.py seed_demo_analytics --confirm-demo-only
-```
-
-- **Web Portal:** [http://localhost:8080/](http://localhost:8080/)
-- **REST API Root:** [http://localhost:8000/api/v1/](http://localhost:8000/api/v1/)
-- **OpenAPI Documentation:** [http://localhost:8000/api/schema/swagger-ui/](http://localhost:8000/api/schema/swagger-ui/)
-- **Telemetry Health Check:** [http://localhost:8000/api/v1/health/](http://localhost:8000/api/v1/health/)
-
-The local PostgreSQL port is bound to `127.0.0.1:5433`. Production deployments must use their deployment platform's service configuration and provide valid SMTP credentials, Cloudinary credentials for persistent media storage, and a Firebase service-account key mounted at runtime; see [deployment and observability](docs/walkthrough/deployment_observability.md).
-
-### 2. Local Setup (Without Docker)
-
-#### Backend (Django)
-
-```bash
-python3 -m venv venv
+python3.12 -m venv venv
 source venv/bin/activate
 pip install -r backend/requirements.txt
-
+cp backend/.env.example backend/.env
 python backend/manage.py migrate
-# Seed local development accounts across all roles (local presentation/development only; requires --confirm-demo-only):
-python backend/manage.py seed_users --confirm-demo-only
-python backend/manage.py seed_barangays --confirm-demo-only
-# Optional, local presentation data only; never run against a deployed database.
-python backend/manage.py seed_demo_analytics --confirm-demo-only
+python backend/manage.py check
 python backend/manage.py runserver
 ```
 
-#### Frontend (React)
+Configure a local `SECRET_KEY` and development database in the ignored `backend/.env`. Do not run seed or demo commands against deployed databases; each command's explicit safety options and environment guards must be respected.
+
+### Web
 
 ```bash
 cd frontend
@@ -120,7 +65,7 @@ npm ci
 npm run dev
 ```
 
-### 3. Mobile Client (Flutter)
+### Mobile
 
 ```bash
 cd mobile
@@ -128,22 +73,18 @@ flutter pub get
 flutter run
 ```
 
----
+Configure the mobile API URL for the device/emulator using the supported build define. Do not embed provider credentials in a client build.
 
-## Testing and Quality Assurance
+## Verification commands
 
-The repository includes automated regression test suites covering authorization boundaries, serializers, transactions, and UI workflows across all three architectural tiers:
+Run relevant suites for changed code and follow the task packet's required validation:
 
 ```bash
-# Run Backend Test Suite
 ./venv/bin/pytest backend
-
-# Run Frontend Test Suite
-npm --prefix frontend test -- --run
-
-# Run Mobile Test Suite
-cd mobile && flutter test
-
-# Run Django System Sanity Check
-python backend/manage.py check
+npm --prefix frontend run lint
+npm --prefix frontend run test -- --run
+npm --prefix frontend run build
+cd mobile && flutter analyze && flutter test
 ```
+
+These are example commands, not a report that the current checkout has passed them. Record actual output and any unavailable checks in the active task status.

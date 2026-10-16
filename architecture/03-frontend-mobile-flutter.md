@@ -1,64 +1,32 @@
-# 03 Frontend Mobile Implementation (Flutter)
+# Mobile Client Architecture (Flutter)
 
-## 1. Technology Stack
-*   **Core:** Flutter SDK (Dart) for natively compiled, cross-platform performance.
-*   **State Management:** **BLoC (Business Logic Component)** to separate the UI presentation layer from repositories and network requests.
-*   **Networking:** `Dio` client configured with interceptors for token auto-injection.
-*   **Hardware / Plugins:** 
-    *   `image_picker` & `flutter_image_compress` for capturing and optimizing upload images.
-    *   `mobile_scanner` (or `qr_code_scanner`) for physical ticket validation.
-    *   `firebase_messaging` & `flutter_local_notifications` for real-time FCM alert overlays.
+The mobile application is implemented in Flutter and Dart under `mobile/lib/`. Its current organization separates screens, reusable widgets, models, services, core networking/configuration, and theme code. It does not use the BLoC package or a `blocs/` layer; describe state management from the actual feature implementation rather than assuming BLoC.
 
----
+## Main code areas
 
-## 2. Directory Architecture (Clean Architecture)
-The Flutter mobile application code is organized as follows:
 ```text
-lib/
-├── main.dart               # App entry point, initializes Firebase & app theme
-├── blocs/                  # BLoC state managers (e.g., auth_bloc, queue_bloc, report_bloc)
-├── models/                 # Data entities (e.g., resident_profile.dart, queue_ticket.dart)
-├── repositories/           # Abstract and concrete API repositories (e.g., api_repository.dart)
-├── services/               # Device-level services (FCM listener setup, HTTP clients)
-└── views/
-    ├── screens/            # Full-page widgets (LoginScreen, HomeScreen, IssueReportScreen)
-    └── widgets/            # Custom reusable buttons, input fields, queue ticket cards
+mobile/lib/
+├── core/       # API configuration, network client, feature flags, theme
+├── models/     # API and UI data models
+├── screens/    # Role-specific and resident-facing screens
+├── services/   # API and device service coordination
+└── widgets/    # Reusable presentation components
 ```
 
----
+Authentication and role checks select the appropriate experience for residents, barangay administrators, and field officials. Client-side role branching improves navigation; backend permissions and tenant scoping remain authoritative.
 
-## 3. Core Mobile Workflows
+Field Officials use the Flutter client for their supported staff workflow. Barangay administrators provision and manage these accounts in the web settings page. The API token is not cryptographically bound to a mobile device, so “mobile-only” describes the supported product workflow and browser-role restriction, not device attestation.
 
-### 3.1 BLoC State Management Pattern
-For queue tracking, the BLoC pattern orchestrates flow:
-*   **Events:** `StartQueueTracking(String ticketNum)`, `RefreshQueueStatus()`, `StopQueueTracking()`
-*   **States:** `QueueTrackerInitial`, `QueueTrackerLoading`, `QueueTrackerActive(QueueStatus)`, `QueueTrackerError(String message)`
+## Network and privacy boundaries
 
-When a user scans a ticket QR code, `StartQueueTracking` is dispatched. The BLoC switches to `QueueTrackerLoading`, calls the repository, transitions to `QueueTrackerActive` on success, and schedules a periodic periodic refresh timer.
+The mobile app calls the Django API using the configured `API_BASE_URL` build value. Do not embed Gemini, Firebase service-account, or other server credentials in the app. Private identity, billing, and payment evidence is accessed through authenticated backend media endpoints; do not construct public storage URLs for it.
 
-### 3.2 Image-Backed Issue Submission (Compression)
-To handle slow mobile uploads and database boundaries, the `IssueReportScreen` compresses images locally before they hit the Django REST endpoint.
-*   **Capture:** Resident takes a high-res image (often 5MB to 12MB).
-*   **Compression:** The app reads the file, utilizes `flutter_image_compress` to compress it down to a target file size **< 2MB** and quality of **80%**, converting it to JPEG.
-*   **Multipart Upload:** The compressed file is loaded into a `MultipartFile` and sent via Dio.
+The Public Information Navigator entry point is controlled by the `PUBLIC_NAVIGATOR_ENABLED` Dart define and defaults to disabled. Its server-side gate is independent. Navigator requests must contain only the public question, not resident IDs, profile data, or client-selected tenant IDs.
 
-### 3.3 FCM Push Notification Interception
-FCM handles background notifications natively. For foreground application states (when the resident is actively looking at the app), we configure a listener:
-```dart
-FirebaseMessaging.onMessage.listen((RemoteMessage message) {
-  // Extract notification details
-  String title = message.notification?.title ?? "Queue Alert";
-  String body = message.notification?.body ?? "";
-  
-  // Show foreground heads-up overlay banner via flutter_local_notifications
-  LocalNotificationService.displayNotification(title, body);
-});
-```
+## Notifications and asynchronous behavior
 
----
+Firebase Messaging is used where the project is configured for push delivery. Screen refresh and queue status also use API requests; do not describe this as WebSocket delivery unless an implemented and tested socket contract is added. The backend's in-process background work is best-effort and does not provide a durable queue. See [ADR 009](decisions/009-simplification-to-defended-proposal-architecture.md) and [Deployment](11-deployment-and-ci-cd.md).
 
-## 4. Screens & View Interfaces
-*   **Announcement Feed:** A stream-built card interface showing chronological barangay announcements with filter categories.
-*   **Document Request Form:** Interactive dropdown fields selecting document types, with an urgency toggle.
-*   **Queue Status Tracker:** Displays a digital ticket model showing the number of people waiting ahead of the resident, powered by the BLoC state.
-*   **Issue Reporting Wizard:** Step-by-step form with map location pins and camera previews.
+## Verification
+
+Run Flutter commands from `mobile/`. The authoritative commands and environment setup are linked from the [documentation index](../docs/README.md#developer-walkthroughs); test totals change over time and are intentionally not frozen in this architecture page.

@@ -1,6 +1,6 @@
 # Git Workflow & Version Control
 
-All contributions to the Gridy repository must adhere to the following Git workflow to ensure a clean, trackable, and safe history.
+All contributions to the KapitBayan repository must adhere to the following Git workflow to ensure a clean, trackable, and safe history.
 
 ### 1. Feature Branching Protocol
 * **Rule**: No pushing directly to `main`.

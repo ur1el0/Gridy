@@ -1,60 +1,22 @@
-# Firebase Cloud Messaging (FCM) Integration & Setup Guide
+# Firebase Cloud Messaging Setup
 
-KapitBayan uses **Firebase Cloud Messaging (FCM)** to dispatch real-time alerts to residents when:
-* Document requests change status (Approved / Rejected).
-* Queue tickets shift to `SERVING` status.
-* Official pinned announcements are broadcasted to the entire Barangay.
+KapitBayan can register mobile device tokens and send push notifications through Firebase Cloud Messaging when the required Firebase configuration is available. Provider credentials and project identifiers are environment-specific; this guide does not prescribe a project ID.
 
-This guide outlines how to generate service credentials and configure the backend for push notification processing.
+## Credential handling
 
----
+1. Use an authorized Firebase project and create a service account according to the project's current Google/Firebase administration policy.
+2. Store the JSON service-account key outside the repository and outside the container image.
+3. Configure `FIREBASE_SERVICE_ACCOUNT_JSON_PATH` as an absolute path to the mounted key in an approved environment. Keep local keys ignored and never commit or paste them into chat/issues.
+4. Configure the matching Firebase client settings for the mobile build through the supported platform-specific process.
 
-## Step 1: Generate Firebase Service Account Key
+The backend key and client configuration are different artifacts. Never use the service-account JSON in a web or mobile client.
 
-1. Open the [Firebase Console](https://console.firebase.google.com/).
-2. Select the Firebase project currently configured for KapitBayan (`gridy-66278`).
-3. Click the gear icon next to **Project Overview** in the left sidebar and select **Project settings**.
-4. Navigate to the **Service accounts** tab.
-5. Click **Generate new private key**, then confirm by clicking **Generate key**.
-6. A `.json` file containing your credentials will automatically download to your computer.
+## Device registration and delivery
 
----
+The mobile client obtains an FCM registration token using Firebase Messaging and registers it through the authenticated device endpoint (`POST /api/v1/devices/`). Use the serializer and generated OpenAPI schema for the exact field contract.
 
-## Step 2: Configure Environment Variables
+Push delivery is best-effort in the current backend. A successful API action does not prove that Firebase accepted or delivered a message, and an in-process send can be interrupted by a restart. Validate delivery with a test device and Firebase diagnostics in a non-production environment; do not use real resident records for testing.
 
-1. Save the downloaded `.json` credentials file inside the `backend/` directory or a safe local storage path.
-2. Open your `backend/.env` file.
-3. Reference the relative path to this key under the `FIREBASE_SERVICE_ACCOUNT_JSON_PATH` variable:
+## Local and production checks
 
-```env
-FIREBASE_SERVICE_ACCOUNT_JSON_PATH=firebase-credentials-key.json
-```
-
-> [!WARNING]
-> Keep the `.json` credential keys private! Do not commit them to Git. They are ignored by default via the root `.gitignore` file (`firebase-*.json`).
-
----
-
-## Step 3: Device Registration API Flow
-
-For residents to receive push alerts on mobile devices, their clients must fetch the native device token (e.g. via Expo, Flutter FCM package) and register it in the backend:
-
-1. **Endpoint:** `POST /api/v1/devices/`
-2. **Payload:**
-   ```json
-   {
-     "registration_id": "YOUR_NATIVE_FCM_DEVICE_TOKEN"
-   }
-   ```
-3. **Logic:**
-   * The backend registers the token and automatically maps it to the currently authenticated user profile.
-   * If the token is already registered to another account (e.g., family members sharing a mobile phone), the backend safely updates the ownership to the newly authenticated user to prevent sending private alerts to the wrong resident.
-
----
-
-## Step 4: Graceful Dev Boot (Bypass Firebase)
-
-For development environments lacking Firebase key files, the system initiates a **Safe SDK Boot**:
-* The server boots cleanly without crashing, displaying a warning message in the console:
-  `Warning: Firebase service account JSON key not found. FCM notifications are disabled.`
-* During code execution, if notifications are fired, the system gracefully prints a fallback logger warning inside the console and bypasses network triggers, preventing local test scripts from throwing runtime exceptions.
+Local startup behavior depends on Django settings and whether the configured key is present and valid. Inspect the current app initialization and test expectations rather than assuming Firebase is always silently disabled. Production secret validation and file mounting must match the deployment platform. See [In-Process Background Work](async_tasks_setup.md) and [Deployment and Observability](deployment_observability.md).

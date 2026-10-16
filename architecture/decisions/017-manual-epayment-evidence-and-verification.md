@@ -1,4 +1,4 @@
-# ADR 016: Resident Manual E-Payment Evidence, Storage Isolation, and Verification Architecture
+# ADR 017: Resident Manual E-Payment Evidence, Storage Isolation, and Verification Architecture
 
 ## Status
 Accepted
@@ -16,7 +16,7 @@ However, operational field evaluations revealed critical UX, security, and treas
 ## Decisions
 
 ### 1. Manual E-Payment Scope & Infrastructure Boundaries
-Gridy retains its zero-gateway, zero-cost municipal architecture (ADR 009). KapitBayan does not integrate payment gateways, webhooks, bank scraping, OCR, Celery/Redis background processors, or external financial cloud services. All e-payments remain out-of-band transfers initiated by residents directly to the barangay's configured receiving account. Barangay staff manually verify receipts against their actual receiving account.
+KapitBayan retains the low-dependency, zero-gateway architecture selected in ADR 009. It does not integrate payment gateways, webhooks, bank scraping, OCR, Celery/Redis background processors, or external financial cloud services. All e-payments remain out-of-band transfers initiated by residents directly to the barangay's configured receiving account. Barangay staff manually verify receipts against their actual receiving account.
 
 ### 2. Strict Lifecycle Gate
 Payment reference and proof submission is unlocked **strictly** when the document request transitions to `READY_FOR_PICKUP`. While in `PENDING` or `PROCESSING`, payment submission is blocked server-side, and clients display a clear informational banner explaining that fees are only payable once document preparation is complete and the request is approved for release.

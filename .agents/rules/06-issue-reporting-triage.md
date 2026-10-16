@@ -1,6 +1,6 @@
 # Issue Reporting & Incident Triage Protocol
 
-This document establishes the four-tier incident triage system, status lifecycle, and role-based permissions governing citizen incident reporting in Gridy.
+This document establishes the four-tier incident triage system, status lifecycle, and role-based permissions governing citizen incident reporting in KapitBayan.
 
 ---
 

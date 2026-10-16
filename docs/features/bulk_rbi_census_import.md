@@ -1,38 +1,26 @@
-# Feature Specification: Bulk RBI Census CSV Import
+# Bulk RBI Census CSV Import
 
-## 1. Overview
-The Department of the Interior and Local Government (DILG) mandates that every barangay maintain a Registry of Barangay Inhabitants (RBI). KapitBayan allows barangay administrators to digitize their entire community registry in bulk by uploading standard RBI spreadsheets (CSV format), eliminating manual one-by-one account registration.
+The import workflow helps an authorized barangay administrator migrate legacy Registry of Barangay Inhabitants records that may not have digitized proof images. It is an administrative attestation and audit trail, not a self-service registration shortcut.
 
----
+## Authorization and tenant scope
 
-## 2. Technical Implementation
+The endpoint is `POST /api/v1/auth/import-residents/`. It requires an authenticated `ADMIN` assigned to a barangay. The importing official's barangay determines the destination; the request cannot select another tenant. An unassigned administrator is rejected before CSV processing.
 
-### 2.1 Backend Ingestion Service (`ResidentImportView`)
-*   **Endpoint:** `POST /api/v1/auth/import-residents/`
-*   **RBAC Enforcement:** Restricted strictly to authenticated users with the `ADMIN` role.
-*   **Multi-Tenant Assignment:** Incoming resident records are automatically assigned to `request.user.barangay`. Officials cannot import residents into neighboring LGUs.
-*   **Administrative Residency Attestation vs. Self-Service Uploads:** Self-service resident registration mandates uploading at least one valid proof image (PhilSys ID, secondary ID, or utility billing proof). In contrast, historical Registry of Barangay Inhabitants (RBI) CSV rows frequently lack digitized photos; an authorized official's CSV upload constitutes an official administrative residency attestation.
-*   **Automated Verification & Credential Safety:** Imported residents are created with `is_verified=True`, immediately qualifying them for barangay services. They do not receive fake/placeholder proof images (`philsys_id_photo`, `secondary_id_photo`, and `utility_billing_photo` remain null), nor insecure default credentials. They are provisioned with unusable passwords (`password=None`) and cannot log in until completing an authorized account claim/password reset workflow.
-*   **Durable Audit Provenance:** Every import execution logs audit records to `AuditLog` (`USER_ACTION`), recording the importing official, timestamp, client IP, source filename, batch identifier, and individual resident linkage (`Resident ID`, `Username`).
-*   **Duplicate Prevention:** Checks for existing usernames and emails; existing records are skipped without failing the entire batch.
+## Legacy evidence and credentials
 
-### 2.2 CSV Schema Specification
-The uploaded CSV file must contain the following headers:
+Legacy rows may be imported without identity or proof-of-residency images. The importer does not fabricate files, storage URLs, or proof values. Created accounts receive unusable credentials (`password=None`) and must complete the approved account-claim or password-setting process before sign-in. Existing resident profile rows and evidence fields are preserved on idempotent reruns.
 
-| Header | Type | Description | Example |
-| :--- | :--- | :--- | :--- |
-| `full_name` | String | Legal name of resident | Juan Dela Cruz |
-| `birth_date` | Date (YYYY-MM-DD) | Date of birth | 1990-05-15 |
-| `purok` | String | Zone or Purok name | Purok 3 / Mabini |
-| `contact_number` | String | Mobile number | 09171234567 |
-| `voter_status` | Boolean | Registered voter flag (`true`/`false`) | true |
+## Provenance
 
----
+The importer writes batch-level and resident-level `AuditLog` records, including the importing actor, barangay identity, source context, and a shared UUID batch correlation value. These are durable application records, not a cryptographic immutable log or DB-enforced unique event stream. See [ADR 012](../../architecture/decisions/012-legacy-rbi-import-audit-provenance.md).
 
-## 3. Frontend Ingestion Modal (`ResidentsManagement.tsx`)
+## CSV handling
 
-### 3.1 Client-Side Features
-*   **Download Template Button:** Dynamically generates and downloads a pre-formatted `residents_template.csv` file with sample rows.
-*   **Drag-and-Drop Ingestion:** Accepts CSV files up to 10MB with instant filename confirmation.
-*   **Progress & Summary Feedback:** Displays total imported count, skipped count, and granular validation errors.
-*   **Instant Table Refresh:** Automatically reloads the local resident directory upon successful batch upload.
+Use the template and validation displayed by the current Residents interface. The required headers and accepted formats are defined by the import serializer/view and its tests; check those sources before preparing a production import. Resolve duplicates and validation errors from the returned report, and review a small sample before importing a full census.
+
+## Operational safeguards
+
+- Export and review the source CSV before upload; only transfer records through an authenticated staff account.
+- Confirm the active account's barangay and the source file's intended tenant.
+- Test on a disposable local database first. Never use demo seeding commands on production data.
+- Preserve the original source and import audit records according to the LGU's approved retention policy.

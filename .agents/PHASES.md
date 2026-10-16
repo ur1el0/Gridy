@@ -1,6 +1,6 @@
-# Gridy - Development Phases
+# KapitBayan - Development Phases
 
-This document outlines the macro-level roadmap for the Gridy project.
+This document outlines the macro-level roadmap for the KapitBayan project.
 
 ## Phase 1: Foundation & Authentication (Completed)
 - Django setup, Custom User Models, JWT Authentication.
@@ -33,4 +33,4 @@ This document outlines the macro-level roadmap for the Gridy project.
 ## Phase 7: Mobile Client (Flutter) (Completed)
 - Cross-platform resident and field official portal for document requesting, live queue tracking, and incident reporting.
 - Multi-LGU jurisdiction selection, responsive keyboard layouts, and role guards for DILG administrative routing.
-- Native Gridy branding, custom density mipmap icons, and production release packaging (`v1.0.1`).
+- Native KapitBayan branding, custom density mipmap icons, and production release packaging (`v1.0.1`).

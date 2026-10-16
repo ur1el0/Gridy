@@ -1,4 +1,4 @@
-# Gridy Project Backlog
+# KapitBayan Project Backlog
 
 The following technical debt and DevOps tasks have been parked so we can focus on core feature completion first.
 

@@ -12,9 +12,9 @@ An unvarnished architectural audit against the approved and defended Capstone ma
 3. **Hardware Constraints:** Partner LGUs (Barangay Ibabang Dupay and Barangay Daungan) operate on standard office workstations where complex distributed container orchestrations are impractical.
 
 ## Decision
-We decommissioned Celery, Redis, Channels, and Daphne across the entire codebase and aligned the system directly with the defended proposal:
+The decision removed Celery, Redis, Daphne, and the WebSocket delivery design from the deployed service topology and aligned active workflows with the defended proposal:
 1. **Asynchronous Background Execution:** Replaced Celery's `@shared_task` with a native non-blocking daemon thread decorator (`@async_task` utilizing `threading.Thread(daemon=True)`). It maintains `.delay()` call-site compatibility so Firebase push notifications and welcome emails execute in the background with zero external broker dependencies.
-2. **Real-Time Queue Synchronization:** Replaced WebSocket channel layers with lightweight 3-second HTTP interval polling (`setInterval(fetchTickets, 3000)`), achieving architectural uniformity across desktop web, citizen kiosks, and the Flutter mobile app.
+2. **Queue Synchronization:** Use HTTP polling for current queue displays. Poll intervals are client-specific; this ADR does not establish one fixed cadence for every screen.
 3. **Pure 3-Tier Container Topology:** Reduced `docker-compose.yml` to 3 core services:
    - `gridy_db` (PostgreSQL 15)
    - `gridy_backend` (Django DRF)
@@ -22,5 +22,9 @@ We decommissioned Celery, Redis, Channels, and Daphne across the entire codebase
 4. **Presentation Fixtures:** `seed_barangays` and `seed_demo_analytics` create clearly labeled synthetic records for local development and presentations. Demo-only accounts have unusable passwords; the seed commands require an explicit flag, `DEBUG=True`, and a local database host. Production builds only migrate the schema and never create fixture users or records.
 
 ## Consequences
-- **Positive:** System memory footprint reduced by over 60%; eliminated container migration races and port conflicts; 100% test suite pass rate (40/40 backend, 10/10 frontend); flawless alignment with the defended Capstone 1 manuscript.
+- **Positive:** The design avoids a broker and separately deployed worker, reduces operational components, and keeps current queue clients on HTTP APIs.
 - **Trade-off:** In-process daemon threads do not persist queued tasks across process restarts; acceptable given task volume (instant transactional emails and push notifications) and aligned with academic and LGU operational scale.
+
+## Current implementation note (2026-10)
+
+The current API has no WebSocket queue endpoint or active Channels consumer; queue clients use HTTP requests. Selected email and push work uses in-process daemon threads and remains best-effort. ADR 013 records the original per-process throttle choice; ADR 016 supersedes that storage choice with PostgreSQL-backed scoped windows while leaving the notification decision unchanged. The original memory and test-count figures from early development are historical and are not current verification results.

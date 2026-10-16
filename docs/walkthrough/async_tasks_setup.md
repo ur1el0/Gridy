@@ -1,37 +1,16 @@
-# Asynchronous Background Task Architecture (`@async_task`)
+# In-Process Background Work
 
-This guide outlines the background task execution architecture in KapitBayan, which decouples long-running I/O operations from the synchronous HTTP request-response cycle.
+KapitBayan does not use Celery or Redis for the background operations described by [ADR 009](../../architecture/decisions/009-simplification-to-defended-proposal-architecture.md). Selected email and Firebase Cloud Messaging work is dispatched using daemon threads in the Django process.
 
----
+## Operational behavior
 
-## 1. Architectural Evolution & ADR 009 Alignment
+- Returning an API success response means the application accepted the operation; it does not prove that SMTP or FCM delivered it.
+- A process restart or termination can interrupt an in-flight task.
+- The current thread wrapper does not provide a persistent queue, retry schedule, delivery record, or cross-process coordination.
+- Exceptions are handled/logged by the task implementation; raw private resident data must not be included in task logs.
 
-During early development, Celery worker processes and a Redis message broker were introduced to handle background tasks. However, an unvarnished audit against the approved Capstone 1 manuscript revealed:
-1. **Scope Over-Engineering**: The approved project proposal contracts a pure 3-tier architecture. Celery and Redis introduced unnecessary operational fragility, port conflicts, and race conditions during database migrations.
-2. **LGU Operational Reality**: Running a separate Redis broker and multi-process Celery worker on local LGU hardware consumed disproportionate system memory (~1.8 GB).
+These operations are best-effort. Do not describe them as durable jobs or promise delivery guarantees. If product or LGU requirements need durable retries, propose a separate reviewed outbox/worker design and update ADR 009 before introducing a queue or broker. ADR 013 records the pilot limits and the remaining owner decisions.
 
-Per **ADR 009**, Celery and Redis were decommissioned and replaced with a native, non-blocking Python daemon thread decorator (`@async_task`).
+## Local verification
 
----
-
-## 2. The `@async_task` Engine (`gridy_auth/tasks.py`)
-
-The decorator wraps functions in a background thread while exposing a `.delay()` alias. This preserves standard Celery-style call-site syntax without any external broker or daemon dependencies:
-
-```python
-import functools
-import threading
-
-def async_task(func):
-    """
-    Decorator that executes a function in a background daemon thread,
-    providing .delay() compatibility so call sites work seamlessly without Celery or Redis.
-    """
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        thread = threading.Thread(target=func, args=args, kwargs=kwargs, daemon=True)
-        thread.start()
-        return thread
-    
-    wrapper.delay = wrapper
-    return wrapper
+Use mocked provider calls in tests. Do not send real email or push messages during ordinary test runs. Configure SMTP and Firebase credentials only in local ignored environment files or an approved deployment secret store; never commit service-account JSON or provider keys.

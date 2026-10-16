@@ -1,128 +1,69 @@
-# KapitBayan Backend Developer Onboarding and Setup Guide
+# Developer Onboarding
 
-This document guides developers through setting up the local development environment for the KapitBayan Django REST Framework backend.
-
----
+This guide is for local development only. Check the repository's task packet and current project files if a command differs from your working branch.
 
 ## Prerequisites
 
-Before setting up the project, ensure you have the following installed on your machine:
-* Python 3.10 or higher
-* pip (Python package installer)
-* virtualenv (Python virtual environment manager)
-* Git
+- Python 3.12 for the backend (see `backend/Dockerfile`).
+- Node.js 20 and npm for the web client (see `frontend/Dockerfile` and lockfile).
+- Flutter/Dart compatible with `mobile/pubspec.yaml` when working on mobile.
+- Docker Compose for the full local web/API/PostgreSQL stack.
 
----
+## Full local stack
 
-## Local Environment Setup
-
-### 1. Clone and Navigate to the Repository
-Navigate to the root directory of the KapitBayan project:
 ```bash
-cd Gridy
-```
-
-### 2. Configure the Virtual Environment
-Create a virtual environment to isolate the project dependencies:
-```bash
-python -m venv venv
-```
-
-Activate the virtual environment:
-* On Linux/macOS:
-  ```bash
-  source venv/bin/activate
-  ```
-* On Windows:
-  ```bash
-  venv\Scripts\activate
-  ```
-
-### 3. Install Dependencies
-Install all required Python packages:
-```bash
-pip install -r backend/requirements.txt
-```
-
----
-
-## Environment Variables Configuration
-
-Create an environment configuration file `.env` inside the `backend/` directory by copying the provided template:
-```bash
+cp .env.example .env
 cp backend/.env.example backend/.env
 ```
 
-Ensure the following core variables are configured:
-```env
-# General Settings
-SECRET_KEY=your_secret_key_here
-DEBUG=True
-ALLOWED_HOSTS=localhost,127.0.0.1
+Set a local-only PostgreSQL password and matching `DATABASE_URL` in `.env`; set a local Django secret and required development settings in `backend/.env`. Keep both files untracked. Do not put production credentials in local files or commit secrets.
 
-# Database Configuration (Defaults to SQLite if empty)
-DATABASE_URL=
-
-# CORS Settings
-CORS_ALLOW_ALL_ORIGINS=True
-
-# Cloudinary Credentials (CDN & Media Storage)
-CLOUDINARY_CLOUD_NAME=your_cloud_name
-CLOUDINARY_API_KEY=your_api_key
-CLOUDINARY_API_SECRET=your_api_secret
-
-# Firebase Admin SDK Configuration (FCM)
-FIREBASE_SERVICE_ACCOUNT_JSON_PATH=firebase-credentials-key.json
+```bash
+docker compose up --build
 ```
 
----
+Compose runs PostgreSQL, a one-shot migration service, Django's development server, and the Nginx-served web build. Local service ports are declared in `docker-compose.yml`; do not treat this stack as a production deployment.
 
-## Database Migrations & Initial Seeding
+## Backend without Docker
 
-Apply database schema changes to prepare the local SQLite database:
 ```bash
-python backend/manage.py makemigrations
+python3.12 -m venv venv
+source venv/bin/activate
+pip install -r backend/requirements.txt
+cp backend/.env.example backend/.env
+```
+
+Configure a local `SECRET_KEY`, `DEBUG=True`, and a local `DATABASE_URL` (SQLite is the development fallback). Then:
+
+```bash
 python backend/manage.py migrate
-```
-
-For a local development database only, seed synthetic barangays and starter records. The created accounts have unusable passwords; create staff login accounts through KapitBayan's normal registration process.
-```bash
-python backend/manage.py seed_barangays --confirm-demo-only
-```
-
-To populate dashboards with dated synthetic records for a local presentation, run:
-```bash
-python backend/manage.py seed_demo_analytics --confirm-demo-only
-```
-Both commands refuse to run with `DEBUG=False` or a non-local database host. Never seed a deployed database.
-
-Create a superuser account to access the Django administration console:
-```bash
-python backend/manage.py createsuperuser
-```
-
----
-
-## Running the Server
-
-Start the local development server:
-```bash
+python backend/manage.py check
 python backend/manage.py runserver
 ```
-The server will start running at `http://127.0.0.1:8000/`.
 
----
+Never use production credentials, data, media, or provider keys for local experiments. Demo seed commands have explicit safety flags and environment guards; inspect their `--help` and source before use.
 
-## Verification and Testing
+## Web client
 
-1. **System Health Check:**
-   Verify that all installed apps, database drivers, and models compile cleanly:
-   ```bash
-   python backend/manage.py check
-   ```
+```bash
+cd frontend
+npm ci
+npm run dev
+```
 
-2. **Automated Test Suite (Pytest):**
-   Run the comprehensive test suite (40 unit and integration tests covering authentication, RBAC, treasury audits, and reporting):
-   ```bash
-   pytest backend
-   ```
+The production build uses the configured `/api/v1` same-origin fallback when no explicit API URL is provided. Follow `frontend/vercel.json` and the backend environment examples carefully; the current checked-in upstream hostname values differ and need reconciliation before deployment.
+
+## Mobile client
+
+```bash
+cd mobile
+flutter pub get
+flutter test
+flutter run
+```
+
+Set the API endpoint using the supported `--dart-define` configuration for your local network/device. Never embed backend secrets in Flutter defines.
+
+## API schema
+
+With the local API running, browse `/api/schema/swagger-ui/` for the generated OpenAPI schema. See [API Specification Guide](../features/api_specification.md).

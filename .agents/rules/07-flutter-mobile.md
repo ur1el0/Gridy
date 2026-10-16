@@ -1,6 +1,6 @@
 # Flutter Mobile Architecture & Layer Separation Guidelines
 
-This document defines the architectural standards, layer separation principles, and role-based routing protocols for the Gridy Flutter mobile application.
+This document defines the architectural standards, layer separation principles, and role-based routing protocols for the KapitBayan Flutter mobile application.
 
 ---
 
@@ -74,9 +74,9 @@ Navigator.of(context).pushReplacement(
 ```
 
 ### Secret Authority Barrier
-* The login screen defaults to **Citizen Resident** authentication.
-* A long-press gesture on the `GridyLogo` activates **Barangay Official Authority Mode** with haptic feedback and a warning banner.
-* Strict role boundary gates prevent resident accounts from authenticating in official mode and vice-versa.
+* Mobile navigation selects role-appropriate screens after authentication; the current app does not implement a hidden long-press authority mode.
+* Do not add hidden role-switch gestures without a reviewed product/security decision.
+* Backend permissions remain authoritative even when the mobile client hides role-inappropriate actions.
 
 ---
 

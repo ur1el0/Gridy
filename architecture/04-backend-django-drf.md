@@ -1,72 +1,27 @@
-# 04 Backend Architecture (Django DRF)
+# Backend Architecture (Django REST Framework)
 
-## 1. Core Framework
-Django acts as the core API service, leveraging Django REST Framework (DRF) to serialize relational models into RESTful JSON streams.
+The API is a Django project in `backend/config/` with feature apps under `backend/gridy_*/`. The `gridy_*` package names are intentionally retained because Django app labels, migration dependencies, and database objects depend on them.
 
----
+## Application areas
 
-## 2. Directory Architecture
-The backend uses Django's modular app strategy to separate feature domains:
+- `gridy_auth`: users, residents, barangays, registration, verification, sessions, and onboarding.
+- `gridy_services`: document requests, manual payment workflows, queues, assistance, and service analytics.
+- `gridy_communications`: announcements, schedules, FAQs, hotlines, notifications, and the Public Information Navigator.
+- `gridy_reports`: resident-submitted issue reports and staff triage.
+- `gridy_audit`: durable records for selected administrative actions.
 
-```text
-backend/
-├── manage.py                   # Django management utility
-├── config/                     # Project configuration directory
-│   ├── __init__.py
-│   ├── settings.py             # Database settings, middleware, and installed apps
-│   ├── urls.py                 # Global URL dispatcher routing to app APIs
-│   └── wsgi.py / asgi.py
-├── gridy_auth/                 # Custom AbstractUser auth and RBAC JWT logic
-├── gridy_audit/                # Administrative audit trail and event logging
-├── gridy_services/             # Document request pipelines and queue logic
-├── gridy_reports/              # Issue reports, multipart handlers, Cloudinary bridges
-└── gridy_communications/       # Announcements and activity schedules
-```
+The exact models, serializers, permissions, and URL configuration in each app are the implementation source of truth. Exact public request and response schemas are generated through drf-spectacular; see [API contracts](06-api-endpoint-contracts.md).
 
----
+## Tenant and authorization boundary
 
-## 3. Configuration & Third-Party Services
+Authenticated user identity and the user's assigned `barangay_id` determine tenant scope. Views and querysets must enforce both role and barangay rules. A web/mobile route or hidden UI control does not grant server access. DILG oversight paths are explicitly scoped by their permission and use case; they are not a general bypass for barangay-level services.
 
-### 3.1 Media Storage: Cloudinary Pipeline
-Django routes resident issue media directly to Cloudinary. It relies on the `dj3-cloudinary-storage` package to intercept default file fields in Django:
-*   **Django Setting:** `DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'`
-*   **Result:** When an `ImageField` is saved, the binary is automatically streamed to the Cloudinary CDN. The model stores only the resulting secure URL string, preventing local disk filling.
+## Storage boundary
 
-### 3.2 Firebase Admin SDK (Push Alerts)
-To trigger FCM alerts, the server instantiates the `firebase_admin` SDK during startup using the credentials specified in environment settings:
-```python
-# Initialized in settings.py / apps.py
-import firebase_admin
-from firebase_admin import credentials
+The default storage backend is configured from environment. In the private Cloudinary configuration, identity, billing, and payment-proof assets use authenticated storage and are streamed through permission-checked API views. In local development, protected media routes deny direct access to sensitive media directories. Never document or expose public URLs for protected evidence. Issue-report media has a separate policy; check the relevant model and storage configuration before describing its visibility.
 
-cred = credentials.Certificate(os.environ.get('FIREBASE_SERVICE_ACCOUNT_JSON'))
-firebase_admin.initialize_app(cred)
-```
+## Background work, throttling, and dependencies
 
-### 3.3 Asynchronous Execution: Non-Blocking Daemon Threads (`@async_task`)
-In accordance with **ADR 009**, background operations (Firebase FCM push alerts and transactional welcome emails) are decoupled from the synchronous HTTP request-response cycle using in-process daemon threads via `@async_task`. This provides `.delay()` drop-in compatibility without Celery or Redis dependencies.
+This implementation does not add Celery or Redis. Selected notification and email work uses in-process daemon threads, which are best-effort: a process exit can interrupt work and there is no persistent retry queue. Scoped API throttles use the PostgreSQL `APIRateLimitWindow` table with per-bucket row locking and HMAC-derived keys, so counters are shared across workers without storing raw client identifiers. The additive migration must be applied before deploying this code; PostgreSQL tests are required to verify concurrency because SQLite does not provide the needed row-lock behavior. These controls are not a volumetric DDoS defense. See [ADR 009](decisions/009-simplification-to-defended-proposal-architecture.md), [ADR 013](decisions/013-pilot-notification-and-throttle-guardrails.md), and [ADR 016](decisions/016-shared-database-api-throttling.md).
 
----
-
-## 4. RBAC & Security Implementation
-
-### 4.1 SimpleJWT Configurations
-Access tokens are configured with a 15-minute lifespan, while refresh tokens remain valid for 7 days to support the silent refresh flow.
-
-### 4.2 Custom Permission Classes
-To secure endpoints, we implement custom permission classes matching user roles:
-```python
-from rest_framework.permissions import BasePermission
-
-class IsBarangayOfficial(BasePermission):
-    """
-    Allows access only to users with the 'ADMIN' role.
-    """
-    def has_permission(self, request, view):
-        return (
-            request.user and 
-            request.user.is_authenticated and 
-            request.user.role == 'ADMIN'
-        )
-```
-This permission class is then declared on sensitive viewsets (e.g., `QueueViewSet` for advancing tickets, `DocumentRequestViewSet` for approving validation state changes).
+The Public Information Navigator is an in-process, feature-gated service. It may call its configured provider server-side for public-information requests, but it must not query private resident-service records or log query/prompt contents. It defaults off; see [ADR 019](decisions/019-public-information-ai-navigator-boundary.md).

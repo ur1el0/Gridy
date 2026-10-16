@@ -1,53 +1,27 @@
-# KapitBayan Frontend Architecture & Features Manual
+# Web Frontend Features
 
-This document details the core frontend features and architecture implemented in the KapitBayan Web Application, built using React, TypeScript, and Vite.
+The web client is a React, TypeScript, and Vite application. Routes are defined in `frontend/src/App.tsx`; layouts and reusable UI live in `frontend/src/components/`; API calls live in `frontend/src/api/`.
 
----
+## Authentication and route access
 
-## 1. Authentication & Demarcation Gateway
+Resident self-service routes use the resident layout and `RESIDENT` guard. Staff routes use the administrative layout with explicit `ADMIN`/`DILG_ADMIN` guards and narrower guards for sensitive actions. The current router has no hidden keyboard role-switch shortcut. Field officials use the mobile client in the current route design. These client checks complement backend permissions; they do not replace them.
 
-* **Dual-Mode Registration**: Supports distinct onboarding pathways for Citizen Residents (requiring birth date, contact info, and optional guardian fields for minors) and Barangay Administrative Personnel (requiring position titles and official domain accounts).
-* **Demarcation Gateway (ADR 008)**: Provides a single unified web entry point with an operational demarcation toggle (and `Shift + \` shortcut) on `/login` that switches between Citizen Self-Service Kiosk mode and the Administrative Staff Desk Portal.
-* **JWT Context Flow**: Leverages a React `AuthContext` provider to maintain active user session state across the application.
-* **Axios Interceptors**: A pre-configured `axiosPrivate` instance automatically attaches Bearer tokens to all outbound API requests. If a `401 Unauthorized` occurs, the interceptor calls `/api/v1/auth/token/refresh/` via rotating `HttpOnly` cookies and replays the original request without forcing re-authentication.
-* **Protected Routing**: Wraps administrative desk routes inside `<ProtectedRoute>` components enforcing role verification (`ADMIN`, `FIELD_OFFICIAL`).
+## Staff capabilities
 
----
+Depending on role and barangay assignment, staff can process documents and fees, advance queues, manage announcements and activities, maintain residents and verification records, triage reports, and review authorized analytics. Barangay `ADMIN` users can also manage Field Official accounts from `/settings`, including allowed profile edits and activation status; account setup is sent through an expiring email link. Field Officials have no web staff workspace and use the Flutter client. Exact visibility is defined in the route tree and backend permission classes.
 
-## 2. Dashboard & Analytics
+## Resident capabilities
 
-* **API Integration**: Fetches real-time profile metrics and aggregated summary statistics (`/api/v1/dashboard/summary/`) on component mount.
-* **Responsive Layout**: Adapts gracefully across desktop, kiosk, and tablet displays using Tailwind CSS flex and grid utilities.
+Residents can use the portal to request documents, follow queue tickets, read community bulletins, and submit assistance requests. Available pages and paths are listed in [Resident Web Portal](citizen_desktop_portal.md).
 
----
+## Communications and navigator
 
-## 3. Document Requests Management
+Staff can publish announcements and generate an announcement share kit. External Facebook distribution remains manual; KapitBayan neither posts automatically nor moderates external comments. The Ask Barangay drawer is feature-flagged and uses the backend API; it does not call a provider directly or persist chat transcripts in browser storage.
 
-* **Dynamic Data Tables**: Renders active resident clearance and certificate applications with visual status indicators.
-* **Treasury Assessment & Validation**: Slide-over review modal allows officials to inspect resident records, record statutory fee assessments and municipal Official Receipt (O.R.) numbers, and update statuses (`PROCESSING`, `READY_FOR_PICKUP`, `RELEASED`, `REJECTED`).
-* **PDF Clearance Generation**: Directly streams official PDF documents (`/api/v1/document-requests/<id>/generate-pdf/`) for approved clearances.
+## Document evidence and media
 
----
+Protected identity, billing, and payment evidence is accessed through authenticated media endpoints. Do not expose raw storage paths or public links in UI components. Use the shared modal/accessibility patterns for focus, labels, keyboard operation, and visible focus states.
 
-## 4. Issue Reports Triage
+## Frontend verification
 
-* **Visual Urgency Badges**: Reports are color-coded (Low, Medium, High, Urgent) for rapid prioritization by barangay field staff.
-* **Image Lightbox**: Integrates full-screen image inspection fetching Cloudinary CDN URLs attached to resident incident reports.
-
----
-
-## 5. Live Queue Synchronization
-
-* **Multi-Tier Polling Architecture**: 
-  * **Administrative Live Desk**: Polled every 3 seconds (`setInterval(fetchTickets, 3000)`) for real-time ticket progression and counter advancement.
-  * **Citizen Self-Service Kiosk**: Polled every 5 seconds (`setInterval(fetchQueueData, 5000)`) for public "Now Serving" board updates without WebSocket overhead.
-* **Dual-Panel Counter Interface**:
-  * **Now Serving**: Highlights the currently active ticket in high-visibility typography with a one-click completion trigger.
-  * **Waiting List**: Displays pending queue tickets with action triggers to dynamically advance the queue.
-
----
-
-## 6. Communications & Bulletins
-
-* **Announcements Board**: Interfaces with the backend to publish community-wide alerts or pin emergency notices.
-* **Activity Schedules**: Dedicated interface to manage upcoming barangay events, youth programs, and community assemblies.
+Run `npm --prefix frontend run lint`, the focused Vitest suite for changed modules, and `npm --prefix frontend run build` when the task contract asks for those checks. See the [system verification playbook](../walkthrough/system_verification_playbook.md).

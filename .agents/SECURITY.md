@@ -1,88 +1,26 @@
-# Gridy - Data Privacy & Security Policy
+# KapitBayan Security Guidance
 
-This document defines the mandatory data protection protocols, security baselines, and architectural access boundaries enforced across Gridy.
+This is an agent-facing summary, not a replacement for code review. Use [architecture/09-security-and-rbac.md](../architecture/09-security-and-rbac.md), the relevant ADR, backend permissions, serializers, and tests as the detailed contract.
 
----
+## Core rules
 
-## 1. Compliance with Republic Act No. 10173 (Data Privacy Act of 2012)
+1. Enforce authorization in Django for every list, detail, mutation, and media endpoint. UI hiding and route guards are not security controls.
+2. Derive tenant scope from authenticated identity and persisted records. Never trust a client-selected `barangay_id` to authorize cross-tenant access.
+3. Apply endpoint-specific role rules. Residents access their own records; barangay staff are limited to their assigned tenant; DILG oversight is limited to explicit DILG workflows. `FIELD_OFFICIAL` capabilities are defined per endpoint and client.
+4. Keep identity documents, billing evidence, and payment proofs behind authenticated media views. Do not return public URLs, raw storage paths, or sensitive filenames.
+5. Do not log resident PII, authentication secrets, payment proof contents, or Public Navigator query/prompt contents. `AuditLog` is a durable application record for selected events, not a cryptographically immutable ledger; actor references may be nulled when accounts are erased.
+6. Account lifecycle changes must revoke sessions and preserve municipal records according to the current deletion/retention contract.
+7. Electronic payment evidence is manually reviewed. A resident-provided reference or screenshot is not proof of settlement. Positive-fee document release requires the server-side O.R. gate.
+8. Public Navigator retrieval is restricted to approved public sources and must abstain on private-account requests. Server and client feature flags default off.
 
-Barangay operations handle highly sensitive Personally Identifiable Information (PII) including resident full names, government ID numbers, birthdates, civil statuses, monthly household incomes, and exact home addresses.
+## Authentication and runtime limits
 
-### Core Data Privacy Principles Enforced in Gridy
-1. **Transparency & Consent:** Resident personal data collected through census imports (RBI) or digital registration is processed strictly for official barangay certification and frontline governance.
-2. **Purpose Limitation:** Resident demographic data collected for document clearances (e.g. Certificate of Indigency) cannot be repurposed or exposed across unrelated modules.
-3. **Data Proportionality & Minimization:** API endpoints must return only the fields required for the active screen. Sensitive fields like `password`, internal salt, and raw session tokens are excluded from all serializer output schemas.
-4. **Sanitized Error Responses:** Views must never expose raw database exceptions, SQL queries, or internal stack traces in client responses.
+The refresh-cookie policy defaults to `SameSite=Strict` and is secure in production settings. The browser is intended to use the same-origin proxy; do not loosen cookie policy or CORS based on local symptoms without checking host, origin, CSRF, and proxy headers together. Native mobile clients do not use browser CORS enforcement.
 
----
+There is no Celery/Redis queue. In-process notification work is best-effort. Scoped API throttle counters are stored in PostgreSQL and shared across workers; the general-purpose `LocMemCache` is still per process. Database-backed throttles are not volumetric DDoS protection.
 
-## 2. Four-Tier Role-Based Access Control (RBAC) Hierarchy
+## Before making a security change
 
-The system defines four distinct user authorization tiers:
-
-| Tier | Role | Scope & Permissions | Gated Restrictions |
-| :--- | :--- | :--- | :--- |
-| **Tier 1** | `DILG_ADMIN` | Macro-level multi-tenant supervision; cross-barangay auditing. | Cannot modify local barangay operational tickets. |
-| **Tier 2** | `ADMIN` | Full tenant authority (Punong Barangay, Secretary, Treasurer). Document approval, queue advancement, treasury fee collection. | Scoped strictly to `request.user.barangay`. Cannot access other barangays. |
-| **Tier 3** | `FIELD_OFFICIAL` | Field operations (Barangay Tanods). Physical ticket advancement, clearance anti-forgery validation, incident inspection. | **Strictly blocked** from creating resident document requests, filing resident tickets, or approving clearances. |
-| **Tier 4** | `RESIDENT` | Citizen self-service portal. Requisitioning clearances, monitoring tickets, reporting community incidents. | Requires verified status (`is_verified=True`) for official clearances. Scoped strictly to own records. |
-
----
-
-## 3. Multi-Tenant Queryset Isolation Protocol
-
-To prevent horizontal privilege escalation and cross-barangay data leaks:
-
-1. **Mandatory Queryset Overrides:** Every DRF `ModelViewSet` must override `get_queryset()`:
-   ```python
-   def get_queryset(self):
-       user = self.request.user
-       if not user or not user.is_authenticated:
-           return Model.objects.none()
-       if user.role == User.Role.DILG_ADMIN:
-           return Model.objects.all().order_by('-created_at')
-       if user.role in [User.Role.ADMIN, User.Role.FIELD_OFFICIAL]:
-           return Model.objects.filter(barangay=user.barangay).order_by('-created_at')
-       return Model.objects.filter(user=user).order_by('-created_at')
-   ```
-2. **Tenant Parameter Injection:** Desk actions (e.g., walk-in clearance creation, ticket generation) must bind directly to `request.user.barangay`, never trusting client-supplied barangay IDs.
-
----
-
-## 4. Creation-State Parameter Overrides
-
-Clients must never be able to elevate privilege or pre-approve records during submission:
-* Intercept parameters in ViewSet `perform_create()`:
-  * Force `status = PENDING`.
-  * Strip administrative notes, approval flags, and assigned personnel.
-  * Force applicant binding: `user = self.request.user` (or explicit walk-in flags if created by an authorized official).
-
----
-
-## 5. Session Security & Boundary Handling
-
-1. **Short-Lived Access Tokens:** JWT access tokens expire in 15 minutes.
-2. **HttpOnly Rotating Refresh Cookies:** Refresh tokens must reside within server-backed `HttpOnly; SameSite=Lax` cookies, protected from JavaScript XSS attacks.
-3. **Token Rotation:** Every token refresh cycle revokes the prior refresh token and issues a new cryptographic pair to prevent replay attacks.
-4. **Graceful Logout Invalidation:** Session cookies are cleared safely upon sign-out without throwing 400 Bad Request if the cookie was already absent.
-
----
-
-## 6. Dual-Portal UI Segregation (Physical & Visual Security)
-
-To prevent unauthorized tampering when residents or officials use communal devices and public barangay kiosks:
-* **Citizen Portal by Default:** Web and mobile applications launch into Citizen Resident mode by default.
-* **Hidden Authority Barriers:** Switching to Barangay Authority Command requires deliberate administrative action:
-  * **Web Portal:** Hidden `Shift + \` key combination.
-  * **Mobile Client:** Haptic-verified long-press gesture on the `GridyLogo` icon.
-* **Role Verification Gates:** Official credentials attempting login through the resident portal are rejected, and vice-versa.
-
----
-
-## 7. Audit Trails & Non-Repudiation
-
-Every administrative action—including clearance approval, status change, fee assessment, O.R. recording, and census import—generates an immutable record in `gridy_audit.AuditLog` capturing:
-* User ID & role
-* Timestamp
-* Target object & action type
-* Client IP address and User-Agent
+- Read [ADR 004](../architecture/decisions/004-multi-tenant-isolation.md), the relevant auth/session/storage/payment ADRs, and the current deployment notes.
+- Add regression coverage for allowed and denied roles, cross-tenant objects, missing objects, and storage/provider failure paths as required by the task.
+- Report only checks that were actually run. Verify live cloud behavior independently; configuration prose is not evidence of deployment.

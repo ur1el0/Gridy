@@ -1,30 +1,22 @@
-# Gridy - System Architecture
+# KapitBayan System Architecture
 
-## 1. High-Level Architecture
-Gridy follows a decoupled client-server architecture:
-- **Frontend Client**: React Single Page Application (SPA) built with Vite and styled with Tailwind CSS, featuring dual-portal role segregation for Officials and Citizens.
-- **Backend API**: Django REST Framework (DRF) serving JSON payloads and OpenAPI contracts.
-- **Mobile Client**: Cross-platform Flutter mobile application providing feature parity for residents and field officials.
+This file is a short agent-facing pointer. The canonical architecture is maintained under [`architecture/`](../architecture/), with navigation from [`docs/README.md`](../docs/README.md).
 
-## 2. Infrastructure & Containerization
-The system runs on a streamlined 3-tier Docker Compose architecture:
-- **`gridy_backend`**: Django application server running Python 3.12 / DRF with native daemon background threads (`@async_task`).
-- **`gridy_db`**: PostgreSQL 15 relational database for persistent, ACID-compliant data storage.
-- **`gridy_frontend`**: Nginx web server serving compiled Vite production assets on port 80 and proxying API traffic.
+## Runtime components
 
-## 3. Core Technologies
-- **Language**: Python 3.12+, TypeScript, Dart
-- **Frameworks**: Django 6.0+, DRF, React 19, Flutter 3.x
-- **Database**: PostgreSQL 15
-- **Task Management**: Python Daemon Threads (eliminates Celery & Redis overhead)
-- **Real-Time Synchronization**: HTTP Interval Polling (3-second cadence)
-- **State Management**: React Hooks, Context API
-- **API Communication**: Axios with interceptors for JWT injection and silent 401 refresh
+- React and TypeScript web client (`frontend/`).
+- Flutter mobile client (`mobile/`).
+- Django REST API (`backend/`) with internal apps named `gridy_auth`, `gridy_services`, `gridy_reports`, `gridy_communications`, and `gridy_audit`.
+- PostgreSQL for hosted relational data and configured local/test databases.
+- Configurable private object storage, SMTP, and Firebase Messaging integrations.
 
-## 4. Security Architecture
-- **Authentication**: JWT (JSON Web Tokens) with short-lived access tokens and HttpOnly rotating refresh cookies.
-- **Data Isolation**: Multi-tenant-like data filtering overriding `get_queryset()` to ensure residents only see their own records.
-- **Validation**: Strict serializer validation enforcing default creation states (e.g., stripping malicious admin parameters during record creation).
+## Current design constraints
 
-## 5. Third-Party Integrations
-- **Firebase Admin SDK**: Used for dispatching Firebase Cloud Messaging (FCM) Push Notifications to mobile/web clients asynchronously.
+- Backend permissions and tenant-scoped querysets are authoritative; client route guards are not authorization.
+- Queue state is refreshed through HTTP endpoints. Do not describe active workflows as WebSocket-based.
+- Selected email and push work runs in process and is best-effort, not a durable queue.
+- Scoped DRF API throttles use the PostgreSQL `APIRateLimitWindow` table and share counters across workers. The additive migration must be applied before deploying the new throttle code; these limits are not volumetric DDoS protection. See ADR 016.
+- Private identity, billing, and payment evidence is served through authenticated views; never expose public storage URLs.
+- Manual payment and Official Receipt workflows remain staff-controlled. The Public Information Navigator is separately feature-gated and defaults off.
+
+Read the relevant ADRs before changing a boundary. Do not rename the internal `gridy_*` app labels or migration history as part of a product rebrand.
