@@ -8,10 +8,9 @@ This is an agent-facing summary, not a replacement for code review. Use [archite
 2. Derive tenant scope from authenticated identity and persisted records. Never trust a client-selected `barangay_id` to authorize cross-tenant access.
 3. Apply endpoint-specific role rules. Residents access their own records; barangay staff are limited to their assigned tenant; DILG oversight is limited to explicit DILG workflows. `FIELD_OFFICIAL` capabilities are defined per endpoint and client.
 4. Keep identity documents, billing evidence, and payment proofs behind authenticated media views. Do not return public URLs, raw storage paths, or sensitive filenames.
-5. Do not log resident PII, authentication secrets, payment proof contents, or Public Navigator query/prompt contents. `AuditLog` is a durable application record for selected events, not a cryptographically immutable ledger; actor references may be nulled when accounts are erased.
+5. Do not log resident PII, authentication secrets, or payment proof contents. `AuditLog` is a durable application record for selected events, not a cryptographically immutable ledger; actor references may be nulled when accounts are erased.
 6. Account lifecycle changes must revoke sessions and preserve municipal records according to the current deletion/retention contract.
 7. Electronic payment evidence is manually reviewed. A resident-provided reference or screenshot is not proof of settlement. Positive-fee document release requires the server-side O.R. gate.
-8. Public Navigator retrieval is restricted to approved public sources and must abstain on private-account requests. Server and client feature flags default off.
 
 ## Authentication and runtime limits
 

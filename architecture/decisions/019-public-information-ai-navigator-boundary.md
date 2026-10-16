@@ -1,7 +1,9 @@
 # ADR 019: Public Information AI Navigator Boundary and Source Eligibility
 
 ## Status
-Accepted
+Retired (2026-10-16)
+
+The Navigator implementation has been removed: its API routes, web and mobile clients, provider integration, feature configuration, and announcement/activity opt-in fields are no longer part of the current system. This ADR remains as a historical record of the former design decision; it does not describe a currently available capability.
 
 ## Context
 As an emerging-technology research and development component for KapitBayan (the repository retains legacy Gridy identifiers), residents frequently inquire about public barangay procedures, required documents, statutory fee exemptions (e.g., First Time Jobseekers Assistance Act - RA 11261, Certificate of Indigency - RA 7160), community schedules, public announcements, and emergency hotlines. Routine inquiries consume significant phone and counter time of barangay staff.

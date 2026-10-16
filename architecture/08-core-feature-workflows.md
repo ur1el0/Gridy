@@ -23,7 +23,3 @@ Authorized staff publish barangay announcements and activities. Residents can re
 ## Assistance and reports
 
 Residents submit assistance applications and issue reports. Authorized staff review and update records within the applicable barangay scope. The platform records staff decisions; it does not autonomously determine aid eligibility or replace emergency response. For immediate danger, use official emergency channels.
-
-## Public Information Navigator
-
-The navigator answers only from approved public information. Deterministic privacy checks run before the provider call; private application, identity, queue, payment, and case records are excluded. Ambiguous or unsupported questions abstain and direct residents to verified contacts. Both server and client feature flags default off. See [ADR 019](decisions/019-public-information-ai-navigator-boundary.md).

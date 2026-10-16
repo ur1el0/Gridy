@@ -9,7 +9,6 @@ from gridy_communications.views import (
     EmergencyHotlineViewSet,
     FAQViewSet,
     AdminNotificationViewSet,
-    NavigatorQueryView,
 )
 
 router = DefaultRouter()
@@ -31,15 +30,5 @@ urlpatterns = [
         'public/announcements/<int:announcement_id>/',
         PublicAnnouncementDetailView.as_view(),
         name='public-announcement-detail',
-    ),
-    path(
-        'public/navigator/query/',
-        NavigatorQueryView.as_view(),
-        name='public-navigator-query',
-    ),
-    path(
-        'navigator/query/',
-        NavigatorQueryView.as_view(),
-        name='navigator-query',
     ),
 ]

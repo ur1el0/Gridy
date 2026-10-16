@@ -19,10 +19,6 @@ Each sensitive list, detail, create, update, deletion, and media operation must 
 
 Identity documents, billing evidence, and payment proofs are private. Cloud storage uses authenticated assets where configured; local/test sensitive media is blocked from direct public `/media/` retrieval. API media views validate ownership or same-barangay staff authority, reject unauthorized roles, and use private/no-store response headers. Never return public evidence URLs or include proof contents in logs.
 
-## Public information and AI boundary
-
-The Public Information Navigator may use approved, explicitly public sources only. It must not query resident profiles, application records, queue tickets, aid requests, incident narratives, or private evidence. Privacy-probe queries are rejected before provider invocation; response content and prompts are not persisted or logged. The feature defaults to disabled. See [ADR 019](decisions/019-public-information-ai-navigator-boundary.md).
-
 ## Operational caveats
 
 Scoped DRF API throttles use PostgreSQL-backed, HMAC-keyed request windows shared across workers; they do not store raw IP addresses or user IDs. The additive migration must be applied before deploying the corresponding code. These application limits reduce repeated scoped requests but do not provide volumetric DDoS protection. General-purpose Django cache remains process-local. Background notification work is in-process and best-effort. See [ADR 013](decisions/013-pilot-notification-and-throttle-guardrails.md) and [ADR 016](decisions/016-shared-database-api-throttling.md). Treat production HTTPS, secret provisioning, storage access, and provider delivery as deployment properties that require live verification, not assumptions based on this document.

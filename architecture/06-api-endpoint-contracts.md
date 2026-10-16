@@ -15,7 +15,6 @@ All application API routes are mounted below `/api/v1/` unless noted.
 | `/payment-recipients/` | `gridy_services` | Barangay payment recipient configuration and retrieval under role/tenant policy |
 | `/reports/` | `gridy_reports` | Resident issue submission and staff triage |
 | `/announcements/`, `/activities/`, `/faqs/`, `/hotlines/`, `/devices/`, `/admin-notifications/` | `gridy_communications` | Communications, public information, device registration, and notification administration |
-| `/public/navigator/query/` and `/navigator/query/` | `gridy_communications` | Feature-gated public-information navigator query aliases |
 | `/public/barangays/<id>/queue-status/` | `gridy_services` | Public queue display data |
 | `/dashboard/summary/`, `/dilg-analytics/` | `gridy_services` | Role- and tenant-scoped reporting |
 | `/health/live/`, `/health/ready/` | `config` | Liveness and dependency readiness checks |

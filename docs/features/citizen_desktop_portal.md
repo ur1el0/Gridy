@@ -20,7 +20,7 @@ Payment options are shown only when a request is eligible and `READY_FOR_PICKUP`
 
 ## Public information
 
-Residents can read public announcements, activities, and queue displays. The Ask Barangay navigator launcher is controlled by the web feature flag and requires the backend feature flag as well. The navigator handles only approved public information, does not answer account-status questions, and defaults off.
+Residents can read public announcements, activities, and queue displays.
 
 ## Authorization boundary
 

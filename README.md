@@ -13,7 +13,7 @@ The platform supports resident document requests, manual fee assessment and trea
 - Exact endpoint contracts: generated OpenAPI at `/api/schema/` and Swagger UI at `/api/schema/swagger-ui/` when the API is running.
 - Database schema and migrations: Django models and migration files. Do not infer schema from historical documentation.
 
-The web client is configured for a same-origin API proxy, while mobile clients call the configured API URL. Private identity and payment evidence is served through authenticated backend views; never construct public evidence URLs. The Public Information AI Navigator uses only approved public information and is disabled by default. Hosting and service behavior must be verified against the active deployment before being described as live.
+The web client is configured for a same-origin API proxy, while mobile clients call the configured API URL. Private identity and payment evidence is served through authenticated backend views; never construct public evidence URLs. Hosting and service behavior must be verified against the active deployment before being described as live.
 
 ## Documentation
 

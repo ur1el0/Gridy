@@ -6,7 +6,7 @@ The API is a Django project in `backend/config/` with feature apps under `backen
 
 - `gridy_auth`: users, residents, barangays, registration, verification, sessions, and onboarding.
 - `gridy_services`: document requests, manual payment workflows, queues, assistance, and service analytics.
-- `gridy_communications`: announcements, schedules, FAQs, hotlines, notifications, and the Public Information Navigator.
+- `gridy_communications`: announcements, schedules, FAQs, hotlines, and notifications.
 - `gridy_reports`: resident-submitted issue reports and staff triage.
 - `gridy_audit`: durable records for selected administrative actions.
 
@@ -23,5 +23,3 @@ The default storage backend is configured from environment. In the private Cloud
 ## Background work, throttling, and dependencies
 
 This implementation does not add Celery or Redis. Selected notification and email work uses in-process daemon threads, which are best-effort: a process exit can interrupt work and there is no persistent retry queue. Scoped API throttles use the PostgreSQL `APIRateLimitWindow` table with per-bucket row locking and HMAC-derived keys, so counters are shared across workers without storing raw client identifiers. The additive migration must be applied before deploying this code; PostgreSQL tests are required to verify concurrency because SQLite does not provide the needed row-lock behavior. These controls are not a volumetric DDoS defense. See [ADR 009](decisions/009-simplification-to-defended-proposal-architecture.md), [ADR 013](decisions/013-pilot-notification-and-throttle-guardrails.md), and [ADR 016](decisions/016-shared-database-api-throttling.md).
-
-The Public Information Navigator is an in-process, feature-gated service. It may call its configured provider server-side for public-information requests, but it must not query private resident-service records or log query/prompt contents. It defaults off; see [ADR 019](decisions/019-public-information-ai-navigator-boundary.md).

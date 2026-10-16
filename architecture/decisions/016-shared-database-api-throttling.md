@@ -6,13 +6,13 @@
 
 ## Context
 
-The current Django REST Framework scoped throttles store counters in per-process `LocMemCache`. This allows the effective request budget to multiply across Gunicorn workers and replicas. The same issue affected the authenticated public navigator, which uses an explicit scoped throttle. The system uses Neon PostgreSQL already and the project intentionally avoids adding Redis, Celery, or paid infrastructure.
+The current Django REST Framework scoped throttles store counters in per-process `LocMemCache`. This allows the effective request budget to multiply across Gunicorn workers and replicas. The system uses Neon PostgreSQL already and the project intentionally avoids adding Redis, Celery, or paid infrastructure.
 
 ADR 013 accepted per-process throttles as an initial non-production pilot choice. That storage decision is superseded for API throttling only by this ADR. ADR 013's in-process notification delivery decision remains unchanged.
 
 ## Decision
 
-Use a PostgreSQL table to store rolling request timestamps for every configured scoped API throttle, including authentication, password recovery, barangay applications, and the public navigator. Each row is keyed by a SHA-256 HMAC of the throttle scope and client identity, using the Django secret key; raw IP addresses and user identifiers are not stored. A transaction and row lock serialize requests for the same bucket across workers. Expired rows are pruned in bounded batches.
+Use a PostgreSQL table to store rolling request timestamps for every configured scoped API throttle, including authentication, password recovery, and barangay applications. Each row is keyed by a SHA-256 HMAC of the throttle scope and client identity, using the Django secret key; raw IP addresses and user identifiers are not stored. A transaction and row lock serialize requests for the same bucket across workers. Expired rows are pruned in bounded batches.
 
 For unauthenticated clients behind Render, use the first valid IP address in `X-Forwarded-For`, which Render documents as the client address. Fall back to the socket address if that value is absent or malformed. Reassess this parsing if the service moves behind a different proxy topology.
 

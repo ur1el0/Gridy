@@ -15,14 +15,13 @@ Application endpoints are mounted below `/api/v1/`:
 | `/payment-recipients/` | read or manage barangay payment recipients according to role |
 | `/reports/` | submit and triage incident reports |
 | `/announcements/`, `/activities/`, `/faqs/`, `/hotlines/` | community information and schedules |
-| `/public/navigator/query/` | public-information navigator query (resident-authenticated and independently feature-gated) |
 | `/health/live/`, `/health/ready/` | process liveness and dependency readiness |
 
 Exact URL actions and HTTP methods are defined by `backend/config/urls.py` and the Django app URL configurations. Use `/api/schema/` to inspect the current resolved schema.
 
 ## Client integration rules
 
-- Use the repository's configured API client; do not call the AI provider from web or mobile code.
+- Use the repository's configured API client; keep provider credentials and integrations on the server.
 - Derive tenant scope on the server from the authenticated user. Do not add a client `barangay_id` override to resident operations.
 - Treat protected identity, billing, and payment-proof files as authenticated media. Do not render direct public storage URLs.
 - Preserve endpoint error semantics and test unauthorized, cross-tenant, missing-record, and storage-failure cases.

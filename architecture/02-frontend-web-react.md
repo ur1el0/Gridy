@@ -24,7 +24,6 @@ See [ADR 002](decisions/002-httponly-jwt-cookie-auth.md), [ADR 003](decisions/00
 - Route components compose pages and layouts; domain components live under `frontend/src/components/`.
 - API access should go through the existing API modules and client instances.
 - Keep resident and staff workflows visually distinct. Do not add a role-switch shortcut unless a separately reviewed decision changes the current route contract.
-- The Public Information Navigator launcher is controlled by `VITE_PUBLIC_NAVIGATOR_ENABLED`; the backend independently checks `PUBLIC_NAVIGATOR_ENABLED`.
 - Announcement sharing generates an in-app share kit. Staff publish externally themselves; KapitBayan does not automatically post to Facebook or manage Facebook comments.
 - Barangay `ADMIN` users can provision, list, edit the allowed profile fields of, and activate/deactivate Field Official accounts from `/settings`; operations are scoped to the administrator's barangay. Account setup uses an expiring email link rather than an administrator-set password.
 

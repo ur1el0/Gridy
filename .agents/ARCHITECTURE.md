@@ -17,6 +17,6 @@ This file is a short agent-facing pointer. The canonical architecture is maintai
 - Selected email and push work runs in process and is best-effort, not a durable queue.
 - Scoped DRF API throttles use the PostgreSQL `APIRateLimitWindow` table and share counters across workers. The additive migration must be applied before deploying the new throttle code; these limits are not volumetric DDoS protection. See ADR 016.
 - Private identity, billing, and payment evidence is served through authenticated views; never expose public storage URLs.
-- Manual payment and Official Receipt workflows remain staff-controlled. The Public Information Navigator is separately feature-gated and defaults off.
+- Manual payment and Official Receipt workflows remain staff-controlled.
 
 Read the relevant ADRs before changing a boundary. Do not rename the internal `gridy_*` app labels or migration history as part of a product rebrand.

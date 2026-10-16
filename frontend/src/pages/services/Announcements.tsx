@@ -43,16 +43,8 @@ export const Announcements: React.FC = () => {
     const [title, setTitle] = useState('');
     const [content, setContent] = useState('');
     const [isPinned, setIsPinned] = useState(false);
-    const [navigatorAiEnabled, setNavigatorAiEnabled] = useState(false);
     const [imageFile, setImageFile] = useState<File | null>(null);
     const [imagePreview, setImagePreview] = useState<string | null>(null);
-
-    const canEnableAi = Boolean(
-        user?.role &&
-        (user.role === 'ADMIN' || user.role === 'FIELD_OFFICIAL') &&
-        user.barangay_id !== null &&
-        user.barangay_id !== undefined
-    );
 
     const fetchAnnouncements = async (isRetry = false) => {
         if (isRetry) {
@@ -131,7 +123,6 @@ export const Announcements: React.FC = () => {
             formData.append('title', title.trim());
             formData.append('content', content.trim());
             formData.append('is_pinned', String(isPinned));
-            formData.append('navigator_ai_enabled', String(navigatorAiEnabled));
             if (imageFile) {
                 formData.append('image', imageFile);
             }
@@ -155,7 +146,6 @@ export const Announcements: React.FC = () => {
         setTitle('');
         setContent('');
         setIsPinned(false);
-        setNavigatorAiEnabled(false);
         handleRemoveImage();
     };
 
@@ -286,9 +276,6 @@ export const Announcements: React.FC = () => {
                     onImageChange={handleImageChange}
                     onRemoveImage={handleRemoveImage}
                     isSubmitting={isSubmitting}
-                    navigatorAiEnabled={navigatorAiEnabled}
-                    setNavigatorAiEnabled={setNavigatorAiEnabled}
-                    canEnableAi={canEnableAi}
                 />
             )}
 
