@@ -52,7 +52,7 @@ class PublicAnnouncementListView(APIView):
 
     @extend_schema(responses=PublicAnnouncementSerializer(many=True))
     def get(self, request, barangay_id):
-        announcements = Announcement.objects.filter(
+        announcements = Announcement.objects.select_related("created_by").filter(
             created_by__barangay_id=barangay_id,
         ).order_by("-is_pinned", "-created_at")[:50]
         return Response(
@@ -62,6 +62,27 @@ class PublicAnnouncementListView(APIView):
                 context={"request": request},
             ).data
         )
+
+
+class PublicAnnouncementDetailView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    @extend_schema(responses=PublicAnnouncementSerializer)
+    def get(self, request, announcement_id):
+        try:
+            announcement = Announcement.objects.select_related("created_by").get(id=announcement_id)
+        except Announcement.DoesNotExist:
+            return Response(
+                {"detail": "Announcement not found."},
+                status=status.HTTP_404_NOT_FOUND,
+            )
+        return Response(
+            PublicAnnouncementSerializer(
+                announcement,
+                context={"request": request},
+            ).data
+        )
+
 
 class ActivityScheduleViewSet(viewsets.ModelViewSet):
     serializer_class = ActivityScheduleSerializer

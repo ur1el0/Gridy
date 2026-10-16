@@ -36,9 +36,11 @@ class AnnouncementSerializer(serializers.ModelSerializer):
 
 
 class PublicAnnouncementSerializer(serializers.ModelSerializer):
+    barangay_id = serializers.IntegerField(source="created_by.barangay_id", read_only=True)
+
     class Meta:
         model = Announcement
-        fields = ["id", "title", "content", "is_pinned", "created_at"]
+        fields = ["id", "barangay_id", "title", "content", "is_pinned", "created_at"]
         read_only_fields = fields
 
 
