@@ -27,8 +27,6 @@ The web client is configured for a same-origin API proxy, while mobile clients c
 
 Start at the [documentation index](docs/README.md) for current architecture, decision records, feature guides, and walkthroughs. The [ADR index](architecture/decisions/README.md) records the accepted architectural decisions. Use the generated OpenAPI schema for exact request/response details.
 
-`skills-lock.json` is tracked metadata containing upstream skill sources and hashes for reproducible local installation. Downloaded skills under `.agents/skills/` and generated ECC install state are local tooling, not repository source. Project-level `.agents/` guidance remains tracked.
-
 ## Local development with Docker Compose
 
 Requirements: Docker Compose and Git.

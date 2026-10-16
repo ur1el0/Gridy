@@ -48,7 +48,7 @@ htmlcov/
 
 .agents/agents
 .agents/workflows
-# Skill payloads are installed locally from skills-lock.json.
+# Downloaded third-party skill payloads are local developer tooling.
 .agents/skills/
 .agents/ecc-install-state.json
 # Generated skill setup notes are local workflow state.

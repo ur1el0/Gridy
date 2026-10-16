@@ -2,7 +2,7 @@
 
 This document contains standard commands, development workflows, and operational playbooks across the KapitBayan stack (Django, React, Flutter, and PostgreSQL). Internal `gridy_*` Django app names remain unchanged.
 
-`skills-lock.json` is tracked source/hash metadata. Downloaded skill payloads under `.agents/skills/` and generated ECC install state are local-only and ignored; project guidance files directly under `.agents/` remain tracked. See [docs/README.md](../docs/README.md) for domain, issue-tracker, architecture, and feature documentation.
+This file contains KapitBayan development commands and operational playbooks; it is project guidance, not a list of installed third-party skills. Downloaded personal or ECC skill packages under `.agents/skills/` and generated ECC install state are local developer tooling and intentionally ignored. Keep project guidance under `.agents/` tracked. See [docs/README.md](../docs/README.md) for domain, issue-tracker, architecture, and feature documentation.
 
 ---
 
