@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState, type FormEvent } from 'react';
+import { useCallback, useEffect, useRef, useState, type FormEvent } from 'react';
 import { axiosPrivate } from '../../api/axios';
 import { InlineErrorState } from '../../components/ui/InlineErrorState';
 import { ShieldCheck, UserPlus, Users } from 'lucide-react';
@@ -16,7 +16,20 @@ export interface StaffMember {
     last_login: string | null;
 }
 
-const inputClass = 'mt-1 w-full rounded-lg border border-slate-300 px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary';
+const inputClass = 'mt-1 min-h-11 w-full rounded-lg border border-slate-300 px-3 py-2 text-base md:text-sm focus:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus:border-primary';
+
+function getApiErrorMessage(error: unknown, fallback: string) {
+    if (!error || typeof error !== 'object' || !('response' in error)) return fallback;
+    const response = error as { response?: { data?: Record<string, unknown> } };
+    const data = response.response?.data;
+    if (!data || typeof data !== 'object') return fallback;
+
+    const firstKey = Object.keys(data)[0];
+    const value = data[firstKey];
+    if (Array.isArray(value) && value.length > 0) return `${firstKey}: ${value[0]}`;
+    if (typeof value === 'string') return value;
+    return fallback;
+}
 
 export function StaffManagementSettings() {
     const [staffList, setStaffList] = useState<StaffMember[]>([]);
@@ -30,6 +43,13 @@ export function StaffManagementSettings() {
     const [loadError, setLoadError] = useState(false);
     const [saving, setSaving] = useState(false);
     const [togglingId, setTogglingId] = useState<number | null>(null);
+    const [editingStaffId, setEditingStaffId] = useState<number | null>(null);
+    const [editValues, setEditValues] = useState<Pick<StaffMember, 'first_name' | 'last_name' | 'email'> | null>(null);
+    const [editSaving, setEditSaving] = useState(false);
+    const [editError, setEditError] = useState<string | null>(null);
+    const editFirstNameInputRef = useRef<HTMLInputElement | null>(null);
+    const editButtonRefs = useRef<Record<number, HTMLButtonElement | null>>({});
+    const focusAfterEditTransitionId = useRef<number | null>(null);
     const [message, setMessage] = useState<{ text: string; type: 'success' | 'error' } | null>(null);
 
     const loadStaff = useCallback(async (isRetry = false) => {
@@ -51,6 +71,18 @@ export function StaffManagementSettings() {
     useEffect(() => {
         void loadStaff();
     }, [loadStaff]);
+
+    useEffect(() => {
+        const staffId = focusAfterEditTransitionId.current;
+        if (staffId === null) return;
+
+        if (editingStaffId === staffId) {
+            editFirstNameInputRef.current?.focus();
+        } else {
+            editButtonRefs.current[staffId]?.focus();
+        }
+        focusAfterEditTransitionId.current = null;
+    }, [editingStaffId]);
 
     const submit = async (event: FormEvent<HTMLFormElement>) => {
         event.preventDefault();
@@ -74,23 +106,58 @@ export function StaffManagementSettings() {
                 type: 'success',
             });
         } catch (err: unknown) {
-            let errorText = 'Could not create field official account. Please check the inputs.';
-            if (err && typeof err === 'object' && 'response' in err) {
-                const axiosErr = err as { response?: { data?: Record<string, unknown> } };
-                const data = axiosErr.response?.data;
-                if (data && typeof data === 'object') {
-                    const firstKey = Object.keys(data)[0];
-                    const val = data[firstKey];
-                    if (Array.isArray(val) && val.length > 0) {
-                        errorText = `${firstKey}: ${val[0]}`;
-                    } else if (typeof val === 'string') {
-                        errorText = val;
-                    }
-                }
-            }
-            setMessage({ text: errorText, type: 'error' });
+            setMessage({
+                text: getApiErrorMessage(err, 'Could not create field official account. Please check the inputs.'),
+                type: 'error',
+            });
         } finally {
             setSaving(false);
+        }
+    };
+
+    const beginEdit = (staff: StaffMember) => {
+        focusAfterEditTransitionId.current = staff.id;
+        setMessage(null);
+        setEditError(null);
+        setEditingStaffId(staff.id);
+        setEditValues({
+            first_name: staff.first_name,
+            last_name: staff.last_name,
+            email: staff.email,
+        });
+    };
+
+    const cancelEdit = (staffId: number) => {
+        focusAfterEditTransitionId.current = staffId;
+        setEditingStaffId(null);
+        setEditValues(null);
+        setEditError(null);
+    };
+
+    const submitEdit = async (event: FormEvent<HTMLFormElement>, staff: StaffMember) => {
+        event.preventDefault();
+        if (!editValues) return;
+
+        setEditSaving(true);
+        setEditError(null);
+        try {
+            const payload = {
+                first_name: editValues.first_name.trim(),
+                last_name: editValues.last_name.trim(),
+                email: editValues.email.trim().toLowerCase(),
+            };
+            const response = await axiosPrivate.patch(`/auth/staff/${staff.id}/`, payload);
+            setStaffList((current) =>
+                current.map((item) => (item.id === staff.id ? response.data : item))
+            );
+            focusAfterEditTransitionId.current = staff.id;
+            setEditingStaffId(null);
+            setEditValues(null);
+            setMessage({ text: `Profile updated for @${staff.username}.`, type: 'success' });
+        } catch (error: unknown) {
+            setEditError(getApiErrorMessage(error, 'Could not update this field official. Please review the details and try again.'));
+        } finally {
+            setEditSaving(false);
         }
     };
 
@@ -232,40 +299,120 @@ export function StaffManagementSettings() {
                         {staffList.map((staff) => (
                             <article
                                 key={staff.id}
-                                className="flex flex-wrap items-center justify-between gap-3 bg-white p-4 hover:bg-slate-50/50 transition-colors"
+                                className="bg-white p-4 hover:bg-slate-50/50 transition-colors"
                             >
-                                <div className="space-y-1">
-                                    <div className="flex items-center gap-2">
-                                        <h4 className="font-semibold text-slate-900 text-sm">{staff.full_name}</h4>
-                                        <span className="text-xs text-slate-400">@{staff.username}</span>
-                                        <span
-                                            className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                                                staff.is_active
-                                                    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
-                                                    : 'bg-slate-100 text-slate-600 border border-slate-200'
-                                            }`}
-                                        >
-                                            {staff.is_active ? 'Active' : 'Deactivated'}
-                                        </span>
+                                {editingStaffId === staff.id && editValues ? (
+                                    <form onSubmit={(event) => void submitEdit(event, staff)} className="space-y-4" aria-busy={editSaving}>
+                                        <div className="flex flex-wrap items-center gap-2">
+                                            <h4 className="font-semibold text-slate-900 text-sm">Edit {staff.full_name}</h4>
+                                            <span className="text-xs text-slate-500">Username @{staff.username} cannot be changed here.</span>
+                                        </div>
+                                        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+                                            <label className="text-sm font-medium text-slate-700">
+                                                First Name for @{staff.username}
+                                                <input
+                                                    ref={editFirstNameInputRef}
+                                                    className={inputClass}
+                                                    value={editValues.first_name}
+                                                    onChange={(event) => setEditValues({ ...editValues, first_name: event.target.value })}
+                                                    disabled={editSaving}
+                                                    maxLength={150}
+                                                    required
+                                                    autoComplete="given-name"
+                                                />
+                                            </label>
+                                            <label className="text-sm font-medium text-slate-700">
+                                                Last Name for @{staff.username}
+                                                <input
+                                                    className={inputClass}
+                                                    value={editValues.last_name}
+                                                    onChange={(event) => setEditValues({ ...editValues, last_name: event.target.value })}
+                                                    disabled={editSaving}
+                                                    maxLength={150}
+                                                    required
+                                                    autoComplete="family-name"
+                                                />
+                                            </label>
+                                            <label className="text-sm font-medium text-slate-700">
+                                                Email Address for @{staff.username}
+                                                <input
+                                                    type="email"
+                                                    className={inputClass}
+                                                    value={editValues.email}
+                                                    onChange={(event) => setEditValues({ ...editValues, email: event.target.value })}
+                                                    disabled={editSaving}
+                                                    maxLength={254}
+                                                    required
+                                                    autoComplete="email"
+                                                />
+                                            </label>
+                                        </div>
+                                        {editError && <p role="alert" className="text-sm text-red-700">{editError}</p>}
+                                        <div className="flex flex-wrap gap-2">
+                                            <button
+                                                type="submit"
+                                                disabled={editSaving}
+                                                className="min-h-11 rounded-md bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground outline-none transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                                            >
+                                                {editSaving ? 'Saving…' : 'Save Changes'}
+                                            </button>
+                                            <button
+                                                type="button"
+                                                disabled={editSaving}
+                                                onClick={() => cancelEdit(staff.id)}
+                                                className="min-h-11 rounded-md border border-slate-300 px-4 py-2 text-sm font-semibold text-slate-700 outline-none transition-colors disabled:opacity-50 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                                            >
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </form>
+                                ) : (
+                                    <div className="flex flex-wrap items-center justify-between gap-3">
+                                        <div className="space-y-1">
+                                            <div className="flex flex-wrap items-center gap-2">
+                                                <h4 className="font-semibold text-slate-900 text-sm">{staff.full_name}</h4>
+                                                <span className="text-xs text-slate-400">@{staff.username}</span>
+                                                <span
+                                                    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${
+                                                        staff.is_active
+                                                            ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
+                                                            : 'bg-slate-100 text-slate-600 border border-slate-200'
+                                                    }`}
+                                                >
+                                                    {staff.is_active ? 'Active' : 'Deactivated'}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-slate-500 break-all">{staff.email}</p>
+                                        </div>
+                                        <div className="flex flex-wrap gap-2">
+                                            <button
+                                                type="button"
+                                                ref={(button) => { editButtonRefs.current[staff.id] = button; }}
+                                                onClick={() => beginEdit(staff)}
+                                                className="min-h-11 rounded-md border border-slate-300 px-3 py-1.5 text-xs font-semibold text-slate-700 outline-none transition-colors hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2"
+                                                aria-label={`Edit ${staff.full_name}`}
+                                            >
+                                                Edit
+                                            </button>
+                                            <button
+                                                type="button"
+                                                disabled={togglingId === staff.id}
+                                                onClick={() => void toggleStatus(staff)}
+                                                className={`min-h-11 min-w-11 rounded-md border px-3 py-1.5 text-xs font-semibold outline-none transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
+                                                    staff.is_active
+                                                        ? 'border-red-200 text-red-700 hover:bg-red-50'
+                                                        : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'
+                                                }`}
+                                            >
+                                                {togglingId === staff.id
+                                                    ? 'Updating…'
+                                                    : staff.is_active
+                                                    ? 'Deactivate'
+                                                    : 'Activate'}
+                                            </button>
+                                        </div>
                                     </div>
-                                    <p className="text-xs text-slate-500">{staff.email}</p>
-                                </div>
-                                <button
-                                    type="button"
-                                    disabled={togglingId === staff.id}
-                                    onClick={() => void toggleStatus(staff)}
-                                    className={`min-h-11 min-w-11 rounded-md border px-3 py-1.5 text-xs font-semibold outline-none transition-colors disabled:opacity-50 focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 ${
-                                        staff.is_active
-                                            ? 'border-red-200 text-red-700 hover:bg-red-50'
-                                            : 'border-emerald-200 text-emerald-700 hover:bg-emerald-50'
-                                    }`}
-                                >
-                                    {togglingId === staff.id
-                                        ? 'Updating…'
-                                        : staff.is_active
-                                        ? 'Deactivate'
-                                        : 'Activate'}
-                                </button>
+                                )}
                             </article>
                         ))}
                     </div>
