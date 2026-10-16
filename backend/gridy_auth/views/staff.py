@@ -15,6 +15,7 @@ from gridy_auth.models import RefreshSession, User
 from gridy_auth.serializers.staff import (
     StaffUserCreateSerializer,
     StaffUserListSerializer,
+    StaffUserUpdateSerializer,
 )
 from gridy_auth.tasks import send_field_official_setup_email
 
@@ -36,12 +37,13 @@ class IsAssignedBarangayAdmin(permissions.BasePermission):
 class StaffManagementViewSet(
     mixins.ListModelMixin,
     mixins.CreateModelMixin,
+    mixins.UpdateModelMixin,
     viewsets.GenericViewSet,
 ):
     """
     Administrative management for Barangay Field Officials.
-    Allows authenticated Barangay Admins to provision, list, and toggle
-    active status of field officers strictly within their own Barangay.
+    Allows authenticated Barangay Admins to provision, list, edit allowed
+    profile fields, and toggle active status strictly within their Barangay.
     """
     permission_classes = [permissions.IsAuthenticated, IsAssignedBarangayAdmin]
     throttle_classes = [ScopedRateThrottle]
@@ -62,6 +64,8 @@ class StaffManagementViewSet(
     def get_serializer_class(self):
         if self.action == "create":
             return StaffUserCreateSerializer
+        if self.action in {"update", "partial_update"}:
+            return StaffUserUpdateSerializer
         return StaffUserListSerializer
 
     @extend_schema(
@@ -133,6 +137,57 @@ class StaffManagementViewSet(
 
         read_serializer = StaffUserListSerializer(user)
         return Response(read_serializer.data, status=status.HTTP_201_CREATED)
+
+    @extend_schema(
+        summary="Update Field Official Profile",
+        description=(
+            "Updates a Field Official's first name, last name, and/or email. "
+            "The target must belong to the authenticated Admin's Barangay. "
+            "Username, role, Barangay, password, and privilege fields cannot be changed here."
+        ),
+        request=StaffUserUpdateSerializer,
+        responses={
+            200: StaffUserListSerializer,
+            400: OpenApiResponse(description="Invalid profile fields or disallowed request fields."),
+            404: OpenApiResponse(description="Field Official not found in administrator's Barangay."),
+        },
+    )
+    def update(self, request, *args, **kwargs):
+        response = super().update(request, *args, **kwargs)
+        response.data = StaffUserListSerializer(self.get_object()).data
+        return response
+
+    @extend_schema(
+        summary="Partially Update Field Official Profile",
+        description=(
+            "Updates a Field Official's first name, last name, and/or email. "
+            "The target must belong to the authenticated Admin's Barangay. "
+            "Username, role, Barangay, password, and privilege fields cannot be changed here."
+        ),
+        request=StaffUserUpdateSerializer,
+        responses={
+            200: StaffUserListSerializer,
+            400: OpenApiResponse(description="Invalid profile fields or disallowed request fields."),
+            404: OpenApiResponse(description="Field Official not found in administrator's Barangay."),
+        },
+    )
+    def partial_update(self, request, *args, **kwargs):
+        return super().partial_update(request, *args, **kwargs)
+
+    def perform_update(self, serializer):
+        target = serializer.instance
+        changed_fields = sorted(serializer.validated_data)
+        with transaction.atomic():
+            serializer.save()
+            log_action(
+                user=self.request.user,
+                action_type=AuditLog.ActionType.USER_ACTION,
+                description=(
+                    f"Admin {self.request.user.username} updated profile fields "
+                    f"{', '.join(changed_fields)} for field official '{target.username}'."
+                ),
+                request=self.request,
+            )
 
     @extend_schema(
         summary="Toggle Field Official Active Status",

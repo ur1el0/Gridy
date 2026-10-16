@@ -84,3 +84,59 @@ class StaffUserCreateSerializer(serializers.Serializer):
             )
 
         return attrs
+
+
+class StaffUserUpdateSerializer(serializers.Serializer):
+    """Validate the small set of profile fields a Barangay Admin may edit."""
+
+    def __init__(self, *args, **kwargs):
+        partial = kwargs.get("partial", False)
+        super().__init__(*args, **kwargs)
+        if not partial:
+            for field_name in ("first_name", "last_name", "email"):
+                self.fields[field_name].required = True
+
+    first_name = serializers.CharField(
+        required=False,
+        min_length=1,
+        max_length=150,
+        trim_whitespace=True,
+    )
+    last_name = serializers.CharField(
+        required=False,
+        min_length=1,
+        max_length=150,
+        trim_whitespace=True,
+    )
+    email = serializers.EmailField(required=False, max_length=254)
+
+    def update(self, instance, validated_data):
+        for field, value in validated_data.items():
+            setattr(instance, field, value)
+        instance.save(update_fields=list(validated_data.keys()))
+        return instance
+
+    def validate(self, attrs):
+        if isinstance(self.initial_data, Mapping):
+            allowed_fields = {"first_name", "last_name", "email"}
+            disallowed = set(self.initial_data.keys()) - allowed_fields
+            if disallowed:
+                raise serializers.ValidationError(
+                    f"Disallowed fields in request payload: {', '.join(sorted(disallowed))}."
+                )
+
+        if not attrs:
+            raise serializers.ValidationError(
+                {"detail": "Provide at least one profile field to update."}
+            )
+
+        email = attrs.get("email")
+        if email is not None:
+            email = email.strip().lower()
+            if User.objects.filter(email__iexact=email).exclude(pk=self.instance.pk).exists():
+                raise serializers.ValidationError(
+                    {"email": "A user with that email address already exists."}
+                )
+            attrs["email"] = email
+
+        return attrs

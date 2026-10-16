@@ -7,6 +7,7 @@ vi.mock('../../api/axios', () => ({
     axiosPrivate: {
         get: vi.fn(),
         post: vi.fn(),
+        patch: vi.fn(),
     },
 }));
 
@@ -103,5 +104,106 @@ describe('StaffManagementSettings', () => {
         expect(await screen.findByRole('alert')).toHaveTextContent('Could not load field officials list.');
         expect(screen.queryByText('No field officials registered yet')).not.toBeInTheDocument();
         expect(screen.getByRole('button', { name: 'Register Field Official' })).toBeEnabled();
+    });
+
+    it('edits allowed profile fields and updates the displayed row from the response', async () => {
+        const staff = {
+            id: 15,
+            username: 'tanod_juan',
+            email: 'juan@barangay.gov.ph',
+            first_name: 'Juan',
+            last_name: 'Dela Cruz',
+            full_name: 'Juan Dela Cruz',
+            role: 'FIELD_OFFICIAL',
+            is_active: true,
+            date_joined: '2026-10-15T08:00:00Z',
+            last_login: null,
+        };
+        const updated = {
+            ...staff,
+            email: 'juan.new@barangay.gov.ph',
+            first_name: 'Juan Miguel',
+            full_name: 'Juan Miguel Dela Cruz',
+        };
+        vi.mocked(axiosPrivate.get).mockResolvedValueOnce({ data: [staff] } as never);
+        vi.mocked(axiosPrivate.patch).mockResolvedValueOnce({ data: updated } as never);
+
+        render(<StaffManagementSettings />);
+        await screen.findByText('Juan Dela Cruz');
+        fireEvent.click(screen.getByRole('button', { name: 'Edit Juan Dela Cruz' }));
+        expect(screen.getByLabelText('First Name for @tanod_juan')).toHaveFocus();
+
+        fireEvent.change(screen.getByLabelText('First Name for @tanod_juan'), { target: { value: 'Juan Miguel' } });
+        fireEvent.change(screen.getByLabelText('Email Address for @tanod_juan'), { target: { value: 'JUAN.NEW@BARANGAY.GOV.PH' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+
+        await waitFor(() => {
+            expect(axiosPrivate.patch).toHaveBeenCalledWith('/auth/staff/15/', {
+                first_name: 'Juan Miguel',
+                last_name: 'Dela Cruz',
+                email: 'juan.new@barangay.gov.ph',
+            });
+        });
+        expect(await screen.findByText('Juan Miguel Dela Cruz')).toBeInTheDocument();
+        expect(screen.getByText('juan.new@barangay.gov.ph')).toBeInTheDocument();
+        expect(screen.getByRole('alert')).toHaveTextContent('Profile updated for @tanod_juan.');
+        expect(screen.queryByLabelText('Email Address for @tanod_juan')).not.toBeInTheDocument();
+    });
+
+    it('discards staged profile changes on cancel without sending a request', async () => {
+        const staff = {
+            id: 16,
+            username: 'tanod_maria',
+            email: 'maria@barangay.gov.ph',
+            first_name: 'Maria',
+            last_name: 'Santos',
+            full_name: 'Maria Santos',
+            role: 'FIELD_OFFICIAL',
+            is_active: true,
+            date_joined: '2026-10-15T08:00:00Z',
+            last_login: null,
+        };
+        vi.mocked(axiosPrivate.get).mockResolvedValueOnce({ data: [staff] } as never);
+
+        render(<StaffManagementSettings />);
+        await screen.findByText('Maria Santos');
+        fireEvent.click(screen.getByRole('button', { name: 'Edit Maria Santos' }));
+        fireEvent.change(screen.getByLabelText('First Name for @tanod_maria'), { target: { value: 'Changed Draft' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Cancel' }));
+
+        expect(axiosPrivate.patch).not.toHaveBeenCalled();
+        expect(screen.getByText('Maria Santos')).toBeInTheDocument();
+        expect(screen.queryByText('Changed Draft')).not.toBeInTheDocument();
+        expect(screen.queryByLabelText('First Name for @tanod_maria')).not.toBeInTheDocument();
+        expect(screen.getByRole('button', { name: 'Edit Maria Santos' })).toHaveFocus();
+    });
+
+    it('keeps the editor open and announces a server error when saving fails', async () => {
+        const staff = {
+            id: 17,
+            username: 'tanod_pedro',
+            email: 'pedro@barangay.gov.ph',
+            first_name: 'Pedro',
+            last_name: 'Reyes',
+            full_name: 'Pedro Reyes',
+            role: 'FIELD_OFFICIAL',
+            is_active: false,
+            date_joined: '2026-10-15T08:00:00Z',
+            last_login: null,
+        };
+        vi.mocked(axiosPrivate.get).mockResolvedValueOnce({ data: [staff] } as never);
+        vi.mocked(axiosPrivate.patch).mockRejectedValueOnce({
+            response: { data: { email: ['A user with that email address already exists.'] } },
+        });
+
+        render(<StaffManagementSettings />);
+        await screen.findByText('Pedro Reyes');
+        fireEvent.click(screen.getByRole('button', { name: 'Edit Pedro Reyes' }));
+        fireEvent.change(screen.getByLabelText('Email Address for @tanod_pedro'), { target: { value: 'duplicate@example.com' } });
+        fireEvent.click(screen.getByRole('button', { name: 'Save Changes' }));
+
+        expect(await screen.findByRole('alert')).toHaveTextContent('email: A user with that email address already exists.');
+        expect(screen.getByLabelText('Email Address for @tanod_pedro')).toHaveValue('duplicate@example.com');
+        expect(screen.getByRole('button', { name: 'Cancel' })).toBeInTheDocument();
     });
 });

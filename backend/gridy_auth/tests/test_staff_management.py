@@ -113,16 +113,34 @@ class TestStaffManagementPermissions:
     def test_anonymous_caller_receives_401(self, api_client):
         response = api_client.get("/api/v1/auth/staff/")
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        update_response = api_client.patch(
+            "/api/v1/auth/staff/1/",
+            {"first_name": "Changed"},
+            format="json",
+        )
+        assert update_response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_resident_caller_receives_403(self, api_client, resident_a):
         api_client.force_authenticate(user=resident_a)
         response = api_client.get("/api/v1/auth/staff/")
         assert response.status_code == status.HTTP_403_FORBIDDEN
+        update_response = api_client.patch(
+            "/api/v1/auth/staff/1/",
+            {"first_name": "Changed"},
+            format="json",
+        )
+        assert update_response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_field_official_caller_receives_403(self, api_client, field_official_a):
         api_client.force_authenticate(user=field_official_a)
         response = api_client.get("/api/v1/auth/staff/")
         assert response.status_code == status.HTTP_403_FORBIDDEN
+        update_response = api_client.patch(
+            f"/api/v1/auth/staff/{field_official_a.id}/",
+            {"first_name": "Changed"},
+            format="json",
+        )
+        assert update_response.status_code == status.HTTP_403_FORBIDDEN
 
     def test_admin_without_barangay_receives_403(self, api_client):
         unassigned_admin = User.objects.create_user(
@@ -361,3 +379,154 @@ class TestStaffManagementEndpoints:
         toggle_url = f"/api/v1/auth/staff/{resident_a.id}/toggle-status/"
         response = api_client.post(toggle_url)
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_admin_can_update_same_barangay_staff_profile_and_audit_field_names_only(
+        self, api_client, admin_a, field_official_a
+    ):
+        api_client.force_authenticate(user=admin_a)
+        response = api_client.patch(
+            f"/api/v1/auth/staff/{field_official_a.id}/",
+            {
+                "first_name": "Maria",
+                "last_name": "Santos",
+                "email": "MARIA.SANTOS@EXAMPLE.COM",
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["first_name"] == "Maria"
+        assert response.data["last_name"] == "Santos"
+        assert response.data["email"] == "maria.santos@example.com"
+        assert response.data["username"] == field_official_a.username
+        assert response.data["role"] == User.Role.FIELD_OFFICIAL
+
+        field_official_a.refresh_from_db()
+        assert field_official_a.first_name == "Maria"
+        assert field_official_a.last_name == "Santos"
+        assert field_official_a.email == "maria.santos@example.com"
+        assert field_official_a.barangay_id == admin_a.barangay_id
+
+        audit = AuditLog.objects.filter(
+            action_by=admin_a,
+            action_type=AuditLog.ActionType.USER_ACTION,
+        ).latest("timestamp")
+        assert field_official_a.username in audit.description
+        assert "first_name" in audit.description
+        assert "last_name" in audit.description
+        assert "email" in audit.description
+        assert "Maria" not in audit.description
+        assert "Santos" not in audit.description
+        assert "maria.santos@example.com" not in audit.description
+
+    def test_admin_can_retain_staff_member_own_email_case_insensitively(
+        self, api_client, admin_a, field_official_a
+    ):
+        api_client.force_authenticate(user=admin_a)
+        response = api_client.patch(
+            f"/api/v1/auth/staff/{field_official_a.id}/",
+            {"email": field_official_a.email.upper()},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["email"] == field_official_a.email.lower()
+
+    def test_admin_can_replace_full_editable_profile_with_put(self, api_client, admin_a, field_official_a):
+        api_client.force_authenticate(user=admin_a)
+        response = api_client.put(
+            f"/api/v1/auth/staff/{field_official_a.id}/",
+            {
+                "first_name": "Updated",
+                "last_name": "Official",
+                "email": "updated.official@example.com",
+            },
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["first_name"] == "Updated"
+        assert response.data["last_name"] == "Official"
+        assert response.data["email"] == "updated.official@example.com"
+
+    def test_admin_cannot_update_staff_with_duplicate_email(
+        self, api_client, admin_a, field_official_a, field_official_b
+    ):
+        api_client.force_authenticate(user=admin_a)
+        response = api_client.patch(
+            f"/api/v1/auth/staff/{field_official_a.id}/",
+            {"email": field_official_b.email.upper()},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "email" in response.data
+
+    def test_staff_update_rejects_empty_or_invalid_values(self, api_client, admin_a, field_official_a):
+        api_client.force_authenticate(user=admin_a)
+        url = f"/api/v1/auth/staff/{field_official_a.id}/"
+
+        empty_response = api_client.patch(url, {}, format="json")
+        blank_name_response = api_client.patch(url, {"first_name": "   "}, format="json")
+        invalid_email_response = api_client.patch(url, {"email": "not-an-email"}, format="json")
+
+        assert empty_response.status_code == status.HTTP_400_BAD_REQUEST
+        assert blank_name_response.status_code == status.HTTP_400_BAD_REQUEST
+        assert invalid_email_response.status_code == status.HTTP_400_BAD_REQUEST
+
+        # PUT is a full replacement and therefore requires every editable field.
+        incomplete_put = api_client.put(
+            url,
+            {"first_name": "Replacement"},
+            format="json",
+        )
+        assert incomplete_put.status_code == status.HTTP_400_BAD_REQUEST
+
+    @pytest.mark.parametrize(
+        "field,value",
+        [
+            ("username", "new_username"),
+            ("role", User.Role.ADMIN),
+            ("barangay", 999),
+            ("barangay_id", 999),
+            ("is_staff", True),
+            ("is_superuser", True),
+            ("password", "NewPassword123!"),
+        ],
+    )
+    def test_staff_update_rejects_identity_tenant_and_security_fields(
+        self, api_client, admin_a, field_official_a, field, value
+    ):
+        api_client.force_authenticate(user=admin_a)
+        response = api_client.patch(
+            f"/api/v1/auth/staff/{field_official_a.id}/",
+            {"first_name": "Allowed", field: value},
+            format="json",
+        )
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "Disallowed fields" in str(response.data)
+
+    def test_admin_cannot_edit_staff_from_another_barangay_or_other_role(
+        self, api_client, admin_a, field_official_b, resident_a
+    ):
+        api_client.force_authenticate(user=admin_a)
+        cross_barangay = api_client.patch(
+            f"/api/v1/auth/staff/{field_official_b.id}/",
+            {"first_name": "Intruded"},
+            format="json",
+        )
+        wrong_role = api_client.patch(
+            f"/api/v1/auth/staff/{resident_a.id}/",
+            {"first_name": "Intruded"},
+            format="json",
+        )
+
+        assert cross_barangay.status_code == status.HTTP_404_NOT_FOUND
+        assert wrong_role.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_staff_management_does_not_expose_hard_delete(self, api_client, admin_a, field_official_a):
+        api_client.force_authenticate(user=admin_a)
+        response = api_client.delete(f"/api/v1/auth/staff/{field_official_a.id}/")
+
+        assert response.status_code == status.HTTP_405_METHOD_NOT_ALLOWED
