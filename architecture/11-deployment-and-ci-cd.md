@@ -2,19 +2,17 @@
 
 ## 1. Hosting Infrastructure & Origin Topology
 
-The repository is configured for an intended **Same-Origin Reverse Proxy Architecture** for web production. The names and settings below describe the configured target, not proof that a live deployment currently uses them. Verify the active deployment and forwarded headers before relying on runtime behavior.
+The current deployment provider stack is **Vercel** for the web app, **Render** for the Django API, **Neon** for PostgreSQL, and **Cloudinary** for uploaded media. Firebase Cloud Messaging provides mobile push notifications. Check provider dashboards for current service health, custom domains, and environment values before a release.
 
-*   **Backend & Database:** Intended for **Render.com** with PostgreSQL. Confirm the active service, database, and deploy branch in the provider before treating this as live topology.
-*   **Frontend Web Application:** Intended for **Vercel** as a single-page application (SPA). Confirm active domains and project settings in the provider.
-    *   **Frontend-origin example in the backend configuration:** `https://gridy.vercel.app`
+*   **Backend API:** Django is hosted on Render. The checked-in API rewrite target is `https://gridy.onrender.com`.
+*   **Production Database:** Neon PostgreSQL, connected to Django through the Render service's `DATABASE_URL` setting.
+*   **Frontend Web Application:** The React single-page application is hosted on Vercel. Use the Vercel project settings to confirm which domains are currently assigned.
 *   **Reverse Proxy Contract:**
-    *   Vercel Edge Rewrites (`frontend/vercel.json`): The checked-in rewrite currently targets `https://gridy.onrender.com/api/v1/:path*`.
+    *   Vercel Edge Rewrites (`frontend/vercel.json`): Rewrites `/api/v1/:path*` requests to `https://gridy.onrender.com/api/v1/:path*`.
     *   Containerized Stack (`frontend/nginx.conf`): Nginx reverse proxies `/api/` traffic directly to `http://backend:8000`.
-    *   Client URL Resolution (`frontend/src/api/axios.ts`): Resolves `VITE_API_BASE_URL` to relative `/api/v1` in production when unset. Any configured environment variable overrides this fallback.
+    *   Client URL Resolution (`frontend/src/api/axios.ts`): Uses relative `/api/v1` in production. The Vite development server uses `VITE_API_BASE_URL` when configured and otherwise defaults to `http://localhost:8000/api/v1`.
 
-### Configuration drift to resolve
-
-The checked-in frontend rewrite targets `gridy.onrender.com`, while `backend/.env.example` uses `gridy-backend.onrender.com` for `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS`. These are inconsistent configuration examples. Verify the actual Render hostname and forwarded `Host`/`Origin` headers, then align the frontend rewrite and backend allowlists before a production release. This documentation records the discrepancy; it does not claim that either hostname is the live service.
+The checked-in Vercel rewrite targets `gridy.onrender.com`, while `backend/.env.example` retains older Render and Vercel hostnames. Set production `ALLOWED_HOSTS` and `CSRF_TRUSTED_ORIGINS` explicitly in Render to match the active API and Vercel domains. Render's `RENDER_EXTERNAL_HOSTNAME` is also added to `ALLOWED_HOSTS` at runtime.
 
 ### Release migration gate
 
@@ -36,8 +34,8 @@ Under this configured topology, web browser traffic targets `/api/v1` on the fro
     *   `HttpOnly=True`: Inaccessible to JavaScript memory (`localStorage`/`sessionStorage`).
     *   `Secure=True`: Enforced automatically in production when `DEBUG=False`.
 *   **Host & Origin Allowlists (Backend):**
-    *   `ALLOWED_HOSTS`: The example config includes `gridy-backend.onrender.com` and Django may append `RENDER_EXTERNAL_HOSTNAME`. Reconcile this with the Vercel rewrite destination above; do not assume the example matches the active service.
-    *   `CSRF_TRUSTED_ORIGINS`: The example lists `https://gridy.vercel.app` and `https://gridy-backend.onrender.com`, plus development origins when `DEBUG=True`. Arbitrary platform subdomains are not trusted. Confirm the actual origins for the deployed frontend and backend.
+    *   `ALLOWED_HOSTS`: The checked-in environment example retains the older `gridy-backend.onrender.com` hostname. Django also adds `RENDER_EXTERNAL_HOSTNAME` when Render provides it; set the production value to the active API hostname. Broad platform wildcards (`.onrender.com`, `.vercel.app`) are not used.
+    *   `CSRF_TRUSTED_ORIGINS`: The checked-in environment example retains older `gridy.vercel.app` and `gridy-backend.onrender.com` origins. Set production values to the exact origins used by the deployed web/API configuration; development origins are added when `DEBUG=True`. Arbitrary platform subdomains are not trusted.
     *   `CORS Policy`: Web browser clients communicate via the same-origin reverse proxy and do not invoke CORS. Native mobile applications (Flutter) do not run within a browser sandbox and do not use CORS. Broad production regexes are removed; `CORS_ALLOWED_ORIGINS` accepts only explicitly configured origins.
 
 ---
@@ -76,5 +74,5 @@ The CI DNS-reconnect smoke uses disposable PostgreSQL containers and Docker's em
 ## 4. Mobile Distribution
 
 *   The Flutter application can be built into an Android `.apk` (and, with the required signing and platform setup, an iOS `.ipa`).
-*   Mobile clients connect directly to the verified API endpoint via `--dart-define=API_BASE_URL`. Do not copy the current environment example hostname until the Vercel/Render hostname mismatch is reconciled. Because native clients are not subject to browser origin controls, they do not require or use CORS permissions.
+*   Mobile clients connect directly to `https://gridy.onrender.com/api/v1` via `--dart-define=API_BASE_URL`. Because native clients are not subject to browser origin controls, they do not require or use CORS permissions.
 *   GitHub Releases or Firebase App Distribution can be evaluated for staged APK distribution. A release or distribution channel must be verified separately for each build.
