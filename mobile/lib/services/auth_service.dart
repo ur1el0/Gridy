@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
 import 'package:image_picker/image_picker.dart';
@@ -345,6 +346,30 @@ class AuthService {
     final cleanBase = AppConfig.baseUrl.replaceAll(RegExp(r'/+$'), '');
     final cleanPath = relativePath.replaceAll(RegExp(r'^/+'), '');
     return '$cleanBase/$cleanPath';
+  }
+
+  /// Downloads private resident evidence through the authenticated API client.
+  ///
+  /// Using ApiClient preserves the normal Bearer header and refresh-and-retry
+  /// behavior for expired access tokens.
+  Future<Uint8List> fetchPrivateMedia(String relativePath) async {
+    final response = await apiClient.get(
+      relativePath,
+      headers: const {'Accept': 'image/*'},
+      requiresAuth: true,
+    );
+    final contentType = response.headers['content-type']
+        ?.split(';')
+        .first
+        .trim()
+        .toLowerCase();
+    if (contentType == null || !contentType.startsWith('image/')) {
+      throw ApiException(
+        'The server did not return an image.',
+        statusCode: response.statusCode,
+      );
+    }
+    return response.bodyBytes;
   }
 
   /// Renew expired JWT access token using the backend refresh endpoint
