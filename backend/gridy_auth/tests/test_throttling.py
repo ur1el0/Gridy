@@ -42,7 +42,7 @@ class AuthScopedThrottleTests(IsolatedAuthAPITestCase):
             '10/hour',
         )
         self.assertEqual(
-            ScopedRateThrottle.THROTTLE_RATES['staff_management'],
+            SharedDatabaseScopedRateThrottle.THROTTLE_RATES['staff_management'],
             '30/minute',
         )
 

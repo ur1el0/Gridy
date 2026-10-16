@@ -73,5 +73,5 @@ The CI DNS-reconnect smoke uses disposable PostgreSQL containers and Docker's em
 ## 4. Mobile Distribution
 
 *   The Flutter application compiles into an Android `.apk` (and optionally an iOS `.ipa`).
-*   Mobile clients connect directly to the API endpoint (`https://gridy-backend.onrender.com/api/v1`) via `--dart-define=API_BASE_URL`. Because mobile HTTP clients are not subject to browser origin controls, they do not require or use CORS permissions.
+*   Mobile clients connect directly to the API endpoint (`https://gridy.onrender.com/api/v1`) via `--dart-define=API_BASE_URL`. Because mobile HTTP clients are not subject to browser origin controls, they do not require or use CORS permissions.
 *   For staged LGU field rollouts, direct APK distribution via GitHub Releases or Firebase App Distribution is utilized.
