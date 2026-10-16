@@ -25,7 +25,7 @@ Start at the [documentation index](docs/README.md) for current architecture, dec
 
 Requirements: Docker Compose and Git.
 
-1. Copy the example files and set a local-only PostgreSQL password plus a matching `DATABASE_URL` in `.env`:
+1. Copy the example files. Set a local-only PostgreSQL password and a Compose database URL in the root `.env` (host `db`, port `5432`, database `gridy_db`, user `gridy_user`):
 
    ```bash
    cp .env.example .env
@@ -45,17 +45,25 @@ Compose starts PostgreSQL, runs migrations in a one-shot service, then starts Dj
 
 ### Backend
 
+This runs Django directly on the computer. If using PostgreSQL, the database can stay in the local Compose container. From the repository root, create the ignored environment files if needed:
+
+```bash
+cp .env.example .env
+cp backend/.env.example backend/.env
+```
+
+Set a local `SECRET_KEY` in `backend/.env` and set its `DATABASE_URL` to use host `127.0.0.1`, port `5433`, database `gridy_db`, and user `gridy_user`. Set the same local database password in the root `.env` as `POSTGRES_PASSWORD`, then start only the local database with `docker compose up -d db`. Keep these credentials separate from Neon or any other production database.
+
 ```bash
 python3.12 -m venv venv
 source venv/bin/activate
 pip install -r backend/requirements.txt
-cp backend/.env.example backend/.env
 python backend/manage.py migrate
 python backend/manage.py check
-python backend/manage.py runserver
+python backend/manage.py runserver 0.0.0.0:8000
 ```
 
-Configure a local `SECRET_KEY` and development database in the ignored `backend/.env`. Do not run seed or demo commands against deployed databases; each command's explicit safety options and environment guards must be respected.
+Run migrations only against the configured local URL. Do not run seed or demo commands against deployed databases.
 
 ### Web
 
@@ -70,10 +78,19 @@ npm run dev
 ```bash
 cd mobile
 flutter pub get
-flutter run
+flutter devices
 ```
 
-Configure the mobile API URL for the device/emulator using the supported build define. Do not embed provider credentials in a client build.
+For an Android emulator, run `flutter run -d emulator-5554` (replace the example ID with the one shown by `flutter devices`); debug builds default to the host API at `10.0.2.2:8000`. For a physical Android phone over USB, keep the local API running, forward its port, and launch with the forwarded URL:
+
+```bash
+adb devices
+adb reverse tcp:8000 tcp:8000
+cd mobile
+flutter run -d DEVICE_ID --dart-define=API_BASE_URL=http://127.0.0.1:8000/api/v1
+```
+
+Replace `DEVICE_ID` with the ID shown by `flutter devices`. For Wi-Fi testing, use the laptop LAN IP in the API URL (for example, `http://192.168.1.25:8000/api/v1`), bind Django to `0.0.0.0:8000`, add the LAN IP to `ALLOWED_HOSTS`, and allow port `8000` through the local firewall. Do not embed provider credentials in a client build. See [mobile setup](mobile/README.md) and the [mobile barangay pilot test flow](docs/testing/mobile-barangay-pilot-flow.md).
 
 ## Verification commands
 
