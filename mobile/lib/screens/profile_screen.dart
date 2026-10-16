@@ -171,14 +171,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
     required String title,
     required String relativeUrl,
   }) {
-    final mediaUrl = widget.authService.getAuthenticatedMediaUrl(relativeUrl);
-    final token = widget.authService.storageService.getAccessToken();
-
     ResidentEvidenceViewerDialog.show(
       context,
       title: title,
-      mediaUrl: mediaUrl,
-      token: token,
+      loadImage: () => widget.authService.fetchPrivateMedia(relativeUrl),
     );
   }
 
