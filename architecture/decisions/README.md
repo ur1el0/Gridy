@@ -22,7 +22,7 @@ This index lists the decision records present in this repository snapshot. Read 
 | [016](016-shared-database-api-throttling.md) | Shared database API throttling |
 | [017](017-manual-epayment-evidence-and-verification.md) | Manual e-payment evidence and verification |
 | [018](018-explicit-document-fee-assessment-and-waiver-provenance.md) | Explicit fee assessment and waiver provenance |
-| [019](019-public-information-ai-navigator-boundary.md) | Public Information AI Navigator boundary and source eligibility |
+| [019](019-public-information-ai-navigator-boundary.md) | Retired: former Public Information AI Navigator boundary |
 
 ## Implementation notes
 

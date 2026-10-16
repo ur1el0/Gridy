@@ -37,37 +37,6 @@ describe('Resident Portal Components', () => {
         expect(screen.getAllByText('Community Bulletin')[0]).toBeInTheDocument();
     });
 
-    it('keeps the Ask Barangay launcher hidden when the navigator build flag is absent', async () => {
-        vi.stubEnv('VITE_PUBLIC_NAVIGATOR_ENABLED', 'false');
-        render(
-            <BrowserRouter>
-                <AuthProvider restoreSession={false}>
-                    <CitizenLayout />
-                </AuthProvider>
-            </BrowserRouter>
-        );
-
-        expect(screen.queryByRole('button', { name: 'Ask Barangay' })).not.toBeInTheDocument();
-        expect(screen.queryByRole('dialog', { name: 'Ask Barangay' })).not.toBeInTheDocument();
-        vi.unstubAllEnvs();
-    });
-
-    it('shows the Ask Barangay launcher only with explicit opt-in', async () => {
-        vi.stubEnv('VITE_PUBLIC_NAVIGATOR_ENABLED', 'true');
-        render(
-            <BrowserRouter>
-                <AuthProvider restoreSession={false}>
-                    <CitizenLayout />
-                </AuthProvider>
-            </BrowserRouter>
-        );
-
-        fireEvent.click(screen.getByRole('button', { name: 'Ask Barangay' }));
-        expect(screen.getByRole('dialog', { name: 'Ask Barangay' })).toBeInTheDocument();
-        expect(screen.getByLabelText('Your question')).toHaveFocus();
-        vi.unstubAllEnvs();
-    });
-
     it('renders empty state when citizen has no active document requests', async () => {
         vi.mocked(axiosPrivate.get)
             .mockResolvedValueOnce({ data: { results: [] } })

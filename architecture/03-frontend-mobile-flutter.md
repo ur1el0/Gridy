@@ -19,9 +19,7 @@ Field Officials use the Flutter client for their supported staff workflow. Baran
 
 ## Network and privacy boundaries
 
-The mobile app calls the Django API using the configured `API_BASE_URL` build value. Do not embed Gemini, Firebase service-account, or other server credentials in the app. Private identity, billing, and payment evidence is accessed through authenticated backend media endpoints; do not construct public storage URLs for it.
-
-The Public Information Navigator entry point is controlled by the `PUBLIC_NAVIGATOR_ENABLED` Dart define and defaults to disabled. Its server-side gate is independent. Navigator requests must contain only the public question, not resident IDs, profile data, or client-selected tenant IDs.
+The mobile app calls the Django API using the configured `API_BASE_URL` build value. Do not embed Firebase service-account or other server credentials in the app. Private identity, billing, and payment evidence is accessed through authenticated backend media endpoints; do not construct public storage URLs for it.
 
 ## Notifications and asynchronous behavior
 

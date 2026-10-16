@@ -22,10 +22,6 @@ Queue tickets and live desk state are exposed through HTTP APIs and refreshed by
 
 Residents can submit incident reports and staff can triage them. Communications include announcements, schedules, FAQs, hotlines, device registration, and staff notifications. Push/email work is best-effort when external credentials are configured; it is not backed by a durable task broker.
 
-## Public Information Navigator
-
-The navigator uses allowlisted public information only, performs deterministic privacy screening, and does not persist prompts or answers. It is disabled by default and calls the provider only from server code. Read [ADR 019](../../architecture/decisions/019-public-information-ai-navigator-boundary.md) before changing this boundary.
-
 ## Contract and verification
 
 The generated OpenAPI schema and endpoint tests define exact payloads and status behavior. See the [API specification guide](api_specification.md); avoid maintaining copied payload samples here.

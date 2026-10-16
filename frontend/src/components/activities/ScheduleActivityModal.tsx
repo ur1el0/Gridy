@@ -14,9 +14,6 @@ export interface ScheduleActivityModalProps {
     description: string;
     setDescription: (val: string) => void;
     isSubmitting: boolean;
-    navigatorAiEnabled?: boolean;
-    setNavigatorAiEnabled?: (val: boolean) => void;
-    canEnableAi?: boolean;
 }
 
 export const ScheduleActivityModal: React.FC<ScheduleActivityModalProps> = ({
@@ -31,9 +28,6 @@ export const ScheduleActivityModal: React.FC<ScheduleActivityModalProps> = ({
     description,
     setDescription,
     isSubmitting,
-    navigatorAiEnabled = false,
-    setNavigatorAiEnabled,
-    canEnableAi = true,
 }) => {
     const activityDialogTitleId = useId();
     const activityDialogRef = useModalFocus<HTMLDivElement>(true, onClose);
@@ -121,35 +115,6 @@ export const ScheduleActivityModal: React.FC<ScheduleActivityModalProps> = ({
                             placeholder="Details about the event..."
                             className="w-full px-4 py-3 bg-slate-50 border border-slate-200 focus:border-primary focus:ring-2 focus:ring-primary/20 rounded-xl text-sm outline-none transition-all resize-none"
                         />
-                    </div>
-
-                    <div className="flex items-start gap-3 p-3 bg-slate-50 rounded-xl border border-slate-100">
-                        <div className="flex items-center h-5">
-                            <input
-                                id="activity-navigator-ai-enabled"
-                                type="checkbox"
-                                checked={navigatorAiEnabled}
-                                disabled={!canEnableAi}
-                                onChange={e => setNavigatorAiEnabled?.(e.target.checked)}
-                                className="h-4 w-4 text-primary-text focus:ring-primary border-slate-300 rounded cursor-pointer disabled:cursor-not-allowed"
-                            />
-                        </div>
-                        <div className="flex flex-col">
-                            <label
-                                htmlFor="activity-navigator-ai-enabled"
-                                className={`text-xs font-bold ${canEnableAi ? 'text-slate-900 cursor-pointer' : 'text-slate-400 cursor-not-allowed'}`}
-                            >
-                                Share with Public AI Navigator
-                            </label>
-                            <span className="text-[11px] text-slate-500">
-                                Allow the Public Information AI Navigator to use this activity schedule as an official source. Opted-in content is screened locally before reaching the configured AI provider. Do not include resident identifiers, personal contact numbers, or private records.
-                            </span>
-                            {!canEnableAi && (
-                                <span className="text-[11px] text-amber-600 font-medium mt-1">
-                                    AI sharing is restricted to authorized same-barangay staff.
-                                </span>
-                            )}
-                        </div>
                     </div>
 
                     <div className="flex justify-end gap-3 pt-4 border-t border-slate-100">

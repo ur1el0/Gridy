@@ -29,7 +29,6 @@ Tenant scope is derived and enforced by the backend. A client-supplied barangay 
 - Digital and in-person queue workflows.
 - Announcements, activities, FAQs, emergency hotlines, and notifications.
 - Assistance requests, incident reports, resident directories, and scoped analytics.
-- Public Information AI Navigator, behind server and client feature flags. Its default is disabled; it is limited to approved public information and must not answer private account questions. See [ADR 019](decisions/019-public-information-ai-navigator-boundary.md).
 
 ## Architecture records
 

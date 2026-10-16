@@ -14,9 +14,9 @@ Depending on role and barangay assignment, staff can process documents and fees,
 
 Residents can use the portal to request documents, follow queue tickets, read community bulletins, and submit assistance requests. Available pages and paths are listed in [Resident Web Portal](citizen_desktop_portal.md).
 
-## Communications and navigator
+## Communications
 
-Staff can publish announcements and generate an announcement share kit. External Facebook distribution remains manual; KapitBayan neither posts automatically nor moderates external comments. The Ask Barangay drawer is feature-flagged and uses the backend API; it does not call a provider directly or persist chat transcripts in browser storage.
+Staff can publish announcements and generate an announcement share kit. External Facebook distribution remains manual; KapitBayan neither posts automatically nor moderates external comments.
 
 ## Document evidence and media
 

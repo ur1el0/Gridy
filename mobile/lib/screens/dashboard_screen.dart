@@ -7,7 +7,6 @@ import 'package:flutter/material.dart';
 import '../core/network/api_client.dart';
 import '../core/theme/app_colors.dart';
 import '../core/theme/app_tokens.dart';
-import '../core/feature_flags.dart';
 import '../models/user_model.dart';
 import '../models/notification_item_model.dart';
 import '../services/auth_service.dart';
@@ -27,7 +26,6 @@ import 'profile_screen.dart';
 import 'my_issues_screen.dart';
 import 'announcements_screen.dart';
 import 'aid_requests_screen.dart';
-import 'navigator_screen.dart';
 
 class DashboardScreen extends StatefulWidget {
   final DashboardService? dashboardService;
@@ -253,7 +251,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                     // 3. Quick Services Action Cards (MOVED UP FOR FAST EMERGENCY & HOTLINE ACCESS)
                     QuickServicesSection(
-                      showAskBarangay: FeatureFlags.publicNavigatorEnabled,
                       onRequestDocument: () {
                         Navigator.of(context).push(
                           MaterialPageRoute(
@@ -290,16 +287,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                           context,
                           MaterialPageRoute(
                             builder: (_) => const AidRequestsScreen(),
-                          ),
-                        );
-                      },
-                      onAskBarangay: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => NavigatorScreen(
-                              apiClient: _dashboardService?.apiClient,
-                            ),
                           ),
                         );
                       },

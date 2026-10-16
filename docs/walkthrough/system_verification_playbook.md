@@ -19,12 +19,10 @@ Use this checklist in a local or disposable test environment. Do not use real re
 4. Record an explicit fee assessment or waiver, manually verify electronic payment against a test transaction, record the O.R., and verify the server-side release gate.
 5. Verify walk-in records keep barangay and treasury history without requiring a synthetic login account.
 
-## Public information and communications
+## Communications
 
-1. Confirm navigator server and client flags remain off unless explicitly enabled for a test environment.
-2. When enabled in a test environment, verify approved public-source citations, privacy abstention, unsupported-query escalation, and graceful provider failure.
-3. Verify announcement sharing creates a shareable link/kit only; KapitBayan does not automatically publish to Facebook or control external comments.
-4. Treat email and push sends as best-effort and verify them only with synthetic accounts and a test provider setup.
+1. Verify announcement sharing creates a shareable link/kit only; KapitBayan does not automatically publish to Facebook or control external comments.
+2. Treat email and push sends as best-effort and verify them only with synthetic accounts and a test provider setup.
 
 ## Checks by layer
 
