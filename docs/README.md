@@ -37,6 +37,7 @@ Use this page to find current system guidance. Source code, migrations, generate
 - [Deployment and observability](walkthrough/deployment_observability.md)
 - [Nginx and web container](walkthrough/nginx_web_server_setup.md)
 - [System verification](walkthrough/system_verification_playbook.md)
+- [Mobile barangay pilot test flow](testing/mobile-barangay-pilot-flow.md)
 
 ## Domain and architecture guidance
 

@@ -1,32 +1,31 @@
-# React + TypeScript + Vite
+# KapitBayan Web Frontend
 
-This template provides a minimal setup to get React working in Vite with HMR and some Oxlint rules.
+The web client is a React, TypeScript, and Vite application for barangay staff and residents.
 
-Currently, two official plugins are available:
+## Local development
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Oxc](https://oxc.rs)
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/)
+Start the local Django API using the [root README host development setup](../README.md#run-clients-without-docker). The Vite development server uses `http://localhost:8000/api/v1` by default. To override the API URL or feature flags, copy the example environment file and edit the values:
 
-## React Compiler
-
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
-
-## Expanding the Oxlint configuration
-
-If you are developing a production application, we recommend enabling type-aware lint rules by installing `oxlint-tsgolint` and editing `.oxlintrc.json`:
-
-```json
-{
-  "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": ["react", "typescript", "oxc"],
-  "options": {
-    "typeAware": true
-  },
-  "rules": {
-    "react/rules-of-hooks": "error",
-    "react/only-export-components": ["warn", { "allowConstantExport": true }]
-  }
-}
+```bash
+cd frontend
+npm ci
+cp .env.example .env
+npm run dev
 ```
 
-See the [Oxlint rules documentation](https://oxc.rs/docs/guide/usage/linter/rules) for the full list of rules and categories.
+`VITE_API_BASE_URL` controls the development API base URL. Production builds use the same-origin `/api/v1` route configured by the deployment, regardless of that development setting. Never place secrets in `VITE_*` variables; Vite embeds them in client-side assets.
+
+## Checks
+
+```bash
+npm run lint
+npm test
+npm run build
+```
+
+## Related project docs
+
+- [Root README and application quickstart](../README.md)
+- [System overview](../architecture/01-system-overview.md)
+- [Security and RBAC](../architecture/09-security-and-rbac.md)
+- [Testing and QA matrix](../architecture/10-testing-and-qa-iso25010.md)

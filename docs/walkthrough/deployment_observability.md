@@ -14,6 +14,8 @@ docker compose up --build
 
 Compose waits for the database health check, applies migrations once, then starts the backend. Do not use the development-server Compose topology as production configuration.
 
+When Django runs directly on the host, the Compose hostname `db` is unavailable. Start only PostgreSQL with `docker compose up -d db`, then configure `backend/.env` with a local-only `DATABASE_URL` using host `127.0.0.1`, port `5433`, database `gridy_db`, and user `gridy_user`. Keep its password aligned with `POSTGRES_PASSWORD` in the root `.env`. Never point host development at Neon or another production database.
+
 ## Health probes
 
 - `GET /api/v1/health/live/` reports whether the Django process can serve a request; it is not a database check.
