@@ -4,6 +4,7 @@ import '../core/network/api_client.dart';
 import '../core/theme/app_colors.dart';
 import '../models/faq_model.dart';
 import '../services/faq_service.dart';
+import 'resident_tutorial_screen.dart';
 
 class ResidentHelpScreen extends StatefulWidget {
   final ApiClient apiClient;
@@ -154,6 +155,17 @@ class _ResidentHelpScreenState extends State<ResidentHelpScreen> {
         backgroundColor: Colors.white,
         foregroundColor: AppColors.primaryNavy,
         elevation: 0,
+        actions: [
+          TextButton.icon(
+            onPressed: () => Navigator.of(context).push(
+              MaterialPageRoute<void>(
+                builder: (_) => const ResidentTutorialScreen(),
+              ),
+            ),
+            icon: const Icon(Icons.menu_book_outlined),
+            label: const Text('Tutorial'),
+          ),
+        ],
       ),
       body: RefreshIndicator(
         onRefresh: _loadFAQs,
@@ -298,6 +310,40 @@ class _ResidentHelpScreenState extends State<ResidentHelpScreen> {
                 ),
               ),
             const SizedBox(height: 18),
+            Card(
+              color: const Color(0xFFEAF2FF),
+              child: Padding(
+                padding: const EdgeInsets.all(16),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Want a step-by-step guide?',
+                      style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Open the simple tutorial for help finding services and using your account.',
+                      style: TextStyle(fontSize: 16, height: 1.5),
+                    ),
+                    const SizedBox(height: 12),
+                    FilledButton.icon(
+                      onPressed: () => Navigator.of(context).push(
+                        MaterialPageRoute<void>(
+                          builder: (_) => const ResidentTutorialScreen(),
+                        ),
+                      ),
+                      icon: const Icon(Icons.menu_book_outlined),
+                      label: const Text('How to use KapitBayan'),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 12),
             const Card(
               child: Padding(
                 padding: EdgeInsets.all(16),

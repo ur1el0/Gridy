@@ -1,6 +1,7 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { CircleHelp, Loader2, Search, ShieldCheck } from 'lucide-react';
+import { CircleHelp, Loader2, Search, ShieldCheck, BookOpen } from 'lucide-react';
 import { axiosPrivate } from '../../api/axios';
+import { Link } from 'react-router-dom';
 
 type ResidentFAQ = {
     id: number;
@@ -81,6 +82,19 @@ export const ResidentHelp: React.FC = () => {
                     Search for help with your account and Barangay services. Local requirements and programs can differ, so check current instructions from your Barangay.
                 </p>
             </header>
+
+            <section className="flex flex-col gap-4 rounded-2xl border border-blue-200 bg-blue-50 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+                <div className="flex items-start gap-3">
+                    <BookOpen className="mt-1 h-6 w-6 shrink-0 text-blue-900" aria-hidden="true" />
+                    <div>
+                        <h2 className="text-lg font-bold text-blue-950">Need a step-by-step guide?</h2>
+                        <p className="mt-1 text-base leading-6 text-blue-950">Open the simple tutorial for help finding services and using your account.</p>
+                    </div>
+                </div>
+                <Link to="/portal/tutorial" className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-lg bg-primary px-4 font-semibold text-primary-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-primary">
+                    How to use KapitBayan
+                </Link>
+            </section>
 
             <section aria-labelledby="faq-list-heading" className="space-y-5 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm sm:p-6">
                 <div>
