@@ -1,13 +1,15 @@
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.test import APITestCase
+
 from gridy_auth.models import Barangay, User
 from gridy_communications.models import FAQ
 
 
 class FAQAPITests(APITestCase):
     def setUp(self):
-        self.barangay = Barangay.objects.create(name="Barangay Test")
+        self.barangay_a = Barangay.objects.create(name="Barangay Test A")
+        self.barangay_b = Barangay.objects.create(name="Barangay Test B")
         self.dilg_admin = User.objects.create_user(
             username="dilg_admin_faq",
             password="SecurePassword123!",
@@ -15,91 +17,202 @@ class FAQAPITests(APITestCase):
             role=User.Role.DILG_ADMIN,
             is_active=True,
         )
-        self.barangay_admin = User.objects.create_user(
-            username="brgy_admin_faq",
+        self.admin_a = User.objects.create_user(
+            username="brgy_admin_faq_a",
             password="SecurePassword123!",
-            email="brgy_admin@example.com",
+            email="brgy_admin_a@example.com",
             role=User.Role.ADMIN,
-            barangay=self.barangay,
+            barangay=self.barangay_a,
             is_active=True,
         )
-        self.resident = User.objects.create_user(
-            username="resident_faq",
+        self.admin_b = User.objects.create_user(
+            username="brgy_admin_faq_b",
             password="SecurePassword123!",
-            email="resident_faq@example.com",
-            role=User.Role.RESIDENT,
-            barangay=self.barangay,
+            email="brgy_admin_b@example.com",
+            role=User.Role.ADMIN,
+            barangay=self.barangay_b,
             is_active=True,
         )
-        self.faq = FAQ.objects.create(
-            question="How do I get a clearance?",
-            answer="Submit a request through the Citizen Portal.",
-            order=1,
+        self.resident_a = User.objects.create_user(
+            username="resident_faq_a",
+            password="SecurePassword123!",
+            email="resident_a@example.com",
+            role=User.Role.RESIDENT,
+            barangay=self.barangay_a,
+            is_active=True,
+        )
+        self.resident_b = User.objects.create_user(
+            username="resident_faq_b",
+            password="SecurePassword123!",
+            email="resident_b@example.com",
+            role=User.Role.RESIDENT,
+            barangay=self.barangay_b,
+            is_active=True,
+        )
+        self.field_official_a = User.objects.create_user(
+            username="field_faq_a",
+            password="SecurePassword123!",
+            email="field_a@example.com",
+            role=User.Role.FIELD_OFFICIAL,
+            barangay=self.barangay_a,
+            is_active=True,
+        )
+
+        self.global_resident = FAQ.objects.create(
+            question="Global resident help?",
+            answer="A general answer.",
+            audience=FAQ.Audience.RESIDENT,
+            category=FAQ.Category.GETTING_STARTED,
+            is_published=True,
+        )
+        self.local_resident_a = FAQ.objects.create(
+            question="How does Barangay A help?",
+            answer="Ask the Barangay A desk.",
+            audience=FAQ.Audience.RESIDENT,
+            category=FAQ.Category.ASSISTANCE,
+            is_published=True,
+            barangay=self.barangay_a,
+        )
+        self.local_draft_a = FAQ.objects.create(
+            question="Draft for Barangay A?",
+            answer="Not published yet.",
+            audience=FAQ.Audience.RESIDENT,
+            category=FAQ.Category.OTHER,
+            is_published=False,
+            barangay=self.barangay_a,
+        )
+        self.local_resident_b = FAQ.objects.create(
+            question="Private Barangay B guidance?",
+            answer="Only Barangay B residents should see this.",
+            audience=FAQ.Audience.RESIDENT,
+            category=FAQ.Category.ASSISTANCE,
+            is_published=True,
+            barangay=self.barangay_b,
+        )
+        self.global_staff = FAQ.objects.create(
+            question="Staff handling guidance?",
+            answer="Internal staff answer.",
+            audience=FAQ.Audience.STAFF,
+            category=FAQ.Category.OTHER,
+            is_published=True,
+        )
+        # This models an existing FAQ row before the audience/publication migration.
+        self.legacy_faq = FAQ.objects.create(
+            question="Legacy staff FAQ?",
+            answer="Existing staff-only guidance.",
         )
         self.list_url = reverse("faq-list")
-        self.detail_url = reverse("faq-detail", kwargs={"pk": self.faq.pk})
 
-    def test_authenticated_users_can_list_and_retrieve_faqs(self):
-        for user in [self.resident, self.barangay_admin, self.dilg_admin]:
-            self.client.force_login(user)
-            list_res = self.client.get(self.list_url)
-            self.assertEqual(list_res.status_code, status.HTTP_200_OK)
-            results = list_res.data.get("results", list_res.data) if isinstance(list_res.data, dict) else list_res.data
-            self.assertEqual(len(results), 1)
-            self.assertEqual(results[0]["id"], self.faq.pk)
+    @staticmethod
+    def _results(response):
+        return response.data.get("results", response.data) if isinstance(response.data, dict) else response.data
 
-            retrieve_res = self.client.get(self.detail_url)
-            self.assertEqual(retrieve_res.status_code, status.HTTP_200_OK)
-            self.assertEqual(retrieve_res.data["question"], "How do I get a clearance?")
+    def test_resident_sees_only_published_global_and_own_barangay_resident_faqs(self):
+        self.client.force_login(self.resident_a)
+        response = self.client.get(self.list_url)
+
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        questions = {item["question"] for item in self._results(response)}
+        self.assertEqual(questions, {"Global resident help?", "How does Barangay A help?"})
+
+    def test_resident_cannot_retrieve_draft_staff_or_other_barangay_faq(self):
+        self.client.force_login(self.resident_a)
+        for faq in (self.local_draft_a, self.local_resident_b, self.global_staff, self.legacy_faq):
+            response = self.client.get(reverse("faq-detail", kwargs={"pk": faq.pk}))
+            self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_resident_of_other_barangay_gets_its_own_scope_and_global_faqs(self):
+        self.client.force_login(self.resident_b)
+        response = self.client.get(self.list_url)
+
+        questions = {item["question"] for item in self._results(response)}
+        self.assertEqual(questions, {"Global resident help?", "Private Barangay B guidance?"})
 
     def test_unauthenticated_user_cannot_read_faqs(self):
-        list_res = self.client.get(self.list_url)
-        self.assertEqual(list_res.status_code, status.HTTP_401_UNAUTHORIZED)
+        response = self.client.get(self.list_url)
+        self.assertEqual(response.status_code, status.HTTP_401_UNAUTHORIZED)
 
-        retrieve_res = self.client.get(self.detail_url)
-        self.assertEqual(retrieve_res.status_code, status.HTTP_401_UNAUTHORIZED)
+    def test_barangay_admin_can_manage_only_own_resident_faqs(self):
+        self.client.force_login(self.admin_a)
+        response = self.client.get(self.list_url)
+        questions = {item["question"] for item in self._results(response)}
+        self.assertIn("Draft for Barangay A?", questions)
+        self.assertIn("Global resident help?", questions)
+        self.assertNotIn("Private Barangay B guidance?", questions)
 
-    def test_barangay_admin_cannot_create_update_or_delete_faq(self):
-        self.client.force_login(self.barangay_admin)
-
-        post_res = self.client.post(
+        create_response = self.client.post(
             self.list_url,
-            {"question": "New FAQ?", "answer": "Answer.", "order": 2},
+            {
+                "question": "Local question?",
+                "answer": "Local answer.",
+                "audience": FAQ.Audience.RESIDENT,
+                "category": FAQ.Category.OTHER,
+                "is_published": False,
+                "order": 30,
+            },
             format="json",
         )
-        self.assertEqual(post_res.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(create_response.status_code, status.HTTP_201_CREATED)
+        created = FAQ.objects.get(pk=create_response.data["id"])
+        self.assertEqual(created.barangay_id, self.barangay_a.pk)
+        self.assertEqual(created.audience, FAQ.Audience.RESIDENT)
 
-        patch_res = self.client.patch(
-            self.detail_url,
-            {"question": "Modified Question?"},
+        other_detail_url = reverse("faq-detail", kwargs={"pk": self.local_resident_b.pk})
+        cross_tenant_update = self.client.patch(other_detail_url, {"answer": "Tampered."}, format="json")
+        self.assertEqual(cross_tenant_update.status_code, status.HTTP_404_NOT_FOUND)
+        self.local_resident_b.refresh_from_db()
+        self.assertEqual(self.local_resident_b.answer, "Only Barangay B residents should see this.")
+
+    def test_barangay_admin_cannot_create_staff_or_edit_global_faq(self):
+        self.client.force_login(self.admin_a)
+        create_response = self.client.post(
+            self.list_url,
+            {
+                "question": "Staff question?",
+                "answer": "Internal.",
+                "audience": FAQ.Audience.STAFF,
+            },
             format="json",
         )
-        self.assertEqual(patch_res.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(create_response.status_code, status.HTTP_400_BAD_REQUEST)
 
-        delete_res = self.client.delete(self.detail_url)
-        self.assertEqual(delete_res.status_code, status.HTTP_403_FORBIDDEN)
-        self.assertTrue(FAQ.objects.filter(pk=self.faq.pk).exists())
+        detail_url = reverse("faq-detail", kwargs={"pk": self.global_resident.pk})
+        update_response = self.client.patch(detail_url, {"answer": "Changed."}, format="json")
+        self.assertEqual(update_response.status_code, status.HTTP_403_FORBIDDEN)
 
-    def test_dilg_admin_can_create_update_and_delete_faq(self):
+    def test_dilg_admin_can_manage_global_faqs_but_not_barangay_owned_faqs(self):
         self.client.force_login(self.dilg_admin)
-
-        post_res = self.client.post(
+        create_response = self.client.post(
             self.list_url,
-            {"question": "What is KapitBayan?", "answer": "KapitBayan is a barangay management system.", "order": 2},
+            {
+                "question": "Global staff help?",
+                "answer": "Global staff answer.",
+                "audience": FAQ.Audience.STAFF,
+                "category": FAQ.Category.OTHER,
+                "is_published": True,
+            },
             format="json",
         )
-        self.assertEqual(post_res.status_code, status.HTTP_201_CREATED)
-        new_faq_id = post_res.data["id"]
+        self.assertEqual(create_response.status_code, status.HTTP_201_CREATED)
+        created = FAQ.objects.get(pk=create_response.data["id"])
+        self.assertIsNone(created.barangay_id)
 
-        new_detail_url = reverse("faq-detail", kwargs={"pk": new_faq_id})
-        patch_res = self.client.patch(
-            new_detail_url,
-            {"answer": "Updated KapitBayan explanation."},
-            format="json",
-        )
-        self.assertEqual(patch_res.status_code, status.HTTP_200_OK)
-        self.assertEqual(patch_res.data["answer"], "Updated KapitBayan explanation.")
+        local_url = reverse("faq-detail", kwargs={"pk": self.local_resident_a.pk})
+        update_response = self.client.patch(local_url, {"answer": "Tampered."}, format="json")
+        self.assertEqual(update_response.status_code, status.HTTP_403_FORBIDDEN)
+        delete_response = self.client.delete(local_url)
+        self.assertEqual(delete_response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertTrue(FAQ.objects.filter(pk=self.local_resident_a.pk).exists())
 
-        delete_res = self.client.delete(new_detail_url)
-        self.assertEqual(delete_res.status_code, status.HTTP_204_NO_CONTENT)
-        self.assertFalse(FAQ.objects.filter(pk=new_faq_id).exists())
+    def test_field_official_reads_only_published_staff_faqs_in_scope(self):
+        self.client.force_login(self.field_official_a)
+        response = self.client.get(self.list_url)
+
+        questions = {item["question"] for item in self._results(response)}
+        self.assertEqual(questions, {"Staff handling guidance?"})
+
+    def test_barangay_admin_b_cannot_read_barangay_a_drafts_by_id(self):
+        self.client.force_login(self.admin_b)
+        detail_url = reverse("faq-detail", kwargs={"pk": self.local_draft_a.pk})
+        response = self.client.get(detail_url)
+        self.assertEqual(response.status_code, status.HTTP_404_NOT_FOUND)

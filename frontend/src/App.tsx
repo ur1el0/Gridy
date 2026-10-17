@@ -83,6 +83,9 @@ const PublicNoticeRedirect = lazy(() =>
 const AidRequests = lazy(() =>
     import("./pages/citizen/AidRequests").then(({ AidRequests }) => ({ default: AidRequests })),
 );
+const ResidentHelp = lazy(() =>
+    import("./pages/citizen/ResidentHelp").then(({ ResidentHelp }) => ({ default: ResidentHelp })),
+);
 
 function RootRedirect() {
     const { isAuthenticated, isAuthReady, user } = useAuth();
@@ -180,6 +183,7 @@ export function App() {
                                     <Route path="/portal/queue" element={<CitizenQueue />} />
                                     <Route path="/portal/bulletin" element={<CitizenBulletin />} />
                                     <Route path="/portal/aid" element={<AidRequests />} />
+                                    <Route path="/portal/help" element={<ResidentHelp />} />
                                 </Route>
                             </Route>
 

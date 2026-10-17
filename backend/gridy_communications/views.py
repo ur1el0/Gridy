@@ -1,4 +1,5 @@
 import logging
+from django.db.models import Q
 from rest_framework import viewsets, permissions, status
 from rest_framework.decorators import action
 from rest_framework.response import Response
@@ -6,7 +7,7 @@ from rest_framework.views import APIView
 from rest_framework.exceptions import PermissionDenied
 from drf_spectacular.utils import extend_schema
 from gridy_auth.models import User
-from gridy_auth.permissions import IsBarangayOfficial, IsDILGAdmin
+from gridy_auth.permissions import IsBarangayOfficial
 from gridy_communications.models import (
     Announcement,
     ActivitySchedule,
@@ -200,15 +201,112 @@ class EmergencyHotlineViewSet(viewsets.ModelViewSet):
             raise PermissionDenied("A barangay assignment is required to create emergency hotlines.")
         serializer.save(created_by=user)
 
+class FAQManagerPermission(permissions.BasePermission):
+    """Barangay admins manage local resident FAQs; DILG manages global FAQs."""
+
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(
+            user
+            and user.is_authenticated
+            and (
+                user.role == User.Role.DILG_ADMIN
+                or (user.role == User.Role.ADMIN and user.barangay_id)
+            )
+        )
+
+
 class FAQViewSet(viewsets.ModelViewSet):
-    queryset = FAQ.objects.all()
     serializer_class = FAQSerializer
 
+    def get_queryset(self):
+        user = self.request.user
+        if not user or not user.is_authenticated:
+            return FAQ.objects.none()
+
+        faqs = FAQ.objects.select_related('barangay').all()
+        if user.role == User.Role.DILG_ADMIN:
+            return faqs.filter(barangay__isnull=True)
+
+        in_scope = Q(barangay__isnull=True)
+        if user.barangay_id:
+            in_scope |= Q(barangay_id=user.barangay_id)
+
+        if user.role == User.Role.RESIDENT:
+            return faqs.filter(
+                audience=FAQ.Audience.RESIDENT,
+                is_published=True,
+            ).filter(in_scope)
+
+        if user.role == User.Role.ADMIN:
+            local_resident_faqs = Q(
+                barangay_id=user.barangay_id,
+                audience=FAQ.Audience.RESIDENT,
+            ) if user.barangay_id else Q(pk__in=[])
+            published_global_faqs = Q(
+                barangay__isnull=True,
+                audience=FAQ.Audience.RESIDENT,
+                is_published=True,
+            )
+            return faqs.filter(local_resident_faqs | published_global_faqs)
+
+        if user.role == User.Role.FIELD_OFFICIAL:
+            return faqs.filter(
+                audience=FAQ.Audience.STAFF,
+                is_published=True,
+            ).filter(in_scope)
+
+        return FAQ.objects.none()
+
     def get_permissions(self):
-        # Anyone authenticated can read FAQs, but only DILG Admins can create/edit them
         if self.action in ['list', 'retrieve']:
             return [permissions.IsAuthenticated()]
-        return [IsDILGAdmin()]
+        return [FAQManagerPermission()]
+
+    def perform_create(self, serializer):
+        user = self.request.user
+        audience = serializer.validated_data.get('audience', FAQ.Audience.STAFF)
+        if user.role == User.Role.ADMIN:
+            if not user.barangay_id:
+                raise PermissionDenied("A Barangay assignment is required to manage local FAQs.")
+            if audience != FAQ.Audience.RESIDENT:
+                raise PermissionDenied("Barangay admins can create resident FAQs only.")
+            serializer.save(barangay_id=user.barangay_id, audience=FAQ.Audience.RESIDENT)
+            return
+        if user.role == User.Role.DILG_ADMIN:
+            serializer.save(barangay=None)
+            return
+        raise PermissionDenied("You cannot manage FAQs.")
+
+    def perform_update(self, serializer):
+        user = self.request.user
+        instance = serializer.instance
+        audience = serializer.validated_data.get('audience', instance.audience)
+        if user.role == User.Role.ADMIN:
+            if instance.barangay_id != user.barangay_id or instance.audience != FAQ.Audience.RESIDENT:
+                raise PermissionDenied("You can manage only resident FAQs for your Barangay.")
+            if audience != FAQ.Audience.RESIDENT:
+                raise PermissionDenied("Barangay admins can manage resident FAQs only.")
+            serializer.save(barangay_id=user.barangay_id)
+            return
+        if user.role == User.Role.DILG_ADMIN:
+            if instance.barangay_id is not None:
+                raise PermissionDenied("DILG admins can manage global FAQs only.")
+            serializer.save(barangay=None)
+            return
+        raise PermissionDenied("You cannot manage FAQs.")
+
+    def perform_destroy(self, instance):
+        user = self.request.user
+        if user.role == User.Role.ADMIN:
+            if instance.barangay_id != user.barangay_id or instance.audience != FAQ.Audience.RESIDENT:
+                raise PermissionDenied("You can manage only resident FAQs for your Barangay.")
+        elif user.role == User.Role.DILG_ADMIN:
+            if instance.barangay_id is not None:
+                raise PermissionDenied("DILG admins can manage global FAQs only.")
+        else:
+            raise PermissionDenied("You cannot manage FAQs.")
+        instance.delete()
     
 class AdminNotificationViewSet(viewsets.ModelViewSet):
     serializer_class = AdminNotificationSerializer

@@ -9,6 +9,7 @@ import {
     ShieldCheck, 
     Building2,
     HandHeart,
+    CircleHelp,
 } from 'lucide-react';
 import kapitBayanSymbol from '../../assets/kapitbayan/symbol.png';
 
@@ -78,6 +79,10 @@ export const CitizenLayout: React.FC = () => {
                                 <HandHeart className="w-4 h-4" />
                                 <span>Assistance</span>
                             </NavLink>
+                            <NavLink to="/portal/help" className={navLinkClass}>
+                                <CircleHelp className="w-4 h-4" aria-hidden="true" />
+                                <span>FAQs</span>
+                            </NavLink>
                         </nav>
 
                         {/* Right: Resident Profile Pill & Logout */}
@@ -110,7 +115,7 @@ export const CitizenLayout: React.FC = () => {
                 </div>
 
                 {/* Mobile Navigation Row (for smaller screens & kiosks) */}
-                <div className="md:hidden border-t border-white/10 px-2 py-1.5 flex justify-around">
+                <div className="md:hidden flex gap-1 overflow-x-auto border-t border-white/10 px-2 py-1.5">
                     <NavLink to="/portal/documents" className={navLinkClass}>
                         <FileText className="w-4 h-4" />
                         <span className="text-xs">Documents</span>
@@ -126,6 +131,10 @@ export const CitizenLayout: React.FC = () => {
                     <NavLink to="/portal/aid" className={navLinkClass}>
                         <HandHeart className="w-4 h-4" />
                         <span className="text-xs">Aid</span>
+                    </NavLink>
+                    <NavLink to="/portal/help" className={`${navLinkClass} whitespace-nowrap`}>
+                        <CircleHelp className="w-4 h-4" aria-hidden="true" />
+                        <span className="text-xs">FAQs</span>
                     </NavLink>
                 </div>
             </header>
