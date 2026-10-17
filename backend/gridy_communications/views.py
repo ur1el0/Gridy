@@ -210,12 +210,24 @@ class FAQViewSet(viewsets.ModelViewSet):
             return [permissions.IsAuthenticated()]
         return [IsDILGAdmin()]
     
+class IsAdminNotificationRecipient(permissions.BasePermission):
+    """Allow Barangay and DILG admins to access their own notifications."""
+
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(
+            user
+            and user.is_authenticated
+            and user.role in (User.Role.ADMIN, User.Role.DILG_ADMIN)
+        )
+
+
 class AdminNotificationViewSet(viewsets.ModelViewSet):
     serializer_class = AdminNotificationSerializer
-    permission_classes = [permissions.IsAuthenticated, IsBarangayOfficial]
+    permission_classes = [permissions.IsAuthenticated, IsAdminNotificationRecipient]
 
     def get_queryset(self):
-        # SECURITY: Admins can ONLY see their own personal notifications
+        # Keep this endpoint owner-scoped for both Barangay and DILG admins.
         return AdminNotification.objects.filter(user=self.request.user)
     
     @action(detail=False, methods=['post'])
