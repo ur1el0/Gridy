@@ -10,6 +10,7 @@ class QuickServicesSection extends StatelessWidget {
   final VoidCallback? onBarangayHotline;
   final VoidCallback? onMyReports;
   final VoidCallback? onRequestAid;
+  final VoidCallback? onHelpFAQs;
 
   const QuickServicesSection({
     super.key,
@@ -18,6 +19,7 @@ class QuickServicesSection extends StatelessWidget {
     this.onBarangayHotline,
     this.onMyReports,
     this.onRequestAid,
+    this.onHelpFAQs,
   });
 
   @override
@@ -75,6 +77,12 @@ class QuickServicesSection extends StatelessWidget {
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 12),
+        _QuickServiceCard(
+          icon: Icons.help_outline_rounded,
+          title: 'Help & FAQs',
+          onTap: onHelpFAQs,
         ),
       ],
     );

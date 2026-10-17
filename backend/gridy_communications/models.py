@@ -82,9 +82,45 @@ class EmergencyHotline(models.Model):
 
 
 class FAQ(models.Model):
+    class Audience(models.TextChoices):
+        RESIDENT = 'RESIDENT', 'Residents'
+        STAFF = 'STAFF', 'Staff'
+
+    class Category(models.TextChoices):
+        GETTING_STARTED = 'GETTING_STARTED', 'Getting started'
+        ACCOUNT = 'ACCOUNT', 'Account access'
+        DOCUMENTS = 'DOCUMENTS', 'Documents and clearances'
+        PAYMENTS = 'PAYMENTS', 'Fees and payments'
+        QUEUE = 'QUEUE', 'Queue and schedules'
+        ASSISTANCE = 'ASSISTANCE', 'Assistance and programs'
+        COMMUNITY = 'COMMUNITY', 'Community notices'
+        ACCESSIBILITY = 'ACCESSIBILITY', 'Accessibility and older adults'
+        PRIVACY = 'PRIVACY', 'Privacy and safety'
+        OTHER = 'OTHER', 'Other'
+
     question = models.CharField(max_length=255)
     answer = models.TextField()
     order = models.IntegerField(default=0, help_text="Order in which the FAQ appears")
+    audience = models.CharField(
+        max_length=16,
+        choices=Audience.choices,
+        default=Audience.STAFF,
+        db_index=True,
+    )
+    category = models.CharField(
+        max_length=24,
+        choices=Category.choices,
+        default=Category.OTHER,
+        db_index=True,
+    )
+    is_published = models.BooleanField(default=False, db_index=True)
+    barangay = models.ForeignKey(
+        'gridy_auth.Barangay',
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name='faqs',
+    )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -92,7 +128,11 @@ class FAQ(models.Model):
         return self.question
     
     class Meta:
-        ordering = ['order', 'created_at']
+        ordering = ['order', 'created_at', 'id']
+        indexes = [
+            models.Index(fields=['audience', 'is_published', 'category']),
+            models.Index(fields=['barangay', 'audience', 'is_published']),
+        ]
 
 class AdminNotification(models.Model):
     class Type(models.TextChoices):
