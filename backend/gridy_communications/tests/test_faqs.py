@@ -113,7 +113,20 @@ class FAQAPITests(APITestCase):
 
         self.assertEqual(response.status_code, status.HTTP_200_OK)
         questions = {item["question"] for item in self._results(response)}
-        self.assertEqual(questions, {"Global resident help?", "How does Barangay A help?"})
+        expected_global_questions = set(
+            FAQ.objects.filter(
+                audience=FAQ.Audience.RESIDENT,
+                is_published=True,
+                barangay__isnull=True,
+            ).values_list("question", flat=True)
+        )
+        self.assertEqual(
+            questions,
+            expected_global_questions | {"How does Barangay A help?"},
+        )
+        self.assertNotIn("Private Barangay B guidance?", questions)
+        self.assertNotIn("Draft for Barangay A?", questions)
+        self.assertNotIn("Staff handling guidance?", questions)
 
     def test_resident_cannot_retrieve_draft_staff_or_other_barangay_faq(self):
         self.client.force_login(self.resident_a)
@@ -126,7 +139,20 @@ class FAQAPITests(APITestCase):
         response = self.client.get(self.list_url)
 
         questions = {item["question"] for item in self._results(response)}
-        self.assertEqual(questions, {"Global resident help?", "Private Barangay B guidance?"})
+        expected_global_questions = set(
+            FAQ.objects.filter(
+                audience=FAQ.Audience.RESIDENT,
+                is_published=True,
+                barangay__isnull=True,
+            ).values_list("question", flat=True)
+        )
+        self.assertEqual(
+            questions,
+            expected_global_questions | {"Private Barangay B guidance?"},
+        )
+        self.assertNotIn("How does Barangay A help?", questions)
+        self.assertNotIn("Draft for Barangay A?", questions)
+        self.assertNotIn("Staff handling guidance?", questions)
 
     def test_unauthenticated_user_cannot_read_faqs(self):
         response = self.client.get(self.list_url)
@@ -199,9 +225,11 @@ class FAQAPITests(APITestCase):
 
         local_url = reverse("faq-detail", kwargs={"pk": self.local_resident_a.pk})
         update_response = self.client.patch(local_url, {"answer": "Tampered."}, format="json")
-        self.assertEqual(update_response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(update_response.status_code, status.HTTP_404_NOT_FOUND)
         delete_response = self.client.delete(local_url)
-        self.assertEqual(delete_response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertEqual(delete_response.status_code, status.HTTP_404_NOT_FOUND)
+        self.local_resident_a.refresh_from_db()
+        self.assertEqual(self.local_resident_a.answer, "Ask the Barangay A desk.")
         self.assertTrue(FAQ.objects.filter(pk=self.local_resident_a.pk).exists())
 
     def test_field_official_reads_only_published_staff_faqs_in_scope(self):
